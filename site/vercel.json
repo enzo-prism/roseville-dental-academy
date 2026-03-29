@@ -1,0 +1,38 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/bls%2Fcpr-1",
+      "destination": "/bls-cpr-1",
+      "permanent": true
+    },
+    {
+      "source": "/bls/cpr-1",
+      "destination": "/bls-cpr-1",
+      "permanent": true
+    },
+    {
+      "source": "/resume-portal-dr%2Foms-only",
+      "destination": "/resume-portal-dr-oms-only",
+      "permanent": true
+    },
+    {
+      "source": "/resume-portal-dr/oms-only",
+      "destination": "/resume-portal-dr-oms-only",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ]
+}
