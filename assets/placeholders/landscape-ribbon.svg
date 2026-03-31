@@ -1,0 +1,48 @@
+<svg width="1240" height="620" viewBox="0 0 1240 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1240" height="620" fill="url(#bg)"/>
+  <g opacity="0.88" filter="url(#blur-lg)">
+    <circle cx="988" cy="142" r="202" fill="url(#orb-a)"/>
+    <circle cx="269" cy="459" r="245" fill="url(#orb-b)"/>
+    <circle cx="593" cy="232" r="184" fill="url(#orb-c)"/>
+  </g>
+  <path d="M-41 283C91 217 221 206 354 221C489 237 601 278 732 292C860 306 983 292 1085 237C1149 202 1206 159 1271 111V612H-41V283Z" fill="url(#band-a)" opacity="0.74"/>
+  <path d="M-35 359C120 303 246 304 370 323C499 343 620 386 758 391C903 397 1043 352 1177 262C1220 233 1263 201 1292 185V633H-35V359Z" fill="url(#band-b)" opacity="0.88"/>
+  <path d="M-27 467C110 431 232 433 345 445C527 464 666 523 856 518C1027 514 1163 447 1269 378V638H-27V467Z" fill="url(#band-c)" opacity="0.86"/>
+  <defs>
+    <linearGradient id="bg" x1="144" y1="34" x2="1126" y2="596" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FCFEFF"/>
+      <stop offset="0.5" stop-color="#EEF6FF"/>
+      <stop offset="1" stop-color="#DCEBFF"/>
+    </linearGradient>
+    <radialGradient id="orb-a" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(988 142) rotate(90) scale(202)">
+      <stop stop-color="#EDF6FF"/>
+      <stop offset="0.52" stop-color="#C9E0FF"/>
+      <stop offset="1" stop-color="#C9E0FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb-b" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(269 459) rotate(90) scale(245)">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.5" stop-color="#D7E7FF"/>
+      <stop offset="1" stop-color="#D7E7FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb-c" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(593 232) rotate(90) scale(184)">
+      <stop stop-color="#F7FBFF"/>
+      <stop offset="0.55" stop-color="#D4E7FF"/>
+      <stop offset="1" stop-color="#D4E7FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="band-a" x1="71" y1="198" x2="1110" y2="402" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#D2E7FF" stop-opacity="0.42"/>
+    </linearGradient>
+    <linearGradient id="band-b" x1="72" y1="300" x2="1097" y2="518" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9FCFF" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#D0E5FF" stop-opacity="0.82"/>
+    </linearGradient>
+    <linearGradient id="band-c" x1="122" y1="437" x2="1124" y2="624" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#E4F0FF" stop-opacity="0.72"/>
+    </linearGradient>
+    <filter id="blur-lg" x="-56" y="-104" width="1306" height="847" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="46"/>
+    </filter>
+  </defs>
+</svg>

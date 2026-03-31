@@ -1,0 +1,7 @@
+research
+README.md
+site
+site/**
+.git
+.git/**
+.DS_Store

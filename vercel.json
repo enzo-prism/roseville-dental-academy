@@ -1,0 +1,71 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/bls%2Fcpr-1",
+      "destination": "/bls-cpr-1",
+      "permanent": true
+    },
+    {
+      "source": "/bls/cpr-1",
+      "destination": "/bls-cpr-1",
+      "permanent": true
+    },
+    {
+      "source": "/resume-portal-dr%2Foms-only",
+      "destination": "/resume-portal-dr-oms-only",
+      "permanent": true
+    },
+    {
+      "source": "/resume-portal-dr/oms-only",
+      "destination": "/resume-portal-dr-oms-only",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(assets|blobby|ceph-p3-01|gfonts|isteam|signals)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
+      ]
+    }
+  ]
+}
