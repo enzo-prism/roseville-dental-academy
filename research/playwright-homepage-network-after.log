@@ -1,0 +1,128 @@
+[GET] http://127.0.0.1:4321/ => [200] OK
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/Academy%20Logo.jpg/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:516,h:500,cg:true => [200] OK
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_9043.jpg/:/cr=t:14.36%25,l:14.35%25,w:60.24%25,h:60.24%25/rs=w:719,h:959 => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/gpub/d4a8b11df55d557c/script.js => [200] OK
+[GET] http://127.0.0.1:4321/ceph-p3-01/website-builder-data-prod/static/widgets/UX.4.51.17.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/gpub/7910f46e0556bf7/script.js => [200] OK
+[GET] http://127.0.0.1:4321/isteam/ip/static/transparent_placeholder.png/:/rs=w:768,h:960,cg:true,m,i:true/qt=q:1/ll=n:true => [200] OK
+[GET] http://127.0.0.1:4321/isteam/ip/static/transparent_placeholder.png/:/rs=w:360,h:270,cg:true,m,i:true/qt=q:1/ll=n:true => [200] OK
+[GET] http://127.0.0.1:4321/isteam/ip/static/transparent_placeholder.png/:/rs=w:600,h:451,cg:true,m,i:true/qt=q:1/ll=n:true => [200] OK
+[GET] http://127.0.0.1:4321/isteam/ip/static/transparent_placeholder.png/:/rs=w:600,h:300,cg:true,m,i:true/qt=q:1/ll=n:true => [200] OK
+[GET] http://127.0.0.1:4321/isteam/ip/static/transparent_placeholder.png/:/rs=w:768,h:513,cg:true,m,i:true/qt=q:1/ll=n:true => [200] OK
+[GET] http://127.0.0.1:4321/isteam/ip/static/transparent_placeholder.png/:/rs=w:365,h:365,cg:true,m,i:true/qt=q:1/ll=n:true => [200] OK
+[GET] http://127.0.0.1:4321/manifest.webmanifest => [200] OK
+[GET] http://127.0.0.1:4321/gfonts/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2 => [200] OK
+[GET] http://127.0.0.1:4321/gfonts/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2 => [200] OK
+[GET] http://127.0.0.1:4321/gfonts/s/adamina/v22/j8_r6-DH1bjoc-dwi-3UEA.woff2 => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/bs-layout11-Theme-publish-Theme-3339adb0.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-_rollupPluginBabelHelpers-5804ec33.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-defaultSocialIconPack-a2c518b6.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-index-52fbaa26.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-index3-4a866695.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-loaders-fffeeba5.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-modernThinRound-ced97fbd.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-themeOverrides-8f862543.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/components/Carousel-7574d33c.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/components/ColorSwatch-4196a0a9.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/components/DynamicFontScaler-6cccd626.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-dataAids-dc689f22.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-index2-30d4bb8e.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-navigationDrawer-27f5f1f5.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-overlayTypes-6afcb3a5.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-searchFormLocations-c86f2a99.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/c/_commonjsHelpers-67085353.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/c/_react_commonjs-external-a1351e34.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/c/_rollupPluginBabelHelpers-8ce54c82.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/c/interopRequireDefault-c83974f7.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/c/dynamicFontScaler-ecd443bf.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/bs-Hamburger-Component-8956ad4f.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/bs-ComponentGoPay-d63d303e.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-Toggle-0f009dec.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-ComponentPropTypes-60bd54d0.js => [200] OK
+[GET] https://cart-checkout.secureserver.net/dist/embed.js => [200] 
+[GET] http://127.0.0.1:4321/g/api/cart/cart?cartNotifyTimeout=5000&websiteId=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&env=production&cartUrl=http://127.0.0.1:4321/g/api/cart&websiteUrl=http://127.0.0.1:4321 => [200] OK
+[GET] http://127.0.0.1:4321/g/api/cart/cart?cartNotifyTimeout=5000&websiteId=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&env=production&cartUrl=http://127.0.0.1:4321/g/api/cart&websiteUrl=http://127.0.0.1:4321 => [200] OK
+[GET] http://127.0.0.1:4321/assets/favicon.png => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/bs-FlyoutMenu-Component-b4b95853.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/bs-LinkAwareComponent-0e7597ad.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/bs-MobileFlyoutMenu-Component-cde69336.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/SOCIALFEED/bs-Component-b830af8f.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/REVIEWS/bs-Component-2626af05.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/GALLERY/bs-gallery1-Gallery-28634237.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/SUBSCRIBE/bs-subscribe2-subscribe-form-014a07de.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/CONTACT/bs-Component-a87e0af8.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/CONTACT/bs-contact5-contact-form-3b5eb36f.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/CONTACT/bs-genericMap-e615c89a.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/bs-appointments1-Appointments-d08cddb0.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/LAYOUT/c/bs-AbsLink-5de6a485.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/GALLERY/c/bs-CustomArrows-49960b5a.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/GALLERY/c/bs-dataAids-318b181e.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/GALLERY/c/bs-directionalKeyHandlers-acff1496.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/GALLERY/c/bs-util-5fd4c061.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/GALLERY/c/bs-wrapWithDeviceDetection-f9dc1d72.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/SUBSCRIBE/c/bs-subscribe-form-db92f2b4.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/CONTACT/c/bs-data-aids-e16ec476.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/CONTACT/c/bs-_rollupPluginBabelHelpers-5804ec33.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/CONTACT/c/bs-routes-192fdc43.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/components/Form-6710b59f.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/common/utils/form-1fa99f0a.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-AppointmentsSection-93383563.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/common/constants/traffic2-0a7e72c6.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/components/Recaptcha/badge-e542c4f1.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/components/Recaptcha/recaptcha-loader-481e2d0a.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/common/constants/form/formIdentifiers-99523055.js => [200] OK
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@wsb/guac-widget-shared/lib/common/constants/form/recaptchaTypes-ce199ba5.js => [200] OK
+[GET] https://proxy.apps-api.instantpage.godaddy.com/v1/proxy/social-sdk?accountId=&provider=instagram&websiteId=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&method=canGetConnection => [200] 
+[GET] https://proxy.apps-api.instantpage.secureserver.net/v1/proxy/stats?id=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&source=gmb => [200] 
+[GET] https://proxy.apps-api.instantpage.secureserver.net/v1/proxy/stats?id=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&source=gmb => [200] 
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/1E638112-B41B-4794-8C3F-AE76DC368EAB.jpeg/:/rs=w:1300,h:800 => [404] File not found
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/A27538F0-9E9A-450D-84FD-5A298AD1453D.jpeg/:/rs=w:1300,h:800 => [404] File not found
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_2084.jpeg/:/rs=w:1300,h:800 => [404] File not found
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_2798.jpeg/:/rs=w:1300,h:800 => [404] File not found
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_2394.jpeg/:/rs=w:1300,h:800 => [404] File not found
+[GET] https://contact.apps-api.instantpage.secureserver.net/v3/recaptcha => [200] 
+[GET] https://maps.googleapis.com/maps/api/js?client=gme-godaddycom&channel=gc-widget-contact => [200] 
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/1E638112-B41B-4794-8C3F-AE76DC368EAB.jpeg => [404] File not found
+[GET] https://api.ola.godaddy.com/accounts/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/config => [200] 
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_2798.jpeg => [404] File not found
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/A27538F0-9E9A-450D-84FD-5A298AD1453D.jpeg => [404] File not found
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_2084.jpeg => [404] File not found
+[GET] http://127.0.0.1:4321/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_2394.jpeg => [404] File not found
+[GET] https://www.google.com/recaptcha/api.js?render=6LfjspgUAAAAABsbjG9id6qXQKZkqb6_Hpce6ui_ => [200] 
+[GET] https://maps.googleapis.com/maps/api/mapsjs/gen_204?csp_test=true => [200] 
+[GET] https://maps.googleapis.com/maps-api-v3/api/js/63/14d/common.js => [200] 
+[GET] https://maps.googleapis.com/maps-api-v3/api/js/63/14d/util.js => [200] 
+[GET] https://maps.googleapis.com/maps-api-v3/api/js/63/14d/map.js => [200] 
+[GET] https://maps.googleapis.com/maps-api-v3/api/js/63/14d/marker.js => [200] 
+[GET] https://maps.googleapis.com/maps/api/js/StaticMapService.GetMapImage?1m2&1i683474&2i1606291&2e1&3u14&4m2&1u500&2u200&5m10&1e0&5sen-US&6sus&8m3&1e33&2e3&8e1&10b1&12b1&14i47083502&8e1&client=gme-godaddycom&channel=gc-widget-contact&token=1149 => [200] 
+[GET] http://127.0.0.1:4321/gfonts/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2 => [200] OK
+[GET] http://127.0.0.1:4321/gfonts/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1JlFc-K.woff2 => [200] OK
+[GET] https://lh3.googleusercontent.com/a/ACg8ocIxVFpmqbMQO5qJSzQnxkgHsw8dBRqx6mFx5uEHry5UU4wWb8M=s120-c-rp-mo-br100 => [200] 
+[GET] https://lh3.googleusercontent.com/a-/ALV-UjVYisXA8jcD8h2m9nFBn3J6bqDWUQpIEjcnu6fbo-Gqdg8Dugls=s120-c-rp-mo-br100 => [200] 
+[GET] https://lh3.googleusercontent.com/a-/ALV-UjXLetzZUUI7HVOMNaPqrbvr-ni9J3Vn3SrxhQoQYdRugN--GqQ=s120-c-rp-mo-br100 => [200] 
+[GET] https://lh3.googleusercontent.com/a/ACg8ocJDzCZrVC6-C8D8tX9g769MEUby5ZPdhKh1cgEGArZdfxtiuw=s120-c-rp-mo-br100 => [200] 
+[GET] https://lh3.googleusercontent.com/a/ACg8ocJDJ--Ftmxx7yOGMtZ_x3Q0RJquAzJKin0AqitBenS03yt9FQ=s120-c-rp-mo-br100 => [200] 
+[GET] https://api.ola.godaddy.com/accounts/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/hivemind => [200] 
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-ServiceList-17f1d0f3.js => [404] File not found
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-onServiceClick-92f1f0e2.js => [404] File not found
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-ScrollWidgetActions-6038a6e2.js => [404] File not found
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-TrackImpression-c092983e.js => [404] File not found
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-isMobileDevice-eba82ab6.js => [404] File not found
+[GET] https://www.gstatic.com/recaptcha/releases/79clEdOi5xQbrrpL2L8kGmK3/recaptcha__en.js => [200] 
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-onServiceClick-92f1f0e2.js => [404] File not found
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-ServiceList-17f1d0f3.js => [404] File not found
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-ScrollWidgetActions-6038a6e2.js => [404] File not found
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-TrackImpression-c092983e.js => [404] File not found
+[GET] http://127.0.0.1:4321/blobby/go/static/radpack/@widget/APPOINTMENTS/c/bs-isMobileDevice-eba82ab6.js => [404] File not found
+[GET] https://proxy.apps-api.instantpage.godaddy.com/v1/proxy/social-sdk?accountId=&provider=instagram&websiteId=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&method=getConnection => [200] 
+[GET] https://proxy.apps-api.instantpage.godaddy.com/v1/proxy/social-sdk?accountId=&provider=instagram&websiteId=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&method=getPosts => [403] 
+[GET] https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LfjspgUAAAAABsbjG9id6qXQKZkqb6_Hpce6ui_&co=aHR0cDovLzEyNy4wLjAuMTo0MzIx&hl=en&v=79clEdOi5xQbrrpL2L8kGmK3&size=invisible&anchor-ms=20000&execute-ms=30000&cb=3z6nmjyndvg => [200] 
+[GET] https://www.gstatic.com/recaptcha/releases/79clEdOi5xQbrrpL2L8kGmK3/styles__ltr.css => [200] 
+[GET] https://www.gstatic.com/recaptcha/releases/79clEdOi5xQbrrpL2L8kGmK3/recaptcha__en.js => [200] 
+[GET] https://www.google.com/recaptcha/api2/webworker.js?hl=en&v=79clEdOi5xQbrrpL2L8kGmK3 => [200] 
+[GET] https://www.gstatic.com/recaptcha/api2/logo_48.png => [200] 
+[GET] https://fonts.gstatic.com/s/roboto/v48/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBHMdazQ.woff2 => [200] 
+[GET] https://www.gstatic.com/recaptcha/releases/79clEdOi5xQbrrpL2L8kGmK3/recaptcha__en.js => [200] 
+[GET] https://proxy.apps-api.instantpage.godaddy.com/v1/proxy/gpsStats?query=query%20GPSStats%20%7B%0A%20%20%20%20GPSStats(id:%20%22f45bc53a-68c0-4338-bd3f-fe6fbc400a09%22)%20%7B%0A%20%20%20%20%20%20instagram%20%7B%0A%20%20%20%20%20%20%20%20postsIndividual%20%7B%0A%20%20%20%20%20%20%20%20%20%20mostRecent%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20value%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D => [400] 
+[GET] https://proxy.apps-api.instantpage.godaddy.com/v1/proxy/gpsStats?query=query%20GPSStats%20%7B%0A%20%20%20%20GPSStats(id:%20%22f45bc53a-68c0-4338-bd3f-fe6fbc400a09%22)%20%7B%0A%20%20%20%20%20%20instagram%20%7B%0A%20%20%20%20%20%20%20%20postsIndividual%20%7B%0A%20%20%20%20%20%20%20%20%20%20mostRecent%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20value%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D => [400] 
+[GET] https://proxy.apps-api.instantpage.godaddy.com/v1/proxy/gpsStats?query=query%20GPSStats%20%7B%0A%20%20%20%20GPSStats(id:%20%22f45bc53a-68c0-4338-bd3f-fe6fbc400a09%22)%20%7B%0A%20%20%20%20%20%20instagram%20%7B%0A%20%20%20%20%20%20%20%20postsIndividual%20%7B%0A%20%20%20%20%20%20%20%20%20%20mostRecent%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20value%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D => [400] 

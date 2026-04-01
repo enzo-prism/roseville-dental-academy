@@ -1,0 +1,9 @@
+[GET] https://api.ola.godaddy.com/accounts/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/config?fields[]=cart => [200] 
+[GET] http://127.0.0.1:4321/g/api/cart/cart?cartNotifyTimeout=5000&websiteId=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&env=production&cartUrl=http://127.0.0.1:4321/g/api/cart&websiteUrl=http://127.0.0.1:4321 => [200] OK
+[GET] http://127.0.0.1:4321/g/api/cart/cart?cartNotifyTimeout=5000&websiteId=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&env=production&cartUrl=http://127.0.0.1:4321/g/api/cart&websiteUrl=http://127.0.0.1:4321 => [200] OK
+[GET] https://proxy.apps-api.instantpage.secureserver.net/v1/proxy/stats?id=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&source=gmb => [200] 
+[GET] https://proxy.apps-api.instantpage.secureserver.net/v1/proxy/stats?id=f45bc53a-68c0-4338-bd3f-fe6fbc400a09&source=gmb => [200] 
+[GET] https://contact.apps-api.instantpage.secureserver.net/v3/recaptcha => [200] 
+[GET] https://maps.googleapis.com/maps/api/mapsjs/gen_204?csp_test=true => [200] 
+[GET] https://maps.googleapis.com/maps/api/js?client=gme-godaddycom&channel=gc-widget-contact => [FAILED] net::ERR_ABORTED
+[GET] https://maps.googleapis.com/maps/api/js?client=gme-godaddycom&channel=gc-widget-contact => [FAILED] net::ERR_ABORTED
