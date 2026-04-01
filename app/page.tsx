@@ -1,5 +1,5 @@
-import { SitePageRenderer } from "@/components/site/site-page";
-import { buildSiteMetadata } from "@/lib/site-metadata";
+import { SitePageRenderer } from "../components/site/site-page";
+import { buildSiteMetadata } from "../lib/site-metadata";
 
 export const metadata = buildSiteMetadata("");
 

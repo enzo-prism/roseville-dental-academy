@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 
-import { SitePageRenderer } from "@/components/site/site-page";
-import { buildSiteMetadata } from "@/lib/site-metadata";
-import { getPageBySlug } from "@/lib/site-data";
+import { SitePageRenderer } from "../../components/site/site-page";
+import { buildSiteMetadata } from "../../lib/site-metadata";
+import { getPageBySlug } from "../../lib/site-data";
 
 export async function generateMetadata({
   params,

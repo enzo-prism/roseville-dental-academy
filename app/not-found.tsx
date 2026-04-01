@@ -1,7 +1,7 @@
-import { SiteFooter } from "@/components/site/site-footer";
-import { SiteHeader } from "@/components/site/site-header";
-import { SmartLink } from "@/components/site/smart-link";
-import { Button } from "@/components/ui/button";
+import { SiteFooter } from "../components/site/site-footer";
+import { SiteHeader } from "../components/site/site-header";
+import { SmartLink } from "../components/site/smart-link";
+import { Button } from "../components/ui/button";
 
 export default function NotFound() {
   return (

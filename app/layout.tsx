@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Inter, Manrope } from "next/font/google";
 
-import { ElevenLabsAgentWidget } from "@/components/site/elevenlabs-agent-widget";
+import { ElevenLabsAgentWidget } from "../components/site/elevenlabs-agent-widget";
 
 const inter = Inter({
   subsets: ["latin"],
