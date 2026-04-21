@@ -18,7 +18,7 @@ import type {
 } from "@/lib/site-types";
 
 export const announcement =
-  "Now accepting registration for 2026 programs that meet California Dental Board standards, including our comprehensive dental radiography course and radiation safety certification.";
+  "Now accepting registration for 2026 programs and courses that meet California Dental Board standards, including dental assisting, radiation safety, infection control, coronal polish, sealants, and BLS certification.";
 
 export const siteContact = {
   school: "Roseville Dental Academy",
@@ -27,36 +27,42 @@ export const siteContact = {
     "1271 Pleasant Grove Boulevard, Roseville, California 95747, United States",
   phone: "916-888-9821",
   email: "rosevilledentalacademy@gmail.com",
-  hours: "08:00 am - 05:00 pm",
+  hours: "09:00 am - 06:00 pm",
   directionsUrl:
     "https://maps.google.com/?q=1271+Pleasant+Grove+Boulevard+Roseville+CA+95747",
   formspreeEndpoint: "https://formspree.io/f/xzdkgaeg",
 } as const;
 
 export const siteImages = {
-  logo: "/assets/homepage/logo-seal.jpg",
-  careerInfographic: "/assets/homepage/career-outlook-infographic.png",
-  hero: "/assets/academy/hero-clinic.jpg",
-  about: "/assets/academy/classroom-consultation.jpg",
-  team: "/assets/academy/group-celebration.jpg",
-  admissions: "/assets/academy/hero-demo.jpg",
-  bls: "/assets/academy/cpr-training.jpg",
-  infection: "/assets/academy/hands-on-light.jpg",
-  radiation: "/assets/academy/equipment-setup.jpg",
-  coronal: "/assets/academy/clinical-portrait.jpg",
-  sealants: "/assets/academy/clinic-team.jpg",
-  gallery1: "/assets/academy/group-celebration.jpg",
-  gallery2: "/assets/academy/clinical-portrait.jpg",
-  gallery3: "/assets/academy/clinic-team.jpg",
-  gallery4: "/assets/academy/equipment-setup.jpg",
-  gallery5: "/assets/academy/training-focus.jpg",
-  gallery6: "/assets/academy/classroom-consultation.jpg",
-  gallery7: "/assets/academy/hero-demo.jpg",
-  gallery8: "/assets/academy/hands-on-light.jpg",
-  gallery9: "/assets/academy/hero-clinic.jpg",
-  gallery10: "/assets/academy/cpr-training.jpg",
-  gallery11: "/assets/academy/training-focus.jpg",
-  gallery12: "/assets/academy/classroom-consultation.jpg",
+  logo: "/assets/live/home/logo-academy.jpg",
+  careerInfographic: "/assets/live/home/home-opportunity.png",
+  hero: "/assets/live/home/home-hero.jpg",
+  registration: "/assets/live/home/registration.jpg",
+  programHero: "/assets/live/programs/dental-assisting-hero.jpg",
+  programOverview: "/assets/live/programs/dental-assisting-overview.jpg",
+  frontOfficeHero: "/assets/live/programs/front-office-hero.jpg",
+  frontOfficeOverview: "/assets/live/programs/front-office-overview.jpg",
+  bls: "/assets/live/courses/bls.jpg",
+  infection: "/assets/live/courses/infection-control.jpg",
+  radiation: "/assets/live/courses/radiation-safety.jpg",
+  coronal: "/assets/live/courses/coronal-polish.jpg",
+  sealants: "/assets/live/courses/sealants.jpg",
+  instructors: "/assets/live/instructors/meet-the-instructors.jpg",
+  homeGallery1: "/assets/live/gallery/home-gallery-1.jpg",
+  homeGallery2: "/assets/live/gallery/home-gallery-2.jpg",
+  homeGallery3: "/assets/live/gallery/home-gallery-3.jpg",
+  gallery1: "/assets/live/gallery/dental-assisting-1.jpg",
+  gallery2: "/assets/live/gallery/dental-assisting-2.jpg",
+  gallery3: "/assets/live/gallery/dental-assisting-3.jpg",
+  gallery4: "/assets/live/gallery/xrays-1.jpg",
+  gallery5: "/assets/live/gallery/xrays-2.jpg",
+  gallery6: "/assets/live/gallery/xrays-3.jpg",
+  gallery7: "/assets/live/gallery/first-impression-1.jpg",
+  gallery8: "/assets/live/gallery/first-impression-2.jpg",
+  gallery9: "/assets/live/gallery/first-impression-3.jpg",
+  gallery10: "/assets/live/gallery/suctioning-1.jpg",
+  gallery11: "/assets/live/gallery/suctioning-2.jpg",
+  gallery12: "/assets/live/gallery/suctioning-3.jpg",
 } as const;
 
 const admissionsCta: CtaLink = {
@@ -68,7 +74,7 @@ const admissionsCta: CtaLink = {
 
 const studentPortalCta: CtaLink = {
   label: "Student portal",
-  href: "/m/login",
+  href: "/resume-portal-dr-oms-only",
   variant: "outline",
   analyticsKey: "header-student-portal",
 };
@@ -78,17 +84,18 @@ export const headerCtas = {
   studentPortal: studentPortalCta,
 };
 
-export const primaryNavLinks = [
-  { label: "Home", href: "/" },
+export const mobilePrimaryNavLinks = [
   { label: "Admissions", href: "/registration" },
   { label: "Contact", href: "/#contact" },
+] as const;
+
+export const resourceLinks = [
   { label: "Meet the instructors", href: "/meet-the-instructors" },
   { label: "FAQs", href: "/faqs-1" },
   { label: "Photos", href: "/photos" },
 ] as const;
 
-export const navGroups: NavGroup[] = [
-  { label: "Home", href: "/" },
+export const desktopNavGroups: NavGroup[] = [
   {
     label: "Programs",
     description: "Career-entry training programs inside a live practice.",
@@ -136,32 +143,6 @@ export const navGroups: NavGroup[] = [
       },
     ],
   },
-  {
-    label: "More",
-    description: "Additional information about the academy and portal routes.",
-    children: [
-      {
-        label: "Meet the Instructors",
-        href: "/meet-the-instructors",
-        description: "Learn about the teaching environment and the team.",
-      },
-      {
-        label: "FAQs",
-        href: "/faqs-1",
-        description: "Answers to common admissions, program, and pay questions.",
-      },
-      {
-        label: "Photos",
-        href: "/photos",
-        description: "Training moments from the classroom, operatory, and lab.",
-      },
-      {
-        label: "Resume Portal DR/OMS only",
-        href: "/resume-portal-dr-oms-only",
-        description: "Private routes and account access entry point.",
-      },
-    ],
-  },
   { label: "Admissions", href: "/registration" },
   { label: "Contact", href: "/#contact" },
 ];
@@ -172,8 +153,6 @@ export const footerSections: FooterSection[] = [
     links: [
       { label: "Dental Assisting Program", href: "/dental-assisting-program" },
       { label: "Front Office Program", href: "/front-office-program" },
-      { label: "Meet the Instructors", href: "/meet-the-instructors" },
-      { label: "FAQs", href: "/faqs-1" },
     ],
   },
   {
@@ -185,6 +164,10 @@ export const footerSections: FooterSection[] = [
       { label: "Coronal Polish", href: "/coronal-polish" },
       { label: "Sealants", href: "/sealants" },
     ],
+  },
+  {
+    title: "Resources",
+    links: resourceLinks,
   },
   {
     title: "Connect",
@@ -203,7 +186,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$85",
     summary:
-      "American Heart Association-aligned training for healthcare providers, with blended home study and an instructor-led skills evaluation.",
+      "American Heart Association-aligned training for healthcare providers, with blended home study and an instructor-led skills evaluation. Next class: May 2nd 2026.",
     href: "/bls-cpr-1",
     media: siteImages.bls,
     analyticsKey: "card-bls",
@@ -214,7 +197,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$395",
     summary:
-      "California Dental Board-aligned training with current CPR and Dental Practice Act prerequisites.",
+      "California Dental Board-aligned training with current CPR and Dental Practice Act prerequisites. Next class: May 2nd 2026.",
     href: "/infection-control",
     media: siteImages.infection,
     analyticsKey: "card-infection-control",
@@ -225,7 +208,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$695",
     summary:
-      "Radiography training, patient requirements, and documentation support for California dental professionals.",
+      "Radiography training, patient requirements, and documentation support for California dental professionals. Next class: May 2nd 2026.",
     href: "/radiation-safety",
     media: siteImages.radiation,
     analyticsKey: "card-radiation-safety",
@@ -236,7 +219,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$500",
     summary:
-      "Short-format polishing training designed around California certification requirements and clinical competency work.",
+      "Short-format polishing training designed around California certification requirements and clinical competency work. Next class: May 9th 2026.",
     href: "/coronal-polish",
     media: siteImages.coronal,
     analyticsKey: "card-coronal-polish",
@@ -247,7 +230,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$550",
     summary:
-      "Current RDA renewal support with clinical patient requirements and documentation expectations.",
+      "Current RDA renewal support with clinical patient requirements and documentation expectations. Next class: May 9th 2026.",
     href: "/sealants",
     media: siteImages.sealants,
     analyticsKey: "card-sealants",
@@ -376,12 +359,12 @@ export const faqItems = [
   {
     question: "What is included in the dental assisting training program?",
     answer:
-      "The program is built around hands-on dental assisting training, live-practice exposure, class work, clinical time, and homework inside an accelerated format.",
+      "The program includes hands-on dental assisting training, N95 fit testing, internships with experienced dental staff in a live office, and resume and job placement assistance inside an accelerated format.",
   },
   {
     question: "Is your x-ray course board approved?",
     answer:
-      "Yes. The academy presents the Radiation Safety course as California Dental Board aligned and uses provider number X1036 on the live site.",
+      "Yes. The academy presents the Radiation Safety course as California Dental Board approved and uses provider number X1036.",
   },
   {
     question: "Is your infection control course board approved?",
@@ -391,7 +374,7 @@ export const faqItems = [
   {
     question: "Do you accept financial aid?",
     answer:
-      "The academy does not offer traditional financial aid, but it does position the program as a more affordable and accelerated alternative to longer college programs.",
+      "No. The academy does not offer traditional financial aid, but it does state that payment plans are available.",
   },
   {
     question: "How much does a Dental Assistant make?",
@@ -401,12 +384,12 @@ export const faqItems = [
   {
     question: "What distinguishes your program from the conventional college program?",
     answer:
-      "The academy focuses on a shorter, accelerated path with hands-on training in a live office rather than a longer, more expensive traditional college path.",
+      "The academy contrasts its 9-week format with longer 9-month college routes and positions the program as a way to get into the field faster while saving more than $18,000 in tuition and related costs.",
   },
   {
     question: "What is an accelerated program?",
     answer:
-      "The academy frames accelerated training as a more direct route into the field, concentrating practical skills and job-ready instruction into a shorter timeline.",
+      "The academy frames accelerated training as a direct route into the field, concentrating practical skills, homework, and job-ready instruction into a shorter 9-week timeline.",
   },
   {
     question: "How can a short program be as effective as a longer program?",
@@ -426,9 +409,18 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Hands-on chairside practice, instrument setup, and office-based learning moments.",
     items: [
-      { src: siteImages.gallery1, alt: "Dental Assisting program" },
-      { src: siteImages.gallery2, alt: "Dental Assisting program" },
-      { src: siteImages.gallery3, alt: "Dental Assisting program" },
+      {
+        src: siteImages.gallery1,
+        alt: "Dental assisting students during chairside practice",
+      },
+      {
+        src: siteImages.gallery2,
+        alt: "Dental assisting students training in the clinic",
+      },
+      {
+        src: siteImages.gallery3,
+        alt: "Dental assisting operatory practice at Roseville Dental Academy",
+      },
     ],
   },
   {
@@ -436,9 +428,9 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Images that reflect radiography practice and patient positioning inside training.",
     items: [
-      { src: siteImages.gallery4, alt: "Xrays" },
-      { src: siteImages.gallery5, alt: "Xrays" },
-      { src: siteImages.gallery6, alt: "Xrays" },
+      { src: siteImages.gallery4, alt: "Radiography positioning practice" },
+      { src: siteImages.gallery5, alt: "X-ray training in the academy" },
+      { src: siteImages.gallery6, alt: "Students learning dental x-ray workflow" },
     ],
   },
   {
@@ -446,18 +438,30 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Moments that spotlight professionalism, patient interaction, and front-of-house presence.",
     items: [
-      { src: siteImages.gallery7, alt: "Making a good first impression!" },
-      { src: siteImages.gallery8, alt: "Making a good first impression!" },
-      { src: siteImages.gallery9, alt: "Making a good first impression!" },
+      {
+        src: siteImages.gallery7,
+        alt: "Front office professionalism practice",
+      },
+      {
+        src: siteImages.gallery8,
+        alt: "Patient-ready presentation training",
+      },
+      {
+        src: siteImages.gallery9,
+        alt: "First-impression training in a dental office setting",
+      },
     ],
   },
   {
     title: "Everyday we're suctioning!",
     copy: "Routine assisting motions and real operatory training moments.",
     items: [
-      { src: siteImages.gallery10, alt: "Everyday we're suctioning!" },
-      { src: siteImages.gallery11, alt: "Everyday we're suctioning!" },
-      { src: siteImages.gallery12, alt: "Everyday we're suctioning!" },
+      { src: siteImages.gallery10, alt: "Suction technique practice in the operatory" },
+      {
+        src: siteImages.gallery11,
+        alt: "Hands-on suctioning and chairside assistance training",
+      },
+      { src: siteImages.gallery12, alt: "Daily assisting technique practice" },
     ],
   },
 ];
@@ -467,39 +471,39 @@ export const registrationCourseOptions: RegistrationCourseOption[] = [
     key: "dental-assisting",
     label: "Dental Assisting Training Program",
     price: "$2500.00",
-    note: "Accelerated 9-week program with live-practice chairside training.",
+    note: "Accelerated 9-week program with live-practice chairside training. Next cohort: Friday, June 19th 2026.",
     icon: "graduation",
   },
   {
     key: "radiation-safety",
     label: "Radiation Safety / X-ray License",
     price: "$695.00",
-    note: "California Dental Board-aligned radiography training with patient requirements.",
+    note: "California Dental Board-approved radiography training with patient requirements. Next class: May 2nd 2026.",
     icon: "scan",
   },
   {
     key: "infection-control",
     label: "8-Hour Infection Control Certification",
     price: "$395.00",
-    note: "Current compliance training for California dental professionals and students.",
+    note: "Current compliance training for California dental professionals and students. Next class: May 2nd 2026.",
     icon: "shield",
   },
   {
     key: "bls-cpr",
     label: "BLS / CPR",
     price: "$85.00",
-    note: "American Heart Association-aligned BLS training with instructor-led skills evaluation.",
+    note: "American Heart Association-aligned BLS training with instructor-led skills evaluation. Next class: May 2nd 2026.",
     icon: "heart",
   },
 ] as const;
 
 export const homeHero: HeroContent = {
   eyebrow: "Roseville Dental Academy",
-  title: "Begin your career in dental assisting now.",
+  title: "Begin Your Career in Dental Assisting Now!",
   intro:
     "Achieve certification in only 9 weeks with a smaller, hands-on training environment that feels personal, practical, and career-focused from day one.",
   image: siteImages.hero,
-  imageAlt: "Roseville Dental Academy hero art",
+  imageAlt: "Dental assisting student training at Roseville Dental Academy",
   pills: ["9-week program", "Waikiki Dental training site", "Small class sizes"],
   actions: [
     {
@@ -516,12 +520,13 @@ export const homeHero: HeroContent = {
     },
   ],
   panel: {
-    title: "The next Dental Assistant course is almost here",
+    title: "Upcoming class dates",
     copy:
-      "The date is approaching fast and we're making preparations. Don't miss out on this opportunity to change your career.",
+      "Stand-alone certifications are scheduled in May, and the next dental assisting cohort begins in June.",
     items: [
-      "Friday, April 3rd 2026",
-      "Monday, April 20th 2026",
+      "Dental Assisting Training Program: Friday, June 19th 2026",
+      "BLS / CPR, Infection Control, and Radiation Safety: May 2nd 2026",
+      "Coronal Polish and Pit and Fissure Sealants: May 9th 2026",
       "Now offering blended learning BLS",
     ],
   },
@@ -535,11 +540,11 @@ export const homePrimarySplit: SplitSectionContent = {
     "All lectures and hands-on learning happen inside our office at Waikiki Dental, where class sizes stay small for stronger teacher-to-student focus.",
     "Our goal is to set students up for success by teaching exactly what staff at the dental office expect you to know.",
   ],
-  image: siteImages.about,
-  imageAlt: "Dental assisting classroom",
+  image: siteImages.programHero,
+  imageAlt: "Hands-on dental assisting instruction inside Waikiki Dental",
   supporting: {
-    title: "Next course starts",
-    copy: ["Friday, April 3rd 2026 or Monday, April 20th 2026"],
+    title: "Next dental assisting cohort",
+    copy: ["Friday, June 19th 2026"],
     actions: [
       {
         label: "Learn more",
@@ -566,14 +571,14 @@ export const homeSecondarySplit: SplitSectionContent = {
     "Bring proof of online course completion to the evaluation appointment.",
   ],
   image: siteImages.bls,
-  imageAlt: "BLS training course",
+  imageAlt: "Students practicing CPR on a training dummy",
   reverse: true,
   supporting: {
-    title: "Heartcode BLS quick start",
-    copy: ["The online portion link is available during registration."],
+    title: "HeartCode BLS quick start",
+    copy: ["Call admissions if you need the online portion link before your in-person skills evaluation."],
     actions: [
       {
-        label: "Link for online portion",
+        label: "Call for online portion link",
         href: "tel:9168889821",
         variant: "default",
         analyticsKey: "home-bls-call",
@@ -591,11 +596,20 @@ export const homeSecondarySplit: SplitSectionContent = {
 export const homeGalleryHighlight = {
   title: "Photo gallery",
   copy:
-    "A few moments from the classroom, operatories, and hands-on sessions already highlighted on the academy site.",
+    "A few moments from the classroom, operatories, and hands-on sessions at the academy.",
   items: [
-    { src: siteImages.gallery1, alt: "Dental Assisting program" },
-    { src: siteImages.gallery2, alt: "Making a good first impression!" },
-    { src: siteImages.gallery3, alt: "Everyday we're suctioning!" },
+    {
+      src: siteImages.homeGallery1,
+      alt: "Students practicing inside the Roseville Dental Academy clinic",
+    },
+    {
+      src: siteImages.homeGallery2,
+      alt: "Hands-on dental assisting instruction in the operatory",
+    },
+    {
+      src: siteImages.homeGallery3,
+      alt: "Clinical training setup inside the academy",
+    },
   ],
 };
 
@@ -607,6 +621,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Roseville Dental Academy is passionate about training you to become a thriving dental assistant. Start or change your career in just 9 weeks with hands-on dental training, x-ray classes, and CPR courses.",
     kind: "home",
+    contactMode: "full",
   },
   {
     slug: "registration",
@@ -614,6 +629,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Start your Roseville Dental Academy registration online with a digital admissions intake for dental assisting, radiation safety, infection control, and BLS courses.",
     kind: "registration",
+    contactMode: "none",
   },
   {
     slug: "dental-assisting-program",
@@ -621,6 +637,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Launch a dental career in just 9 weeks with Roseville Dental Academy's hands-on dental assisting program, flexible schedules, and job-focused training.",
     kind: "program",
+    contactMode: "none",
   },
   {
     slug: "front-office-program",
@@ -628,6 +645,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Enroll in our Front Office Program at Roseville Dental Academy for hands-on training, flexible schedules, and job assistance.",
     kind: "front-office",
+    contactMode: "none",
   },
   {
     slug: "faqs-1",
@@ -635,6 +653,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Enroll in our dental assisting program for hands-on training and quick employment opportunities.",
     kind: "faq",
+    contactMode: "compact",
   },
   {
     slug: "meet-the-instructors",
@@ -642,6 +661,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Meet the experienced instructors behind Roseville Dental Academy's hands-on dental assisting and certification programs.",
     kind: "instructors",
+    contactMode: "compact",
   },
   {
     slug: "photos",
@@ -649,13 +669,15 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Browse classroom, lab, and student photos from Roseville Dental Academy's hands-on dental assisting and certification training programs.",
     kind: "photos",
+    contactMode: "compact",
   },
   {
     slug: "resume-portal-dr-oms-only",
-    title: "Resume Portal DR/OMS only | Roseville Dental Academy",
+    title: "Student portal | Roseville Dental Academy",
     description:
       "Access the Roseville Dental Academy student login portal for schedule, booking, and account information.",
     kind: "portal",
+    contactMode: "none",
     noIndex: true,
   },
   {
@@ -664,6 +686,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Enroll in our BLS CPR training for healthcare providers and earn your American Heart Association BLS certification today!",
     kind: "course",
+    contactMode: "none",
   },
   {
     slug: "infection-control",
@@ -671,6 +694,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Complete your Infection Control certification with practical training that helps California dental professionals meet state requirements.",
     kind: "course",
+    contactMode: "none",
   },
   {
     slug: "radiation-safety",
@@ -679,6 +703,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Enroll in our Radiation Safety Course to meet California Dental Board standards and achieve radiation safety certification.",
     kind: "course",
+    contactMode: "none",
   },
   {
     slug: "coronal-polish",
@@ -686,6 +711,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Train in coronal polishing with practical instruction designed for California dental professionals and dental assistants.",
     kind: "course",
+    contactMode: "none",
   },
   {
     slug: "sealants",
@@ -693,6 +719,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Train in pit and fissure sealants with practical instruction built for California dental professionals and dental assistants.",
     kind: "course",
+    contactMode: "none",
   },
   {
     slug: "m/login",
@@ -700,6 +727,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Access the Roseville Dental Academy student login portal for schedule, booking, and account information.",
     kind: "auth",
+    contactMode: "none",
     noIndex: true,
   },
   {
@@ -708,6 +736,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Create a Roseville Dental Academy student account to manage classes, bookings, and portal access.",
     kind: "auth",
+    contactMode: "none",
     noIndex: true,
   },
   {
@@ -715,6 +744,7 @@ export const sitePages: SitePageDefinition[] = [
     title: "Set your password | Roseville Dental Academy",
     description: "Set your password for your Roseville Dental Academy account.",
     kind: "auth",
+    contactMode: "none",
     noIndex: true,
   },
   {
@@ -724,6 +754,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Reset your password for your Roseville Dental Academy account.",
     kind: "auth",
+    contactMode: "none",
     noIndex: true,
   },
   {
@@ -732,6 +763,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Access your Roseville Dental Academy bookings and account information.",
     kind: "auth",
+    contactMode: "none",
     noIndex: true,
   },
   {
@@ -740,6 +772,7 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Access your Roseville Dental Academy account information and private pages.",
     kind: "auth",
+    contactMode: "none",
     noIndex: true,
   },
 ];
@@ -754,8 +787,8 @@ export const dentalProgramPage = {
     title: "Dental Assisting Program",
     intro:
       "Launch a dental career in just 9 weeks with hands-on dental assisting training, small class sizes, and live-practice instruction inside Waikiki Dental.",
-    image: siteImages.about,
-    imageAlt: "Students in the dental assisting program",
+    image: siteImages.programHero,
+    imageAlt: "Students learning chairside technique in the dental assisting program",
     pills: ["9 weeks", "210 hours", "Live-practice training"],
     actions: [
       {
@@ -784,13 +817,13 @@ export const dentalProgramPage = {
   } satisfies HeroContent,
   split: {
     title: "Dental Assisting Training Program",
-    eyebrow: "What the live site promises",
+    eyebrow: "Program overview",
     copy: [
       "Hands-on experience in a live practice with real patients.",
       "The program is designed for students who want a shorter, more direct path into the dental field without losing the hands-on reality of chairside training.",
     ],
-    image: siteImages.team,
-    imageAlt: "Students working in an operatory",
+    image: siteImages.programOverview,
+    imageAlt: "Students practicing inside the operatory",
     supporting: {
       title: "What you can expect",
       list: [
@@ -848,7 +881,7 @@ export const dentalProgramPage = {
   ribbon: {
     title: "Admissions and registration",
     copy:
-      "The next course starts Friday, April 3rd 2026 or Monday, April 20th 2026. Reach out for current availability and registration details.",
+      "The next course starts Friday, June 19th 2026. Reach out for current availability and registration details.",
     actions: [
       {
         label: "Start registration",
@@ -878,8 +911,8 @@ export const frontOfficePage = {
     title: "Front Office Program",
     intro:
       "Enroll in our Front Office Program for hands-on training in a live practice, flexible schedules, and job assistance.",
-    image: siteImages.admissions,
-    imageAlt: "Front office training illustration",
+    image: siteImages.frontOfficeHero,
+    imageAlt: "Front office student learning dental basics at a desk",
     pills: ["40-hour internship", "Live practice", "Resume support"],
     actions: [
       {
@@ -889,10 +922,10 @@ export const frontOfficePage = {
         analyticsKey: "front-office-contact",
       },
       {
-        label: "View the student portal",
-        href: "/m/login",
+        label: "Email admissions",
+        href: "mailto:rosevilledentalacademy@gmail.com",
         variant: "secondary",
-        analyticsKey: "front-office-portal",
+        analyticsKey: "front-office-email",
       },
     ],
     panel: {
@@ -909,8 +942,8 @@ export const frontOfficePage = {
       "Students sit alongside the front office staff in a 40-hour internship to learn how the schedule, phone systems, and patient communication really work during the day.",
       "The program is practical and job-oriented, pairing office exposure with resume and job assistance.",
     ],
-    image: siteImages.team,
-    imageAlt: "Front office training",
+    image: siteImages.frontOfficeOverview,
+    imageAlt: "Front office training in a live practice",
     supporting: {
       title: "Built around core office systems",
       list: ["Convenient and flexible schedule", "Resume and job assistance"],
@@ -941,26 +974,25 @@ export const frontOfficePage = {
 export const instructorsPage = {
   hero: {
     eyebrow: "Meet the instructors",
-    title: "Welcome",
+    title: "Learn from instructors who teach in a working practice",
     intro:
-      "Take your time, look around, and learn all there is to know about us. We hope you enjoy the site and take a moment to drop us a line.",
-    image: siteImages.team,
-    imageAlt: "Roseville Dental Academy team",
-    pills: ["Hands-on training", "Small class sizes", "Real office setting"],
+      "Meet the team behind the academy's hands-on instruction, small-group coaching, and live-practice learning environment.",
+    image: siteImages.instructors,
+    imageAlt: "Meet the instructors page visual from the live academy site",
     actions: [
       {
-        label: "Find out more",
-        href: "/#contact",
+        label: "Call admissions",
+        href: "tel:9168889821",
         variant: "default",
+        analyticsKey: "instructors-call",
+      },
+      {
+        label: "Email the academy",
+        href: "mailto:rosevilledentalacademy@gmail.com",
+        variant: "secondary",
         analyticsKey: "instructors-contact",
       },
     ],
-    panel: {
-      title: "Teaching environment",
-      copy:
-        "Instruction is grounded in a working practice, with an emphasis on practical readiness and close instructor support.",
-      items: ["Dental assisting", "Clinical certifications", "Career transitions"],
-    },
   } satisfies HeroContent,
   features: [
     {
@@ -978,7 +1010,7 @@ export const instructorsPage = {
     {
       title: "Practical outcomes",
       summary:
-        "Every page of the live site reinforces the same mission: set students up for success by teaching the skills dental offices expect.",
+        "Students train toward the same goal each day: building the habits and skills dental offices expect from entry-level hires.",
       icon: "briefcase",
     },
   ] satisfies FeatureItem[],
@@ -986,13 +1018,12 @@ export const instructorsPage = {
 
 export const portalPage = {
   hero: {
-    eyebrow: "DR / OMS only",
-    title: "Resume Portal",
+    eyebrow: "Student portal",
+    title: "Student portal",
     intro:
-      "Sign in to your account to access your profile, history, and any private pages you've been granted access to.",
+      "Use the portal to sign in, create an account, or reset your password before attempting bookings, profile details, or other private pages.",
     image: siteImages.hero,
-    imageAlt: "Student portal illustration",
-    pills: ["Private access", "Account history", "Profile updates"],
+    imageAlt: "Roseville Dental Academy training photo",
     actions: [
       {
         label: "Sign in",
@@ -1006,13 +1037,13 @@ export const portalPage = {
         variant: "secondary",
         analyticsKey: "portal-create-account",
       },
+      {
+        label: "Reset password",
+        href: "/m/reset",
+        variant: "outline",
+        analyticsKey: "portal-reset-password",
+      },
     ],
-    panel: {
-      title: "Portal routes on the live site",
-      copy:
-        "The current public route leads visitors into the academy's membership experience.",
-      items: ["Account sign in", "Reset password", "Create account"],
-    },
   } satisfies HeroContent,
   features: [
     {
@@ -1051,7 +1082,7 @@ export const coursePages: Record<string, CoursePageData> = {
       intro:
         "American Heart Association BLS training for healthcare professionals and other personnel who need to perform CPR and basic cardiovascular life support skills.",
       image: siteImages.bls,
-      imageAlt: "BLS training course",
+      imageAlt: "Students practicing CPR on a training dummy",
       pills: ["$85", "AHA-aligned", "Healthcare providers"],
       actions: [
         {
@@ -1087,7 +1118,7 @@ export const coursePages: Record<string, CoursePageData> = {
         "Skills must be completed in person and students must pass the written exam with a score above 84%.",
       ],
       image: siteImages.bls,
-      imageAlt: "BLS course image",
+      imageAlt: "Students practicing CPR on a training dummy",
       supporting: {
         title: "Registration",
         copy: [
@@ -1166,7 +1197,7 @@ export const coursePages: Record<string, CoursePageData> = {
       intro:
         "Complete your Infection Control certification with a course built to support California dental professionals and students who need current compliance training.",
       image: siteImages.infection,
-      imageAlt: "Infection control training",
+      imageAlt: "Infection control training at Roseville Dental Academy",
       pills: ["$395", "Provider number IC189", "8 hours"],
       actions: [
         {
@@ -1201,7 +1232,7 @@ export const coursePages: Record<string, CoursePageData> = {
         "Students should arrive prepared for both didactic and practical work and review prerequisite documents before contacting the office to register.",
       ],
       image: siteImages.infection,
-      imageAlt: "Infection control illustration",
+      imageAlt: "Infection control training at Roseville Dental Academy",
       supporting: {
         title: "Registration",
         copy: [
@@ -1279,7 +1310,8 @@ export const coursePages: Record<string, CoursePageData> = {
       intro:
         "Meet California Dental Board standards with a radiation safety course that covers x-ray safety, digital imaging, and required clinical evaluation.",
       image: siteImages.radiation,
-      imageAlt: "Radiation safety course",
+      imageAlt:
+        "Students adjusting a dental mannequin during radiation safety training",
       pills: ["$695", "Provider number X1036", "32 hours"],
       actions: [
         {
@@ -1310,7 +1342,8 @@ export const coursePages: Record<string, CoursePageData> = {
         "Students should be ready for both didactic work and clinical patient requirements. The academy does not provide patients for this course.",
       ],
       image: siteImages.radiation,
-      imageAlt: "Radiation safety illustration",
+      imageAlt:
+        "Students adjusting a dental mannequin during radiation safety training",
       supporting: {
         title: "Registration",
         copy: [
@@ -1401,7 +1434,7 @@ export const coursePages: Record<string, CoursePageData> = {
       intro:
         "Complete coronal polishing training with a short-format course built around California dental certification requirements and clinical competencies.",
       image: siteImages.coronal,
-      imageAlt: "Coronal polish course",
+      imageAlt: "Dental professionals practicing coronal polish technique",
       pills: ["$500", "Provider number CP148", "12 hours"],
       actions: [
         {
@@ -1432,7 +1465,7 @@ export const coursePages: Record<string, CoursePageData> = {
         "The academy does not provide patients for the course, so students should prepare their own eligible patients in advance.",
       ],
       image: siteImages.coronal,
-      imageAlt: "Coronal polish illustration",
+      imageAlt: "Dental professionals practicing coronal polish technique",
       supporting: {
         title: "Registration",
         copy: [
@@ -1520,7 +1553,7 @@ export const coursePages: Record<string, CoursePageData> = {
       intro:
         "Train in pit and fissure sealants with a California-focused course for dental professionals, RDA renewal, and clinical skill development.",
       image: siteImages.sealants,
-      imageAlt: "Sealants course",
+      imageAlt: "Sealants procedure training on a dental mannequin",
       pills: ["$550", "Provider number PF186", "16 hours"],
       actions: [
         {
@@ -1552,7 +1585,7 @@ export const coursePages: Record<string, CoursePageData> = {
         "The academy does not provide patients for this course.",
       ],
       image: siteImages.sealants,
-      imageAlt: "Sealants course illustration",
+      imageAlt: "Sealants procedure training on a dental mannequin",
       supporting: {
         title: "Registration",
         copy: [
@@ -1648,51 +1681,34 @@ export const authPages: Record<string, AuthPageData> = {
       intro:
         "Sign in to your account to access your profile, history, and any private pages you've been granted access to.",
       image: siteImages.hero,
-      imageAlt: "Portal sign in",
-      pills: ["Profile access", "Bookings", "Private pages"],
-      actions: [
-        {
-          label: "Sign in",
-          href: "#portal-form",
-          variant: "default",
-          analyticsKey: "auth-login-signin",
-        },
-        {
-          label: "Reset password",
-          href: "/m/reset",
-          variant: "secondary",
-          analyticsKey: "auth-login-reset",
-        },
-        {
-          label: "Create account",
-          href: "/m/create-account",
-          variant: "outline",
-          analyticsKey: "auth-login-create",
-        },
-      ],
-      panel: {
-        title: "Portal access",
-        copy:
-          "These screens preserve the route structure and account copy from the live site while presenting them in a cleaner static shell.",
-        items: ["Account sign in", "Create account", "Reset password"],
-      },
+      imageAlt: "Roseville Dental Academy training photo",
     },
     cardTitle: "Sign in",
-    cardCopy: "Use the same academy account routes as the live site.",
+    cardCopy: "Enter the email and password connected to your academy account.",
     fields: [
       { id: "login-email", label: "Email", type: "email" },
       { id: "login-password", label: "Password", type: "password" },
     ],
-    note: "Reset password if you need to recover access. Not a member? Create account.",
-    actions: [
-      { label: "Sign in", href: "#", variant: "default", analyticsKey: "auth-login-submit" },
-      { label: "Reset password", href: "/m/reset", variant: "secondary", analyticsKey: "auth-login-reset-card" },
-      { label: "Create account", href: "/m/create-account", variant: "outline", analyticsKey: "auth-login-create-card" },
-    ],
-    supportTitle: "Student portal access",
-    supportCopy: [
-      "This route mirrors the live portal entry point for private pages, bookings, and account history.",
-      "If you do not have access yet, create an account first or contact the academy.",
+    note: "Need help getting in? Reset your password or create an account first.",
+    primaryAction: {
+      label: "Sign in",
+      href: "#",
+      variant: "default",
+      analyticsKey: "auth-login-submit",
+    },
+    secondaryLinks: [
+      {
+        label: "Reset password",
+        href: "/m/reset",
+        variant: "secondary",
+        analyticsKey: "auth-login-reset",
+      },
+      {
+        label: "Create account",
+        href: "/m/create-account",
+        variant: "outline",
+        analyticsKey: "auth-login-create",
+      },
     ],
   },
   "m/create-account": {
@@ -1705,37 +1721,32 @@ export const authPages: Record<string, AuthPageData> = {
       eyebrow: "Student portal",
       title: "Create account",
       intro:
-        "Create a Roseville Dental Academy account to manage classes, bookings, and portal access.",
+        "Create an academy account so you can sign in, manage bookings, and reach protected student pages.",
       image: siteImages.hero,
-      imageAlt: "Create account",
-      pills: ["Create account", "Portal access", "Promotions"],
-      actions: [
-        { label: "Create account", href: "#portal-form", variant: "default", analyticsKey: "auth-create-submit" },
-        { label: "Already have an account? Sign in", href: "/m/login", variant: "secondary", analyticsKey: "auth-create-login" },
-      ],
-      panel: {
-        title: "Portal access",
-        copy:
-          "These screens preserve the route structure and account copy from the live site while presenting them in a cleaner static shell.",
-        items: ["Account sign in", "Create account", "Reset password"],
-      },
+      imageAlt: "Roseville Dental Academy training photo",
     },
     cardTitle: "Create your account",
-    cardCopy: "By creating an account, you may receive newsletters or promotions.",
+    cardCopy:
+      "Use a working email so the academy can recognize your account when you return to sign in.",
     fields: [
       { id: "create-name", label: "Full name", type: "text" },
       { id: "create-email", label: "Email", type: "email" },
       { id: "create-password", label: "Password", type: "password" },
     ],
-    note: "Already have an account? Sign in. This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply.",
-    actions: [
-      { label: "Create account", href: "#", variant: "default", analyticsKey: "auth-create-account-submit" },
-      { label: "Sign in instead", href: "/m/login", variant: "secondary", analyticsKey: "auth-create-account-login" },
-    ],
-    supportTitle: "Why create an account?",
-    supportCopy: [
-      "Use an account to move between the public site and the academy's private membership routes.",
-      "The live site also uses this route to support portal access and future promotions.",
+    note: "Already have an account? Return to sign in.",
+    primaryAction: {
+      label: "Create account",
+      href: "#",
+      variant: "default",
+      analyticsKey: "auth-create-account-submit",
+    },
+    secondaryLinks: [
+      {
+        label: "Sign in",
+        href: "/m/login",
+        variant: "secondary",
+        analyticsKey: "auth-create-account-login",
+      },
     ],
   },
   "m/create": {
@@ -1747,20 +1758,9 @@ export const authPages: Record<string, AuthPageData> = {
       eyebrow: "Student portal",
       title: "Set your password",
       intro:
-        "You're signing in for the first time, so you need to set a password.",
+        "If this is your first visit, set a password before returning to sign in.",
       image: siteImages.hero,
-      imageAlt: "Set password",
-      pills: ["First-time login", "Password setup", "Portal access"],
-      actions: [
-        { label: "Set password", href: "#portal-form", variant: "default", analyticsKey: "auth-set-password" },
-        { label: "Back to sign in", href: "/m/login", variant: "secondary", analyticsKey: "auth-set-password-login" },
-      ],
-      panel: {
-        title: "Portal access",
-        copy:
-          "These screens preserve the route structure and account copy from the live site while presenting them in a cleaner static shell.",
-        items: ["Account sign in", "Create account", "Reset password"],
-      },
+      imageAlt: "Roseville Dental Academy training photo",
     },
     cardTitle: "Set password",
     cardCopy:
@@ -1770,14 +1770,19 @@ export const authPages: Record<string, AuthPageData> = {
       { id: "set-password-confirm", label: "Confirm password", type: "password" },
     ],
     note: "After setting your password, return to the sign-in route to access your account.",
-    actions: [
-      { label: "Set password", href: "#", variant: "default", analyticsKey: "auth-set-password-submit" },
-      { label: "Back to sign in", href: "/m/login", variant: "secondary", analyticsKey: "auth-set-password-back" },
-    ],
-    supportTitle: "First-time portal access",
-    supportCopy: [
-      "The live site uses this route when a student or portal user is signing in for the first time.",
-      "If you reached this page by mistake, head back to the login route or contact the academy for help.",
+    primaryAction: {
+      label: "Set password",
+      href: "#",
+      variant: "default",
+      analyticsKey: "auth-set-password-submit",
+    },
+    secondaryLinks: [
+      {
+        label: "Back to sign in",
+        href: "/m/login",
+        variant: "secondary",
+        analyticsKey: "auth-set-password-back",
+      },
     ],
   },
   "m/reset": {
@@ -1788,35 +1793,28 @@ export const authPages: Record<string, AuthPageData> = {
     hero: {
       eyebrow: "Student portal",
       title: "Reset your password",
-      intro: "Reset your password for your Roseville Dental Academy account.",
+      intro:
+        "Enter your account email and follow the reset steps before signing in again.",
       image: siteImages.hero,
-      imageAlt: "Reset password",
-      pills: ["Password recovery", "Email reset", "Portal access"],
-      actions: [
-        { label: "Reset password", href: "#portal-form", variant: "default", analyticsKey: "auth-reset-submit" },
-        { label: "Set password", href: "/m/create", variant: "secondary", analyticsKey: "auth-reset-set-password" },
-        { label: "Back to sign in", href: "/m/login", variant: "outline", analyticsKey: "auth-reset-login" },
-      ],
-      panel: {
-        title: "Portal access",
-        copy:
-          "These screens preserve the route structure and account copy from the live site while presenting them in a cleaner static shell.",
-        items: ["Account sign in", "Create account", "Reset password"],
-      },
+      imageAlt: "Roseville Dental Academy training photo",
     },
     cardTitle: "Reset password",
     cardCopy: "Enter the account email you use with the academy portal.",
     fields: [{ id: "reset-email", label: "Email", type: "email" }],
-    note: "Set password after you receive reset guidance.",
-    actions: [
-      { label: "Reset password", href: "#", variant: "default", analyticsKey: "auth-reset-password-submit" },
-      { label: "Set password", href: "/m/create", variant: "secondary", analyticsKey: "auth-reset-password-set" },
-      { label: "Back to sign in", href: "/m/login", variant: "outline", analyticsKey: "auth-reset-password-login" },
-    ],
-    supportTitle: "Need help recovering access?",
-    supportCopy: [
-      "The live site keeps this route simple: reset your password, then return to sign in.",
-      "If you still have trouble, contact the academy directly for account support.",
+    note: "Once your password is updated, return to sign in.",
+    primaryAction: {
+      label: "Reset password",
+      href: "#",
+      variant: "default",
+      analyticsKey: "auth-reset-password-submit",
+    },
+    secondaryLinks: [
+      {
+        label: "Back to sign in",
+        href: "/m/login",
+        variant: "secondary",
+        analyticsKey: "auth-reset-password-login",
+      },
     ],
   },
   "m/bookings": {
@@ -1828,39 +1826,33 @@ export const authPages: Record<string, AuthPageData> = {
     hero: {
       eyebrow: "Student portal",
       title: "Bookings",
-      intro:
-        "Sign in to your account to access your profile, history, and any private pages you've been granted access to.",
+      intro: "Bookings are only available after you sign in to an academy account.",
       image: siteImages.hero,
-      imageAlt: "Bookings access",
-      pills: ["Bookings", "Private pages", "Sign in required"],
-      actions: [
-        { label: "Sign in", href: "/m/login", variant: "default", analyticsKey: "auth-bookings-login" },
-        { label: "Create account", href: "/m/create-account", variant: "secondary", analyticsKey: "auth-bookings-create" },
-      ],
-      panel: {
-        title: "Portal access",
-        copy:
-          "These screens preserve the route structure and account copy from the live site while presenting them in a cleaner static shell.",
-        items: ["Account sign in", "Create account", "Reset password"],
-      },
+      imageAlt: "Roseville Dental Academy training photo",
     },
-    cardTitle: "Bookings access",
-    cardCopy:
-      "This route requires an academy account before bookings become visible.",
-    fields: [
-      { id: "bookings-email", label: "Email", type: "email" },
-      { id: "bookings-password", label: "Password", type: "password" },
+    cardTitle: "Bookings require sign in",
+    cardCopy: "Sign in first, then return here to view or manage your bookings.",
+    primaryAction: {
+      label: "Sign in",
+      href: "/m/login",
+      variant: "default",
+      analyticsKey: "auth-bookings-login",
+    },
+    secondaryLinks: [
+      {
+        label: "Create account",
+        href: "/m/create-account",
+        variant: "secondary",
+        analyticsKey: "auth-bookings-create",
+      },
     ],
-    note: "Sign in first to view or manage your bookings.",
-    actions: [
-      { label: "Sign in", href: "/m/login", variant: "default", analyticsKey: "auth-bookings-login-card" },
-      { label: "Create account", href: "/m/create-account", variant: "secondary", analyticsKey: "auth-bookings-create-card" },
-    ],
-    supportTitle: "Private route",
-    supportCopy: [
-      "The public live site points unauthenticated visitors back into the same account sign-in experience on this route.",
-      "Use the portal first, then return here once access has been granted.",
-    ],
+    utilityNotice: {
+      title: "Private route",
+      copy: [
+        "On the live academy site, this route sends you through sign in before anything loads here.",
+        "Use the portal to authenticate first, then return here to manage your bookings.",
+      ],
+    },
   },
   "m/account": {
     slug: "m/account",
@@ -1872,38 +1864,33 @@ export const authPages: Record<string, AuthPageData> = {
       eyebrow: "Student portal",
       title: "My Account",
       intro:
-        "Sign in to your account to access your profile, history, and any private pages you've been granted access to.",
+        "Account details and history are available after you sign in to the student portal.",
       image: siteImages.hero,
-      imageAlt: "Account access",
-      pills: ["Profile", "History", "Private pages"],
-      actions: [
-        { label: "Sign in", href: "/m/login", variant: "default", analyticsKey: "auth-account-login" },
-        { label: "Create account", href: "/m/create-account", variant: "secondary", analyticsKey: "auth-account-create" },
-      ],
-      panel: {
-        title: "Portal access",
-        copy:
-          "These screens preserve the route structure and account copy from the live site while presenting them in a cleaner static shell.",
-        items: ["Account sign in", "Create account", "Reset password"],
-      },
+      imageAlt: "Roseville Dental Academy training photo",
     },
-    cardTitle: "Account access",
-    cardCopy:
-      "Use your academy credentials to open profile and history details.",
-    fields: [
-      { id: "account-email", label: "Email", type: "email" },
-      { id: "account-password", label: "Password", type: "password" },
+    cardTitle: "Account access requires sign in",
+    cardCopy: "Use your academy account to open profile details and account history.",
+    primaryAction: {
+      label: "Sign in",
+      href: "/m/login",
+      variant: "default",
+      analyticsKey: "auth-account-login",
+    },
+    secondaryLinks: [
+      {
+        label: "Create account",
+        href: "/m/create-account",
+        variant: "secondary",
+        analyticsKey: "auth-account-create",
+      },
     ],
-    note: "Not a member? Create account.",
-    actions: [
-      { label: "Sign in", href: "/m/login", variant: "default", analyticsKey: "auth-account-login-card" },
-      { label: "Create account", href: "/m/create-account", variant: "secondary", analyticsKey: "auth-account-create-card" },
-    ],
-    supportTitle: "Account overview",
-    supportCopy: [
-      "The live account route behaves like a protected page and sends visitors through the same sign-in flow.",
-      "Once access is granted, this route is where profile and history details live.",
-    ],
+    utilityNotice: {
+      title: "Private route",
+      copy: [
+        "On the live academy site, this route sends you through sign in before account details are shown.",
+        "Sign in first, then return here to view account information.",
+      ],
+    },
   },
 };
 

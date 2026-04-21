@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { getPageBySlug } from "@/lib/site-data";
+import { getPageBySlug, siteImages } from "@/lib/site-data";
 
 const siteUrl = "https://www.rosevilledentalacademy.com";
 const fallbackTitle = "Roseville Dental Academy";
@@ -31,7 +31,7 @@ export function buildSiteMetadata(slug = ""): Metadata {
       siteName: fallbackTitle,
       images: [
         {
-          url: "/assets/homepage/logo-seal.jpg",
+          url: siteImages.logo,
           alt: "Roseville Dental Academy seal",
         },
       ],
@@ -40,7 +40,7 @@ export function buildSiteMetadata(slug = ""): Metadata {
       card: "summary_large_image",
       title,
       description,
-      images: ["/assets/homepage/logo-seal.jpg"],
+      images: [siteImages.logo],
     },
     alternates: {
       canonical: pathname,

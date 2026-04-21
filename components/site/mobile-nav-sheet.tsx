@@ -20,6 +20,7 @@ import type { CtaLink, LinkItem, NavGroup } from "@/lib/site-types";
 type MobileNavSheetProps = {
   pathname: string;
   primaryLinks: readonly LinkItem[];
+  resourceLinks: readonly LinkItem[];
   navGroups: readonly NavGroup[];
   ctas: {
     admissions: CtaLink;
@@ -30,6 +31,7 @@ type MobileNavSheetProps = {
 export function MobileNavSheet({
   pathname,
   primaryLinks,
+  resourceLinks,
   navGroups,
   ctas,
 }: MobileNavSheetProps) {
@@ -61,7 +63,7 @@ export function MobileNavSheet({
         <SheetHeader className="border-b border-border/60 px-5 py-5 text-left">
           <SheetTitle className="text-left text-lg">Explore Roseville Dental Academy</SheetTitle>
           <SheetDescription className="text-left">
-            Programs, certifications, admissions, and portal routes.
+            Programs, certifications, admissions, and student resources.
           </SheetDescription>
         </SheetHeader>
 
@@ -148,6 +150,33 @@ export function MobileNavSheet({
                             {link.description}
                           </span>
                         ) : null}
+                      </SmartLink>
+                    </SheetClose>
+                  ))}
+                </AccordionContent>
+              </AccordionItem>
+            ) : null}
+
+            {resourceLinks.length ? (
+              <AccordionItem
+                value="resources"
+                className="rounded-[1.4rem] border border-border/70 bg-card/95 px-4"
+              >
+                <AccordionTrigger className="py-4 text-sm font-semibold hover:no-underline">
+                  Resources
+                </AccordionTrigger>
+                <AccordionContent className="space-y-2 pb-4">
+                  {resourceLinks.map((link) => (
+                    <SheetClose key={link.href} asChild>
+                      <SmartLink
+                        href={link.href}
+                        className={cn(
+                          "block rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground",
+                          isActivePath(pathname, link.href) &&
+                            "bg-primary/7 font-medium text-primary",
+                        )}
+                      >
+                        <span className="block text-foreground">{link.label}</span>
                       </SmartLink>
                     </SheetClose>
                   ))}

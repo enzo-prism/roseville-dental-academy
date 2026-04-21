@@ -3,7 +3,7 @@ import Image from "next/image";
 import { SiteIcon, type SiteIconName } from "@/components/site/site-icon";
 import { SmartLink } from "@/components/site/smart-link";
 import { Separator } from "@/components/ui/separator";
-import { footerSections, siteContact, socialLinks } from "@/lib/site-data";
+import { footerSections, siteContact, siteImages, socialLinks } from "@/lib/site-data";
 
 export function SiteFooter() {
   return (
@@ -18,7 +18,7 @@ export function SiteFooter() {
                   className="object-cover"
                   fill
                   sizes="56px"
-                  src="/assets/homepage/logo-seal.jpg"
+                  src={siteImages.logo}
                 />
               </div>
               <div>

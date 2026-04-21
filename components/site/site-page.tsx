@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   additionalTrainingOptions,
@@ -44,6 +43,7 @@ import {
 import { cn } from "@/lib/utils";
 import type {
   AuthPageData,
+  CtaLink,
   CoursePageData,
   FeatureItem,
   HeroContent,
@@ -96,7 +96,11 @@ function PlaceholderWash({ src }: { src: string }) {
 }
 
 function HeroVisualFallback({ hero }: { hero: HeroContent }) {
-  const visualItems = (hero.panel.items.length ? hero.panel.items : hero.pills).slice(0, 4);
+  const panelItems = hero.panel?.items ?? [];
+  const pills = hero.pills ?? [];
+  const visualItems = (panelItems.length ? panelItems : pills).slice(0, 4);
+  const fallbackTitle = hero.panel?.title ?? hero.title;
+  const fallbackCopy = hero.panel?.copy ?? hero.intro;
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--color-secondary)_84%,white),transparent_48%),linear-gradient(145deg,color-mix(in_oklab,var(--color-background)_90%,white),color-mix(in_oklab,var(--color-primary)_10%,white))]">
@@ -119,7 +123,7 @@ function HeroVisualFallback({ hero }: { hero: HeroContent }) {
                   fill
                   priority
                   sizes="56px"
-                  src="/assets/homepage/logo-seal.jpg"
+                  src={siteImages.logo}
                 />
               </div>
               <div className="min-w-0">
@@ -127,12 +131,12 @@ function HeroVisualFallback({ hero }: { hero: HeroContent }) {
                   Live-practice learning
                 </p>
                 <p className="mt-1 text-balance font-heading text-2xl leading-none text-primary">
-                  {hero.panel.title}
+                  {fallbackTitle}
                 </p>
               </div>
             </div>
             <p className="mt-4 max-w-lg text-sm leading-7 text-secondary-foreground/82">
-              {hero.panel.copy}
+              {fallbackCopy}
             </p>
           </div>
 
@@ -160,6 +164,9 @@ function HeroSection({
   imagePriority?: boolean;
 }) {
   const usesPlaceholderArt = isPlaceholderAsset(hero.image);
+  const pills = hero.pills ?? [];
+  const actions = hero.actions ?? [];
+  const hasPanel = Boolean(hero.panel);
 
   return (
     <section className="relative overflow-hidden pb-12 pt-6 sm:pb-16 sm:pt-10">
@@ -178,7 +185,7 @@ function HeroSection({
                     className="object-cover"
                     fill
                     sizes="28px"
-                    src="/assets/homepage/logo-seal.jpg"
+                    src={siteImages.logo}
                   />
                 </div>
                 <span className="text-[0.72rem] font-semibold tracking-[0.22em] text-primary uppercase">
@@ -196,8 +203,9 @@ function HeroSection({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2.5">
-              {hero.pills.map((pill) => (
+            {pills.length ? (
+              <div className="flex flex-wrap gap-2.5">
+                {pills.map((pill) => (
                 <Badge
                   key={pill}
                   className="rounded-full border border-border/70 bg-card/92 px-3 py-1.5 text-[0.72rem] font-semibold tracking-[0.14em] text-secondary-foreground uppercase"
@@ -205,22 +213,15 @@ function HeroSection({
                 >
                   {pill}
                 </Badge>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : null}
 
-            <PrimaryCtaGroup actions={hero.actions} />
+            {actions.length ? <PrimaryCtaGroup actions={actions} /> : null}
           </div>
 
           <div className="space-y-4 lg:pl-2">
             <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_36px_90px_-48px_rgba(27,49,74,0.55)]">
-              <div className="absolute inset-x-6 top-6 z-10 flex items-center justify-between">
-                <Badge className="rounded-full px-3 py-1 text-[0.68rem] tracking-[0.18em] uppercase">
-                  Premium familiar
-                </Badge>
-                <div className="rounded-full border border-white/50 bg-white/72 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.18em] text-primary uppercase backdrop-blur">
-                  Roseville
-                </div>
-              </div>
               <div className="relative aspect-[6/5] bg-secondary/40 sm:aspect-[11/10]">
                 {usesPlaceholderArt ? (
                   <HeroVisualFallback hero={hero} />
@@ -230,6 +231,7 @@ function HeroSection({
                       alt={hero.imageAlt}
                       className="object-cover"
                       fill
+                      loading={imagePriority ? "eager" : undefined}
                       priority={imagePriority}
                       sizes="(max-width: 1024px) 100vw, 46vw"
                       src={hero.image}
@@ -241,16 +243,17 @@ function HeroSection({
               </div>
             </div>
 
+            {hasPanel ? (
             <Card className="border border-border/70 bg-card/97 shadow-[0_24px_56px_-40px_rgba(27,49,74,0.26)]">
               <CardHeader className="space-y-3 pb-4">
-                <CardTitle className="text-2xl">{hero.panel.title}</CardTitle>
+                <CardTitle className="text-2xl">{hero.panel?.title}</CardTitle>
                 <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
-                  {hero.panel.copy}
+                  {hero.panel?.copy}
                 </p>
               </CardHeader>
               <CardContent>
                 <ul className="grid gap-3 sm:grid-cols-2">
-                  {hero.panel.items.map((item) => (
+                  {hero.panel?.items.map((item) => (
                     <li
                       key={item}
                       className="flex items-start gap-3 rounded-[1.2rem] border border-border/70 bg-muted/42 px-4 py-3 text-sm leading-6 text-foreground/90"
@@ -264,6 +267,7 @@ function HeroSection({
                 </ul>
               </CardContent>
             </Card>
+            ) : null}
           </div>
         </div>
       </div>
@@ -297,6 +301,7 @@ function SplitSection({
                     "scale-[1.04] opacity-74 mix-blend-multiply saturate-[0.78]",
                 )}
                 fill
+                loading="eager"
                 sizes="(max-width: 1024px) 100vw, 44vw"
                 src={content.image}
               />
@@ -463,7 +468,7 @@ function SupportRibbon({
 }: {
   title: string;
   copy: string;
-  actions: HeroContent["actions"];
+  actions: readonly CtaLink[];
 }) {
   return (
     <section className="py-14 sm:py-18">
@@ -539,6 +544,8 @@ function HomeGallerySection() {
                       "scale-[1.04] opacity-72 mix-blend-multiply saturate-[0.78]",
                   )}
                   fill
+                  loading="eager"
+                  priority
                   sizes="(max-width: 1024px) 100vw, 33vw"
                   src={item.src}
                 />
@@ -602,8 +609,8 @@ function ContactSection() {
             details={[
               siteContact.phone,
               siteContact.email,
-              "Friday, April 3rd 2026 start",
-              "Monday, April 20th 2026 start",
+              "Dental Assisting: Friday, June 19th 2026",
+              "Stand-alone courses: May 2nd and May 9th 2026",
             ]}
             icon="phone"
             title="Reach admissions"
@@ -673,6 +680,38 @@ function ContactSection() {
   );
 }
 
+function CompactContactStrip({
+  title = "Talk with admissions",
+  copy = "Call or email the academy if you want help choosing the right program, reviewing prerequisites, or confirming the next available start date.",
+}: {
+  title?: string;
+  copy?: string;
+}) {
+  return (
+    <section className="py-14 sm:py-16">
+      <div className="site-frame">
+        <div className="flex flex-col gap-6 rounded-[1.8rem] border border-border/70 bg-card/95 px-6 py-6 shadow-[0_24px_48px_-36px_rgba(32,51,76,0.24)] sm:px-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl space-y-2">
+            <p className="text-xs font-semibold tracking-[0.22em] text-primary uppercase">
+              Admissions help
+            </p>
+            <h2 className="text-balance text-2xl sm:text-3xl">{title}</h2>
+            <p className="text-sm leading-7 text-muted-foreground sm:text-base">{copy}</p>
+          </div>
+          <div data-slot="button-group" className="flex flex-col gap-3 sm:flex-row">
+            <Button asChild className="rounded-full" size="lg">
+              <SmartLink href={`tel:${siteContact.phone}`}>Call admissions</SmartLink>
+            </Button>
+            <Button asChild className="rounded-full" size="lg" variant="outline">
+              <SmartLink href={`mailto:${siteContact.email}`}>Email admissions</SmartLink>
+            </Button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function RegistrationFormFallback() {
   return (
     <Card className="border border-border/70 bg-card/95 shadow-[0_24px_48px_-36px_rgba(32,51,76,0.35)]">
@@ -699,9 +738,9 @@ function RegistrationPageContent() {
     eyebrow: "Admissions and registration",
     title: "Reserve your seat online",
     intro:
-      "Complete a digital registration request so admissions can confirm the right course, class date, and secure payment follow-up without sending sensitive details through a public form.",
-    image: siteImages.admissions,
-    imageAlt: "Admissions illustration",
+      "Complete a registration request so admissions can confirm the right course, class date, and payment follow-up before your seat is reserved.",
+    image: siteImages.registration,
+    imageAlt: "Dental training materials at Roseville Dental Academy",
     pills: ["Secure follow-up", "Multiple course routes", "Digital intake"],
     actions: [
       {
@@ -718,9 +757,9 @@ function RegistrationPageContent() {
       },
     ],
     panel: {
-      title: "A safer, cleaner registration flow",
+      title: "What admissions needs",
       copy:
-        "The digital intake preserves the useful admissions questions from the academy's paper form while removing sensitive information from the public web.",
+        "The form covers course interest, contact details, emergency contact information, and payment follow-up preferences.",
       items: [
         "Choose one or more course routes",
         "Share contact and emergency contact information",
@@ -746,6 +785,11 @@ function RegistrationPageContent() {
           </Suspense>
         </div>
       </section>
+
+      <CompactContactStrip
+        copy="If you have questions before submitting the form, admissions can help you confirm prerequisites, pricing, and the best registration path."
+        title="Need help before you submit?"
+      />
     </>
   );
 }
@@ -758,7 +802,7 @@ function ProgramPageContent() {
         <div className="site-frame grid gap-8 xl:grid-cols-[1.05fr_0.95fr] xl:items-center">
           <div className="space-y-6">
             <SectionHeading
-              copy="These stats stay front and center on the redesign because they reinforce why an accelerated, job-focused path is compelling for career changers."
+              copy="These are the outcomes students ask about most often: employment outlook, starting pay, schedule flexibility, and long-term growth inside the field."
               eyebrow="Career outlook"
               title="A short route into a durable field"
             />
@@ -771,9 +815,10 @@ function ProgramPageContent() {
           <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_32px_80px_-50px_rgba(35,57,85,0.45)]">
             <div className="relative aspect-[4/3] bg-secondary/35">
               <Image
-                alt="Dental assisting career outlook infographic"
+                alt="Dental assistant training overview from the live academy site"
                 className="object-cover"
                 fill
+                loading="eager"
                 sizes="(max-width: 1280px) 100vw, 42vw"
                 src={siteImages.careerInfographic}
               />
@@ -811,7 +856,7 @@ function FrontOfficePageContent() {
       />
       <SupportRibbon
         actions={frontOfficePage.hero.actions}
-        copy="Ask about current scheduling, portal access, and whether the front office program is the right fit for the kind of dental role you want next."
+        copy="Ask about current scheduling and whether the front office program is the right fit for the type of dental role you want next."
         title="Talk through the schedule"
       />
     </>
@@ -843,10 +888,9 @@ function FaqPageContent() {
     eyebrow: "Frequently asked questions",
     title: "Answers that help students move faster",
     intro:
-      "The academy's most common questions are organized here with cleaner hierarchy, clearer reading rhythm, and a direct line back into admissions when a student needs more detail.",
-    image: siteImages.admissions,
-    imageAlt: "FAQ illustration",
-    pills: ["Admissions", "Board-aligned courses", "Career questions"],
+      "Browse the questions students ask most often about the program, certifications, pay, and next steps before contacting admissions.",
+    image: siteImages.programHero,
+    imageAlt: "Hands-on dental assisting training at Roseville Dental Academy",
     actions: [
       {
         label: "Start registration",
@@ -861,16 +905,6 @@ function FaqPageContent() {
         analyticsKey: "faq-contact",
       },
     ],
-    panel: {
-      title: "What students ask most",
-      copy:
-        "Program content, board approval, earnings, and the difference between this route and a traditional college program come up over and over again.",
-      items: [
-        "What is included in the main program?",
-        "Are infection control and x-ray routes board aligned?",
-        "How does an accelerated format still work well?",
-      ],
-    },
   };
 
   return (
@@ -880,7 +914,7 @@ function FaqPageContent() {
         <div className="site-frame space-y-8">
           <SectionHeading
             centered
-            copy="These answers preserve the live site's meaning while making the content easier to scan, easier to trust, and easier to act on."
+            copy="Start here if you want the quickest answer to the academy's most common admissions and program questions."
             eyebrow="FAQ library"
             title="Common questions"
           />
@@ -896,7 +930,7 @@ function InstructorsPageContent() {
     <>
       <HeroSection hero={instructorsPage.hero} />
       <FeatureGrid
-        copy="This page shifts the tone from generic brochure language to a clearer explanation of how the teaching environment actually supports student confidence and job readiness."
+        copy="The academy's teaching approach stays consistent across programs: hands-on instruction, small groups, and training that reflects daily office work."
         eyebrow="Teaching approach"
         items={instructorsPage.features}
         title="What the instructors emphasize"
@@ -909,12 +943,11 @@ function InstructorsPageContent() {
 function PhotosPageContent() {
   const photosHero: HeroContent = {
     eyebrow: "Academy gallery",
-    title: "A cleaner home for classroom and student moments",
+    title: "Classroom and student moments",
     intro:
-      "The gallery now sits inside the same design system as the rest of the site, so the images feel intentionally presented instead of tucked into a disconnected page.",
+      "Browse training moments from the classroom, operatory, and hands-on sessions across the academy.",
     image: siteImages.gallery7,
     imageAlt: "Academy gallery preview",
-    pills: ["Programs", "X-rays", "Clinical moments"],
     actions: [
       {
         label: "Contact admissions",
@@ -929,12 +962,6 @@ function PhotosPageContent() {
         analyticsKey: "photos-registration",
       },
     ],
-    panel: {
-      title: "Gallery groups",
-      copy:
-        "The live site organizes photos by teaching moment. The redesign keeps that structure while giving each group a stronger visual frame.",
-      items: photoGroups.map((group) => group.title),
-    },
   };
 
   return (
@@ -980,12 +1007,23 @@ function PortalPageContent() {
   return (
     <>
       <HeroSection hero={portalPage.hero} />
-      <FeatureGrid
-        copy="The public resume portal route now reads as a calm private-access hub rather than a dead-end entry point."
-        eyebrow="Private route overview"
-        items={portalPage.features}
-        title="Portal routes"
-      />
+      <section className="pb-14 sm:pb-16">
+        <div className="site-frame">
+          <Card className="border border-border/70 bg-card/95 shadow-[0_24px_48px_-36px_rgba(32,51,76,0.24)]">
+            <CardContent className="grid gap-4 px-6 py-6 sm:px-8 lg:grid-cols-3">
+              {[
+                "Use this hub for sign in, password reset, and first-time account access.",
+                "Bookings, account details, and other private routes still require sign in before they become useful.",
+                "If you are trying to reach a protected page, start with sign in and return once access is confirmed.",
+              ].map((line) => (
+                <p key={line} className="text-sm leading-7 text-muted-foreground">
+                  {line}
+                </p>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </>
   );
 }
@@ -995,30 +1033,8 @@ function AuthPageContent({ page }: { page: AuthPageData }) {
     <>
       <HeroSection hero={page.hero} />
       <section className="py-14 sm:py-18">
-        <div className="site-frame grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="site-frame max-w-3xl">
           <AuthPortalForm page={page} />
-
-          <Card className="border border-border/70 bg-card/95 shadow-[0_24px_48px_-36px_rgba(32,51,76,0.35)]">
-            <CardHeader className="space-y-3">
-              <CardTitle className="text-3xl">{page.supportTitle}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5 text-sm leading-7 text-muted-foreground">
-              {page.supportCopy.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-              <Separator />
-              <div data-slot="button-group" className="flex flex-col gap-3 sm:flex-row">
-                <Button asChild className="rounded-full" size="lg">
-                  <SmartLink href="/m/login">Open sign in</SmartLink>
-                </Button>
-                <Button asChild className="rounded-full" size="lg" variant="outline">
-                  <SmartLink href="/resume-portal-dr-oms-only">
-                    Back to portal overview
-                  </SmartLink>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </section>
     </>
@@ -1034,7 +1050,7 @@ function HomePageContent() {
         <div className="site-frame grid gap-8 xl:grid-cols-[1.05fr_0.95fr] xl:items-center">
           <div className="space-y-6">
             <SectionHeading
-              copy="The current site already sells the promise of a faster route into the field. The redesign sharpens that message with a more confident hierarchy and one consistent card system."
+              copy="Students usually want to know four things right away: job outlook, starting pay, schedule flexibility, and whether the training can lead to a longer dental career."
               eyebrow="Opportunity snapshot"
               title="Why students choose the academy"
             />
@@ -1053,9 +1069,10 @@ function HomePageContent() {
             </div>
             <div className="relative aspect-[11/9] bg-secondary/40">
               <Image
-                alt="Dental assisting career infographic"
+                alt="Dental assistant training overview from the live academy site"
                 className="object-cover"
                 fill
+                loading="eager"
                 sizes="(max-width: 1280px) 100vw, 42vw"
                 src={siteImages.careerInfographic}
               />
@@ -1070,7 +1087,7 @@ function HomePageContent() {
         <div className="site-frame space-y-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <SectionHeading
-              copy="Courses are now presented through one product-card system, so pricing, prerequisites, and next steps stay consistent across every certification path."
+              copy="Compare certification routes, pricing, prerequisites, and next steps without having to jump between different pages or formats."
               eyebrow="Stand-alone courses"
               title="Certification routes"
             />
@@ -1089,10 +1106,10 @@ function HomePageContent() {
       <SplitSection content={homeSecondarySplit} />
 
       <FeatureGrid
-        copy="These add-on services now use the same elevation, spacing, and CTA language as the rest of the site instead of feeling like unrelated promo boxes."
-        eyebrow="Additional training"
+        copy="The academy also offers fit testing, one-on-one procedural coaching, and continuing education for working dental teams."
+        eyebrow="Continuing education"
         items={additionalTrainingOptions}
-        title="More ways the academy supports dental teams"
+        title="Support beyond entry-level training"
       />
 
       <TestimonialsSection />
@@ -1102,9 +1119,9 @@ function HomePageContent() {
         <div className="site-frame space-y-8">
           <SectionHeading
             centered
-            copy="The FAQ section now sits inside the same rhythm as the rest of the homepage, keeping the answers useful without turning the page into a dense wall of text."
+            copy="Quick answers for students who want clarity before they register or call admissions."
             eyebrow="Frequently asked questions"
-            title="Admissions clarity, without the clutter"
+            title="Questions students ask most"
           />
           <FaqAccordion items={faqItems.map((item) => ({ ...item }))} />
         </div>
@@ -1115,17 +1132,18 @@ function HomePageContent() {
 
 function PublicSiteShell({
   children,
-  showContactSection = true,
+  contactMode = "full",
 }: {
   children: React.ReactNode;
-  showContactSection?: boolean;
+  contactMode?: "full" | "compact" | "none";
 }) {
   return (
     <>
       <SiteHeader />
       <main>
         {children}
-        {showContactSection ? <ContactSection /> : null}
+        {contactMode === "full" ? <ContactSection /> : null}
+        {contactMode === "compact" ? <CompactContactStrip /> : null}
       </main>
       <SiteFooter />
     </>
@@ -1142,25 +1160,25 @@ export function SitePageRenderer({ slug = "" }: { slug?: string }) {
   switch (page.kind) {
     case "home":
       return (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <HomePageContent />
         </PublicSiteShell>
       );
     case "registration":
       return (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <RegistrationPageContent />
         </PublicSiteShell>
       );
     case "program":
       return (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <ProgramPageContent />
         </PublicSiteShell>
       );
     case "front-office":
       return (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <FrontOfficePageContent />
         </PublicSiteShell>
       );
@@ -1168,32 +1186,32 @@ export function SitePageRenderer({ slug = "" }: { slug?: string }) {
       const coursePage = coursePages[slug];
 
       return coursePage ? (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <CoursePageContent page={coursePage} />
         </PublicSiteShell>
       ) : null;
     }
     case "faq":
       return (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <FaqPageContent />
         </PublicSiteShell>
       );
     case "instructors":
       return (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <InstructorsPageContent />
         </PublicSiteShell>
       );
     case "photos":
       return (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <PhotosPageContent />
         </PublicSiteShell>
       );
     case "portal":
       return (
-        <PublicSiteShell>
+        <PublicSiteShell contactMode={page.contactMode}>
           <PortalPageContent />
         </PublicSiteShell>
       );
@@ -1201,7 +1219,7 @@ export function SitePageRenderer({ slug = "" }: { slug?: string }) {
       const authPage = authPages[slug];
 
       return authPage ? (
-        <PublicSiteShell showContactSection={false}>
+        <PublicSiteShell contactMode={page.contactMode}>
           <AuthPageContent page={authPage} />
         </PublicSiteShell>
       ) : null;

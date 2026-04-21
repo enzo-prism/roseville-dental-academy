@@ -16,7 +16,15 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
-import { announcement, headerCtas, navGroups, primaryNavLinks, siteContact } from "@/lib/site-data";
+import {
+  announcement,
+  desktopNavGroups,
+  headerCtas,
+  mobilePrimaryNavLinks,
+  resourceLinks,
+  siteContact,
+  siteImages,
+} from "@/lib/site-data";
 import { isActivePath, navGroupIsActive } from "@/lib/site-routing";
 
 export function SiteHeader() {
@@ -47,7 +55,7 @@ export function SiteHeader() {
               fill
               priority
               sizes="48px"
-              src="/assets/homepage/logo-seal.jpg"
+              src={siteImages.logo}
             />
           </div>
           <div className="min-w-0">
@@ -63,7 +71,7 @@ export function SiteHeader() {
         <div className="hidden min-w-0 flex-1 items-center justify-center md:flex">
           <NavigationMenu viewport={false}>
             <NavigationMenuList className="gap-1">
-              {navGroups.map((group) => {
+              {desktopNavGroups.map((group) => {
                 if (group.children?.length) {
                   return (
                     <NavigationMenuItem key={group.label}>
@@ -150,9 +158,10 @@ export function SiteHeader() {
 
         <MobileNavSheet
           ctas={headerCtas}
-          navGroups={navGroups}
+          navGroups={desktopNavGroups}
           pathname={pathname}
-          primaryLinks={primaryNavLinks}
+          primaryLinks={mobilePrimaryNavLinks}
+          resourceLinks={resourceLinks}
         />
       </header>
     </div>

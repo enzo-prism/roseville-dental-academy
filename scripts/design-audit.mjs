@@ -45,11 +45,45 @@ async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
 
+async function primeLazyContent(page) {
+  await page.waitForTimeout(1200);
+
+  await page.evaluate(async () => {
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const step = Math.max(320, Math.floor(window.innerHeight * 0.8));
+
+    for (let top = 0; top < maxScroll; top += step) {
+      window.scrollTo({ top, behavior: "instant" });
+      await new Promise((resolve) => window.setTimeout(resolve, 90));
+    }
+
+    window.scrollTo({ top: maxScroll, behavior: "instant" });
+    await new Promise((resolve) => window.setTimeout(resolve, 140));
+    window.scrollTo({ top: 0, behavior: "instant" });
+
+    const deadline = Date.now() + 2500;
+    while (Date.now() < deadline) {
+      const pendingImages = Array.from(document.querySelectorAll("img")).some((img) => {
+        const src = img.currentSrc || img.getAttribute("src") || "";
+        return Boolean(src && !src.startsWith("data:") && !img.complete);
+      });
+
+      if (!pendingImages) {
+        break;
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+    }
+  });
+
+  await page.waitForTimeout(300);
+}
+
 async function auditPage(page, route, device) {
   const href = route.slug ? `${baseUrl}/${route.slug}` : baseUrl;
   await page.setViewportSize({ width: device.width, height: device.height });
   await page.goto(href, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1200);
+  await primeLazyContent(page);
 
   const screenshotPath = path.join(
     screenshotDir,

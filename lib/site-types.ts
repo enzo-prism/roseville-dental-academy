@@ -103,9 +103,9 @@ export type HeroContent = {
   intro: string;
   image: string;
   imageAlt: string;
-  pills: readonly string[];
-  actions: readonly CtaLink[];
-  panel: {
+  pills?: readonly string[];
+  actions?: readonly CtaLink[];
+  panel?: {
     title: string;
     copy: string;
     items: readonly string[];
@@ -151,11 +151,14 @@ export type AuthPageData = {
   hero: HeroContent;
   cardTitle: string;
   cardCopy: string;
-  fields: readonly AuthField[];
-  note: string;
-  actions: readonly CtaLink[];
-  supportTitle: string;
-  supportCopy: readonly string[];
+  fields?: readonly AuthField[];
+  note?: string;
+  primaryAction: CtaLink;
+  secondaryLinks?: readonly CtaLink[];
+  utilityNotice?: {
+    title: string;
+    copy: readonly string[];
+  };
   noIndex?: boolean;
 };
 
@@ -174,5 +177,6 @@ export type SitePageDefinition = {
     | "photos"
     | "portal"
     | "auth";
+  contactMode?: "full" | "compact" | "none";
   noIndex?: boolean;
 };
