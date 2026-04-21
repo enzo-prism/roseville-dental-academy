@@ -59,16 +59,18 @@ export function MobileNavSheet({
           <MenuIcon />
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[92vw] gap-0 border-l border-border/70 bg-background p-0 sm:max-w-md">
-        <SheetHeader className="border-b border-border/60 px-5 py-5 text-left">
-          <SheetTitle className="text-left text-lg">Explore Roseville Dental Academy</SheetTitle>
+      <SheetContent className="w-[min(92vw,24rem)] gap-0 border-l border-border/70 bg-background p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-border/60 px-4 py-4 text-left sm:px-5 sm:py-5">
+          <SheetTitle className="text-left text-base sm:text-lg">
+            Explore Roseville Dental Academy
+          </SheetTitle>
           <SheetDescription className="text-left">
             Programs, certifications, admissions, and student resources.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5">
-          <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+          <div className="space-y-2.5">
             <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
               Primary
             </p>
@@ -78,7 +80,7 @@ export function MobileNavSheet({
                   <SmartLink
                     href={link.href}
                     className={cn(
-                      "rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-border hover:bg-muted/70",
+                      "rounded-[1.15rem] border border-transparent px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-border hover:bg-muted/70",
                       isActivePath(pathname, link.href) &&
                         "border-primary/20 bg-primary/7 text-primary",
                     )}
@@ -92,11 +94,11 @@ export function MobileNavSheet({
 
           <Separator className="my-6" />
 
-          <Accordion type="multiple" className="space-y-4">
+          <Accordion type="multiple" className="space-y-3.5">
             {programs?.children?.length ? (
               <AccordionItem
                 value="programs"
-                className="rounded-[1.4rem] border border-border/70 bg-card/95 px-4"
+                className="rounded-[1.25rem] border border-border/70 bg-card/95 px-4"
               >
                 <AccordionTrigger className="py-4 text-sm font-semibold hover:no-underline">
                   Programs
@@ -128,7 +130,7 @@ export function MobileNavSheet({
             {courses?.children?.length ? (
               <AccordionItem
                 value="courses"
-                className="rounded-[1.4rem] border border-border/70 bg-card/95 px-4"
+                className="rounded-[1.25rem] border border-border/70 bg-card/95 px-4"
               >
                 <AccordionTrigger className="py-4 text-sm font-semibold hover:no-underline">
                   Stand-alone Courses
@@ -160,7 +162,7 @@ export function MobileNavSheet({
             {resourceLinks.length ? (
               <AccordionItem
                 value="resources"
-                className="rounded-[1.4rem] border border-border/70 bg-card/95 px-4"
+                className="rounded-[1.25rem] border border-border/70 bg-card/95 px-4"
               >
                 <AccordionTrigger className="py-4 text-sm font-semibold hover:no-underline">
                   Resources
@@ -186,17 +188,17 @@ export function MobileNavSheet({
           </Accordion>
         </div>
 
-        <div className="border-t border-border/60 px-5 py-5">
+        <div className="site-safe-bottom border-t border-border/60 px-4 pt-4 sm:px-5 sm:pt-5">
           <div
             data-slot="button-group"
-            className="flex flex-col gap-3 sm:flex-row sm:flex-wrap"
+            className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap"
           >
-            <Button asChild className="rounded-full" size="lg">
+            <Button asChild className="w-full rounded-full sm:w-auto" size="lg">
               <SheetClose asChild>
                 <SmartLink href={ctas.admissions.href}>{ctas.admissions.label}</SmartLink>
               </SheetClose>
             </Button>
-            <Button asChild className="rounded-full" size="lg" variant="outline">
+            <Button asChild className="w-full rounded-full sm:w-auto" size="lg" variant="outline">
               <SheetClose asChild>
                 <SmartLink href={ctas.studentPortal.href}>
                   {ctas.studentPortal.label}

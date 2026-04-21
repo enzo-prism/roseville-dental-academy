@@ -20,7 +20,7 @@ export function ProgramCard({
 
   return (
     <Card className="group h-full border border-border/70 bg-card/95 shadow-[0_22px_50px_-34px_rgba(34,56,82,0.45)]">
-      <div className="relative aspect-[5/4] overflow-hidden rounded-t-xl border-b border-border/60 bg-secondary/30">
+      <div className="relative aspect-[6/5] overflow-hidden rounded-t-xl border-b border-border/60 bg-secondary/30 sm:aspect-[5/4]">
         <Image
           alt={card.title}
           className={
@@ -36,12 +36,15 @@ export function ProgramCard({
           <div className="absolute inset-0 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--color-background)_3%,transparent),color-mix(in_oklab,var(--color-primary)_14%,transparent))]" />
         ) : null}
       </div>
-      <CardHeader className="gap-3">
+      <CardHeader className="gap-2.5 sm:gap-3">
         <div className="flex items-center justify-between gap-3">
-          <Badge variant="secondary" className="rounded-full px-3 py-1 text-[0.7rem] tracking-[0.18em] uppercase">
+          <Badge
+            variant="secondary"
+            className="rounded-full px-2.5 py-1 text-[0.66rem] tracking-[0.16em] uppercase sm:px-3 sm:text-[0.7rem]"
+          >
             {card.type}
           </Badge>
-          <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary sm:size-10">
             <SiteIcon className="size-4" name={card.icon as SiteIconName} />
           </div>
         </div>
@@ -49,13 +52,13 @@ export function ProgramCard({
           <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
             {card.price}
           </p>
-          <CardTitle className="text-xl text-balance">{card.title}</CardTitle>
+          <CardTitle className="text-lg text-balance sm:text-xl">{card.title}</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
+      <CardContent className="space-y-3 text-sm leading-6 text-muted-foreground sm:space-y-4">
         <p>{card.summary}</p>
       </CardContent>
-      <CardFooter className="mt-auto bg-transparent px-4 pb-5 pt-0">
+      <CardFooter className="mt-auto bg-transparent px-3.5 pb-4 pt-0 sm:px-4 sm:pb-5">
         <Button asChild className="w-full rounded-full" variant="outline">
           <SmartLink href={card.href}>View course details</SmartLink>
         </Button>

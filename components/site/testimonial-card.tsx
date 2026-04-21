@@ -9,15 +9,15 @@ export function TestimonialCard({
 }) {
   return (
     <Card className="h-full min-w-0 border border-border/70 bg-card/95 shadow-[0_24px_48px_-34px_rgba(35,57,85,0.36)]">
-      <CardHeader className="gap-3">
+      <CardHeader className="gap-2.5 sm:gap-3">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <CardTitle className="text-lg">{testimonial.name}</CardTitle>
+            <CardTitle className="text-base sm:text-lg">{testimonial.name}</CardTitle>
             <p className="text-sm leading-5 text-muted-foreground">
               {testimonial.meta}
             </p>
           </div>
-          <div className="flex items-center gap-1 text-primary">
+          <div className="flex shrink-0 items-center gap-0.5 text-primary sm:gap-1">
             {Array.from({ length: testimonial.rating }).map((_, index) => (
               <SiteIcon key={`${testimonial.name}-${index}`} name="star" />
             ))}

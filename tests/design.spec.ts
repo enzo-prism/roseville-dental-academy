@@ -13,8 +13,8 @@ const routes = [
 ] as const;
 
 const devices = [
-  { name: "mobile", width: 390, height: 844, maxStickyHeight: 136 },
-  { name: "tablet", width: 768, height: 1024, maxStickyHeight: 120 },
+  { name: "mobile", width: 390, height: 844, maxStickyHeight: 108 },
+  { name: "tablet", width: 768, height: 1024, maxStickyHeight: 112 },
   { name: "desktop", width: 1280, height: 900, maxStickyHeight: 110 },
   { name: "widescreen", width: 1440, height: 960, maxStickyHeight: 110 },
 ] as const;
@@ -78,6 +78,7 @@ async function getLayoutScan(page: Page) {
           "[role='button']",
           "[role='link']",
           "[role='combobox']",
+          "[data-slot='badge']",
           "form",
           "fieldset",
           "[data-slot='button-group']",

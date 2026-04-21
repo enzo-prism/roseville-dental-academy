@@ -24,12 +24,12 @@ export function AuthPortalForm({ page }: AuthPortalFormProps) {
       id="portal-form"
     >
       <CardHeader className="space-y-3">
-        <CardTitle className="text-3xl">{page.cardTitle}</CardTitle>
+        <CardTitle className="text-2xl sm:text-3xl">{page.cardTitle}</CardTitle>
         <p className="text-sm leading-7 text-muted-foreground">{page.cardCopy}</p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5 sm:space-y-6">
         <form
-          className="space-y-5"
+          className="space-y-4 sm:space-y-5"
           onSubmit={(event) => {
             event.preventDefault();
             setMessage(
@@ -87,15 +87,18 @@ export function AuthPortalForm({ page }: AuthPortalFormProps) {
             </div>
           ) : null}
 
-          <div data-slot="button-group" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <div
+            data-slot="button-group"
+            className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap"
+          >
             {hasFields ? (
-              <Button className="rounded-full px-5" size="lg" type="submit">
+              <Button className="w-full rounded-full px-5 sm:w-auto" size="lg" type="submit">
                 {page.primaryAction.label}
               </Button>
             ) : (
               <Button
                 asChild
-                className="rounded-full px-5"
+                className="w-full rounded-full px-5 sm:w-auto"
                 size="lg"
                 variant={page.primaryAction.variant}
               >
@@ -106,7 +109,7 @@ export function AuthPortalForm({ page }: AuthPortalFormProps) {
               <Button
                 key={action.analyticsKey}
                 asChild
-                className="rounded-full"
+                className="w-full rounded-full sm:w-auto"
                 size="lg"
                 variant={action.variant}
               >

@@ -64,13 +64,13 @@ function SectionHeading({
   centered?: boolean;
 }) {
   return (
-    <div className={cn("space-y-3", centered && "mx-auto max-w-3xl text-center")}>
-      <p className="text-xs font-semibold tracking-[0.24em] text-primary uppercase">
+    <div className={cn("space-y-2.5 sm:space-y-3", centered && "mx-auto max-w-3xl text-center")}>
+      <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-primary uppercase sm:text-xs sm:tracking-[0.24em]">
         {eyebrow}
       </p>
-      <h2 className="text-balance text-3xl sm:text-4xl">{title}</h2>
+      <h2 className="text-balance text-[clamp(2rem,8vw,2.5rem)] sm:text-4xl">{title}</h2>
       {copy ? (
-        <p className="text-pretty text-sm leading-7 text-muted-foreground sm:text-base">
+        <p className="text-pretty text-[0.95rem] leading-7 text-muted-foreground sm:text-base">
           {copy}
         </p>
       ) : null}
@@ -108,15 +108,15 @@ function HeroVisualFallback({ hero }: { hero: HeroContent }) {
       <div className="absolute right-[-4rem] top-4 size-44 rounded-full border border-white/50 bg-white/55 blur-sm" />
       <div className="absolute bottom-[-4rem] right-10 size-52 rounded-full border border-secondary-foreground/10 bg-secondary/55 blur-sm" />
 
-      <div className="relative flex h-full items-end p-6 sm:p-8">
-        <div className="w-full max-w-xl space-y-4">
-          <Badge className="rounded-full border border-white/70 bg-white/88 px-3 py-1 text-[0.68rem] tracking-[0.18em] text-primary uppercase">
+      <div className="relative flex h-full items-end p-5 sm:p-8">
+        <div className="w-full max-w-xl space-y-3.5 sm:space-y-4">
+          <Badge className="rounded-full border border-white/70 bg-white/88 px-2.5 py-1 text-[0.66rem] tracking-[0.16em] text-primary uppercase sm:px-3 sm:text-[0.68rem]">
             Roseville training
           </Badge>
 
-          <div className="rounded-[1.8rem] border border-white/70 bg-white/84 p-5 shadow-[0_24px_48px_-34px_rgba(35,57,85,0.3)] backdrop-blur">
-            <div className="flex items-center gap-4">
-              <div className="relative size-14 overflow-hidden rounded-[1.05rem] border border-primary/12 bg-card shadow-[0_14px_26px_-18px_rgba(35,57,85,0.45)]">
+          <div className="rounded-[1.55rem] border border-white/70 bg-white/84 p-4 shadow-[0_24px_48px_-34px_rgba(35,57,85,0.3)] backdrop-blur sm:rounded-[1.8rem] sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="relative size-12 overflow-hidden rounded-[1rem] border border-primary/12 bg-card shadow-[0_14px_26px_-18px_rgba(35,57,85,0.45)] sm:size-14 sm:rounded-[1.05rem]">
                 <Image
                   alt="Roseville Dental Academy seal"
                   className="object-cover"
@@ -130,17 +130,17 @@ function HeroVisualFallback({ hero }: { hero: HeroContent }) {
                 <p className="text-[0.7rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                   Live-practice learning
                 </p>
-                <p className="mt-1 text-balance font-heading text-2xl leading-none text-primary">
+                <p className="mt-1 text-balance font-heading text-xl leading-none text-primary sm:text-2xl">
                   {fallbackTitle}
                 </p>
               </div>
             </div>
-            <p className="mt-4 max-w-lg text-sm leading-7 text-secondary-foreground/82">
+            <p className="mt-3 max-w-lg text-sm leading-6 text-secondary-foreground/82 sm:mt-4 sm:leading-7">
               {fallbackCopy}
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
             {visualItems.map((item) => (
               <div
                 key={item}
@@ -169,17 +169,17 @@ function HeroSection({
   const hasPanel = Boolean(hero.panel);
 
   return (
-    <section className="relative overflow-hidden pb-12 pt-6 sm:pb-16 sm:pt-10">
+    <section className="relative overflow-hidden pb-10 pt-4 sm:pb-16 sm:pt-10">
       <div className="absolute inset-x-0 top-0 -z-10 h-[34rem] bg-[radial-gradient(circle_at_top_left,_color-mix(in_oklab,var(--color-secondary)_85%,white),transparent_58%),linear-gradient(180deg,color-mix(in_oklab,var(--color-background)_96%,white),transparent)]" />
-      <div className="absolute left-[-6rem] top-24 -z-10 size-56 rounded-full bg-primary/7 blur-3xl" />
-      <div className="absolute right-[-8rem] top-8 -z-10 size-72 rounded-full bg-secondary blur-3xl" />
+      <div className="absolute left-[-6rem] top-24 -z-10 hidden size-56 rounded-full bg-primary/7 blur-3xl sm:block" />
+      <div className="absolute right-[-8rem] top-8 -z-10 hidden size-72 rounded-full bg-secondary blur-3xl sm:block" />
 
       <div className="site-frame">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(25rem,0.92fr)] lg:items-center lg:gap-12">
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/88 px-3 py-1.5">
-                <div className="relative size-7 overflow-hidden rounded-full border border-primary/10 bg-background">
+        <div className="grid gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(25rem,0.92fr)] lg:items-center lg:gap-12">
+          <div className="space-y-5 sm:space-y-6">
+            <div className="space-y-3.5 sm:space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/88 px-2.5 py-1 sm:px-3 sm:py-1.5">
+                <div className="relative size-6 overflow-hidden rounded-full border border-primary/10 bg-background sm:size-7">
                   <Image
                     alt="Roseville Dental Academy seal"
                     className="object-cover"
@@ -188,31 +188,31 @@ function HeroSection({
                     src={siteImages.logo}
                   />
                 </div>
-                <span className="text-[0.72rem] font-semibold tracking-[0.22em] text-primary uppercase">
+                <span className="text-[0.66rem] font-semibold tracking-[0.18em] text-primary uppercase sm:text-[0.72rem] sm:tracking-[0.22em]">
                   {hero.eyebrow}
                 </span>
               </div>
 
-              <div className="space-y-4">
-                <h1 className="max-w-4xl text-balance text-5xl leading-[0.96] sm:text-6xl lg:text-7xl">
+              <div className="space-y-3.5 sm:space-y-4">
+                <h1 className="max-w-4xl text-balance text-[clamp(2.7rem,12vw,4.4rem)] leading-[0.93] sm:text-6xl lg:text-7xl">
                   {hero.title}
                 </h1>
-                <p className="max-w-2xl text-pretty text-base leading-8 text-muted-foreground sm:text-lg">
+                <p className="max-w-2xl text-pretty text-[0.98rem] leading-7 text-muted-foreground sm:text-lg sm:leading-8">
                   {hero.intro}
                 </p>
               </div>
             </div>
 
             {pills.length ? (
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 {pills.map((pill) => (
-                <Badge
-                  key={pill}
-                  className="rounded-full border border-border/70 bg-card/92 px-3 py-1.5 text-[0.72rem] font-semibold tracking-[0.14em] text-secondary-foreground uppercase"
-                  variant="outline"
-                >
-                  {pill}
-                </Badge>
+                  <Badge
+                    key={pill}
+                    className="rounded-full border border-border/70 bg-card/92 px-2.5 py-1 text-[0.66rem] font-semibold tracking-[0.12em] text-secondary-foreground uppercase sm:px-3 sm:py-1.5 sm:text-[0.72rem] sm:tracking-[0.14em]"
+                    variant="outline"
+                  >
+                    {pill}
+                  </Badge>
                 ))}
               </div>
             ) : null}
@@ -220,9 +220,9 @@ function HeroSection({
             {actions.length ? <PrimaryCtaGroup actions={actions} /> : null}
           </div>
 
-          <div className="space-y-4 lg:pl-2">
-            <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_36px_90px_-48px_rgba(27,49,74,0.55)]">
-              <div className="relative aspect-[6/5] bg-secondary/40 sm:aspect-[11/10]">
+          <div className="space-y-3.5 sm:space-y-4 lg:pl-2">
+            <div className="relative overflow-hidden rounded-[1.55rem] border border-border/70 bg-card shadow-[0_28px_72px_-44px_rgba(27,49,74,0.52)] sm:rounded-[2rem] sm:shadow-[0_36px_90px_-48px_rgba(27,49,74,0.55)]">
+              <div className="relative aspect-[7/5] bg-secondary/40 sm:aspect-[11/10]">
                 {usesPlaceholderArt ? (
                   <HeroVisualFallback hero={hero} />
                 ) : (
@@ -244,29 +244,29 @@ function HeroSection({
             </div>
 
             {hasPanel ? (
-            <Card className="border border-border/70 bg-card/97 shadow-[0_24px_56px_-40px_rgba(27,49,74,0.26)]">
-              <CardHeader className="space-y-3 pb-4">
-                <CardTitle className="text-2xl">{hero.panel?.title}</CardTitle>
-                <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
-                  {hero.panel?.copy}
-                </p>
-              </CardHeader>
-              <CardContent>
-                <ul className="grid gap-3 sm:grid-cols-2">
-                  {hero.panel?.items.map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-start gap-3 rounded-[1.2rem] border border-border/70 bg-muted/42 px-4 py-3 text-sm leading-6 text-foreground/90"
-                    >
-                      <div className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <SiteIcon className="size-3.5" name="badge-check" />
-                      </div>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+              <Card className="rounded-[1.55rem] border border-border/70 bg-card/97 shadow-[0_24px_56px_-40px_rgba(27,49,74,0.26)] sm:rounded-[2rem]">
+                <CardHeader className="space-y-2.5 pb-3 sm:space-y-3 sm:pb-4">
+                  <CardTitle className="text-xl sm:text-2xl">{hero.panel?.title}</CardTitle>
+                  <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:leading-7">
+                    {hero.panel?.copy}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+                    {hero.panel?.items.map((item) => (
+                      <li
+                        key={item}
+                        className="flex items-start gap-3 rounded-[1.1rem] border border-border/70 bg-muted/42 px-3.5 py-3 text-sm leading-6 text-foreground/90 sm:rounded-[1.2rem] sm:px-4"
+                      >
+                        <div className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <SiteIcon className="size-3.5" name="badge-check" />
+                        </div>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
             ) : null}
           </div>
         </div>
@@ -283,15 +283,15 @@ function SplitSection({
   const usesPlaceholderArt = isPlaceholderAsset(content.image);
 
   return (
-    <section className="py-14 sm:py-18">
+    <section className="py-10 sm:py-14 lg:py-18">
       <div className="site-frame">
         <div
           className={cn(
-            "grid gap-8 lg:grid-cols-2 lg:items-center",
+            "grid gap-6 sm:gap-8 lg:grid-cols-2 lg:items-center",
             content.reverse && "lg:[&>*:first-child]:order-2 lg:[&>*:last-child]:order-1",
           )}
         >
-          <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_30px_72px_-46px_rgba(35,57,85,0.46)]">
+          <div className="relative overflow-hidden rounded-[1.6rem] border border-border/70 bg-card shadow-[0_30px_72px_-46px_rgba(35,57,85,0.46)] sm:rounded-[2rem]">
             <div className="relative aspect-[5/4] bg-secondary/35">
               <Image
                 alt={content.imageAlt}
@@ -316,36 +316,36 @@ function SplitSection({
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-5 sm:space-y-6">
             <SectionHeading
               copy={content.copy[0]}
               eyebrow={content.eyebrow}
               title={content.title}
             />
 
-            <div className="space-y-4 text-sm leading-7 text-muted-foreground sm:text-base">
+            <div className="space-y-3.5 text-sm leading-6 text-muted-foreground sm:space-y-4 sm:text-base sm:leading-7">
               {content.copy.slice(1).map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
             </div>
 
             {content.supporting ? (
-              <Card className="border border-border/70 bg-card/95 shadow-[0_20px_44px_-36px_rgba(35,57,85,0.4)]">
+              <Card className="rounded-[1.6rem] border border-border/70 bg-card/95 shadow-[0_20px_44px_-36px_rgba(35,57,85,0.4)] sm:rounded-[2rem]">
                 <CardHeader className="space-y-2">
-                  <CardTitle className="text-2xl">{content.supporting.title}</CardTitle>
+                  <CardTitle className="text-xl sm:text-2xl">{content.supporting.title}</CardTitle>
                   {content.supporting.copy?.map((paragraph) => (
-                    <p key={paragraph} className="text-sm leading-7 text-muted-foreground">
+                    <p key={paragraph} className="text-sm leading-6 text-muted-foreground sm:leading-7">
                       {paragraph}
                     </p>
                   ))}
                 </CardHeader>
-                <CardContent className="space-y-5">
+                <CardContent className="space-y-4 sm:space-y-5">
                   {content.supporting.list?.length ? (
-                    <ul className="grid gap-3 sm:grid-cols-2">
+                    <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
                       {content.supporting.list.map((item) => (
                         <li
                           key={item}
-                          className="flex items-start gap-3 rounded-[1.2rem] border border-border/70 bg-muted/45 px-4 py-3 text-sm leading-6 text-foreground"
+                          className="flex items-start gap-3 rounded-[1.1rem] border border-border/70 bg-muted/45 px-3.5 py-3 text-sm leading-6 text-foreground sm:rounded-[1.2rem] sm:px-4"
                         >
                           <div className="mt-1 flex size-5 items-center justify-center rounded-full bg-primary/10 text-primary">
                             <SiteIcon className="size-3.5" name="badge-check" />
@@ -380,28 +380,28 @@ function FeatureGrid({
   items: readonly FeatureItem[];
 }) {
   return (
-    <section className="py-14 sm:py-18">
-      <div className="site-frame space-y-8">
+    <section className="py-10 sm:py-14 lg:py-18">
+      <div className="site-frame space-y-6 sm:space-y-8">
         <SectionHeading centered copy={copy} eyebrow={eyebrow} title={title} />
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
           {items.map((item) => (
             <Card
               key={item.title}
               className="border border-border/70 bg-card/95 shadow-[0_24px_48px_-38px_rgba(35,57,85,0.38)]"
             >
-              <CardHeader className="space-y-4">
-                <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <CardHeader className="space-y-3 sm:space-y-4">
+                <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary sm:size-11">
                   <SiteIcon
-                    className="size-5"
+                    className="size-4 sm:size-5"
                     name={(item.icon ?? "badge-check") as SiteIconName}
                   />
                 </div>
-                <CardTitle className="text-2xl">{item.title}</CardTitle>
+                <CardTitle className="text-xl sm:text-2xl">{item.title}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-5">
-                <p className="text-sm leading-7 text-muted-foreground">{item.summary}</p>
+              <CardContent className="space-y-4 sm:space-y-5">
+                <p className="text-sm leading-6 text-muted-foreground sm:leading-7">{item.summary}</p>
                 {item.href && item.ctaLabel ? (
-                  <Button asChild className="rounded-full" variant="outline">
+                  <Button asChild className="w-full rounded-full sm:w-auto" variant="outline">
                     <SmartLink href={item.href}>{item.ctaLabel}</SmartLink>
                   </Button>
                 ) : null}
@@ -426,25 +426,25 @@ function RequirementsSection({
   requirements: readonly RequirementGroup[];
 }) {
   return (
-    <section className="py-14 sm:py-18">
-      <div className="site-frame space-y-8">
+    <section className="py-10 sm:py-14 lg:py-18">
+      <div className="site-frame space-y-6 sm:space-y-8">
         <SectionHeading centered copy={copy} eyebrow={eyebrow} title={title} />
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
           {requirements.map((group) => (
             <Card
               key={group.title}
               className="border border-border/70 bg-card/95 shadow-[0_24px_48px_-38px_rgba(35,57,85,0.36)]"
             >
               <CardHeader className="space-y-3">
-                <CardTitle className="text-2xl">{group.title}</CardTitle>
+                <CardTitle className="text-xl sm:text-2xl">{group.title}</CardTitle>
                 {group.copy ? (
-                  <p className="text-sm leading-7 text-muted-foreground">{group.copy}</p>
+                  <p className="text-sm leading-6 text-muted-foreground sm:leading-7">{group.copy}</p>
                 ) : null}
               </CardHeader>
               <CardContent>
-                <ul className="space-y-3">
+                <ul className="space-y-2.5 sm:space-y-3">
                   {group.items.map((item) => (
-                    <li key={item} className="flex items-start gap-3 text-sm leading-7 text-foreground/90">
+                    <li key={item} className="flex items-start gap-3 text-sm leading-6 text-foreground/90 sm:leading-7">
                       <div className="mt-1 flex size-5 items-center justify-center rounded-full bg-primary/10 text-primary">
                         <SiteIcon className="size-3.5" name="badge-check" />
                       </div>
@@ -471,16 +471,16 @@ function SupportRibbon({
   actions: readonly CtaLink[];
 }) {
   return (
-    <section className="py-14 sm:py-18">
+    <section className="py-10 sm:py-14 lg:py-18">
       <div className="site-frame">
-        <div className="overflow-hidden rounded-[2rem] border border-primary/15 bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-secondary)_72%,white),color-mix(in_oklab,var(--color-background)_99%,white))] shadow-[0_32px_80px_-52px_rgba(32,51,76,0.5)]">
-          <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
+        <div className="overflow-hidden rounded-[1.6rem] border border-primary/15 bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-secondary)_72%,white),color-mix(in_oklab,var(--color-background)_99%,white))] shadow-[0_32px_80px_-52px_rgba(32,51,76,0.5)] sm:rounded-[2rem]">
+          <div className="grid gap-6 px-5 py-6 sm:gap-8 sm:px-8 sm:py-8 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
             <div className="space-y-3">
               <p className="text-xs font-semibold tracking-[0.24em] text-primary uppercase">
                 Next steps
               </p>
-              <h2 className="text-balance text-3xl sm:text-4xl">{title}</h2>
-              <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
+              <h2 className="text-balance text-[clamp(1.9rem,8vw,2.4rem)] sm:text-4xl">{title}</h2>
+              <p className="max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
                 {copy}
               </p>
             </div>
@@ -494,15 +494,15 @@ function SupportRibbon({
 
 function TestimonialsSection() {
   return (
-    <section className="py-14 sm:py-18">
-      <div className="site-frame space-y-8">
+    <section className="py-10 sm:py-14 lg:py-18">
+      <div className="site-frame space-y-6 sm:space-y-8">
         <SectionHeading
           centered
           copy="Students repeatedly call out the same strengths: small class sizes, practical teaching, and staff who help them bridge into real job opportunities."
           eyebrow="Student trust"
           title="What students say"
         />
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
           {testimonials.slice(0, 6).map((testimonial) => (
             <TestimonialCard key={testimonial.name} testimonial={testimonial} />
           ))}
@@ -514,8 +514,8 @@ function TestimonialsSection() {
 
 function HomeGallerySection() {
   return (
-    <section className="py-14 sm:py-18">
-      <div className="site-frame space-y-8">
+    <section className="py-10 sm:py-14 lg:py-18">
+      <div className="site-frame space-y-6 sm:space-y-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeading
             copy={homeGalleryHighlight.copy}
@@ -526,16 +526,23 @@ function HomeGallerySection() {
             <SmartLink href="/photos">View the full gallery</SmartLink>
           </Button>
         </div>
-        <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
+        <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           {homeGalleryHighlight.items.map((item, index) => (
             <div
               key={`${item.alt}-${index}`}
               className={cn(
-                "relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_24px_54px_-38px_rgba(35,57,85,0.36)]",
-                index === 0 ? "lg:row-span-2" : "",
+                "relative overflow-hidden rounded-[1.6rem] border border-border/70 bg-card shadow-[0_24px_54px_-38px_rgba(35,57,85,0.36)] sm:rounded-[2rem]",
+                index === 0 ? "col-span-2 lg:col-span-1 lg:row-span-2" : "",
               )}
             >
-              <div className={cn("relative bg-secondary/35", index === 0 ? "aspect-[4/5]" : "aspect-[4/3]")}>
+              <div
+                className={cn(
+                  "relative bg-secondary/35",
+                  index === 0
+                    ? "aspect-[16/10] sm:aspect-[16/11] lg:aspect-[4/5]"
+                    : "aspect-[4/3]",
+                )}
+              >
                 <Image
                   alt={item.alt}
                   className={cn(
@@ -561,8 +568,8 @@ function HomeGallerySection() {
 
 function ContactSection() {
   return (
-    <section className="py-16 sm:py-20" id="contact">
-      <div className="site-frame space-y-8">
+    <section className="py-12 sm:py-16 lg:py-20" id="contact">
+      <div className="site-frame space-y-6 sm:space-y-8">
         <SectionHeading
           centered
           copy="Visit during normal business hours, send a note about prerequisites or seat availability, or call if you need to line up the next class date quickly."
@@ -570,7 +577,7 @@ function ContactSection() {
           title="Plan your next step"
         />
 
-        <div className="grid gap-5 xl:grid-cols-[0.8fr_0.8fr_1.1fr]">
+        <div className="grid gap-4 sm:gap-5 xl:grid-cols-[0.8fr_0.8fr_1.1fr]">
           <ContactCard
             actions={[
               {
@@ -618,8 +625,8 @@ function ContactSection() {
 
           <Card className="border border-border/70 bg-card/95 shadow-[0_28px_56px_-40px_rgba(35,57,85,0.38)]">
             <CardHeader className="space-y-3">
-              <CardTitle className="text-3xl">Send a quick note</CardTitle>
-              <p className="text-sm leading-7 text-muted-foreground">
+              <CardTitle className="text-2xl sm:text-3xl">Send a quick note</CardTitle>
+              <p className="text-sm leading-6 text-muted-foreground sm:leading-7">
                 Keep it simple. Admissions will follow up with the right next step
                 for programs, certifications, or portal questions.
               </p>
@@ -627,7 +634,7 @@ function ContactSection() {
             <CardContent>
               <form
                 action={siteContact.formspreeEndpoint}
-                className="space-y-4"
+                className="space-y-3.5 sm:space-y-4"
                 method="POST"
               >
                 <input type="hidden" name="_subject" value="Roseville Dental Academy contact request" />
@@ -663,11 +670,11 @@ function ContactSection() {
                     required
                   />
                 </div>
-                <div data-slot="button-group" className="flex flex-col gap-3 sm:flex-row">
-                  <Button className="rounded-full px-5" size="lg" type="submit">
+                <div data-slot="button-group" className="flex flex-col gap-2.5 sm:flex-row">
+                  <Button className="w-full rounded-full px-5 sm:w-auto" size="lg" type="submit">
                     Send message
                   </Button>
-                  <Button asChild className="rounded-full" size="lg" variant="outline">
+                  <Button asChild className="w-full rounded-full sm:w-auto" size="lg" variant="outline">
                     <SmartLink href={`tel:${siteContact.phone}`}>Prefer to call</SmartLink>
                   </Button>
                 </div>
@@ -688,21 +695,21 @@ function CompactContactStrip({
   copy?: string;
 }) {
   return (
-    <section className="py-14 sm:py-16">
+    <section className="py-10 sm:py-14 lg:py-16">
       <div className="site-frame">
-        <div className="flex flex-col gap-6 rounded-[1.8rem] border border-border/70 bg-card/95 px-6 py-6 shadow-[0_24px_48px_-36px_rgba(32,51,76,0.24)] sm:px-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-5 rounded-[1.55rem] border border-border/70 bg-card/95 px-5 py-5 shadow-[0_24px_48px_-36px_rgba(32,51,76,0.24)] sm:gap-6 sm:rounded-[1.8rem] sm:px-8 sm:py-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-3xl space-y-2">
             <p className="text-xs font-semibold tracking-[0.22em] text-primary uppercase">
               Admissions help
             </p>
-            <h2 className="text-balance text-2xl sm:text-3xl">{title}</h2>
-            <p className="text-sm leading-7 text-muted-foreground sm:text-base">{copy}</p>
+            <h2 className="text-balance text-xl sm:text-3xl">{title}</h2>
+            <p className="text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">{copy}</p>
           </div>
-          <div data-slot="button-group" className="flex flex-col gap-3 sm:flex-row">
-            <Button asChild className="rounded-full" size="lg">
+          <div data-slot="button-group" className="flex flex-col gap-2.5 sm:flex-row">
+            <Button asChild className="w-full rounded-full sm:w-auto" size="lg">
               <SmartLink href={`tel:${siteContact.phone}`}>Call admissions</SmartLink>
             </Button>
-            <Button asChild className="rounded-full" size="lg" variant="outline">
+            <Button asChild className="w-full rounded-full sm:w-auto" size="lg" variant="outline">
               <SmartLink href={`mailto:${siteContact.email}`}>Email admissions</SmartLink>
             </Button>
           </div>
@@ -719,7 +726,7 @@ function RegistrationFormFallback() {
         <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border/70 bg-secondary/70 px-3 py-1 text-[0.72rem] font-semibold tracking-[0.18em] text-secondary-foreground uppercase">
           Digital registration
         </div>
-        <CardTitle className="text-3xl text-balance">
+        <CardTitle className="text-2xl text-balance sm:text-3xl">
           Loading the registration form
         </CardTitle>
       </CardHeader>
@@ -772,8 +779,8 @@ function RegistrationPageContent() {
     <>
       <HeroSection hero={registrationHero} />
 
-      <section className="pb-14 sm:pb-18" id="registration-form">
-        <div className="site-frame space-y-8">
+      <section className="pb-10 sm:pb-14 lg:pb-18" id="registration-form">
+        <div className="site-frame space-y-6 sm:space-y-8">
           <SectionHeading
             centered
             copy="Use the form below to tell admissions which program or certification you want, how to reach you, and anything you'd like clarified before the next class date."
@@ -798,9 +805,9 @@ function ProgramPageContent() {
   return (
     <>
       <HeroSection hero={dentalProgramPage.hero} />
-      <section className="py-14 sm:py-18">
-        <div className="site-frame grid gap-8 xl:grid-cols-[1.05fr_0.95fr] xl:items-center">
-          <div className="space-y-6">
+      <section className="py-10 sm:py-14 lg:py-18">
+        <div className="site-frame grid gap-6 sm:gap-8 xl:grid-cols-[1.05fr_0.95fr] xl:items-center">
+          <div className="space-y-5 sm:space-y-6">
             <SectionHeading
               copy="These are the outcomes students ask about most often: employment outlook, starting pay, schedule flexibility, and long-term growth inside the field."
               eyebrow="Career outlook"
@@ -812,7 +819,7 @@ function ProgramPageContent() {
               ))}
             </div>
           </div>
-          <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_32px_80px_-50px_rgba(35,57,85,0.45)]">
+          <div className="relative overflow-hidden rounded-[1.6rem] border border-border/70 bg-card shadow-[0_32px_80px_-50px_rgba(35,57,85,0.45)] sm:rounded-[2rem]">
             <div className="relative aspect-[4/3] bg-secondary/35">
               <Image
                 alt="Dental assistant training overview from the live academy site"
@@ -910,8 +917,8 @@ function FaqPageContent() {
   return (
     <>
       <HeroSection hero={faqHero} />
-      <section className="py-14 sm:py-18">
-        <div className="site-frame space-y-8">
+      <section className="py-10 sm:py-14 lg:py-18">
+        <div className="site-frame space-y-6 sm:space-y-8">
           <SectionHeading
             centered
             copy="Start here if you want the quickest answer to the academy's most common admissions and program questions."
@@ -967,33 +974,41 @@ function PhotosPageContent() {
   return (
     <>
       <HeroSection hero={photosHero} />
-      <section className="py-14 sm:py-18">
-        <div className="site-frame space-y-8">
+      <section className="py-10 sm:py-14 lg:py-18">
+        <div className="site-frame space-y-6 sm:space-y-8">
           {photoGroups.map((group) => (
-            <div key={group.title} className="space-y-5">
+            <div key={group.title} className="space-y-4 sm:space-y-5">
               <SectionHeading eyebrow="Photo group" title={group.title} copy={group.copy} />
-              <div className="grid gap-5 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3">
                 {group.items.map((item, index) => (
                   <div
                     key={`${group.title}-${item.alt}-${index}`}
-                    className="relative overflow-hidden rounded-[1.8rem] border border-border/70 bg-card shadow-[0_22px_50px_-38px_rgba(35,57,85,0.34)]"
+                    className={cn(
+                      "relative overflow-hidden rounded-[1.5rem] border border-border/70 bg-card shadow-[0_22px_50px_-38px_rgba(35,57,85,0.34)] sm:rounded-[1.8rem]",
+                      index === 0 && "col-span-2 md:col-span-1",
+                    )}
                   >
-                  <div className="relative aspect-[4/3] bg-secondary/35">
-                    <Image
-                      alt={item.alt}
+                    <div
                       className={cn(
-                        "object-cover",
-                        isPlaceholderAsset(item.src) &&
-                          "scale-[1.04] opacity-72 mix-blend-multiply saturate-[0.78]",
+                        "relative bg-secondary/35",
+                        index === 0 ? "aspect-[16/10] sm:aspect-[4/3]" : "aspect-[4/3]",
                       )}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      src={item.src}
-                    />
-                    <PlaceholderWash src={item.src} />
+                    >
+                      <Image
+                        alt={item.alt}
+                        className={cn(
+                          "object-cover",
+                          isPlaceholderAsset(item.src) &&
+                            "scale-[1.04] opacity-72 mix-blend-multiply saturate-[0.78]",
+                        )}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        src={item.src}
+                      />
+                      <PlaceholderWash src={item.src} />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
               </div>
             </div>
           ))}
@@ -1007,16 +1022,16 @@ function PortalPageContent() {
   return (
     <>
       <HeroSection hero={portalPage.hero} />
-      <section className="pb-14 sm:pb-16">
+      <section className="pb-10 sm:pb-14 lg:pb-16">
         <div className="site-frame">
           <Card className="border border-border/70 bg-card/95 shadow-[0_24px_48px_-36px_rgba(32,51,76,0.24)]">
-            <CardContent className="grid gap-4 px-6 py-6 sm:px-8 lg:grid-cols-3">
+            <CardContent className="grid gap-3 px-5 py-5 sm:gap-4 sm:px-6 sm:py-6 lg:grid-cols-3 lg:px-8">
               {[
                 "Use this hub for sign in, password reset, and first-time account access.",
                 "Bookings, account details, and other private routes still require sign in before they become useful.",
                 "If you are trying to reach a protected page, start with sign in and return once access is confirmed.",
               ].map((line) => (
-                <p key={line} className="text-sm leading-7 text-muted-foreground">
+                <p key={line} className="text-sm leading-6 text-muted-foreground sm:leading-7">
                   {line}
                 </p>
               ))}
@@ -1032,7 +1047,7 @@ function AuthPageContent({ page }: { page: AuthPageData }) {
   return (
     <>
       <HeroSection hero={page.hero} />
-      <section className="py-14 sm:py-18">
+      <section className="py-10 sm:py-14 lg:py-18">
         <div className="site-frame max-w-3xl">
           <AuthPortalForm page={page} />
         </div>
@@ -1046,9 +1061,9 @@ function HomePageContent() {
     <>
       <HeroSection hero={homeHero} />
 
-      <section className="py-14 sm:py-18">
-        <div className="site-frame grid gap-8 xl:grid-cols-[1.05fr_0.95fr] xl:items-center">
-          <div className="space-y-6">
+      <section className="py-10 sm:py-14 lg:py-18">
+        <div className="site-frame grid gap-6 sm:gap-8 xl:grid-cols-[1.05fr_0.95fr] xl:items-center">
+          <div className="space-y-5 sm:space-y-6">
             <SectionHeading
               copy="Students usually want to know four things right away: job outlook, starting pay, schedule flexibility, and whether the training can lead to a longer dental career."
               eyebrow="Opportunity snapshot"
@@ -1061,13 +1076,13 @@ function HomePageContent() {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_34px_84px_-52px_rgba(35,57,85,0.46)]">
-            <div className="absolute inset-x-6 top-6 z-10">
-              <Badge className="rounded-full px-3 py-1 text-[0.7rem] tracking-[0.2em] uppercase">
+          <div className="relative overflow-hidden rounded-[1.6rem] border border-border/70 bg-card shadow-[0_34px_84px_-52px_rgba(35,57,85,0.46)] sm:rounded-[2rem]">
+            <div className="absolute inset-x-4 top-4 z-10 sm:inset-x-6 sm:top-6">
+              <Badge className="rounded-full px-2.5 py-1 text-[0.66rem] tracking-[0.16em] uppercase sm:px-3 sm:text-[0.7rem] sm:tracking-[0.2em]">
                 Career outlook
               </Badge>
             </div>
-            <div className="relative aspect-[11/9] bg-secondary/40">
+            <div className="relative aspect-[4/3] bg-secondary/40 sm:aspect-[11/9]">
               <Image
                 alt="Dental assistant training overview from the live academy site"
                 className="object-cover"
@@ -1083,15 +1098,15 @@ function HomePageContent() {
 
       <SplitSection content={homePrimarySplit} />
 
-      <section className="py-14 sm:py-18" id="stand-alone-courses">
-        <div className="site-frame space-y-8">
+      <section className="py-10 sm:py-14 lg:py-18" id="stand-alone-courses">
+        <div className="site-frame space-y-6 sm:space-y-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <SectionHeading
               copy="Compare certification routes, pricing, prerequisites, and next steps without having to jump between different pages or formats."
               eyebrow="Stand-alone courses"
               title="Certification routes"
             />
-            <Button asChild className="rounded-full" variant="outline">
+            <Button asChild className="w-full rounded-full sm:w-auto" variant="outline">
               <SmartLink href="/registration">Start registration</SmartLink>
             </Button>
           </div>
@@ -1115,8 +1130,8 @@ function HomePageContent() {
       <TestimonialsSection />
       <HomeGallerySection />
 
-      <section className="py-14 sm:py-18">
-        <div className="site-frame space-y-8">
+      <section className="py-10 sm:py-14 lg:py-18">
+        <div className="site-frame space-y-6 sm:space-y-8">
           <SectionHeading
             centered
             copy="Quick answers for students who want clarity before they register or call admissions."

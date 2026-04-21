@@ -123,14 +123,17 @@
 
   html {
     @apply scroll-smooth font-sans;
+    overflow-x: clip;
   }
 
   body {
     @apply bg-background text-foreground;
     margin: 0;
+    overflow-x: clip;
     letter-spacing: -0.011em;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
     background-image:
       radial-gradient(circle at top left, color-mix(in oklab, var(--color-secondary) 88%, white), transparent 42%),
       radial-gradient(circle at 100% 0%, color-mix(in oklab, var(--color-accent) 58%, white), transparent 34%),
@@ -186,5 +189,9 @@
 @layer components {
   .site-frame {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .site-safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }

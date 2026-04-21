@@ -22,30 +22,32 @@ export function ContactCard({
 }: ContactCardProps) {
   return (
     <Card className="h-full border border-border/70 bg-card/95 shadow-[0_24px_48px_-34px_rgba(35,57,85,0.34)]">
-      <CardHeader className="gap-3">
-        <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <SiteIcon className="size-5" name={icon} />
+      <CardHeader className="gap-2.5 sm:gap-3">
+        <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary sm:size-11">
+          <SiteIcon className="size-4 sm:size-5" name={icon} />
         </div>
-        <CardTitle className="text-2xl">{title}</CardTitle>
+        <CardTitle className="text-xl sm:text-2xl">{title}</CardTitle>
         <p className="text-sm leading-6 text-muted-foreground">{description}</p>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {details.map((detail) => (
-          <Badge
-            key={detail}
-            className="mr-2 mb-2 rounded-full border border-border/70 bg-secondary/70 px-3 py-1.5 text-sm font-normal text-secondary-foreground"
-            variant="outline"
-          >
-            {detail}
-          </Badge>
-        ))}
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          {details.map((detail) => (
+            <Badge
+              key={detail}
+              className="m-0 inline-flex h-auto min-h-8 w-full items-start justify-start rounded-[1rem] border border-border/70 bg-secondary/70 px-3 py-2 text-left text-sm leading-5 font-normal whitespace-normal break-words text-secondary-foreground sm:w-auto sm:items-center sm:whitespace-nowrap sm:py-1.5"
+              variant="outline"
+            >
+              {detail}
+            </Badge>
+          ))}
+        </div>
       </CardContent>
-      <CardFooter className="flex flex-col items-stretch gap-3 bg-transparent px-4 pb-5 pt-0 sm:flex-row">
+      <CardFooter className="flex flex-col items-stretch gap-2.5 bg-transparent px-3.5 pb-4 pt-0 sm:flex-row sm:px-4 sm:pb-5">
         {actions.map((action) => (
           <Button
             key={action.analyticsKey}
             asChild
-            className="rounded-full"
+            className="w-full rounded-full sm:w-auto"
             variant={action.variant}
           >
             <SmartLink href={action.href}>{action.label}</SmartLink>

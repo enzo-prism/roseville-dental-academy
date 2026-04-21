@@ -14,7 +14,7 @@ export function PrimaryCtaGroup({
     <div
       data-slot="button-group"
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center",
+        "flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center",
         className,
       )}
     >
@@ -25,7 +25,7 @@ export function PrimaryCtaGroup({
           size="lg"
           variant={action.variant}
           className={cn(
-            "justify-center rounded-full px-5 text-sm sm:justify-start",
+            "w-full justify-center rounded-full px-4 text-sm sm:w-auto sm:justify-start sm:px-5",
             action.variant === "default" &&
               "bg-primary shadow-[0_18px_38px_-20px_color-mix(in_oklab,var(--color-primary)_40%,transparent)]",
           )}

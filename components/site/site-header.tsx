@@ -33,8 +33,8 @@ export function SiteHeader() {
   return (
     <div className="sticky top-0 z-50 border-b border-border/70 bg-background/92 backdrop-blur-xl">
       <div className="border-b border-border/50 bg-secondary/50">
-        <div className="site-frame flex min-h-7 items-center justify-between gap-4 py-1">
-          <p className="max-w-4xl text-[0.68rem] leading-4 text-secondary-foreground sm:text-[0.72rem]">
+        <div className="site-frame flex items-start justify-between gap-3 py-1 sm:min-h-7 sm:items-center sm:gap-4">
+          <p className="flex-1 text-pretty text-[0.63rem] leading-[1.2] text-secondary-foreground sm:max-w-4xl sm:text-[0.72rem] sm:leading-4">
             {announcement}
           </p>
           <SmartLink
@@ -46,9 +46,9 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <header className="site-frame flex min-h-[4.125rem] items-center justify-between gap-4 py-2.5">
-        <SmartLink href="/" className="group flex min-w-0 items-center gap-3">
-          <div className="relative size-11 overflow-hidden rounded-full border border-primary/15 bg-card shadow-[0_12px_26px_-18px_rgba(35,57,85,0.55)]">
+      <header className="site-frame flex min-h-[3.55rem] items-center justify-between gap-3 py-2 sm:min-h-[4.125rem] sm:gap-4 sm:py-2.5">
+        <SmartLink href="/" className="group flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <div className="relative size-10 overflow-hidden rounded-full border border-primary/15 bg-card shadow-[0_12px_26px_-18px_rgba(35,57,85,0.55)] sm:size-11">
             <Image
               alt="Roseville Dental Academy seal"
               className="object-cover"
@@ -59,10 +59,10 @@ export function SiteHeader() {
             />
           </div>
           <div className="min-w-0">
-            <p className="font-heading text-lg leading-none tracking-[0.04em] text-primary sm:text-xl">
+            <p className="font-heading text-base leading-none tracking-[0.03em] text-primary sm:text-xl">
               Roseville Dental Academy
             </p>
-            <p className="mt-1 hidden text-xs tracking-[0.24em] text-muted-foreground uppercase sm:block">
+            <p className="mt-1 hidden text-xs tracking-[0.22em] text-muted-foreground uppercase md:block">
               Roseville, California
             </p>
           </div>
