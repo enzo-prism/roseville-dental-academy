@@ -6,9 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint app components lib next.config.ts postcss.config.mjs",
+    "lint": "eslint app components lib tests next.config.ts postcss.config.mjs",
     "audit:design": "node scripts/design-audit.mjs",
-    "test:design": "playwright test tests/design.spec.ts"
+    "snapshot:refresh": "node scripts/capture-live-snapshot.mjs && node scripts/refresh-live-baselines.mjs",
+    "test:smoke": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/smoke.spec.ts",
+    "test:parity-content": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.spec.ts",
+    "test:parity-visual": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.visual.spec.ts",
+    "test:ux": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/ux-stability.spec.ts",
+    "test:design": "pnpm test:ux && pnpm test:parity-visual",
+    "test:parity": "pnpm test:parity-content && pnpm test:parity-visual",
+    "test:release": "pnpm lint && pnpm build && PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3100} pnpm test:smoke && PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3100} pnpm test:parity-content && PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3100} pnpm test:ux && PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3100} pnpm test:parity-visual",
+    "test:preview": "PREVIEW_URL=${PREVIEW_URL:?PREVIEW_URL is required} PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=${PREVIEW_URL} pnpm test:smoke && PREVIEW_URL=${PREVIEW_URL:?PREVIEW_URL is required} PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=${PREVIEW_URL} pnpm test:parity-content && PREVIEW_URL=${PREVIEW_URL:?PREVIEW_URL is required} PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=${PREVIEW_URL} pnpm test:ux && PREVIEW_URL=${PREVIEW_URL:?PREVIEW_URL is required} PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=${PREVIEW_URL} pnpm test:parity-visual"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

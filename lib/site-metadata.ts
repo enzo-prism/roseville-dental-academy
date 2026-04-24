@@ -1,58 +1,31 @@
 import type { Metadata } from "next";
 
-import { getPageBySlug, siteImages } from "@/lib/site-data";
+import { getLiveRouteForSlug } from "@/lib/live-route-data";
+import { getSiteUrl } from "@/lib/site-config";
 
-const siteUrl = "https://www.rosevilledentalacademy.com";
-const fallbackTitle = "Roseville Dental Academy";
-const fallbackDescription =
-  "Dental training and certification in Roseville, California.";
+const fallbackTitle = "404 Not Found";
 
-export function buildSiteMetadata(slug = ""): Metadata {
-  const page = getPageBySlug(slug);
+function stringifySlug(slug: string | string[]) {
+  return Array.isArray(slug) ? slug.join("/") : slug;
+}
+
+export function buildSiteMetadata(slug: string | string[] = ""): Metadata {
+  const page = getLiveRouteForSlug(slug);
   const title = page?.title ?? fallbackTitle;
-  const description = page?.description ?? fallbackDescription;
-  const pathname = slug ? `/${slug}` : "/";
+  const routePath = page?.route ?? (stringifySlug(slug) ? `/${stringifySlug(slug)}` : "/");
+  const siteUrl = getSiteUrl();
 
   return {
     metadataBase: new URL(siteUrl),
     title,
-    description,
-    applicationName: fallbackTitle,
-    icons: {
-      icon: "/assets/favicon.png",
-      shortcut: "/assets/favicon.png",
-      apple: "/assets/favicon.png",
-    },
-    openGraph: {
-      type: "website",
-      url: pathname,
-      title,
-      description,
-      siteName: fallbackTitle,
-      images: [
-        {
-          url: siteImages.logo,
-          alt: "Roseville Dental Academy seal",
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [siteImages.logo],
-    },
+    description: title,
+    applicationName: "Roseville Dental Academy",
     alternates: {
-      canonical: pathname,
+      canonical: routePath,
     },
-    robots: page?.noIndex
-      ? {
-          index: false,
-          follow: false,
-        }
-      : {
-          index: true,
-          follow: true,
-        },
+    robots: {
+      follow: true,
+      index: true,
+    },
   };
 }

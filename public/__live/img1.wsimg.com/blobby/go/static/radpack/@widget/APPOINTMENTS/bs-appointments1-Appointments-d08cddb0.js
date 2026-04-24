@@ -1,0 +1,2 @@
+define("@widget/APPOINTMENTS/bs-appointments1-Appointments-d08cddb0.js",["exports","~/c/bs-AppointmentsSection"],(function(e,t){"use strict";e.default=e=>(global.React||guac.react).createElement(t.A,t._({},e,{serviceListComponent:"ServiceList1"})),Object.defineProperty(e,"__esModule",{value:!0})})),"undefined"!=typeof window&&(window.global=window);
+//# sourceMappingURL=bs-appointments1-Appointments-d08cddb0.js.map

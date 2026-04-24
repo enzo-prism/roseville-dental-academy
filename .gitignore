@@ -2,6 +2,7 @@
 .vercel
 node_modules
 .next
+.mirror-cache
 out
 dist
 coverage

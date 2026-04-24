@@ -1,0 +1,400 @@
+{
+  "generatedAt": "2026-04-23T23:58:06.561Z",
+  "assetRoot": "/__live",
+  "routes": [
+    {
+      "id": "home",
+      "route": "/",
+      "sourcePath": "/",
+      "aliases": [],
+      "status": 200,
+      "title": "Dental Assisting X Ray Class CPR Class - Rosevilledental",
+      "htmlPath": "snapshot/live/html/home.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/home.json",
+      "visualBaselines": {
+        "desktop": "tests/baselines/live/visual/home-desktop.png",
+        "mobile": "tests/baselines/live/visual/home-mobile.png"
+      },
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-reviews .carousel-viewport"
+        },
+        {
+          "type": "selector",
+          "value": ".widget-reviews .carousel-arrow"
+        },
+        {
+          "type": "selector",
+          "value": ".widget-reviews .carousel-dots"
+        },
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "registration-404",
+      "route": "/registration",
+      "sourcePath": "/registration",
+      "aliases": [],
+      "status": 404,
+      "title": "404 Not Found",
+      "htmlPath": "snapshot/live/html/registration-404.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/registration-404.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": "#membership140625-utility-menu"
+        },
+        {
+          "type": "selector",
+          "value": "#bs-9 [tabindex='0']"
+        },
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "dental-assisting-program",
+      "route": "/dental-assisting-program",
+      "sourcePath": "/dental-assisting-program",
+      "aliases": [],
+      "status": 200,
+      "title": "Dental Assisting Program",
+      "htmlPath": "snapshot/live/html/dental-assisting-program.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/dental-assisting-program.json",
+      "visualBaselines": {
+        "desktop": "tests/baselines/live/visual/dental-assisting-program-desktop.png",
+        "mobile": "tests/baselines/live/visual/dental-assisting-program-mobile.png"
+      },
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": "#membership140625-utility-menu"
+        },
+        {
+          "type": "selector",
+          "value": "#bs-9 [tabindex='0']"
+        },
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "front-office-program",
+      "route": "/front-office-program",
+      "sourcePath": "/front-office-program",
+      "aliases": [],
+      "status": 200,
+      "title": "Front Office Program | Roseville Dental Academy",
+      "htmlPath": "snapshot/live/html/front-office-program.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/front-office-program.json",
+      "visualBaselines": {
+        "desktop": "tests/baselines/live/visual/front-office-program-desktop.png",
+        "mobile": "tests/baselines/live/visual/front-office-program-mobile.png"
+      },
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "faqs-1",
+      "route": "/faqs-1",
+      "sourcePath": "/faqs-1",
+      "aliases": [],
+      "status": 200,
+      "title": "Dental Assisting Program FAQs - Roseville Dental Academy",
+      "htmlPath": "snapshot/live/html/faqs-1.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/faqs-1.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "meet-the-instructors",
+      "route": "/meet-the-instructors",
+      "sourcePath": "/meet-the-instructors",
+      "aliases": [],
+      "status": 200,
+      "title": "Meet the Instructors | rosevilledental",
+      "htmlPath": "snapshot/live/html/meet-the-instructors.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/meet-the-instructors.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "photos",
+      "route": "/photos",
+      "sourcePath": "/photos",
+      "aliases": [],
+      "status": 200,
+      "title": "Photos",
+      "htmlPath": "snapshot/live/html/photos.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/photos.json",
+      "visualBaselines": {
+        "desktop": "tests/baselines/live/visual/photos-desktop.png",
+        "mobile": "tests/baselines/live/visual/photos-mobile.png"
+      },
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "resume-portal",
+      "route": "/resume-portal-dr%2Foms-only",
+      "sourcePath": "/resume-portal-dr%2Foms-only",
+      "aliases": [
+        "/resume-portal-dr-oms-only",
+        "/resume-portal-dr/oms-only"
+      ],
+      "status": 200,
+      "title": "Login",
+      "htmlPath": "snapshot/live/html/resume-portal.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/resume-portal.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "bls-cpr-1",
+      "route": "/bls%2Fcpr-1",
+      "sourcePath": "/bls%2Fcpr-1",
+      "aliases": [
+        "/bls-cpr-1",
+        "/bls/cpr-1"
+      ],
+      "status": 200,
+      "title": "BLS CPR Training for Healthcare Providers",
+      "htmlPath": "snapshot/live/html/bls-cpr-1.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/bls-cpr-1.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "infection-control",
+      "route": "/infection-control",
+      "sourcePath": "/infection-control",
+      "aliases": [],
+      "status": 200,
+      "title": "Infection Control",
+      "htmlPath": "snapshot/live/html/infection-control.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/infection-control.json",
+      "visualBaselines": {
+        "desktop": "tests/baselines/live/visual/infection-control-desktop.png",
+        "mobile": "tests/baselines/live/visual/infection-control-mobile.png"
+      },
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "radiation-safety",
+      "route": "/radiation-safety",
+      "sourcePath": "/radiation-safety",
+      "aliases": [],
+      "status": 200,
+      "title": "Radiation Safety Course for Dental Professionals",
+      "htmlPath": "snapshot/live/html/radiation-safety.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/radiation-safety.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "coronal-polish",
+      "route": "/coronal-polish",
+      "sourcePath": "/coronal-polish",
+      "aliases": [],
+      "status": 200,
+      "title": "Coronal Polish",
+      "htmlPath": "snapshot/live/html/coronal-polish.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/coronal-polish.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "sealants",
+      "route": "/sealants",
+      "sourcePath": "/sealants",
+      "aliases": [],
+      "status": 200,
+      "title": "Sealants",
+      "htmlPath": "snapshot/live/html/sealants.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/sealants.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "m-login",
+      "route": "/m/login",
+      "sourcePath": "/m/login",
+      "aliases": [],
+      "status": 200,
+      "title": "Login",
+      "htmlPath": "snapshot/live/html/m-login.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/m-login.json",
+      "visualBaselines": {
+        "desktop": "tests/baselines/live/visual/m-login-desktop.png",
+        "mobile": "tests/baselines/live/visual/m-login-mobile.png"
+      },
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "m-create-account",
+      "route": "/m/create-account",
+      "sourcePath": "/m/create-account",
+      "aliases": [],
+      "status": 200,
+      "title": "Create Account",
+      "htmlPath": "snapshot/live/html/m-create-account.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/m-create-account.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "m-create",
+      "route": "/m/create",
+      "sourcePath": "/m/create",
+      "aliases": [],
+      "status": 200,
+      "title": "Set your password",
+      "htmlPath": "snapshot/live/html/m-create.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/m-create.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "m-reset",
+      "route": "/m/reset",
+      "sourcePath": "/m/reset",
+      "aliases": [],
+      "status": 200,
+      "title": "Reset your password",
+      "htmlPath": "snapshot/live/html/m-reset.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/m-reset.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "m-bookings",
+      "route": "/m/bookings",
+      "sourcePath": "/m/bookings",
+      "aliases": [],
+      "status": 200,
+      "title": "Login",
+      "htmlPath": "snapshot/live/html/m-bookings.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/m-bookings.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    },
+    {
+      "id": "m-account",
+      "route": "/m/account",
+      "sourcePath": "/m/account",
+      "aliases": [],
+      "status": 200,
+      "title": "Login",
+      "htmlPath": "snapshot/live/html/m-account.html",
+      "assetRoot": "/__live",
+      "contentBaselinePath": "tests/baselines/live/content/m-account.json",
+      "visualBaselines": {},
+      "visualMasks": [
+        {
+          "type": "selector",
+          "value": ".widget-trustedsite"
+        }
+      ]
+    }
+  ]
+}

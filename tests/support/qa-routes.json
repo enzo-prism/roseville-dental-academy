@@ -1,0 +1,250 @@
+{
+  "routes": [
+    {
+      "label": "home",
+      "livePath": "/",
+      "localPath": "/",
+      "expectedStatus": 200,
+      "expectedTitle": "Dental Assisting X Ray Class CPR Class - Rosevilledental",
+      "smokeText": "ROSEVILLE DENTAL ACADEMY"
+    },
+    {
+      "label": "registration-404",
+      "livePath": "/registration",
+      "localPath": "/registration",
+      "expectedStatus": 404,
+      "expectedTitle": "404 Not Found",
+      "smokeText": "File not found (404 error)"
+    },
+    {
+      "label": "dental-assisting-program",
+      "livePath": "/dental-assisting-program",
+      "localPath": "/dental-assisting-program",
+      "expectedStatus": 200,
+      "expectedTitle": "Dental Assisting Program",
+      "smokeText": "DENTAL ASSISTING TRAINING PROGRAM"
+    },
+    {
+      "label": "front-office-program",
+      "livePath": "/front-office-program",
+      "localPath": "/front-office-program",
+      "expectedStatus": 200,
+      "expectedTitle": "Front Office Program | Roseville Dental Academy",
+      "smokeText": "FRONT OFFICE PROGRAM"
+    },
+    {
+      "label": "faqs-1",
+      "livePath": "/faqs-1",
+      "localPath": "/faqs-1",
+      "expectedStatus": 200,
+      "expectedTitle": "Dental Assisting Program FAQs - Roseville Dental Academy",
+      "smokeText": "Dental Assisting Program FAQs"
+    },
+    {
+      "label": "meet-the-instructors",
+      "livePath": "/meet-the-instructors",
+      "localPath": "/meet-the-instructors",
+      "expectedStatus": 200,
+      "expectedTitle": "Meet the Instructors | rosevilledental",
+      "smokeText": "WELCOME"
+    },
+    {
+      "label": "photos",
+      "livePath": "/photos",
+      "localPath": "/photos",
+      "expectedStatus": 200,
+      "expectedTitle": "Photos",
+      "smokeText": "Photo Gallery"
+    },
+    {
+      "label": "resume-portal",
+      "livePath": "/resume-portal-dr%2Foms-only",
+      "localPath": "/resume-portal-dr%2Foms-only",
+      "expectedStatus": 200,
+      "expectedTitle": "Login",
+      "smokeText": "ACCOUNT SIGN IN"
+    },
+    {
+      "label": "bls-cpr-1",
+      "livePath": "/bls%2Fcpr-1",
+      "localPath": "/bls%2Fcpr-1",
+      "expectedStatus": 200,
+      "expectedTitle": "BLS CPR Training for Healthcare Providers",
+      "smokeText": "BLS CPR Training for Healthcare Providers"
+    },
+    {
+      "label": "infection-control",
+      "livePath": "/infection-control",
+      "localPath": "/infection-control",
+      "expectedStatus": 200,
+      "expectedTitle": "Infection Control",
+      "smokeText": "Infection Control"
+    },
+    {
+      "label": "radiation-safety",
+      "livePath": "/radiation-safety",
+      "localPath": "/radiation-safety",
+      "expectedStatus": 200,
+      "expectedTitle": "Radiation Safety Course for Dental Professionals",
+      "smokeText": "Radiation Safety Course"
+    },
+    {
+      "label": "coronal-polish",
+      "livePath": "/coronal-polish",
+      "localPath": "/coronal-polish",
+      "expectedStatus": 200,
+      "expectedTitle": "Coronal Polish",
+      "smokeText": "Coronal Polish"
+    },
+    {
+      "label": "sealants",
+      "livePath": "/sealants",
+      "localPath": "/sealants",
+      "expectedStatus": 200,
+      "expectedTitle": "Sealants",
+      "smokeText": "Sealants"
+    },
+    {
+      "label": "m-login",
+      "livePath": "/m/login",
+      "localPath": "/m/login",
+      "expectedStatus": 200,
+      "expectedTitle": "Login",
+      "smokeText": "ACCOUNT SIGN IN",
+      "auth": true
+    },
+    {
+      "label": "m-create-account",
+      "livePath": "/m/create-account",
+      "localPath": "/m/create-account",
+      "expectedStatus": 200,
+      "expectedTitle": "Create Account",
+      "smokeText": "Create Account",
+      "auth": true
+    },
+    {
+      "label": "m-create",
+      "livePath": "/m/create",
+      "localPath": "/m/create",
+      "expectedStatus": 200,
+      "expectedTitle": "Set your password",
+      "smokeText": "SET PASSWORD",
+      "auth": true
+    },
+    {
+      "label": "m-reset",
+      "livePath": "/m/reset",
+      "localPath": "/m/reset",
+      "expectedStatus": 200,
+      "expectedTitle": "Reset your password",
+      "smokeText": "RESET PASSWORD",
+      "auth": true
+    },
+    {
+      "label": "m-bookings",
+      "livePath": "/m/bookings",
+      "localPath": "/m/bookings",
+      "expectedStatus": 200,
+      "expectedTitle": "Login",
+      "smokeText": "ACCOUNT SIGN IN",
+      "auth": true
+    },
+    {
+      "label": "m-account",
+      "livePath": "/m/account",
+      "localPath": "/m/account",
+      "expectedStatus": 200,
+      "expectedTitle": "Login",
+      "smokeText": "ACCOUNT SIGN IN",
+      "auth": true
+    }
+  ],
+  "aliases": [
+    {
+      "label": "bls-cpr-1-alias",
+      "aliasPath": "/bls-cpr-1",
+      "canonicalPath": "/bls%2Fcpr-1"
+    },
+    {
+      "label": "resume-portal-alias",
+      "aliasPath": "/resume-portal-dr-oms-only",
+      "canonicalPath": "/resume-portal-dr%2Foms-only"
+    }
+  ],
+  "visualRoutes": [
+    {
+      "label": "home",
+      "livePath": "/",
+      "localPath": "/"
+    },
+    {
+      "label": "dental-assisting-program",
+      "livePath": "/dental-assisting-program",
+      "localPath": "/dental-assisting-program"
+    },
+    {
+      "label": "front-office-program",
+      "livePath": "/front-office-program",
+      "localPath": "/front-office-program"
+    },
+    {
+      "label": "infection-control",
+      "livePath": "/infection-control",
+      "localPath": "/infection-control"
+    },
+    {
+      "label": "photos",
+      "livePath": "/photos",
+      "localPath": "/photos"
+    },
+    {
+      "label": "m-login",
+      "livePath": "/m/login",
+      "localPath": "/m/login"
+    }
+  ],
+  "uxDevices": [
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844,
+      "maxStickyHeight": 108
+    },
+    {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024,
+      "maxStickyHeight": 112
+    },
+    {
+      "name": "desktop",
+      "width": 1280,
+      "height": 900,
+      "maxStickyHeight": 110
+    }
+  ],
+  "visualViewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 2200
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "primaryNavLabels": [
+    "Home",
+    "BLS/CPR",
+    "Infection Control",
+    "Coronal Polish",
+    "Radiation Safety"
+  ],
+  "coreWarmRoutes": [
+    "/",
+    "/dental-assisting-program",
+    "/infection-control",
+    "/m/login",
+    "/registration"
+  ]
+}

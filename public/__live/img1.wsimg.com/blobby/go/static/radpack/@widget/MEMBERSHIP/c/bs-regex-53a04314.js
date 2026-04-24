@@ -1,0 +1,2 @@
+define("@widget/MEMBERSHIP/c/bs-regex-53a04314.js",["exports"],(function(e){"use strict";e.E=/^(([^<>()[\].,;:\s@"]+(.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/i,e.q=function(e){return"^(?:.*[&\\?]"+encodeURIComponent(e).replace(/[.+*]/g,"\\$&")+"(?:\\=([^&]*))?)?.*$"}})),"undefined"!=typeof window&&(window.global=window);
+//# sourceMappingURL=bs-regex-53a04314.js.map

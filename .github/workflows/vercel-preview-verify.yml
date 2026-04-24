@@ -1,0 +1,70 @@
+name: Vercel Preview Verify
+
+on:
+  deployment_status:
+
+concurrency:
+  group: vercel-preview-${{ github.event.deployment_status.deployment.id || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-preview:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment_url != '' && contains(github.event.deployment_status.environment_url, 'vercel.app')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Wait for preview healthcheck
+        env:
+          PREVIEW_URL: ${{ github.event.deployment_status.environment_url }}
+        run: |
+          for attempt in $(seq 1 40); do
+            status="$(curl -L -s -o /dev/null -w '%{http_code}' "${PREVIEW_URL%/}/manifest.webmanifest" || true)"
+            if [ "$status" = "200" ]; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Preview did not become ready at ${PREVIEW_URL}" >&2
+          exit 1
+
+      - name: Run preview verification
+        env:
+          BASELINE_DIR: tests/baselines/live
+          CI: "true"
+          PREVIEW_URL: ${{ github.event.deployment_status.environment_url }}
+        run: pnpm test:preview
+
+      - name: Upload preview QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vercel-preview-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore

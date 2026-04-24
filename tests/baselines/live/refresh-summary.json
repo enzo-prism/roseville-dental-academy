@@ -1,0 +1,82 @@
+{
+  "generatedAt": "2026-04-23T23:15:55.284Z",
+  "liveOrigin": "https://rosevilledentalacademy.com",
+  "results": [
+    {
+      "id": "home",
+      "status": "updated"
+    },
+    {
+      "id": "registration-404",
+      "status": "updated"
+    },
+    {
+      "id": "dental-assisting-program",
+      "status": "updated"
+    },
+    {
+      "id": "front-office-program",
+      "status": "updated"
+    },
+    {
+      "id": "faqs-1",
+      "status": "updated"
+    },
+    {
+      "id": "meet-the-instructors",
+      "status": "updated"
+    },
+    {
+      "id": "photos",
+      "status": "updated"
+    },
+    {
+      "id": "resume-portal",
+      "status": "updated"
+    },
+    {
+      "id": "bls-cpr-1",
+      "status": "updated"
+    },
+    {
+      "id": "infection-control",
+      "status": "updated"
+    },
+    {
+      "id": "radiation-safety",
+      "status": "updated"
+    },
+    {
+      "id": "coronal-polish",
+      "status": "updated"
+    },
+    {
+      "id": "sealants",
+      "status": "updated"
+    },
+    {
+      "id": "m-login",
+      "status": "updated"
+    },
+    {
+      "id": "m-create-account",
+      "status": "updated"
+    },
+    {
+      "id": "m-create",
+      "status": "updated"
+    },
+    {
+      "id": "m-reset",
+      "status": "updated"
+    },
+    {
+      "id": "m-bookings",
+      "status": "updated"
+    },
+    {
+      "id": "m-account",
+      "status": "updated"
+    }
+  ]
+}
