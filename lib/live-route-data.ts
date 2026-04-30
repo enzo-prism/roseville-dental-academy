@@ -65,6 +65,32 @@ const EXCLUDED_WIDGET_CLASS_PREFIXES = [
 const DIRECT_TRUSTEDSITE_BADGE_REGEX =
   /<div\b(?=[^>]*(?:\bid=(["'])trustedsite-tm-image\1|\btitle=(["'])TrustedSite Certified\2))[^>]*>/gi;
 
+const GENERATED_IMAGE_REPLACEMENTS: Array<{
+  pattern: RegExp;
+  replacement: string;
+}> = [
+  {
+    pattern:
+      /\/__live\/img1\.wsimg\.com\/isteam\/ip\/f45bc53a-68c0-4338-bd3f-fe6fbc400a09\/Typodont__960e7dba70\.jpg/g,
+    replacement: "/assets/generated/roseville/homepage-typodont-training.jpg",
+  },
+  {
+    pattern:
+      /\/__live\/img1\.wsimg\.com\/isteam\/ip\/f45bc53a-68c0-4338-bd3f-fe6fbc400a09\/n955pic__c0ae03990d\.jpg/g,
+    replacement: "/assets/generated/roseville/homepage-n95-fit-testing.jpg",
+  },
+  {
+    pattern:
+      /\/__live\/img1\.wsimg\.com\/isteam\/ip\/f45bc53a-68c0-4338-bd3f-fe6fbc400a09\/guided%(?:20|2520)implant%(?:20|2520)surgery%(?:20|2520)picture__f5e7136df7\.jpg/g,
+    replacement: "/assets/generated/roseville/homepage-implant-coaching.jpg",
+  },
+  {
+    pattern:
+      /\/__live\/img1\.wsimg\.com\/isteam\/getty\/2166302030\/:\/[^"'\s]+?\.jpg/g,
+    replacement: "/assets/generated/roseville/front-office-insurance-documents.jpg",
+  },
+];
+
 function routeDescription(route: ManifestRoute) {
   if (route.route === "/") {
     return "Roseville Dental Academy training for dental assisting, x-ray, CPR, infection control, coronal polish, sealants, and front office skills.";
@@ -366,18 +392,65 @@ function stripDirectTrustedSiteBadges(html: string) {
   return stripMatchedDivs(html, DIRECT_TRUSTEDSITE_BADGE_REGEX);
 }
 
+function getHtmlAttribute(tag: string, name: string) {
+  const match = tag.match(new RegExp(`\\s${name}="([^"]*)"`, "i"));
+  return match?.[1] ?? "";
+}
+
+function removeHtmlAttribute(tag: string, name: string) {
+  return tag.replace(new RegExp(`\\s${name}="[^"]*"`, "gi"), "");
+}
+
+function setHtmlAttribute(tag: string, name: string, value: string) {
+  const escapedValue = value.replace(/"/g, "&quot;");
+  const attributePattern = new RegExp(`(\\s${name}=)"[^"]*"`, "i");
+
+  if (attributePattern.test(tag)) {
+    return tag.replace(attributePattern, `$1"${escapedValue}"`);
+  }
+
+  return tag.replace(/>$/, ` ${name}="${escapedValue}">`);
+}
+
+function isPlaceholderImageSrc(value: string) {
+  return (
+    /^data:image\/gif;base64/i.test(value) ||
+    /transparent_placeholder/i.test(value)
+  );
+}
+
+function promoteLazyImageTag(tag: string) {
+  const lazySrc = getHtmlAttribute(tag, "data-srclazy");
+  const lazySrcSet = getHtmlAttribute(tag, "data-srcsetlazy");
+  const currentSrc = getHtmlAttribute(tag, "src");
+  const currentSrcSet = getHtmlAttribute(tag, "srcset");
+  let promotedTag = tag;
+
+  if (lazySrc && (!currentSrc || isPlaceholderImageSrc(currentSrc))) {
+    promotedTag = setHtmlAttribute(promotedTag, "src", lazySrc);
+  }
+
+  if (lazySrcSet.trim()) {
+    promotedTag = setHtmlAttribute(promotedTag, "srcset", lazySrcSet);
+  } else if (currentSrcSet && isPlaceholderImageSrc(currentSrcSet)) {
+    promotedTag = removeHtmlAttribute(promotedTag, "srcset");
+  }
+
+  return promotedTag;
+}
+
 function promoteLazyImages(html: string) {
   return html
-    .replace(
-      /(<img\b[^>]*?)\s+src="data:image\/gif;base64,[^"]*"([^>]*?\sdata-srclazy="([^"]+)"[^>]*>)/gi,
-      (_match, before: string, after: string, lazySrc: string) => `${before} src="${lazySrc}"${after}`,
-    )
-    .replace(
-      /(<img\b[^>]*?)\s+srcset="[^"]*transparent_placeholder[^"]*"([^>]*?\sdata-srcsetlazy="([^"]*)"[^>]*>)/gi,
-      (_match, before: string, after: string, lazySrcSet: string) =>
-        lazySrcSet.trim() ? `${before} srcset="${lazySrcSet}"${after}` : `${before}${after}`,
-    )
+    .replace(/<source\b[^>]*>/gi, promoteLazyImageTag)
+    .replace(/<img\b[^>]*>/gi, promoteLazyImageTag)
     .replace(/\sdata-lazyimg="true"/gi, "");
+}
+
+function applyGeneratedImageReplacements(html: string) {
+  return GENERATED_IMAGE_REPLACEMENTS.reduce(
+    (output, { pattern, replacement }) => output.replace(pattern, replacement),
+    html,
+  );
 }
 
 function sanitizeSnapshotBody(bodyHtml: string) {
@@ -386,7 +459,7 @@ function sanitizeSnapshotBody(bodyHtml: string) {
   const widgetFreeHtml = stripExcludedWidgets(iframeFreeHtml);
   const badgeFreeHtml = stripDirectTrustedSiteBadges(widgetFreeHtml);
 
-  return promoteLazyImages(badgeFreeHtml).trim();
+  return applyGeneratedImageReplacements(promoteLazyImages(badgeFreeHtml)).trim();
 }
 
 async function loadSnapshotHtml(htmlPath: string) {

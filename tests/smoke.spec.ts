@@ -232,6 +232,129 @@ test("contact us button replaces the shopping and profile utility icons", async 
   expect(mismatches).toEqual([]);
 });
 
+test("key public pages render full-page image slots after lazy promotion", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const checkedRoutes = ["/", "/front-office-program"];
+  const results: Array<{
+    blank: Array<{ aid: string; complete: boolean; height: number; index: number; naturalHeight: number; naturalWidth: number; src: string; width: number }>;
+    broken: Array<{ aid: string; complete: boolean; height: number; index: number; naturalHeight: number; naturalWidth: number; src: string; width: number }>;
+    largeImageCount: number;
+    route: string;
+  }> = [];
+
+  for (const routePath of checkedRoutes) {
+    await page.goto(`${localOrigin}${routePath}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await page.waitForLoadState("load").catch(() => undefined);
+
+    for (let index = 0; index < 60; index += 1) {
+      const reachedBottom = await page.evaluate(() => {
+        window.scrollBy(0, Math.max(500, Math.floor(window.innerHeight * 0.85)));
+        return window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
+      });
+
+      if (reachedBottom) {
+        break;
+      }
+
+      await page.waitForTimeout(100);
+    }
+
+    await page.waitForTimeout(1_000);
+
+    const result = await page.evaluate(async () => {
+      const images = Array.from(document.images);
+
+      await Promise.all(
+        images.map(
+          (image) =>
+            new Promise<void>((resolvePromise) => {
+              if (image.complete) {
+                resolvePromise();
+                return;
+              }
+
+              const settle = () => resolvePromise();
+              image.addEventListener("load", settle, { once: true });
+              image.addEventListener("error", settle, { once: true });
+              window.setTimeout(settle, 3_000);
+            }),
+        ),
+      );
+
+      const largeImages = images
+        .map((image, index) => {
+          const rect = image.getBoundingClientRect();
+          const src = image.currentSrc || image.src || image.getAttribute("src") || "";
+
+          return {
+            aid: image.getAttribute("data-aid") || image.alt || `image-${index}`,
+            complete: image.complete,
+            height: Math.round(rect.height),
+            index,
+            naturalHeight: image.naturalHeight,
+            naturalWidth: image.naturalWidth,
+            src,
+            width: Math.round(rect.width),
+          };
+        })
+        .filter((image) => image.width > 100 && image.height > 100);
+
+      return {
+        blank: largeImages.filter(
+          (image) =>
+            image.naturalWidth <= 1 ||
+            /^data:image\/gif/i.test(image.src) ||
+            /transparent_placeholder/i.test(image.src),
+        ),
+        broken: largeImages.filter((image) => !image.complete || image.naturalWidth === 0),
+        largeImageCount: largeImages.length,
+      };
+    });
+
+    results.push({
+      ...result,
+      route: routePath,
+    });
+  }
+
+  const mismatches: string[] = [];
+
+  const routesWithBlankImages = results.filter((result) => result.blank.length > 0);
+  const routesWithBrokenImages = results.filter((result) => result.broken.length > 0);
+
+  if (routesWithBlankImages.length > 0) {
+    mismatches.push(
+      `blank large images: ${routesWithBlankImages
+        .map((result) => `${result.route}: ${result.blank.map((image) => image.aid).join(", ")}`)
+        .join("; ")}`,
+    );
+  }
+
+  if (routesWithBrokenImages.length > 0) {
+    mismatches.push(
+      `broken large images: ${routesWithBrokenImages
+        .map((result) => `${result.route}: ${result.broken.map((image) => image.aid).join(", ")}`)
+        .join("; ")}`,
+    );
+  }
+
+  smokeSummary.push({
+    results,
+    routes: checkedRoutes,
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "key-public-page-full-page-images",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "key-public-page-full-page-images-summary.json", {
+      mismatches,
+      results,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("elevenlabs widget is embedded on every page shell", async ({ request }, testInfo) => {
   const checkedRoutes = ["/", "/contact", "/m/login"];
   const results: Array<Record<string, unknown>> = [];
