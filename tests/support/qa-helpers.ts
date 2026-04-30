@@ -134,6 +134,8 @@ function normalizeAssetHref(rawHref: string, baseUrl: string) {
   try {
     const resolved = new URL(rawHref, baseUrl);
 
+    resolved.searchParams.delete("dpl");
+
     if (resolved.origin === localUrl.origin) {
       return `${resolved.pathname}${resolved.search}${resolved.hash}`;
     }
