@@ -40,6 +40,9 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Install visual diff dependencies
+        run: python3 -m pip install --user Pillow
+
       - name: Run frozen-clone release gate
         env:
           BASELINE_DIR: tests/baselines/live
