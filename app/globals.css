@@ -657,8 +657,19 @@ textarea {
   pointer-events: none;
   position: fixed;
   right: max(24px, env(safe-area-inset-right));
+  transition:
+    height 180ms ease,
+    width 180ms ease,
+    right 180ms ease,
+    bottom 180ms ease;
   width: min(320px, calc(100vw - 48px));
   z-index: var(--rda-shell-z-widget);
+}
+
+.live-elevenlabs-widget.is-expanded {
+  height: min(620px, calc(100vh - 48px));
+  height: min(620px, calc(100svh - 48px));
+  width: min(420px, calc(100vw - 48px));
 }
 
 .live-elevenlabs-widget elevenlabs-convai {
@@ -729,6 +740,14 @@ textarea {
     width: min(320px, calc(100vw - 28px));
   }
 
+  .live-elevenlabs-widget.is-expanded {
+    bottom: 0;
+    height: min(620px, calc(100vh - 112px));
+    height: min(620px, calc(100svh - 112px));
+    right: 0;
+    width: 100vw;
+  }
+
   .live-elevenlabs-widget elevenlabs-convai {
     height: 100% !important;
     max-height: none !important;
@@ -742,5 +761,13 @@ textarea {
     left: 12px;
     max-width: none;
     right: 12px;
+  }
+
+  .rda-live-shell:has(.live-elevenlabs-widget.is-expanded) .rda-cookie-banner,
+  .rda-live-shell:has(.live-elevenlabs-widget.is-expanded)
+    [data-aid="FOOTER_COOKIE_BANNER_RENDERED"] {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(16px);
   }
 }

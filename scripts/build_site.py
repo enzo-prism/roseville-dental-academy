@@ -1280,7 +1280,7 @@ def homepage() -> str:
             [
                 "Our dental assisting program is designed to be completed in just 9 weeks. The program prepares students for an entry-level position in a dental office.",
                 "All lectures and hands on learning will be done in our office at Waikiki Dental. We keep class sizes small for a better teacher to student focus. Our goal is to set students up for success by teaching you exactly what the staff at the dental office will expect you to know.",
-                "Our accelerated program totals 9 weeks (210 hours) of combined class, clinical, and homework. Classes generally meet on either Mondays or Friday with one day of assigned externship. Due to limited space all sales are final and no refunds will be issued.",
+                "Our accelerated program totals 9 weeks (210 hours) of combined class, clinical, and homework. Classes generally meet on either Mondays or Friday with one day of assigned externship, helping students connect classroom skills to real office workflow.",
             ],
             image=IMAGE["about"],
             image_alt="Dental assisting classroom",
@@ -1324,7 +1324,7 @@ def homepage() -> str:
                 {
                     "icon": "heart",
                     "title": "BLS Certification Course - Initial or Renewal",
-                    "copy": "$85. April 4th, 2026. Due to limited space all sales are final and no refunds will be issued.",
+                    "copy": "$85. April 4th, 2026. Initial and renewal BLS training with hands-on CPR, AED, ventilation, and in-person skills evaluation.",
                     "cta": "Learn more",
                     "href": "/bls-cpr-1/",
                     "image": IMAGE["bls"],
@@ -1340,7 +1340,7 @@ def homepage() -> str:
                 {
                     "icon": "scan",
                     "title": "Radiation Safety Course",
-                    "copy": "$695. Due to limited space all sales are final and no refunds will be issued.",
+                    "copy": "$695. Board-aligned radiography training covering x-ray safety, digital imaging, manikin work, and clinical patient requirements.",
                     "cta": "Learn more",
                     "href": "/radiation-safety/",
                     "image": IMAGE["radiation"],
@@ -1348,7 +1348,7 @@ def homepage() -> str:
                 {
                     "icon": "spark-star",
                     "title": "Coronal Polish Course",
-                    "copy": "$500. April 11th, 2026. Due to limited space all sales are final and no refunds will be issued.",
+                    "copy": "$500. April 11th, 2026. Hands-on coronal polishing instruction with didactic, lab, manikin, and clinical patient requirements.",
                     "cta": "Learn more",
                     "href": "/coronal-polish/",
                     "image": IMAGE["coronal"],
@@ -1931,6 +1931,7 @@ def course_page(
     requirements_copy: str,
     requirement_groups: list[dict[str, list[str] | str]],
     registration_course: str | None = None,
+    registration_note: str = "Call to confirm prerequisites, current class date, and registration steps before reserving your seat.",
 ) -> str:
     body = []
     hero_buttons = [("Call to register", "tel:9168889821", "button")]
@@ -1972,7 +1973,7 @@ def course_page(
             secondary_title="Registration",
             secondary_copy=[
                 "Please call 916-888-9821 for registration and scheduling.",
-                "Due to limited space all sales are final and no refunds will be issued.",
+                registration_note,
             ],
             secondary_buttons=secondary_buttons,
             icon_name="clipboard-check",
@@ -2372,6 +2373,7 @@ PAGES = {
             },
         ],
         registration_course="bls-cpr",
+        registration_note="Call to confirm whether you need the initial or renewal session and reserve the correct in-person skills evaluation date.",
     ),
     "infection-control": lambda: course_page(
         slug="infection-control",
@@ -2412,6 +2414,7 @@ PAGES = {
             },
         ],
         registration_course="infection-control",
+        registration_note="Call to confirm prerequisite documents, current class date, and seat availability for the 8-hour Infection Control course.",
     ),
     "radiation-safety": lambda: course_page(
         slug="radiation-safety",
@@ -2466,6 +2469,7 @@ PAGES = {
             },
         ],
         registration_course="radiation-safety",
+        registration_note="Call to confirm prerequisites, patient requirements, current class date, and registration steps before reserving your seat.",
     ),
     "coronal-polish": lambda: course_page(
         slug="coronal-polish",
@@ -2516,6 +2520,7 @@ PAGES = {
                 ],
             },
         ],
+        registration_note="Call to confirm prerequisites, patient planning, current class date, and registration steps before reserving your seat.",
     ),
     "sealants": lambda: course_page(
         slug="sealants",
@@ -2571,6 +2576,7 @@ PAGES = {
                 ],
             },
         ],
+        registration_note="Call to confirm prerequisites, patient requirements, current class date, and registration steps for the Pit and Fissure Sealants course.",
     ),
     "m/login": lambda: auth_page(
         slug="m/login",

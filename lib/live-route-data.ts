@@ -91,6 +91,18 @@ const GENERATED_IMAGE_REPLACEMENTS: Array<{
   },
 ];
 
+const HOMEPAGE_REFUND_POLICY_COPY_PATTERN =
+  /Due to limited space all sales are final and no refunds will be issued\.?(?:&nbsp;)?/;
+
+const HOMEPAGE_COURSE_COPY_REPLACEMENTS = [
+  "Initial and renewal BLS training for healthcare providers who need hands-on CPR, AED, ventilation, and team-resuscitation practice with an in-person skills evaluation.",
+  "California Dental Board-aligned infection control training covering required precautions, clinical safety habits, and compliance expectations for dental students and professionals.",
+  "Board-aligned radiography training covering x-ray safety, digital imaging, manikin practice, written testing, and supervised clinical patient requirements.",
+  "Hands-on coronal polishing instruction with didactic, laboratory, manikin, and clinical patient requirements for eligible dental assistants.",
+  "Sealant certification training for qualified dental assistants and RDAs, including manikin practice, written testing, and supervised clinical patient requirements.",
+  "Students move through a focused 210-hour schedule with class, clinical practice, homework, and an assigned externship day that connects classroom skills to real office workflow.",
+] as const;
+
 function routeDescription(route: ManifestRoute) {
   if (route.route === "/") {
     return "Roseville Dental Academy training for dental assisting, x-ray, CPR, infection control, coronal polish, sealants, and front office skills.";
@@ -453,6 +465,13 @@ function applyGeneratedImageReplacements(html: string) {
   );
 }
 
+function applyHomepageCourseCopyReplacements(html: string) {
+  return HOMEPAGE_COURSE_COPY_REPLACEMENTS.reduce(
+    (output, replacement) => output.replace(HOMEPAGE_REFUND_POLICY_COPY_PATTERN, replacement),
+    html,
+  );
+}
+
 function sanitizeSnapshotBody(bodyHtml: string) {
   const scriptFreeHtml = stripScriptTags(bodyHtml);
   const iframeFreeHtml = stripIframes(scriptFreeHtml);
@@ -482,10 +501,12 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
     route.description ||
     FALLBACK_DESCRIPTION;
   const styleBlocks = extractStyleBlocks(headHtml);
+  const sanitizedBodyHtml = sanitizeSnapshotBody(bodyHtml);
 
   return {
     bodyClass,
-    bodyHtml: sanitizeSnapshotBody(bodyHtml),
+    bodyHtml:
+      route.route === "/" ? applyHomepageCourseCopyReplacements(sanitizedBodyHtml) : sanitizedBodyHtml,
     bodyScripts: [],
     description,
     headScripts: [],

@@ -232,6 +232,48 @@ test("contact us button replaces the shopping and profile utility icons", async 
   expect(mismatches).toEqual([]);
 });
 
+test("homepage course cards use unique descriptive copy", async ({ page }, testInfo) => {
+  const snapshot = await captureSnapshot(page, `${localOrigin}/`, {
+    viewport: { width: 1280, height: 900 },
+  });
+  const badRefundCopy = "Due to limited space all sales are final and no refunds will be issued";
+  const requiredCourseCopy = [
+    "Initial and renewal BLS training for healthcare providers",
+    "California Dental Board-aligned infection control training",
+    "Board-aligned radiography training covering x-ray safety",
+    "Hands-on coronal polishing instruction",
+    "Sealant certification training for qualified dental assistants and RDAs",
+    "focused 210-hour schedule with class, clinical practice, homework",
+  ];
+  const mismatches: string[] = [];
+
+  if (snapshot.bodyText.includes(badRefundCopy)) {
+    mismatches.push("homepage still renders the repeated refund policy copy");
+  }
+
+  for (const phrase of requiredCourseCopy) {
+    if (!snapshot.bodyText.includes(phrase)) {
+      mismatches.push(`homepage missing unique course copy: ${phrase}`);
+    }
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "homepage-course-copy",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "homepage-course-copy-summary.json", {
+      bodyText: snapshot.bodyText,
+      mismatches,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("key public pages render full-page image slots after lazy promotion", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const checkedRoutes = ["/", "/front-office-program"];

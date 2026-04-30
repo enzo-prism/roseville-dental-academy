@@ -236,8 +236,8 @@ The shape language is squared and utilitarian.
 - **Primary actions:** Deep teal background, white text, rectangular.
 - **Secondary actions:** White background, teal or dark text, rectangular border when needed.
 - **Footer:** Deep teal background, centered white contact/nav/social blocks.
-- **Cookie banner:** Deep teal, lower-left on desktop, raised above the ElevenLabs widget on mobile.
-- **ElevenLabs widget:** Provider embed must remain bottom-right, bounded to avoid full-page overlays, and large enough for the real pill to render without clipping.
+- **Cookie banner:** Deep teal, lower-left on desktop, raised above the collapsed ElevenLabs widget on mobile. When the assistant is expanded on mobile, temporarily hide the cookie banner so it cannot sit behind or compete with the conversation surface.
+- **ElevenLabs widget:** Provider embed must remain bottom-right and bounded to its real visual state. Collapsed state stays compact (`320px x 160px` max). Expanded state uses a larger safe panel (`420px x 620px` max on desktop, full viewport width with a `620px` height cap on mobile, and top-shell clearance on short mobile screens) so the vendor conversation, visualizer, controls, and attribution render without clipping.
 
 ## Do's and Don'ts
 

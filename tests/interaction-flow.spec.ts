@@ -25,48 +25,115 @@ test.describe("live-style interaction flows", () => {
         body: `
           class MockElevenLabsConvai extends HTMLElement {
             connectedCallback() {
-              this.style.position = "fixed";
-              this.style.inset = "0";
-              this.style.width = "100vw";
-              this.style.height = "100vh";
-              this.style.zIndex = "1000";
               if (!this.shadowRoot) {
-                const root = this.attachShadow({ mode: "open" });
-                root.innerHTML = [
-                  "<style>",
-                  ".mock-elevenlabs-overlay {",
-                  "align-items: flex-end;",
-                  "display: flex;",
-                  "inset: 32px;",
-                  "justify-content: flex-end;",
-                  "position: absolute;",
-                  "}",
-                  ".mock-elevenlabs-card {",
-                  "background: #fff;",
-                  "border-radius: 18px;",
-                  "box-sizing: border-box;",
-                  "color: #111827;",
-                  "height: 100%;",
-                  "max-width: 256px;",
-                  "overflow: hidden;",
-                  "width: 256px;",
-                  "}",
-                  ".mock-elevenlabs-row {",
-                  "align-items: center;",
-                  "box-sizing: border-box;",
-                  "display: flex;",
-                  "height: 44px;",
-                  "padding: 0 12px;",
-                  "}",
-                  "</style>",
-                  '<div class="mock-elevenlabs-overlay">',
-                  '<div class="mock-elevenlabs-card">',
-                  '<div class="mock-elevenlabs-row">Need help?</div>',
-                  '<div class="mock-elevenlabs-row">Start a call</div>',
-                  "</div>",
-                  "</div>",
-                ].join("");
+                this.attachShadow({ mode: "open" });
               }
+              this.expanded = false;
+              this.render();
+            }
+
+            render() {
+              const expandedMarkup = [
+                '<div class="mock-elevenlabs-overlay">',
+                '<div class="sheet mock-elevenlabs-sheet">',
+                '<div class="mock-elevenlabs-avatar"></div>',
+                '<textarea aria-label="Send a message..."></textarea>',
+                "</div>",
+                '<button class="mock-elevenlabs-collapse" aria-label="Collapse">⌄</button>',
+                '<p class="mock-elevenlabs-powered">Powered by ElevenAgents</p>',
+                "</div>",
+              ].join("");
+              const collapsedMarkup = [
+                '<div class="mock-elevenlabs-overlay">',
+                '<div class="mock-elevenlabs-card">',
+                '<div class="mock-elevenlabs-row">Need help?</div>',
+                '<button class="mock-elevenlabs-row">Start a call</button>',
+                "</div>",
+                "</div>",
+              ].join("");
+
+              this.shadowRoot.innerHTML = [
+                "<style>",
+                ":host { display: block; height: 100%; position: relative; width: 100%; }",
+                ".mock-elevenlabs-overlay {",
+                "align-items: flex-end;",
+                "display: flex;",
+                "inset: 32px;",
+                "justify-content: flex-end;",
+                "position: absolute;",
+                "}",
+                ".mock-elevenlabs-card, .mock-elevenlabs-sheet {",
+                "background: #fff;",
+                "border-radius: 18px;",
+                "box-sizing: border-box;",
+                "box-shadow: 0 20px 50px rgba(0, 0, 0, .18);",
+                "color: #111827;",
+                "overflow: hidden;",
+                "}",
+                ".mock-elevenlabs-card { padding: 4px; width: 256px; }",
+                ".mock-elevenlabs-row {",
+                "align-items: center;",
+                "box-sizing: border-box;",
+                "display: flex;",
+                "height: 44px;",
+                "padding: 0 12px;",
+                "}",
+                "button.mock-elevenlabs-row { border: 0; width: 100%; }",
+                ".mock-elevenlabs-sheet {",
+                "bottom: 80px;",
+                "height: calc(100% - 120px);",
+                "max-height: 560px;",
+                "min-height: 360px;",
+                "position: absolute;",
+                "right: 0;",
+                "width: min(356px, calc(100% - 64px));",
+                "}",
+                ".mock-elevenlabs-avatar {",
+                "background: linear-gradient(135deg, #9ce6e6, #2792dc);",
+                "border-radius: 999px;",
+                "height: 192px;",
+                "margin: 72px auto 0;",
+                "width: 192px;",
+                "}",
+                "textarea {",
+                "border: 1px solid #d9dee8;",
+                "border-radius: 16px;",
+                "bottom: 20px;",
+                "box-sizing: border-box;",
+                "height: 96px;",
+                "left: 16px;",
+                "padding: 16px;",
+                "position: absolute;",
+                "right: 16px;",
+                "}",
+                ".mock-elevenlabs-collapse {",
+                "background: #000;",
+                "border: 6px solid #fff;",
+                "border-radius: 999px;",
+                "bottom: 0;",
+                "color: #fff;",
+                "height: 66px;",
+                "position: absolute;",
+                "right: 0;",
+                "width: 66px;",
+                "}",
+                ".mock-elevenlabs-powered {",
+                "bottom: -32px;",
+                "font-size: 10px;",
+                "margin: 0;",
+                "opacity: .45;",
+                "position: absolute;",
+                "right: 0;",
+                "}",
+                "</style>",
+                this.expanded ? expandedMarkup : collapsedMarkup,
+              ].join("");
+
+              this.shadowRoot.querySelector("button")?.addEventListener("click", (event) => {
+                event.preventDefault();
+                this.expanded = !this.expanded;
+                this.render();
+              });
             }
           }
           customElements.define("elevenlabs-convai", MockElevenLabsConvai);
@@ -124,8 +191,107 @@ test.describe("live-style interaction flows", () => {
 
     expect(hitTestTargetsContactButton).toBeTruthy();
 
-    await contactButton.click();
-    await page.waitForURL("**/contact", { timeout: 12_000 });
+    await page.locator("elevenlabs-convai").evaluate((element) => {
+      element.shadowRoot?.querySelector<HTMLButtonElement>("button")?.click();
+    });
+    await expect(page.locator('[data-elevenlabs-widget-expanded="true"]')).toBeVisible();
+    await page.waitForTimeout(250);
+
+    const expandedWidgetBounds = await page.locator("[data-elevenlabs-widget-slot]").evaluate(
+      (element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          bottom: Math.round(window.innerHeight - rect.bottom),
+          height: Math.round(rect.height),
+          right: Math.round(window.innerWidth - rect.right),
+          width: Math.round(rect.width),
+        };
+      },
+    );
+
+    expect(expandedWidgetBounds.width).toBeGreaterThanOrEqual(400);
+    expect(expandedWidgetBounds.width).toBeLessThanOrEqual(430);
+    expect(expandedWidgetBounds.height).toBeGreaterThanOrEqual(560);
+    expect(expandedWidgetBounds.height).toBeLessThanOrEqual(630);
+    expect(expandedWidgetBounds.bottom).toBe(24);
+    expect(expandedWidgetBounds.right).toBe(24);
+
+    const expandedWidgetFit = await page.locator("elevenlabs-convai").evaluate((element) => {
+      const root = element.shadowRoot;
+      const sheet = root?.querySelector<HTMLElement>(".sheet");
+      const textarea = root?.querySelector<HTMLElement>("textarea");
+      const collapseButton = root?.querySelector<HTMLElement>(".mock-elevenlabs-collapse");
+      const powered = root?.querySelector<HTMLElement>(".mock-elevenlabs-powered");
+      const sheetRect = sheet?.getBoundingClientRect();
+      const textareaRect = textarea?.getBoundingClientRect();
+      const collapseRect = collapseButton?.getBoundingClientRect();
+      const poweredRect = powered?.getBoundingClientRect();
+
+      return {
+        collapseInViewport:
+          Boolean(collapseRect) &&
+          collapseRect!.bottom <= window.innerHeight &&
+          collapseRect!.right <= window.innerWidth,
+        poweredInViewport:
+          Boolean(poweredRect) &&
+          poweredRect!.bottom <= window.innerHeight &&
+          poweredRect!.right <= window.innerWidth,
+        sheetHeight: Math.round(sheetRect?.height ?? 0),
+        textareaInsideSheet:
+          Boolean(sheetRect && textareaRect) &&
+          textareaRect!.bottom <= sheetRect!.bottom &&
+          textareaRect!.right <= sheetRect!.right,
+      };
+    });
+
+    expect(expandedWidgetFit.sheetHeight).toBeGreaterThanOrEqual(360);
+    expect(expandedWidgetFit.textareaInsideSheet).toBeTruthy();
+    expect(expandedWidgetFit.collapseInViewport).toBeTruthy();
+    expect(expandedWidgetFit.poweredInViewport).toBeTruthy();
+
+    await page.setViewportSize({ height: 667, width: 390 });
+    await gotoSettled(page, "/");
+    await page.locator("elevenlabs-convai").evaluate((element) => {
+      element.shadowRoot?.querySelector<HTMLButtonElement>("button")?.click();
+    });
+    await expect(page.locator('[data-elevenlabs-widget-expanded="true"]')).toBeVisible();
+    await page.waitForTimeout(250);
+
+    const mobileExpandedFit = await page.evaluate(() => {
+      const slot = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
+      const widget = document.querySelector<HTMLElement>("elevenlabs-convai");
+      const sheet = widget?.shadowRoot?.querySelector<HTMLElement>(".sheet");
+      const collapseButton =
+        widget?.shadowRoot?.querySelector<HTMLElement>(".mock-elevenlabs-collapse");
+      const cookieBanner = document.querySelector<HTMLElement>(".rda-cookie-banner");
+      const slotRect = slot?.getBoundingClientRect();
+      const sheetRect = sheet?.getBoundingClientRect();
+      const collapseRect = collapseButton?.getBoundingClientRect();
+      const cookieStyle = cookieBanner ? window.getComputedStyle(cookieBanner) : null;
+
+      return {
+        collapseInViewport:
+          Boolean(collapseRect) &&
+          collapseRect!.bottom <= window.innerHeight &&
+          collapseRect!.right <= window.innerWidth,
+        cookieOpacity: cookieStyle?.opacity,
+        cookiePointerEvents: cookieStyle?.pointerEvents,
+        sheetBottom: Math.round(window.innerHeight - (sheetRect?.bottom ?? 0)),
+        sheetHeight: Math.round(sheetRect?.height ?? 0),
+        slotHeight: Math.round(slotRect?.height ?? 0),
+        slotRight: Math.round(window.innerWidth - (slotRect?.right ?? 0)),
+        slotWidth: Math.round(slotRect?.width ?? 0),
+      };
+    });
+
+    expect(mobileExpandedFit.slotWidth).toBe(390);
+    expect(mobileExpandedFit.slotHeight).toBe(555);
+    expect(mobileExpandedFit.slotRight).toBe(0);
+    expect(mobileExpandedFit.sheetHeight).toBeGreaterThanOrEqual(360);
+    expect(mobileExpandedFit.sheetBottom).toBeGreaterThanOrEqual(79);
+    expect(mobileExpandedFit.collapseInViewport).toBeTruthy();
+    expect(mobileExpandedFit.cookieOpacity).toBe("0");
+    expect(mobileExpandedFit.cookiePointerEvents).toBe("none");
   });
 
   test.describe("without third-party widget noise", () => {

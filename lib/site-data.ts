@@ -1163,7 +1163,7 @@ export const coursePages: Record<string, CoursePageData> = {
         title: "Registration",
         copy: [
           "Please call 916-888-9821 for registration and scheduling.",
-          "Due to limited space all sales are final and no refunds will be issued.",
+          "Call to confirm whether you need the initial or renewal session and reserve the correct in-person skills evaluation date.",
         ],
         actions: [
           {
@@ -1277,7 +1277,7 @@ export const coursePages: Record<string, CoursePageData> = {
         title: "Registration",
         copy: [
           "Please call 916-888-9821 for registration and scheduling.",
-          "Due to limited space all sales are final and no refunds will be issued.",
+          "Call to confirm prerequisite documents, current class date, and seat availability for the 8-hour Infection Control course.",
         ],
         actions: [
           {
@@ -1388,7 +1388,7 @@ export const coursePages: Record<string, CoursePageData> = {
         title: "Registration",
         copy: [
           "Please call 916-888-9821 for registration and scheduling.",
-          "Due to limited space all sales are final and no refunds will be issued.",
+          "Call to confirm prerequisites, patient requirements, current class date, and registration steps before reserving your seat.",
         ],
         actions: [
           {
@@ -1510,7 +1510,7 @@ export const coursePages: Record<string, CoursePageData> = {
         title: "Registration",
         copy: [
           "Please call 916-888-9821 for registration and scheduling.",
-          "Due to limited space all sales are final and no refunds will be issued.",
+          "Call to confirm prerequisites, patient planning, current class date, and registration steps before reserving your seat.",
         ],
         actions: [
           {
@@ -1630,7 +1630,7 @@ export const coursePages: Record<string, CoursePageData> = {
         title: "Registration",
         copy: [
           "Please call 916-888-9821 for registration and scheduling.",
-          "Due to limited space all sales are final and no refunds will be issued.",
+          "Call to confirm prerequisites, patient requirements, current class date, and registration steps for the Pit and Fissure Sealants course.",
         ],
         actions: [
           {
