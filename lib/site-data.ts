@@ -403,24 +403,20 @@ export const faqItems = [
   },
 ] as const;
 
+const livePhoto = (src: string, alt: string) => ({ src, alt });
+
 export const photoGroups: GalleryGroup[] = [
   {
     title: "Dental Assisting program",
     copy:
       "Hands-on chairside practice, instrument setup, and office-based learning moments.",
     items: [
-      {
-        src: siteImages.gallery1,
-        alt: "Dental assisting students during chairside practice",
-      },
-      {
-        src: siteImages.gallery2,
-        alt: "Dental assisting students training in the clinic",
-      },
-      {
-        src: siteImages.gallery3,
-        alt: "Dental assisting operatory practice at Roseville Dental Academy",
-      },
+      livePhoto("/assets/live/photos/e49f18da-07a4-40eb-bbb6-fb3954968af5.jpg", "Dental assisting student practice"),
+      livePhoto("/assets/live/photos/fc50cf07-aeb2-428a-980d-851803e10d45.jpg", "Dental assisting students in the clinic"),
+      livePhoto("/assets/live/photos/d5b6325b-61bf-461f-853a-90e2092845b8.jpg", "Dental assisting operatory training"),
+      livePhoto("/assets/live/photos/777a66bd-6f42-49ea-a07a-6d38dc6770e1.jpg", "Hands-on dental assisting class"),
+      livePhoto("/assets/live/photos/img-4377.jpg", "Dental assisting students with instructor"),
+      livePhoto("/assets/live/photos/aeb507d7-8b3c-4bca-a21b-93ee9aef8677.jpg", "Dental assisting program training moment"),
     ],
   },
   {
@@ -428,9 +424,20 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Images that reflect radiography practice and patient positioning inside training.",
     items: [
-      { src: siteImages.gallery4, alt: "Radiography positioning practice" },
-      { src: siteImages.gallery5, alt: "X-ray training in the academy" },
-      { src: siteImages.gallery6, alt: "Students learning dental x-ray workflow" },
+      livePhoto("/assets/live/photos/6fe56dbe-0af9-4da8-b880-ce43dbec9238.jpg", "Radiography positioning practice"),
+      livePhoto("/assets/live/photos/64b30c90-dc2b-4e69-a6fb-6bfafd36160d.jpg", "X-ray training in the academy"),
+      livePhoto("/assets/live/photos/img-0287.jpg", "Students learning dental x-ray workflow"),
+      livePhoto("/assets/live/photos/b8945f84-574a-4016-a733-4e13e1b5784d.jpg", "Dental radiography hands-on practice"),
+      livePhoto("/assets/live/photos/51eca530-bbab-4e0b-96b6-8e19e77f8ebd.jpg", "Student positioning dental x-ray equipment"),
+      livePhoto("/assets/live/photos/fe0e476c-71da-4c2a-9bf5-7ec4697547f0.jpg", "Dental x-ray training room"),
+      livePhoto("/assets/live/photos/4e2ded85-a64e-425f-92a4-8e98e0b2ac37.jpg", "Radiation safety course practice"),
+      livePhoto("/assets/live/photos/img-6818.jpg", "Dental x-ray class practice"),
+      livePhoto("/assets/live/photos/img-3881.png", "X-ray certification training"),
+      livePhoto("/assets/live/photos/img-0569.jpg", "Radiography student practice"),
+      livePhoto("/assets/live/photos/img-0687.jpg", "Dental radiography equipment practice"),
+      livePhoto("/assets/live/photos/img-1052.jpg", "Student preparing for dental x-ray"),
+      livePhoto("/assets/live/photos/img-1057.jpg", "Hands-on x-ray course instruction"),
+      livePhoto("/assets/live/photos/img-1061.jpg", "Dental radiography clinical training"),
     ],
   },
   {
@@ -438,30 +445,63 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Moments that spotlight professionalism, patient interaction, and front-of-house presence.",
     items: [
-      {
-        src: siteImages.gallery7,
-        alt: "Front office professionalism practice",
-      },
-      {
-        src: siteImages.gallery8,
-        alt: "Patient-ready presentation training",
-      },
-      {
-        src: siteImages.gallery9,
-        alt: "First-impression training in a dental office setting",
-      },
+      livePhoto("/assets/live/photos/img-3077.jpg", "Front office professionalism practice"),
+      livePhoto("/assets/live/photos/img-7738.jpg", "Patient-ready presentation training"),
+      livePhoto("/assets/live/photos/aabc2fc5-4701-416f-ac09-25a6192dcdf7.jpg", "First-impression training in a dental office setting"),
+      livePhoto("/assets/live/photos/ffd84999-f1fb-4fd1-acf8-4f69f268cf6a.jpg", "Dental office communication practice"),
+      livePhoto("/assets/live/photos/img-7746.jpg", "Student practicing patient interaction"),
+      livePhoto("/assets/live/photos/img-3056.jpg", "Dental academy front office training"),
+      livePhoto("/assets/live/photos/img-3082.jpg", "Students preparing for patient-facing work"),
+      livePhoto("/assets/live/photos/img-3064.jpg", "Dental office first impression training"),
+      livePhoto("/assets/live/photos/img-3089-59f42e8.jpg", "Professional presentation practice"),
+      livePhoto("/assets/live/photos/img-3078.jpg", "Dental assisting professionalism training"),
+      livePhoto("/assets/live/photos/img-3067-e270703.jpg", "Students learning dental office workflow"),
+      livePhoto("/assets/live/photos/img-3085.jpg", "Academy student training moment"),
+      livePhoto("/assets/live/photos/imp.png", "Dental office impression training"),
+      livePhoto("/assets/live/photos/7e0bce74-3c71-4c19-8583-ad8d338ab99c.jpg", "Patient interaction practice"),
+      livePhoto("/assets/live/photos/img-0715.jpg", "Dental academy classroom moment"),
+      livePhoto("/assets/live/photos/46eb336b-29f9-4042-9e33-ae410fe854b4.jpg", "Students at Roseville Dental Academy"),
+      livePhoto("/assets/live/photos/img-5418.jpg", "Dental assisting student team"),
+      livePhoto("/assets/live/photos/img-0063.jpg", "Dental academy student training"),
+      livePhoto("/assets/live/photos/54680cdf-1fe9-4319-813c-1493eedba95e.jpg", "Roseville Dental Academy student group"),
     ],
   },
   {
     title: "Everyday we're suctioning!",
     copy: "Routine assisting motions and real operatory training moments.",
     items: [
-      { src: siteImages.gallery10, alt: "Suction technique practice in the operatory" },
-      {
-        src: siteImages.gallery11,
-        alt: "Hands-on suctioning and chairside assistance training",
-      },
-      { src: siteImages.gallery12, alt: "Daily assisting technique practice" },
+      livePhoto("/assets/live/photos/img-0805.jpg", "Suction technique practice in the operatory"),
+      livePhoto("/assets/live/photos/suctioning.png", "Hands-on suctioning and chairside assistance training"),
+      livePhoto("/assets/live/photos/img-2662.png", "Daily assisting technique practice"),
+    ],
+  },
+  {
+    title: "BLS",
+    copy:
+      "Basic life support training moments from CPR, AED, and healthcare-provider skills sessions.",
+    items: [
+      livePhoto("/assets/live/photos/8021e43b-b453-4fa5-9d37-218c88a0a96d.jpg", "BLS students practicing CPR"),
+      livePhoto("/assets/live/photos/cpr-0001.jpg", "CPR training manikin practice"),
+      livePhoto("/assets/live/photos/0207a208-aeca-4cea-895d-daa4acccb2d3.jpg", "Basic life support skills class"),
+      livePhoto("/assets/live/photos/63ee5718-9fb9-483c-87c0-5a688bffdb5a.jpg", "Healthcare provider BLS training"),
+      livePhoto("/assets/live/photos/img-4683.jpg", "Students practicing CPR technique"),
+      livePhoto("/assets/live/photos/f7bd9053-b79d-476b-9cf3-8972e19aa5da.jpg", "BLS certification course practice"),
+      livePhoto("/assets/live/photos/blsaug21st.png", "BLS class group training"),
+      livePhoto("/assets/live/photos/blsaug21.png", "BLS skills evaluation"),
+      livePhoto("/assets/live/photos/img-6415.jpg", "CPR and AED training session"),
+    ],
+  },
+  {
+    title: "Infection Control",
+    copy:
+      "Training photos from infection control, sterilization, PPE, and clinical safety sessions.",
+    items: [
+      livePhoto("/assets/live/photos/img-5878.jpg", "Infection control course practice"),
+      livePhoto("/assets/live/photos/blob-0010.png", "Sterilization and PPE training"),
+      livePhoto("/assets/live/photos/img-5905.jpg", "Students learning infection control protocols"),
+      livePhoto("/assets/live/photos/img-5918-2.jpg", "Clinical safety training practice"),
+      livePhoto("/assets/live/photos/img-5910.jpg", "Infection control hands-on instruction"),
+      livePhoto("/assets/live/photos/img-1062-0001.jpg", "Dental office infection control training"),
     ],
   },
 ];

@@ -388,6 +388,80 @@ test("faq page preserves the live board-approval answers", async ({ page }, test
   expect(missingPhrases).toEqual([]);
 });
 
+test("photos page renders the full live-site gallery inventory", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${localOrigin}/photos`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForSelector(".rda-gallery-item img", { timeout: 12_000 });
+
+  for (let index = 0; index < 40; index += 1) {
+    const reachedBottom = await page.evaluate(() => {
+      window.scrollBy(0, Math.max(360, Math.floor(window.innerHeight * 0.85)));
+      return window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
+    });
+
+    if (reachedBottom) {
+      break;
+    }
+
+    await page.waitForTimeout(100);
+  }
+
+  const result = await page.evaluate(async () => {
+    const images = Array.from(document.querySelectorAll<HTMLImageElement>(".rda-gallery-item img"));
+
+    await Promise.all(
+      images.map(
+        (image) =>
+          new Promise<void>((resolvePromise) => {
+            if (image.complete && image.naturalWidth > 0) {
+              resolvePromise();
+              return;
+            }
+
+            const settle = () => resolvePromise();
+            image.addEventListener("load", settle, { once: true });
+            image.addEventListener("error", settle, { once: true });
+            window.setTimeout(settle, 3_000);
+          }),
+      ),
+    );
+
+    return {
+      broken: images
+        .filter((image) => !image.complete || image.naturalWidth === 0)
+        .map((image) => image.currentSrc || image.getAttribute("src") || image.alt),
+      count: images.length,
+    };
+  });
+
+  const mismatches: string[] = [];
+
+  if (result.count !== 57) {
+    mismatches.push(`expected 57 live gallery photos, found ${result.count}`);
+  }
+
+  if (result.broken.length > 0) {
+    mismatches.push(`broken gallery images: ${result.broken.join(", ")}`);
+  }
+
+  smokeSummary.push({
+    broken: result.broken,
+    count: result.count,
+    route: "/photos",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "photos-live-gallery",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "photos-live-gallery-summary.json", {
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("alias routes match their canonical mirrored routes", async ({ browser }, testInfo) => {
   const results: Array<Record<string, unknown>> = [];
 
