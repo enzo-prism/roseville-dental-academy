@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import {
+  blockElevenLabsWidgetScript,
   captureSnapshot,
   localOrigin,
   routeMappings,
@@ -13,6 +14,10 @@ import {
 const uxSummary: Array<Record<string, unknown>> = [];
 
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ context }) => {
+  await blockElevenLabsWidgetScript(context);
+});
 
 for (const route of routeMappings) {
   for (const device of uxDevices) {

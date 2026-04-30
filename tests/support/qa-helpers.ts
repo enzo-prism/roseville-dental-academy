@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import type { Page, TestInfo } from "@playwright/test";
+import type { BrowserContext, Page, TestInfo } from "@playwright/test";
 
 import frozenManifest from "@/snapshot/live/manifest.json";
 
@@ -23,6 +23,8 @@ export const visualViewports = fixtures.visualViewports;
 export const primaryNavLabels = fixtures.primaryNavLabels;
 export const coreWarmRoutes = fixtures.coreWarmRoutes;
 export const snapshotRoutes = frozenManifest.routes;
+export const elevenLabsAgentId = "agent_6301kn20gh9denavkvn1bg9krf54";
+export const elevenLabsScriptSrc = "https://unpkg.com/@elevenlabs/convai-widget-embed";
 
 export type RuntimeDiagnostics = {
   blockingResourceErrors: Array<{ detail: string; kind: "request-failed" | "response"; url: string }>;
@@ -63,6 +65,16 @@ type SnapshotRenderData = {
   visibleInputs: string[];
   visibleLinks: Array<{ href: string; text: string }>;
 };
+
+export async function blockElevenLabsWidgetScript(context: BrowserContext) {
+  await context.route(`${elevenLabsScriptSrc}**`, async (route) => {
+    await route.fulfill({
+      body: "",
+      contentType: "text/javascript",
+      status: 204,
+    });
+  });
+}
 
 function normalizeTextValue(value: string) {
   return value.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
@@ -333,6 +345,10 @@ export async function settleMirrorPage(page: Page) {
   await page
     .waitForFunction(
       ({ labels }) => {
+        function normalizeValue(value: string) {
+          return value.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+        }
+
         function isPlaceholderValue(value: string) {
           return /^data:image\/gif;base64/i.test(value) || /transparent_placeholder/i.test(value);
         }
@@ -356,7 +372,7 @@ export async function settleMirrorPage(page: Page) {
 
         const visibleHeaderLabels = headerControls
           .filter((element) => isVisible(element))
-          .map((element) => normalizeTextValue(element.innerText || element.textContent || ""))
+          .map((element) => normalizeValue(element.innerText || element.textContent || ""))
           .filter(Boolean);
 
         const hasHeader = headerControls.length > 0;
@@ -520,10 +536,13 @@ export async function scanUi(page: Page): Promise<UiScan> {
       document.querySelectorAll<HTMLElement>("header a, header button, header [role='button'], nav a, nav button"),
     );
 
-    const visiblePrimaryNavLabels = headerControls
+    const visibleHeaderLabels = headerControls
       .filter((element) => isVisible(element))
       .map((element) => normalizeValue(element.innerText || element.textContent || ""))
       .filter(Boolean);
+    const visiblePrimaryNavLabels = visibleHeaderLabels.filter((visibleLabel) =>
+      labels.some((label) => visibleLabel.toLowerCase() === label.toLowerCase()),
+    );
 
     const headerPresent = headerControls.length > 0;
     const missingPrimaryNavLabels = headerPresent

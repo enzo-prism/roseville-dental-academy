@@ -14,6 +14,9 @@ import {
   writeJson,
 } from "./live-clone-shared.mjs";
 
+const CAPTURE_ORIGIN = process.env.BASELINE_CAPTURE_ORIGIN ?? LIVE_ORIGIN;
+const ELEVENLABS_SCRIPT_SRC = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+
 async function settlePage(page) {
   await page.waitForLoadState("load").catch(() => undefined);
 
@@ -275,7 +278,15 @@ async function main() {
       });
 
       try {
-        const url = `${LIVE_ORIGIN}${route.sourcePath}`;
+        await page.route(`${ELEVENLABS_SCRIPT_SRC}**`, async (requestRoute) => {
+          await requestRoute.fulfill({
+            body: "",
+            contentType: "text/javascript",
+            status: 204,
+          });
+        });
+
+        const url = `${CAPTURE_ORIGIN}${route.sourcePath}`;
         const content = await captureContentSnapshot(page, url, assetMap);
         await writeJson(route.contentBaselinePath, content);
 
@@ -309,6 +320,7 @@ async function main() {
   }
 
   await writeJson(`${BASELINE_DIR}/refresh-summary.json`, {
+    captureOrigin: CAPTURE_ORIGIN,
     generatedAt: new Date().toISOString(),
     liveOrigin: LIVE_ORIGIN,
     results: summary,

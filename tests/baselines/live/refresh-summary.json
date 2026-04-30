@@ -1,9 +1,14 @@
 {
-  "generatedAt": "2026-04-23T23:15:55.284Z",
+  "captureOrigin": "http://127.0.0.1:3000",
+  "generatedAt": "2026-04-30T15:39:36.726Z",
   "liveOrigin": "https://rosevilledentalacademy.com",
   "results": [
     {
       "id": "home",
+      "status": "updated"
+    },
+    {
+      "id": "contact",
       "status": "updated"
     },
     {

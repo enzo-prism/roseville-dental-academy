@@ -1281,8 +1281,18 @@ export function normalizeVisibleAssetUrl(rawValue, baseUrl, assetMap) {
   }
 
   try {
-    const resolved = new URL(rawValue, baseUrl).toString();
-    return assetMap[resolved] ? encodeLocalAssetUrl(assetMap[resolved]) : resolved;
+    const resolved = new URL(rawValue, baseUrl);
+    const resolvedHref = resolved.toString();
+
+    if (assetMap[resolvedHref]) {
+      return encodeLocalAssetUrl(assetMap[resolvedHref]);
+    }
+
+    if (resolved.hostname === "127.0.0.1" || resolved.hostname === "localhost") {
+      return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+    }
+
+    return resolvedHref;
   } catch {
     return rawValue;
   }

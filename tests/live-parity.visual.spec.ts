@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import {
+  blockElevenLabsWidgetScript,
   captureVisual,
   countDifferingPixels,
   getVisualBaseline,
@@ -18,6 +19,10 @@ const visualParitySummary: Array<Record<string, unknown>> = [];
 const VISUAL_DIFF_TOLERANCE = 50000;
 
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ context }) => {
+  await blockElevenLabsWidgetScript(context);
+});
 
 for (const route of visualMappings) {
   for (const [viewportLabel, viewport] of Object.entries(visualViewports)) {

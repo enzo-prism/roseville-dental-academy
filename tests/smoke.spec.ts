@@ -5,8 +5,11 @@ import { expect, test } from "@playwright/test";
 import {
   aliasMappings,
   baselineDir,
+  blockElevenLabsWidgetScript,
   captureSnapshot,
   coreWarmRoutes,
+  elevenLabsAgentId,
+  elevenLabsScriptSrc,
   getContentBaseline,
   localOrigin,
   routeMappings,
@@ -19,6 +22,10 @@ import {
 const smokeSummary: Array<Record<string, unknown>> = [];
 
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ context }) => {
+  await blockElevenLabsWidgetScript(context);
+});
 
 test("verify frozen snapshot inputs and required local resources", async ({ request }, testInfo) => {
   const warmedRoutes: Array<{ path: string; status: number }> = [];
@@ -143,14 +150,15 @@ test("mobile homepage menu opens and reveals live information links", async ({ p
   await page.waitForTimeout(6_000);
 
   await page.getByRole("button", { name: "Hamburger Site Navigation Icon" }).click();
-  await expect(page.getByRole("link", { name: "Home" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "More Information" })).toBeVisible();
+  const mobileMenu = page.locator('[data-rda-mobile-menu="true"]');
+  await expect(mobileMenu.getByRole("link", { name: "Home" })).toBeVisible();
+  await expect(mobileMenu.getByRole("button", { name: "More Information" })).toBeVisible();
 
-  await page.getByRole("button", { name: "More Information" }).click();
+  await mobileMenu.getByRole("button", { name: "More Information" }).click();
 
-  await expect(page.getByRole("link", { name: "Meet the Instructors" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "FAQs" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Photos" })).toBeVisible();
+  await expect(mobileMenu.getByRole("link", { name: "Meet the Instructors" })).toBeVisible();
+  await expect(mobileMenu.getByRole("link", { name: "FAQs" })).toBeVisible();
+  await expect(mobileMenu.getByRole("link", { name: "Photos" })).toBeVisible();
 
   smokeSummary.push({
     route: "/",
@@ -162,6 +170,193 @@ test("mobile homepage menu opens and reveals live information links", async ({ p
     route: "/",
     status: "passed",
   });
+});
+
+test("contact us button replaces the shopping and profile utility icons", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForFunction(
+    () => document.querySelectorAll('[data-rda-contact-us="true"]').length > 0,
+    undefined,
+    { timeout: 12_000 },
+  );
+  const visibleContactButton = page.locator('[data-rda-contact-us="true"]:visible').first();
+
+  await expect(visibleContactButton).toBeVisible({ timeout: 12_000 });
+
+  const visibleContactButtons = await page
+    .locator('[data-rda-contact-us="true"]:visible')
+    .count();
+  const visibleCartIcons = await page.locator('a[aria-label="Shopping Cart Icon"]:visible').count();
+  const visibleProfileIcons = await page
+    .locator('a[data-aid="MEMBERSHIP_ICON_DESKTOP_RENDERED"]:visible')
+    .count();
+
+  await visibleContactButton.click();
+  await page.waitForURL("**/contact", { timeout: 12_000 });
+
+  const mismatches: string[] = [];
+
+  if (visibleContactButtons === 0) {
+    mismatches.push("Contact Us utility button was not visible");
+  }
+
+  if (visibleCartIcons > 0) {
+    mismatches.push("shopping cart icon was still visible");
+  }
+
+  if (visibleProfileIcons > 0) {
+    mismatches.push("profile icon was still visible");
+  }
+
+  if (!page.url().endsWith("/contact")) {
+    mismatches.push("Contact Us button did not navigate to /contact");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "contact-us-button",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "contact-us-button-summary.json", {
+      mismatches,
+      visibleCartIcons,
+      visibleContactButtons,
+      visibleProfileIcons,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
+test("elevenlabs widget is embedded on every page shell", async ({ request }, testInfo) => {
+  const checkedRoutes = ["/", "/contact", "/m/login"];
+  const results: Array<Record<string, unknown>> = [];
+  const mismatches: string[] = [];
+
+  for (const routePath of checkedRoutes) {
+    const response = await request.get(`${localOrigin}${routePath}`, {
+      headers: {
+        accept: "text/html,application/xhtml+xml",
+      },
+      timeout: 120_000,
+    });
+    const html = await response.text();
+    const hasWidget = html.includes(
+      `<elevenlabs-convai agent-id="${elevenLabsAgentId}"></elevenlabs-convai>`,
+    );
+    const hasScript = html.includes(elevenLabsScriptSrc);
+
+    if (!hasWidget) {
+      mismatches.push(`${routePath} missing ElevenLabs widget element`);
+    }
+
+    if (!hasScript) {
+      mismatches.push(`${routePath} missing ElevenLabs widget script`);
+    }
+
+    results.push({
+      hasScript,
+      hasWidget,
+      route: routePath,
+      status: response.status(),
+    });
+  }
+
+  smokeSummary.push({
+    mismatches,
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "elevenlabs-widget",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "elevenlabs-widget-summary.json", {
+      mismatches,
+      results,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
+test("legacy cookie banner stays out of the elevenlabs widget corner", async ({ page }, testInfo) => {
+  const results: Array<Record<string, unknown>> = [];
+  const mismatches: string[] = [];
+
+  for (const viewport of [
+    { height: 900, label: "desktop", width: 1280 },
+    { height: 844, label: "mobile", width: 390 },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+
+    const result = await page.evaluate(() => {
+      const banner = document.createElement("div");
+
+      banner.setAttribute("data-aid", "FOOTER_COOKIE_BANNER_RENDERED");
+      banner.textContent =
+        "This website uses cookies. We use cookies to analyze website traffic and optimize your website experience.";
+      banner.style.background = "rgb(43, 83, 85)";
+      banner.style.color = "#fff";
+      banner.style.padding = "16px";
+      banner.style.position = "fixed";
+      banner.style.width = "100vw";
+      document.body.appendChild(banner);
+
+      const widget = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
+      const bannerRect = banner.getBoundingClientRect();
+      const widgetRect = widget?.getBoundingClientRect() ?? new DOMRect();
+      const overlaps =
+        bannerRect.left < widgetRect.right &&
+        bannerRect.right > widgetRect.left &&
+        bannerRect.top < widgetRect.bottom &&
+        bannerRect.bottom > widgetRect.top;
+
+      banner.remove();
+
+      return {
+        banner: {
+          bottom: Math.round(window.innerHeight - bannerRect.bottom),
+          left: Math.round(bannerRect.left),
+          right: Math.round(window.innerWidth - bannerRect.right),
+          width: Math.round(bannerRect.width),
+        },
+        overlaps,
+        widget: {
+          bottom: Math.round(window.innerHeight - widgetRect.bottom),
+          right: Math.round(window.innerWidth - widgetRect.right),
+          width: Math.round(widgetRect.width),
+        },
+      };
+    });
+
+    if (result.overlaps) {
+      mismatches.push(`${viewport.label} cookie banner overlaps ElevenLabs widget`);
+    }
+
+    results.push({
+      ...result,
+      viewport: viewport.label,
+    });
+  }
+
+  smokeSummary.push({
+    mismatches,
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "cookie-widget-corner",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "cookie-widget-corner-summary.json", {
+      mismatches,
+      results,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
 });
 
 test("faq page preserves the live board-approval answers", async ({ page }, testInfo) => {

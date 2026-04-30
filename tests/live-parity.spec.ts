@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import {
+  blockElevenLabsWidgetScript,
   buildTextDiff,
   captureSnapshot,
   getContentBaseline,
@@ -15,6 +16,10 @@ import {
 const contentParitySummary: Array<Record<string, unknown>> = [];
 
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ context }) => {
+  await blockElevenLabsWidgetScript(context);
+});
 
 for (const route of routeMappings) {
   test(`content parity ${route.label}`, async ({ page }, testInfo) => {

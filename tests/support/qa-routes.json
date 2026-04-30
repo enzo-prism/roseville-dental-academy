@@ -9,6 +9,14 @@
       "smokeText": "ROSEVILLE DENTAL ACADEMY"
     },
     {
+      "label": "contact",
+      "livePath": "/contact",
+      "localPath": "/contact",
+      "expectedStatus": 200,
+      "expectedTitle": "Contact | Roseville Dental Academy",
+      "smokeText": "Better yet, come see us in person!"
+    },
+    {
       "label": "registration-404",
       "livePath": "/registration",
       "localPath": "/registration",
@@ -242,6 +250,7 @@
   ],
   "coreWarmRoutes": [
     "/",
+    "/contact",
     "/dental-assisting-program",
     "/infection-control",
     "/m/login",
