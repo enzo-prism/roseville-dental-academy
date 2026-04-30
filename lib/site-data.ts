@@ -10,6 +10,8 @@ import type {
   ProgramCardData,
   RegistrationCourseOption,
   RequirementGroup,
+  ReviewPhotoData,
+  SignupInterestOption,
   SitePageDefinition,
   SocialLink,
   SplitSectionContent,
@@ -22,16 +24,38 @@ export const announcement =
 
 export const siteContact = {
   school: "Roseville Dental Academy",
+  location: "Woodcreek Plaza",
   address: "1271 Pleasant Grove Boulevard, Ste. 100, Roseville, California 95747",
   mapsAddress:
     "1271 Pleasant Grove Boulevard, Roseville, California 95747, United States",
   phone: "916-888-9821",
   email: "rosevilledentalacademy@gmail.com",
-  hours: "09:00 am - 06:00 pm",
+  hours: "Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM, Sat-Sun Closed",
+  weeklyHours: [
+    { day: "Monday", time: "9AM-5PM" },
+    { day: "Tuesday", time: "9AM-6PM" },
+    { day: "Wednesday", time: "8AM-5PM" },
+    { day: "Thursday", time: "9AM-6PM" },
+    { day: "Friday", time: "9AM-3PM" },
+    { day: "Saturday", time: "Closed" },
+    { day: "Sunday", time: "Closed" },
+  ],
   directionsUrl:
     "https://maps.google.com/?q=1271+Pleasant+Grove+Boulevard+Roseville+CA+95747",
   formspreeEndpoint: "https://formspree.io/f/xzdkgaeg",
 } as const;
+
+export const signupInterestOptions: SignupInterestOption[] = [
+  { label: "Dental Assisting Program", value: "Dental Assisting Program" },
+  { label: "BLS / CPR", value: "BLS / CPR" },
+  { label: "Infection Control", value: "Infection Control" },
+  { label: "Radiation Safety", value: "Radiation Safety" },
+  { label: "Coronal Polish", value: "Coronal Polish" },
+  { label: "Pit and Fissure Sealants", value: "Pit and Fissure Sealants" },
+  { label: "Front Office Program", value: "Front Office Program" },
+  { label: "N95 Fit Test", value: "N95 Fit Test" },
+  { label: "Not sure yet", value: "Not sure yet" },
+];
 
 export const siteImages = {
   logo: "/assets/live/home/logo-academy.jpg",
@@ -294,6 +318,81 @@ export const testimonials: TestimonialData[] = [
     rating: 5,
     quote:
       "Teachers and instructors are friendly and helpful whenever I have questions. They always make sure that students understand and are catching up with all the courses.",
+  },
+];
+
+export const homepageReviewHighlights: ReviewPhotoData[] = [
+  {
+    name: "Adriana Nebuloni",
+    meta: "Google review - 2 weeks ago",
+    rating: 5,
+    feature: "9-week program",
+    quote:
+      "The 9-week program was well-structured, hands-on, and incredibly informative. The instructors were supportive, knowledgeable, and genuinely invested in our success.",
+    image: {
+      src: "/assets/live/photos/aeb507d7-8b3c-4bca-a21b-93ee9aef8677.jpg",
+      alt: "Roseville Dental Academy students celebrating completion certificates",
+    },
+  },
+  {
+    name: "Selene",
+    meta: "Google review - 3 months ago",
+    rating: 5,
+    feature: "Hands-on training",
+    quote:
+      "Excellent dental assisting program with hands-on training and great support. Jessica is patient, knowledgeable, and truly invested in her students.",
+    image: {
+      src: "/assets/live/photos/img-3089-59f42e8.jpg",
+      alt: "Instructor guiding a student through hands-on dental assisting practice",
+    },
+  },
+  {
+    name: "grace",
+    meta: "Google review - 3 months ago",
+    rating: 5,
+    feature: "Career foundations",
+    quote:
+      "During my 9-week course, I gained valuable knowledge in radiation safety, infection control, BLS, chairside assisting, and patient care.",
+    image: {
+      src: "/assets/live/photos/64b30c90-dc2b-4e69-a6fb-6bfafd36160d.jpg",
+      alt: "Students learning together during a dental assisting class session",
+    },
+  },
+  {
+    name: "Salvador Garcia",
+    meta: "Google review - 3 months ago",
+    rating: 5,
+    feature: "Resume and job help",
+    quote:
+      "The staff is very caring and helps make sure you understand everything. They helped with resumes and applying to jobs, which is how I got hired.",
+    image: {
+      src: "/assets/live/photos/img-5918-2.jpg",
+      alt: "Roseville Dental Academy students holding certificates outside the office",
+    },
+  },
+  {
+    name: "Breana Donahue",
+    meta: "Google review - 3 months ago",
+    rating: 5,
+    feature: "Internship support",
+    quote:
+      "I am confident in my skills after taking this program and excited to start my career. They help you find an internship and look for job opportunities.",
+    image: {
+      src: "/assets/live/photos/e49f18da-07a4-40eb-bbb6-fb3954968af5.jpg",
+      alt: "Student practicing tray setup and dental assisting skills",
+    },
+  },
+  {
+    name: "Jordyn Sturgeon",
+    meta: "Google review - 1 year ago",
+    rating: 5,
+    feature: "Certification courses",
+    quote:
+      "As a DA I took a bunch of their classes working toward my RDA. Everyone was incredibly sweet, with great communication and teaching from the office.",
+    image: {
+      src: "/assets/live/photos/blsaug21.png",
+      alt: "Students practicing BLS certification skills during class",
+    },
   },
 ];
 

@@ -23,17 +23,25 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
           <address>
             <strong>{siteContact.school}</strong>
             <br />
+            Located in {siteContact.location}
+            <br />
             {siteContact.address}
             <br />
             <a href={`tel:${siteContact.phone.replace(/\D/g, "")}`}>Phone: {siteContact.phone}</a>
             <br />
             <a href={`mailto:${siteContact.email}`}>Email: {siteContact.email}</a>
           </address>
-          <p>
+          <div className="rda-hours-list">
             <strong>Hours</strong>
-            <br />
-            Open today {siteContact.hours}
-          </p>
+            <dl>
+              {siteContact.weeklyHours.map((entry) => (
+                <div key={entry.day}>
+                  <dt>{entry.day}</dt>
+                  <dd>{entry.time}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
           <div className="rda-contact-actions">
             <button onClick={() => setFormOpen((value) => !value)} type="button">
               Drop us a line!

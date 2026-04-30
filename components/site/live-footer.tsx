@@ -23,7 +23,17 @@ export function LiveFooter() {
           <p>
             <a href={`mailto:${siteContact.email}`}>{siteContact.email}</a>
           </p>
-          <p>Hours: {siteContact.hours}</p>
+          <div className="rda-footer-hours">
+            <p>Hours</p>
+            <dl>
+              {siteContact.weeklyHours.map((entry) => (
+                <div key={entry.day}>
+                  <dt>{entry.day}</dt>
+                  <dd>{entry.time}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </div>
         <nav aria-label="Footer" className="rda-footer-links">
           {footerLinks.map((link) => (

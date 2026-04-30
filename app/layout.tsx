@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
 import { getSiteUrl } from "../lib/site-config";
 
 import "./globals.css";
+
+const analyticsMode = process.env.VERCEL ? "auto" : "development";
 
 export const metadata: Metadata = {
   title: "Roseville Dental Academy",
@@ -26,7 +29,10 @@ export default function RootLayout({
       <head>
         <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
       </head>
-      <body className={LIVE_BODY_CLASS}>{children}</body>
+      <body className={LIVE_BODY_CLASS}>
+        {children}
+        <Analytics mode={analyticsMode} />
+      </body>
     </html>
   );
 }

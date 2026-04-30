@@ -381,6 +381,68 @@ textarea {
   margin: 0;
 }
 
+.rda-home-review-highlights {
+  border-bottom: 1px solid var(--rda-color-border-soft);
+  border-top: 1px solid var(--rda-color-border-soft);
+}
+
+.rda-review-photo-intro {
+  color: var(--rda-color-muted);
+  line-height: 1.7;
+  margin: -10px auto 30px;
+  max-width: 720px;
+  text-align: center;
+}
+
+.rda-review-photo-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rda-review-photo-card {
+  background: var(--rda-color-surface);
+  border: 1px solid var(--rda-color-border-soft);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rda-review-photo-media {
+  aspect-ratio: 4 / 3;
+  background: rgba(49, 86, 88, 0.08);
+  margin: 0;
+  overflow: hidden;
+}
+
+.rda-review-photo-media img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.rda-review-photo-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 22px;
+}
+
+.rda-review-photo-body blockquote {
+  flex: 1;
+  line-height: 1.7;
+  margin: 0 0 18px;
+}
+
+.rda-review-photo-feature {
+  color: var(--rda-color-accent-deep);
+  font-family: var(--rda-font-heading);
+  font-size: 13px;
+  line-height: 1.3;
+  margin: 0 0 10px;
+}
+
 .rda-gallery-groups {
   display: grid;
   gap: 42px;
@@ -424,6 +486,100 @@ textarea {
   text-align: center;
 }
 
+.rda-signup-section {
+  max-width: 980px;
+}
+
+.rda-signup-section-compact {
+  border-top: 1px solid var(--rda-color-border-soft);
+}
+
+.rda-signup-intro {
+  color: var(--rda-color-muted);
+  line-height: 1.7;
+  margin: -10px auto 24px;
+  max-width: 680px;
+  text-align: center;
+}
+
+.rda-signup-form {
+  border: 1px solid var(--rda-color-border-soft);
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.rda-interest-fieldset {
+  border: 0;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
+}
+
+.rda-interest-fieldset legend {
+  font-family: var(--rda-font-heading);
+  margin: 0 0 10px;
+}
+
+.rda-interest-options {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rda-interest-option {
+  align-items: center;
+  border: 1px solid var(--rda-color-border);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto 1fr;
+  line-height: 1.45;
+  min-height: 44px;
+  padding: 9px 10px;
+}
+
+.rda-interest-option[data-selected="true"] {
+  background: rgba(49, 86, 88, 0.08);
+  border-color: var(--rda-color-primary);
+}
+
+.rda-interest-option input {
+  min-height: auto;
+  width: auto;
+}
+
+.rda-signup-fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rda-signup-form label,
+.rda-signup-notes {
+  display: grid;
+  gap: 7px;
+}
+
+.rda-signup-footer {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.rda-signup-footer .rda-form-note {
+  max-width: 440px;
+}
+
+.rda-form-error {
+  color: var(--rda-color-accent-deep);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
 .rda-newsletter-section form {
   align-items: stretch;
   display: grid;
@@ -442,6 +598,8 @@ textarea {
 }
 
 .rda-newsletter-section input,
+.rda-signup-form input,
+.rda-signup-form textarea,
 .rda-contact-form-card input,
 .rda-contact-form-card textarea {
   border: 1px solid var(--rda-color-border);
@@ -450,7 +608,13 @@ textarea {
   width: 100%;
 }
 
+.rda-signup-form .rda-interest-option input {
+  min-height: auto;
+  width: auto;
+}
+
 .rda-newsletter-section button,
+.rda-signup-form button,
 .rda-contact-actions button,
 .rda-contact-actions a,
 .rda-form-actions button {
@@ -496,6 +660,33 @@ textarea {
 
 .rda-contact-copy a {
   color: var(--rda-color-primary);
+}
+
+.rda-hours-list {
+  line-height: 1.7;
+  margin: 0 0 18px;
+}
+
+.rda-hours-list dl,
+.rda-footer-hours dl {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 0;
+}
+
+.rda-hours-list div,
+.rda-footer-hours div {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(92px, auto) auto;
+  justify-content: start;
+}
+
+.rda-hours-list dt,
+.rda-hours-list dd,
+.rda-footer-hours dt,
+.rda-footer-hours dd {
+  margin: 0;
 }
 
 .rda-contact-actions {
@@ -579,6 +770,23 @@ textarea {
 .rda-footer-contact p {
   line-height: 1.7;
   margin: 0 0 6px;
+}
+
+.rda-footer-hours {
+  margin-top: 10px;
+}
+
+.rda-footer-hours p {
+  font-family: var(--rda-font-heading);
+  margin-bottom: 6px;
+}
+
+.rda-footer-hours dl {
+  justify-items: center;
+}
+
+.rda-footer-hours div {
+  gap: 12px;
 }
 
 .rda-footer-name {
@@ -723,10 +931,27 @@ textarea {
   }
 
   .rda-review-grid,
+  .rda-review-photo-grid,
   .rda-gallery-grid,
   .rda-contact-grid,
+  .rda-interest-options,
+  .rda-signup-fields,
   .rda-newsletter-section form {
     grid-template-columns: 1fr;
+  }
+
+  .rda-signup-form {
+    padding: 18px;
+  }
+
+  .rda-signup-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .rda-signup-footer .rda-form-note,
+  .rda-signup-footer button {
+    width: 100%;
   }
 
   .rda-contact-grid {

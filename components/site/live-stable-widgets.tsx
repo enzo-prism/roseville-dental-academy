@@ -4,12 +4,12 @@ import type { LiveRoute } from "@/lib/live-route-data";
 import {
   homeGalleryHighlight,
   photoGroups,
-  siteContact,
   socialLinks,
   testimonials,
 } from "@/lib/site-data";
 
 import { LiveContactSection } from "./live-contact-section";
+import { LiveSignupSection } from "./live-signup-section";
 
 export function LiveStableWidgets({ route }: { route: LiveRoute }) {
   const slots = new Set(route.widgetSlots);
@@ -18,8 +18,13 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
     <>
       {slots.has("reviews") ? <StableReviews /> : null}
       {slots.has("photos") ? <StableGallery full={route.route === "/photos"} /> : null}
-      {slots.has("newsletter") ? <StableNewsletter /> : null}
-      {slots.has("contact") ? <LiveContactSection compact={route.route !== "/contact"} /> : null}
+      {route.route === "/contact" && slots.has("contact") ? <LiveContactSection /> : null}
+      {slots.has("signup") ? (
+        <LiveSignupSection compact={route.route !== "/"} sourceLabel={route.title} />
+      ) : null}
+      {route.route !== "/contact" && slots.has("contact") ? (
+        <LiveContactSection compact={route.route !== "/contact"} />
+      ) : null}
       {route.route === "/" ? <StableAppointments /> : null}
     </>
   );
@@ -75,26 +80,6 @@ function StableGallery({ full = false }: { full?: boolean }) {
           </div>
         ))}
       </div>
-    </section>
-  );
-}
-
-function StableNewsletter() {
-  return (
-    <section className="rda-stable-section rda-newsletter-section" data-rda-stable-widget="newsletter">
-      <div className="rda-section-heading">
-        <h2>Subscribe</h2>
-        <span aria-hidden="true" />
-      </div>
-      <form action={siteContact.formspreeEndpoint} data-rda-subscribe-form="true" method="post">
-        <label>
-          <span>Email</span>
-          <input aria-label="Email" name="_replyto" placeholder="Email" required type="email" />
-        </label>
-        <button data-aid="SUBSCRIBE_SUBMIT_BUTTON_REND" type="submit">
-          Sign up
-        </button>
-      </form>
     </section>
   );
 }

@@ -53,6 +53,19 @@ export type TestimonialData = {
   quote: string;
 };
 
+export type ReviewPhotoData = TestimonialData & {
+  feature: string;
+  image: {
+    src: string;
+    alt: string;
+  };
+};
+
+export type SignupInterestOption = {
+  label: string;
+  value: string;
+};
+
 export type StatCardData = {
   title: string;
   value: string;

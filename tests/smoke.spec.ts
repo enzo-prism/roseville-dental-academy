@@ -274,6 +274,76 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
   expect(mismatches).toEqual([]);
 });
 
+test("homepage review photos appear directly below the hero", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForLoadState("load").catch(() => undefined);
+
+  const hero = page.locator(".widget-introduction-introduction-1").first();
+  const countdown = page.locator(".widget-countdown-countdown-1").first();
+  const reviewSection = page.locator('[data-rda-home-review-highlights="true"]');
+  const reviewCards = reviewSection.locator(".rda-review-photo-card");
+  const mismatches: string[] = [];
+
+  await expect(reviewSection).toBeVisible({ timeout: 12_000 });
+  await expect(reviewSection.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible();
+
+  const heroBox = await hero.boundingBox();
+  const countdownBox = await countdown.boundingBox();
+  const reviewBox = await reviewSection.boundingBox();
+  const cardCount = await reviewCards.count();
+  const imageSources = await reviewCards.locator("img").evaluateAll((images) =>
+    images.map((image) => image.getAttribute("src") || ""),
+  );
+  const uniqueImageSources = new Set(imageSources.filter(Boolean));
+  const reviewText = (await reviewSection.textContent()) ?? "";
+
+  if (!heroBox || !reviewBox) {
+    mismatches.push("could not measure hero and review section placement");
+  } else if (reviewBox.y < heroBox.y + heroBox.height - 4) {
+    mismatches.push("review photo section is not positioned directly after the hero");
+  }
+
+  if (!countdownBox || !reviewBox) {
+    mismatches.push("could not measure countdown and review section placement");
+  } else if (reviewBox.y > countdownBox.y) {
+    mismatches.push("review photo section rendered after the countdown/course area");
+  }
+
+  if (cardCount !== 6) {
+    mismatches.push(`expected 6 review cards, found ${cardCount}`);
+  }
+
+  if (uniqueImageSources.size !== imageSources.length) {
+    mismatches.push("review cards do not use unique gallery photos");
+  }
+
+  for (const phrase of ["Adriana Nebuloni", "Selene", "Salvador Garcia", "Breana Donahue"]) {
+    if (!reviewText.includes(phrase)) {
+      mismatches.push(`review section missing ${phrase}`);
+    }
+  }
+
+  smokeSummary.push({
+    cardCount,
+    imageSources,
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "homepage-review-photos",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "homepage-review-photos-summary.json", {
+      cardCount,
+      imageSources,
+      mismatches,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("key public pages render full-page image slots after lazy promotion", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const checkedRoutes = ["/", "/front-office-program"];

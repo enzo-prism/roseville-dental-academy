@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import manifestData from "@/snapshot/live/manifest.json";
 import { LIVE_SOURCE_ORIGIN } from "@/lib/site-config";
+import { homepageReviewHighlights } from "@/lib/site-data";
 
 export const LIVE_SITE_ORIGIN = LIVE_SOURCE_ORIGIN;
 export const LIVE_BODY_CLASS = "x x-fonts-adamina x-fonts-fjalla-one";
@@ -16,7 +17,7 @@ type ManifestRoute = (typeof manifestData.routes)[number];
 
 export type LiveRouteKind = "mirror" | "plain404";
 export type LiveShellVariant = "public" | "utility" | "plain404";
-export type LiveWidgetSlot = "contact" | "home" | "newsletter" | "photos" | "reviews";
+export type LiveWidgetSlot = "contact" | "home" | "photos" | "reviews" | "signup";
 
 export type LiveRoute = ManifestRoute & {
   description: string;
@@ -103,6 +104,11 @@ const HOMEPAGE_COURSE_COPY_REPLACEMENTS = [
   "Students move through a focused 210-hour schedule with class, clinical practice, homework, and an assigned externship day that connects classroom skills to real office workflow.",
 ] as const;
 
+const HOMEPAGE_HERO_WIDGET_REGEX =
+  /<div\b(?=[^>]*\bclass="[^"]*\bwidget-introduction-introduction-1\b[^"]*"[^>]*>)/i;
+const HOMEPAGE_AFTER_HERO_WIDGET_MARKER =
+  '<div id="f11e5afa-6606-44e2-847f-fe03d31d5b23" class="widget widget-countdown';
+
 function routeDescription(route: ManifestRoute) {
   if (route.route === "/") {
     return "Roseville Dental Academy training for dental assisting, x-ray, CPR, infection control, coronal polish, sealants, and front office skills.";
@@ -125,15 +131,23 @@ function routeDescription(route: ManifestRoute) {
 
 function widgetSlotsForRoute(route: ManifestRoute): LiveWidgetSlot[] {
   if (route.route === "/") {
-    return ["home", "reviews", "photos", "newsletter", "contact"];
+    return ["home", "photos", "signup", "contact"];
   }
 
   if (route.route === "/contact") {
-    return ["contact"];
+    return ["contact", "signup"];
   }
 
   if (route.route === "/photos") {
-    return ["photos"];
+    return ["photos", "signup"];
+  }
+
+  if (
+    route.status === 200 &&
+    !route.route.startsWith("/m/") &&
+    !route.route.includes("resume-portal")
+  ) {
+    return ["signup"];
   }
 
   return [];
@@ -472,6 +486,72 @@ function applyHomepageCourseCopyReplacements(html: string) {
   );
 }
 
+function escapeHtml(value: string | number) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderHomepageReviewHighlightsHtml() {
+  const reviewCards = homepageReviewHighlights
+    .map(
+      (review) => `
+        <article class="rda-review-photo-card">
+          <figure class="rda-review-photo-media">
+            <img src="${escapeHtml(review.image.src)}" alt="${escapeHtml(review.image.alt)}" loading="lazy" decoding="async" width="640" height="853" />
+          </figure>
+          <div class="rda-review-photo-body">
+            <p class="rda-review-photo-feature">${escapeHtml(review.feature)}</p>
+            <p class="rda-review-rating">${escapeHtml(review.rating)}.0 / 5</p>
+            <blockquote>${escapeHtml(review.quote)}</blockquote>
+            <div>
+              <p class="rda-review-name">${escapeHtml(review.name)}</p>
+              <p class="rda-review-meta">${escapeHtml(review.meta)}</p>
+            </div>
+          </div>
+        </article>`,
+    )
+    .join("");
+
+  return `
+    <section class="rda-stable-section rda-home-review-highlights" data-rda-home-review-highlights="true" aria-labelledby="rda-home-review-highlights-title">
+      <div class="rda-section-heading">
+        <h2 id="rda-home-review-highlights-title">What Students Are Saying</h2>
+        <span aria-hidden="true"></span>
+      </div>
+      <p class="rda-review-score">5.0 Roseville Dental Academy - 77 Google reviews</p>
+      <p class="rda-review-photo-intro">Recent student feedback paired with real moments from the academy gallery.</p>
+      <div class="rda-review-photo-grid">
+        ${reviewCards}
+      </div>
+    </section>`;
+}
+
+function insertHomepageReviewHighlights(html: string) {
+  if (html.includes('data-rda-home-review-highlights="true"')) {
+    return html;
+  }
+
+  const markerIndex = html.indexOf(HOMEPAGE_AFTER_HERO_WIDGET_MARKER);
+
+  if (markerIndex >= 0) {
+    return `${html.slice(0, markerIndex)}${renderHomepageReviewHighlightsHtml()}${html.slice(markerIndex)}`;
+  }
+
+  const match = html.match(HOMEPAGE_HERO_WIDGET_REGEX);
+
+  if (match?.index === undefined) {
+    return html;
+  }
+
+  const end = findClosingDiv(html, match.index + match[0].length);
+
+  return `${html.slice(0, end)}${renderHomepageReviewHighlightsHtml()}${html.slice(end)}`;
+}
+
 function sanitizeSnapshotBody(bodyHtml: string) {
   const scriptFreeHtml = stripScriptTags(bodyHtml);
   const iframeFreeHtml = stripIframes(scriptFreeHtml);
@@ -506,7 +586,9 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
   return {
     bodyClass,
     bodyHtml:
-      route.route === "/" ? applyHomepageCourseCopyReplacements(sanitizedBodyHtml) : sanitizedBodyHtml,
+      route.route === "/"
+        ? insertHomepageReviewHighlights(applyHomepageCourseCopyReplacements(sanitizedBodyHtml))
+        : sanitizedBodyHtml,
     bodyScripts: [],
     description,
     headScripts: [],

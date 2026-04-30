@@ -233,6 +233,8 @@ The shape language is squared and utilitarian.
 - **Mobile nav:** A hamburger button, a visible `Contact Us` button, and a vertical menu with the same link structure.
 - **Logo masthead:** Centered academy logo on white. Never let link overflow rules stretch it.
 - **Section heading:** Fjalla One heading with a short teal underline.
+- **Homepage review/photo highlights:** A white, bordered section directly after the homepage hero. Pair short Google review excerpts with real gallery images, one unique image per review, using squared review cards and the standard section heading underline.
+- **Quick sign-up form:** A lightweight Formspree-backed section for public pages. Keep it under one minute to complete: rectangular interest checkboxes, name, email, phone, optional notes, and one primary submit button. Use it instead of generic newsletter capture when the visitor is choosing classes or certifications.
 - **Primary actions:** Deep teal background, white text, rectangular.
 - **Secondary actions:** White background, teal or dark text, rectangular border when needed.
 - **Footer:** Deep teal background, centered white contact/nav/social blocks.

@@ -23,6 +23,7 @@
     "test:preview": "PREVIEW_URL=${PREVIEW_URL:?PREVIEW_URL is required} PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=${PREVIEW_URL} pnpm test:smoke && PREVIEW_URL=${PREVIEW_URL:?PREVIEW_URL is required} PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=${PREVIEW_URL} pnpm test:parity-content && PREVIEW_URL=${PREVIEW_URL:?PREVIEW_URL is required} PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=${PREVIEW_URL} pnpm test:ux && PREVIEW_URL=${PREVIEW_URL:?PREVIEW_URL is required} PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=${PREVIEW_URL} pnpm test:parity-visual"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.7.0",

@@ -338,22 +338,45 @@ test.describe("live-style interaction flows", () => {
       await expect(banner).toBeHidden();
     });
 
-    test("homepage newsletter signup has a submission path and email validation", async ({
+    test("quick sign up form is reusable and wired for class interest", async ({
       page,
     }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
-      const submit = page.locator('[data-aid="SUBSCRIBE_SUBMIT_BUTTON_REND"]').first();
-      const form = page.locator('form[data-rda-subscribe-form="true"]').first();
+      const submit = page.locator('[data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND"]').first();
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      const name = form.locator('input[name="Name"]').first();
       const email = form.locator('input[name="_replyto"]').first();
+      const phone = form.locator('input[name="Phone"]').first();
+      const notes = form.locator('textarea[name="Notes"]').first();
+      const options = form.locator('input[name="Interested classes[]"]');
 
       await expect(submit).toBeVisible();
       await expect(form).toHaveAttribute("action", "https://formspree.io/f/xzdkgaeg");
       await expect(form).toHaveAttribute("method", /post/i);
+      await expect(name).toHaveAttribute("required", "");
       await expect(email).toHaveAttribute("type", "email");
       await expect(email).toHaveAttribute("required", "");
-      await expect(email).toHaveAttribute("aria-label", "Email");
+      await expect(phone).toHaveAttribute("type", "tel");
+      await expect(phone).toHaveAttribute("required", "");
+      await expect(notes).toBeVisible();
+      await expect(options).toHaveCount(9);
+
+      await name.fill("Test Student");
+      await email.fill("student@example.com");
+      await phone.fill("916-555-0123");
+      await submit.click();
+      await expect(form.getByText("Choose at least one class or certification.")).toBeVisible();
+
+      await expect(form.getByLabel("Dental Assisting Program")).toBeVisible();
+      await expect(form.getByLabel("BLS / CPR")).toBeVisible();
+
+      await gotoSettled(page, "/infection-control");
+      await expect(page.locator('form[data-rda-signup-form="true"]').first()).toBeVisible();
+
+      await gotoSettled(page, "/contact");
+      await expect(page.locator('form[data-rda-signup-form="true"]').first()).toBeVisible();
     });
 
     test("contact page actions are wired", async ({ page }) => {
@@ -367,6 +390,15 @@ test.describe("live-style interaction flows", () => {
       await expect(
         page.getByRole("link", { name: "rosevilledentalacademy@gmail.com" }).first(),
       ).toHaveAttribute("href", "mailto:rosevilledentalacademy@gmail.com");
+      await expect(page.getByText("Located in Woodcreek Plaza")).toBeVisible();
+      await expect(page.getByText("Monday").first()).toBeVisible();
+      await expect(page.getByText("9AM-5PM").first()).toBeVisible();
+      await expect(page.getByText("Wednesday").first()).toBeVisible();
+      await expect(page.getByText("8AM-5PM").first()).toBeVisible();
+      await expect(page.getByText("Friday").first()).toBeVisible();
+      await expect(page.getByText("9AM-3PM").first()).toBeVisible();
+      await expect(page.getByText("Saturday").first()).toBeVisible();
+      await expect(page.getByText("Closed").first()).toBeVisible();
 
       await page.getByRole("button", { name: "Drop us a line!" }).click();
 
