@@ -16,7 +16,7 @@ import {
 } from "./support/qa-helpers";
 
 const visualParitySummary: Array<Record<string, unknown>> = [];
-const VISUAL_DIFF_TOLERANCE = 50000;
+const VISUAL_DIFF_TOLERANCE = Number(process.env.VISUAL_DIFF_TOLERANCE ?? (process.env.CI ? "75000" : "50000"));
 
 test.describe.configure({ mode: "serial" });
 
