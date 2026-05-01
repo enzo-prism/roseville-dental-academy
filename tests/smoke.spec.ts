@@ -778,13 +778,44 @@ test("elevenlabs widget is embedded on every page shell", async ({ request }, te
       timeout: 120_000,
     });
     const html = await response.text();
-    const hasWidget = html.includes(
-      `<elevenlabs-convai agent-id="${elevenLabsAgentId}"></elevenlabs-convai>`,
-    );
+    const hasWidget = html.includes("<elevenlabs-convai");
+    const hasAgentId = html.includes(`agent-id="${elevenLabsAgentId}"`);
+    const hasBrandOrbColors =
+      html.includes('avatar-orb-color-1="#315658"') &&
+      html.includes('avatar-orb-color-2="#B78336"');
+    const hasDisplayText =
+      html.includes('action-text="Questions about classes?"') &&
+      html.includes('start-call-text="Start a call"') &&
+      html.includes('expand-text="Ask Roseville Dental Academy"');
+    const hasMarkdownSafety =
+      html.includes(
+        'markdown-link-allowed-hosts="rosevilledentalacademy.com,www.rosevilledentalacademy.com"',
+      ) && html.includes('markdown-link-allow-http="false"');
+    const isDismissible = html.includes('dismissible="true"');
     const hasScript = html.includes(elevenLabsScriptSrc);
 
     if (!hasWidget) {
       mismatches.push(`${routePath} missing ElevenLabs widget element`);
+    }
+
+    if (!hasAgentId) {
+      mismatches.push(`${routePath} missing ElevenLabs agent id`);
+    }
+
+    if (!hasBrandOrbColors) {
+      mismatches.push(`${routePath} missing branded ElevenLabs orb colors`);
+    }
+
+    if (!hasDisplayText) {
+      mismatches.push(`${routePath} missing ElevenLabs display text customization`);
+    }
+
+    if (!hasMarkdownSafety) {
+      mismatches.push(`${routePath} missing ElevenLabs markdown link safety attributes`);
+    }
+
+    if (!isDismissible) {
+      mismatches.push(`${routePath} ElevenLabs widget should be dismissible`);
     }
 
     if (!hasScript) {
@@ -792,8 +823,13 @@ test("elevenlabs widget is embedded on every page shell", async ({ request }, te
     }
 
     results.push({
+      hasAgentId,
+      hasBrandOrbColors,
+      hasDisplayText,
+      hasMarkdownSafety,
       hasScript,
       hasWidget,
+      isDismissible,
       route: routePath,
       status: response.status(),
     });

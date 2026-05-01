@@ -5,6 +5,16 @@ import Script from "next/script";
 
 const DEFAULT_AGENT_ID = "agent_6301kn20gh9denavkvn1bg9krf54";
 const ELEVENLABS_SCRIPT_SRC = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+const ELEVENLABS_WIDGET_TEXT = {
+  action: "Questions about classes?",
+  endCall: "End call",
+  expand: "Ask Roseville Dental Academy",
+  listening: "Listening...",
+  speaking: "Roseville Dental Academy is speaking",
+  startCall: "Start a call",
+} as const;
+const ELEVENLABS_MARKDOWN_ALLOWED_HOSTS =
+  "rosevilledentalacademy.com,www.rosevilledentalacademy.com";
 
 function hasVisibleExpandedSheet(element: HTMLElement) {
   const shadowRoot = element.shadowRoot;
@@ -114,7 +124,20 @@ export function ElevenLabsAgentWidget() {
       >
         {createElement("elevenlabs-convai", {
           "agent-id": agentId,
+          "action-text": ELEVENLABS_WIDGET_TEXT.action,
+          "avatar-orb-color-1": "#315658",
+          "avatar-orb-color-2": "#B78336",
+          dismissible: "true",
+          "end-call-text": ELEVENLABS_WIDGET_TEXT.endCall,
+          "expand-text": ELEVENLABS_WIDGET_TEXT.expand,
+          "listening-text": ELEVENLABS_WIDGET_TEXT.listening,
+          "markdown-link-allow-http": "false",
+          "markdown-link-allowed-hosts": ELEVENLABS_MARKDOWN_ALLOWED_HOSTS,
+          "markdown-link-include-www": "true",
           ref: widgetRef,
+          "speaking-text": ELEVENLABS_WIDGET_TEXT.speaking,
+          "start-call-text": ELEVENLABS_WIDGET_TEXT.startCall,
+          "syntax-highlight-theme": "auto",
         })}
       </div>
     </>
