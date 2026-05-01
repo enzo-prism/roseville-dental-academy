@@ -2,6 +2,26 @@
 
 import { useId, useState } from "react";
 import type { FormEvent } from "react";
+import {
+  AirVent,
+  BadgeCheck,
+  BadgeInfo,
+  BriefcaseBusiness,
+  CircleHelp,
+  ClipboardCheck,
+  GraduationCap,
+  HeartPulse,
+  ListChecks,
+  Mail,
+  MessageSquareText,
+  Phone,
+  Radiation,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 
 import { signupInterestOptions, siteContact } from "@/lib/site-data";
 
@@ -10,8 +30,41 @@ type LiveSignupSectionProps = {
   sourceLabel: string;
 };
 
+const interestIcons: Record<string, LucideIcon> = {
+  "Dental Assisting Program": GraduationCap,
+  "BLS / CPR": HeartPulse,
+  "Infection Control": ShieldCheck,
+  "Radiation Safety": Radiation,
+  "Coronal Polish": Sparkles,
+  "Pit and Fissure Sealants": BadgeCheck,
+  "Front Office Program": BriefcaseBusiness,
+  "N95 Fit Test": AirVent,
+  "Not sure yet": CircleHelp,
+};
+
+function SignupIcon({
+  Icon,
+  className = "rda-signup-icon",
+  dataIcon,
+}: {
+  Icon: LucideIcon;
+  className?: string;
+  dataIcon?: string;
+}) {
+  return (
+    <Icon
+      aria-hidden="true"
+      className={className}
+      data-rda-signup-icon={dataIcon}
+      focusable="false"
+      strokeWidth={1.8}
+    />
+  );
+}
+
 export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSectionProps) {
   const formId = useId();
+  const titleId = `${formId}-title`;
   const errorId = `${formId}-interest-error`;
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
@@ -35,10 +88,13 @@ export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSe
     <section
       className={compact ? "rda-stable-section rda-signup-section rda-signup-section-compact" : "rda-stable-section rda-signup-section"}
       data-rda-signup-section="true"
-      aria-labelledby="rda-signup-title"
+      aria-labelledby={titleId}
     >
-      <div className="rda-section-heading">
-        <h2 id="rda-signup-title">Quick Sign Up</h2>
+      <div className="rda-section-heading rda-signup-heading">
+        <span className="rda-signup-heading-icon" data-rda-signup-icon="heading">
+          <SignupIcon Icon={ClipboardCheck} />
+        </span>
+        <h2 id={titleId}>Quick Sign Up</h2>
         <span aria-hidden="true" />
       </div>
       <p className="rda-signup-intro">
@@ -58,10 +114,16 @@ export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSe
           aria-invalid={attemptedSubmit && !hasInterest ? "true" : undefined}
           className="rda-interest-fieldset"
         >
-          <legend>Classes or certifications</legend>
+          <legend>
+            <span className="rda-interest-legend">
+              <SignupIcon Icon={ListChecks} />
+              Classes or certifications
+            </span>
+          </legend>
           <div className="rda-interest-options">
             {signupInterestOptions.map((option) => {
               const isSelected = selectedInterests.includes(option.value);
+              const InterestIcon = interestIcons[option.value] ?? BadgeCheck;
 
               return (
                 <label
@@ -76,7 +138,15 @@ export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSe
                     type="checkbox"
                     value={option.value}
                   />
-                  <span>{option.label}</span>
+                  <span className="rda-interest-option-content">
+                    <span
+                      className="rda-interest-option-icon"
+                      data-rda-signup-icon={option.value}
+                    >
+                      <SignupIcon Icon={InterestIcon} />
+                    </span>
+                    <span>{option.label}</span>
+                  </span>
                 </label>
               );
             })}
@@ -89,11 +159,17 @@ export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSe
         </fieldset>
         <div className="rda-signup-fields">
           <label>
-            Name
+            <span className="rda-field-label">
+              <SignupIcon Icon={UserRound} dataIcon="name" />
+              Name
+            </span>
             <input autoComplete="name" name="Name" placeholder="Name" required type="text" />
           </label>
           <label>
-            Email
+            <span className="rda-field-label">
+              <SignupIcon Icon={Mail} dataIcon="email" />
+              Email
+            </span>
             <input
               autoComplete="email"
               name="_replyto"
@@ -103,12 +179,18 @@ export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSe
             />
           </label>
           <label>
-            Phone
+            <span className="rda-field-label">
+              <SignupIcon Icon={Phone} dataIcon="phone" />
+              Phone
+            </span>
             <input autoComplete="tel" name="Phone" placeholder="Phone" required type="tel" />
           </label>
         </div>
         <label className="rda-signup-notes">
-          Other notes
+          <span className="rda-field-label">
+            <SignupIcon Icon={MessageSquareText} dataIcon="notes" />
+            Other notes
+          </span>
           <textarea
             name="Notes"
             placeholder="Schedule questions, goals, or anything helpful"
@@ -116,9 +198,13 @@ export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSe
           />
         </label>
         <div className="rda-signup-footer">
-          <p className="rda-form-note">Short form, quick follow-up. No payment is collected here.</p>
+          <p className="rda-form-note rda-signup-note">
+            <SignupIcon Icon={BadgeInfo} dataIcon="note" />
+            <span>Short form, quick follow-up. No payment is collected here.</span>
+          </p>
           <button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">
             Send interest
+            <SignupIcon Icon={Send} className="rda-signup-submit-icon" dataIcon="submit" />
           </button>
         </div>
       </form>

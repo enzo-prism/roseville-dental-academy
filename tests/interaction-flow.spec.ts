@@ -351,6 +351,7 @@ test.describe("live-style interaction flows", () => {
       const phone = form.locator('input[name="Phone"]').first();
       const notes = form.locator('textarea[name="Notes"]').first();
       const options = form.locator('input[name="Interested classes[]"]');
+      const optionIcons = form.locator(".rda-interest-option-icon[data-rda-signup-icon]");
 
       await expect(submit).toBeVisible();
       await expect(form).toHaveAttribute("action", "https://formspree.io/f/xzdkgaeg");
@@ -362,6 +363,12 @@ test.describe("live-style interaction flows", () => {
       await expect(phone).toHaveAttribute("required", "");
       await expect(notes).toBeVisible();
       await expect(options).toHaveCount(9);
+      await expect(optionIcons).toHaveCount(9);
+      await expect(form.locator('[data-rda-signup-icon="name"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="email"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="phone"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="notes"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
 
       await name.fill("Test Student");
       await email.fill("student@example.com");

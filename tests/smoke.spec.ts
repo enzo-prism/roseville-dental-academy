@@ -232,6 +232,86 @@ test("contact us button replaces the shopping and profile utility icons", async 
   expect(mismatches).toEqual([]);
 });
 
+test("desktop navigation items render distinct matching icons", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+
+  await page.getByRole("button", { name: "More Information" }).click();
+  await expect(page.locator('[data-rda-more-menu][data-open="true"]')).toBeVisible();
+
+  const result = await page.evaluate(() => {
+    const readItem = (item: Element) => ({
+      icon: item.querySelector("[data-rda-nav-icon]")?.getAttribute("data-rda-nav-icon") || "",
+      label: item.textContent?.replace(/\s+/g, " ").trim() || "",
+    });
+
+    return {
+      dropdown: Array.from(document.querySelectorAll(".rda-more-menu .rda-more-link")).map(readItem),
+      topLevel: Array.from(
+        document.querySelectorAll(
+          ".rda-desktop-nav .rda-nav-link, .rda-desktop-nav .rda-contact-us-button",
+        ),
+      ).map(readItem),
+    };
+  });
+
+  const expected = new Map([
+    ["Home", "home"],
+    ["BLS/CPR", "heart-pulse"],
+    ["Infection Control", "shield-check"],
+    ["Coronal Polish", "sparkles"],
+    ["Radiation Safety", "radiation"],
+    ["More Information", "book-open-check"],
+    ["Sealants", "badge-check"],
+    ["Contact Us", "phone"],
+    ["Dental Assisting Program", "graduation-cap"],
+    ["Meet the Instructors", "user-round-check"],
+    ["FAQs", "circle-help"],
+    ["Photos", "images"],
+    ["Front Office Program", "briefcase-business"],
+    ["Resume Portal DR/OMS only", "file-user"],
+  ]);
+  const allItems = [...result.topLevel, ...result.dropdown];
+  const mismatches: string[] = [];
+
+  for (const [label, icon] of expected) {
+    const match = allItems.find((item) => item.label === label);
+
+    if (!match) {
+      mismatches.push(`missing nav item ${label}`);
+    } else if (match.icon !== icon) {
+      mismatches.push(`${label} expected ${icon} icon, found ${match.icon || "none"}`);
+    }
+  }
+
+  const icons = allItems
+    .filter((item) => expected.has(item.label))
+    .map((item) => item.icon)
+    .filter(Boolean);
+
+  if (new Set(icons).size !== expected.size) {
+    mismatches.push("desktop nav icons are not unique across the top-level and dropdown items");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    result,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "desktop-nav-icons",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "desktop-nav-icons-summary.json", {
+      expected: Array.from(expected.entries()),
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("social media links render as branded buttons", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });

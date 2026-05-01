@@ -3,29 +3,75 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Menu, X } from "lucide-react";
+import {
+  BadgeCheck,
+  BookOpenCheck,
+  BriefcaseBusiness,
+  ChevronDown,
+  CircleHelp,
+  FileUser,
+  GraduationCap,
+  HeartPulse,
+  Home,
+  Images,
+  Menu,
+  Phone,
+  Radiation,
+  ShieldCheck,
+  Sparkles,
+  UserRoundCheck,
+  X,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { announcement } from "@/lib/site-data";
 
 const logoSrc = "/assets/live/home/logo-academy.jpg";
 
-const primaryLinks = [
-  { href: "/", label: "Home" },
-  { href: "/bls%2Fcpr-1", label: "BLS/CPR" },
-  { href: "/infection-control", label: "Infection Control" },
-  { href: "/coronal-polish", label: "Coronal Polish" },
-  { href: "/radiation-safety", label: "Radiation Safety" },
-  { href: "/sealants", label: "Sealants" },
+type NavLinkItem = {
+  href: string;
+  Icon: LucideIcon;
+  iconKey: string;
+  label: string;
+};
+
+const primaryLinks: NavLinkItem[] = [
+  { href: "/", Icon: Home, iconKey: "home", label: "Home" },
+  { href: "/bls%2Fcpr-1", Icon: HeartPulse, iconKey: "heart-pulse", label: "BLS/CPR" },
+  { href: "/infection-control", Icon: ShieldCheck, iconKey: "shield-check", label: "Infection Control" },
+  { href: "/coronal-polish", Icon: Sparkles, iconKey: "sparkles", label: "Coronal Polish" },
+  { href: "/radiation-safety", Icon: Radiation, iconKey: "radiation", label: "Radiation Safety" },
+  { href: "/sealants", Icon: BadgeCheck, iconKey: "badge-check", label: "Sealants" },
 ];
 
-const moreLinks = [
-  { href: "/dental-assisting-program", label: "Dental Assisting Program" },
-  { href: "/meet-the-instructors", label: "Meet the Instructors" },
-  { href: "/faqs-1", label: "FAQs" },
-  { href: "/photos", label: "Photos" },
-  { href: "/front-office-program", label: "Front Office Program" },
-  { href: "/resume-portal-dr%2Foms-only", label: "Resume Portal DR/OMS only" },
+const moreLinks: NavLinkItem[] = [
+  {
+    href: "/dental-assisting-program",
+    Icon: GraduationCap,
+    iconKey: "graduation-cap",
+    label: "Dental Assisting Program",
+  },
+  {
+    href: "/meet-the-instructors",
+    Icon: UserRoundCheck,
+    iconKey: "user-round-check",
+    label: "Meet the Instructors",
+  },
+  { href: "/faqs-1", Icon: CircleHelp, iconKey: "circle-help", label: "FAQs" },
+  { href: "/photos", Icon: Images, iconKey: "images", label: "Photos" },
+  {
+    href: "/front-office-program",
+    Icon: BriefcaseBusiness,
+    iconKey: "briefcase-business",
+    label: "Front Office Program",
+  },
+  {
+    href: "/resume-portal-dr%2Foms-only",
+    Icon: FileUser,
+    iconKey: "file-user",
+    label: "Resume Portal DR/OMS only",
+  },
 ];
 
 function normalizePathname(value: string) {
@@ -44,6 +90,28 @@ function useActivePath(currentRoute: string) {
 
 function isActive(activePath: string, href: string) {
   return normalizePathname(href) === activePath;
+}
+
+function NavIcon({
+  className = "rda-nav-icon",
+  Icon,
+  iconKey,
+  size = 15,
+}: {
+  className?: string;
+  Icon: LucideIcon;
+  iconKey: string;
+  size?: number;
+}) {
+  return (
+    <Icon
+      aria-hidden="true"
+      className={className}
+      data-rda-nav-icon={iconKey}
+      size={size}
+      strokeWidth={1.9}
+    />
+  );
 }
 
 export function LiveHeader({ currentRoute }: { currentRoute: string }) {
@@ -97,6 +165,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
         setMoreOpen(false);
       }}
     >
+      <NavIcon Icon={link.Icon} iconKey={link.iconKey} />
       {link.label}
     </Link>
   ));
@@ -113,7 +182,8 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
       }}
       role="menuitem"
     >
-      {link.label}
+      <NavIcon className="rda-more-icon" Icon={link.Icon} iconKey={link.iconKey} />
+      <span>{link.label}</span>
     </Link>
   ));
 
@@ -134,7 +204,8 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
           {mobileOpen ? <X aria-hidden="true" size={32} /> : <Menu aria-hidden="true" size={36} />}
         </button>
         <Link className="rda-contact-us-button" data-rda-contact-us="true" href="/contact">
-          Contact Us
+          <NavIcon Icon={Phone} iconKey="phone" />
+          <span>Contact Us</span>
         </Link>
       </div>
 
@@ -149,6 +220,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
               onClick={() => setMoreOpen((value) => !value)}
               type="button"
             >
+              <NavIcon Icon={BookOpenCheck} iconKey="book-open-check" />
               <span>More Information</span>
               <ChevronDown aria-hidden="true" size={16} />
             </button>
@@ -170,7 +242,8 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
             data-rda-contact-us="true"
             href="/contact"
           >
-            Contact Us
+            <NavIcon Icon={Phone} iconKey="phone" />
+            <span>Contact Us</span>
           </Link>
         </div>
       </nav>
@@ -198,7 +271,15 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                 key={link.href}
                 onClick={() => setMobileOpen(false)}
               >
-                {link.label}
+                <span className="rda-mobile-label">
+                  <NavIcon
+                    className="rda-mobile-nav-icon"
+                    Icon={link.Icon}
+                    iconKey={link.iconKey}
+                    size={16}
+                  />
+                  <span>{link.label}</span>
+                </span>
               </Link>
             ))}
             <div className="rda-mobile-more">
@@ -208,7 +289,15 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                 onClick={() => setMoreOpen((value) => !value)}
                 type="button"
               >
-                <span>More Information</span>
+                <span className="rda-mobile-label">
+                  <NavIcon
+                    className="rda-mobile-nav-icon"
+                    Icon={BookOpenCheck}
+                    iconKey="book-open-check"
+                    size={16}
+                  />
+                  <span>More Information</span>
+                </span>
                 <ChevronDown aria-hidden="true" size={16} />
               </button>
               {moreOpen ? (
@@ -221,7 +310,15 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                       key={link.href}
                       onClick={() => setMobileOpen(false)}
                     >
-                      {link.label}
+                      <span className="rda-mobile-label">
+                        <NavIcon
+                          className="rda-mobile-nav-icon"
+                          Icon={link.Icon}
+                          iconKey={link.iconKey}
+                          size={15}
+                        />
+                        <span>{link.label}</span>
+                      </span>
                     </Link>
                   ))}
                 </div>
@@ -234,7 +331,15 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
               href="/contact"
               onClick={() => setMobileOpen(false)}
             >
-              Contact Us
+              <span className="rda-mobile-label">
+                <NavIcon
+                  className="rda-mobile-nav-icon"
+                  Icon={Phone}
+                  iconKey="phone"
+                  size={16}
+                />
+                <span>Contact Us</span>
+              </span>
             </Link>
           </nav>
         </div>

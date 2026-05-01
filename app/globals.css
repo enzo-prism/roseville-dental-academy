@@ -114,10 +114,10 @@ textarea {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: 20px;
   justify-content: center;
   margin: 0 auto;
-  max-width: 1200px;
+  max-width: 1240px;
 }
 
 .rda-nav-link,
@@ -130,7 +130,7 @@ textarea {
   display: inline-flex;
   font-family: var(--rda-font-heading);
   font-size: 14px;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
   line-height: 1.2;
   min-height: 40px;
@@ -138,6 +138,14 @@ textarea {
   text-decoration: none;
   text-transform: none;
   white-space: nowrap;
+}
+
+.rda-nav-icon,
+.rda-more-icon,
+.rda-mobile-nav-icon {
+  color: currentColor;
+  flex: 0 0 auto;
+  opacity: 0.76;
 }
 
 .rda-nav-link:hover,
@@ -167,6 +175,19 @@ textarea {
   text-decoration: none;
 }
 
+.rda-nav-link:hover .rda-nav-icon,
+.rda-nav-link:focus-visible .rda-nav-icon,
+.rda-contact-us-button:hover .rda-nav-icon,
+.rda-contact-us-button:focus-visible .rda-nav-icon,
+.rda-more-link:hover .rda-more-icon,
+.rda-more-link:focus-visible .rda-more-icon,
+.rda-mobile-link:hover .rda-mobile-nav-icon,
+.rda-mobile-link:focus-visible .rda-mobile-nav-icon,
+.rda-mobile-sublink:hover .rda-mobile-nav-icon,
+.rda-mobile-sublink:focus-visible .rda-mobile-nav-icon {
+  opacity: 1;
+}
+
 .rda-more-wrap {
   position: relative;
 }
@@ -185,10 +206,13 @@ textarea {
 }
 
 .rda-more-link {
+  align-items: center;
   color: var(--rda-color-nav);
-  display: block;
+  display: flex;
   font-family: var(--rda-font-heading);
   font-size: 14px;
+  gap: 10px;
+  justify-content: flex-start;
   line-height: 1.35;
   padding: 11px 18px;
   text-decoration: none;
@@ -276,6 +300,13 @@ textarea {
   padding: 0;
   text-decoration: none;
   width: 100%;
+}
+
+.rda-mobile-label {
+  align-items: center;
+  display: inline-flex;
+  gap: 10px;
+  min-width: 0;
 }
 
 .rda-mobile-sublink {
@@ -719,6 +750,23 @@ textarea {
   text-align: center;
 }
 
+.rda-signup-heading .rda-signup-heading-icon {
+  align-items: center;
+  background: var(--rda-color-surface);
+  border: 1px solid var(--rda-color-border-soft);
+  color: var(--rda-color-primary);
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  margin-bottom: -2px;
+  width: 38px;
+}
+
+.rda-signup-heading .rda-signup-heading-icon svg {
+  height: 20px;
+  width: 20px;
+}
+
 .rda-signup-form {
   border: 1px solid var(--rda-color-border-soft);
   display: grid;
@@ -736,6 +784,25 @@ textarea {
 .rda-interest-fieldset legend {
   font-family: var(--rda-font-heading);
   margin: 0 0 10px;
+}
+
+.rda-interest-legend,
+.rda-field-label,
+.rda-signup-note {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.rda-interest-legend {
+  color: var(--rda-color-heading);
+}
+
+.rda-signup-icon {
+  color: var(--rda-color-primary);
+  flex: 0 0 auto;
+  height: 17px;
+  width: 17px;
 }
 
 .rda-interest-options {
@@ -762,8 +829,42 @@ textarea {
 }
 
 .rda-interest-option input {
+  accent-color: var(--rda-color-primary);
   min-height: auto;
   width: auto;
+}
+
+.rda-interest-option-content {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.rda-interest-option-icon {
+  align-items: center;
+  border: 1px solid var(--rda-color-border-soft);
+  color: var(--rda-color-primary);
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.rda-interest-option-icon .rda-signup-icon {
+  height: 15px;
+  width: 15px;
+}
+
+.rda-interest-option[data-selected="true"] .rda-interest-option-icon {
+  background: var(--rda-color-primary);
+  border-color: var(--rda-color-primary);
+  color: var(--rda-color-surface);
+}
+
+.rda-interest-option[data-selected="true"] .rda-interest-option-icon .rda-signup-icon {
+  color: var(--rda-color-surface);
 }
 
 .rda-signup-fields {
@@ -778,16 +879,39 @@ textarea {
   gap: 7px;
 }
 
+.rda-field-label {
+  color: var(--rda-color-heading);
+  font-family: var(--rda-font-heading);
+}
+
 .rda-signup-footer {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .rda-signup-footer .rda-form-note {
+  flex: 0 1 auto;
   max-width: 440px;
+}
+
+.rda-signup-form input,
+.rda-signup-form textarea,
+.rda-signup-form button {
+  scroll-margin-block-end: 190px;
+}
+
+.rda-signup-note {
+  line-height: 1.5;
+}
+
+.rda-signup-submit-icon {
+  color: currentColor;
+  height: 15px;
+  margin-left: 8px;
+  width: 15px;
 }
 
 .rda-form-error {
