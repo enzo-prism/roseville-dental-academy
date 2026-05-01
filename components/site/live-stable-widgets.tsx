@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import type { LiveRoute } from "@/lib/live-route-data";
@@ -32,7 +33,7 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {route.route !== "/contact" && slots.has("contact") ? (
         <LiveContactSection compact={route.route !== "/contact"} />
       ) : null}
-      {route.route === "/" ? <StableAppointments /> : null}
+      {route.route === "/" ? <StableSocialFollow /> : null}
     </>
   );
 }
@@ -159,11 +160,16 @@ function StableGallery({ full = false }: { full?: boolean }) {
   const groups = full ? photoGroups : [{ ...homeGalleryHighlight, items: homeGalleryHighlight.items }];
 
   return (
-    <section className="rda-stable-section rda-gallery-section" data-rda-stable-widget="gallery">
+    <section
+      className={`rda-stable-section rda-gallery-section${full ? "" : " rda-gallery-section-home"}`}
+      data-rda-gallery-mode={full ? "full" : "home"}
+      data-rda-stable-widget="gallery"
+    >
       <div className="rda-section-heading">
         <h2>{full ? "Photo Gallery" : homeGalleryHighlight.title}</h2>
         <span aria-hidden="true" />
       </div>
+      {!full ? <p className="rda-gallery-intro">{homeGalleryHighlight.copy}</p> : null}
       <div className="rda-gallery-groups">
         {groups.map((group) => (
           <div className="rda-gallery-group" key={group.title}>
@@ -183,18 +189,26 @@ function StableGallery({ full = false }: { full?: boolean }) {
           </div>
         ))}
       </div>
+      {!full ? (
+        <div className="rda-gallery-actions">
+          <Link href="/photos">{homeGalleryHighlight.ctaLabel}</Link>
+        </div>
+      ) : null}
     </section>
   );
 }
 
-function StableAppointments() {
+function StableSocialFollow() {
   return (
-    <section className="rda-stable-section rda-appointments-section" data-rda-stable-widget="appointments">
+    <section className="rda-stable-section rda-social-follow-section" data-rda-stable-widget="social-follow">
       <div className="rda-section-heading">
-        <h2>Online Appointments</h2>
+        <h2>Follow Us on Social Media</h2>
         <span aria-hidden="true" />
       </div>
-      <p>New services are coming soon!</p>
+      <p className="rda-social-follow-copy">
+        See class photos, course updates, student moments, and academy reminders on Facebook,
+        Instagram, and TikTok.
+      </p>
       <SocialLinkButtons links={socialLinks} variant="inline" />
     </section>
   );

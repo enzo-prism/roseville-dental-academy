@@ -236,6 +236,24 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
+  const mismatches: string[] = [];
+  const socialFollowSection = page.locator('[data-rda-stable-widget="social-follow"]');
+  const socialFollowCount = await socialFollowSection.count();
+  const socialFollowText =
+    socialFollowCount > 0 ? await socialFollowSection.first().innerText() : "";
+
+  if (socialFollowCount !== 1) {
+    mismatches.push(`expected 1 homepage social follow section, found ${socialFollowCount}`);
+  }
+
+  if (!/Follow Us on Social Media/i.test(socialFollowText)) {
+    mismatches.push("homepage social section is missing the social media heading");
+  }
+
+  if (/Online Appointments|New services are coming soon/i.test(socialFollowText)) {
+    mismatches.push("homepage social section still contains the old appointments placeholder copy");
+  }
+
   const buttons = page.locator("[data-rda-social-button]");
   const result = await buttons.evaluateAll((links) =>
     links.map((link) => ({
@@ -246,7 +264,6 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
       tagName: link.tagName.toLowerCase(),
     })),
   );
-  const mismatches: string[] = [];
   const expected = [
     ["facebook", "Facebook"],
     ["instagram", "Instagram"],
@@ -452,6 +469,69 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     writeJsonArtifact(testInfo, "homepage-review-photos-summary.json", {
       cardCount,
       imageSources,
+      mismatches,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
+test("homepage gallery preview shows a larger photo showcase", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+
+  const gallery = page.locator('[data-rda-stable-widget="gallery"][data-rda-gallery-mode="home"]');
+  const images = gallery.locator(".rda-gallery-item img");
+  const mismatches: string[] = [];
+
+  await expect(gallery).toBeVisible({ timeout: 12_000 });
+  await expect(gallery.getByRole("heading", { name: "Gallery" })).toBeVisible();
+  await expect(gallery.getByRole("link", { name: "View the full gallery" })).toHaveAttribute(
+    "href",
+    "/photos",
+  );
+
+  const galleryText = (await gallery.textContent()) ?? "";
+  const imageCount = await images.count();
+  const imageDetails = await images.evaluateAll((nodes) =>
+    nodes.map((image) => ({
+      alt: image.getAttribute("alt") || "",
+      src: image.getAttribute("src") || "",
+    })),
+  );
+  const uniqueSources = new Set(imageDetails.map((image) => image.src).filter(Boolean));
+
+  if (imageCount !== 9) {
+    mismatches.push(`expected 9 homepage gallery photos, found ${imageCount}`);
+  }
+
+  if (uniqueSources.size !== imageDetails.length) {
+    mismatches.push("homepage gallery preview repeats one or more photos");
+  }
+
+  for (const phrase of ["hands-on dental assisting", "radiography", "BLS", "clinical safety"]) {
+    if (!galleryText.includes(phrase)) {
+      mismatches.push(`homepage gallery copy missing ${phrase}`);
+    }
+  }
+
+  if (imageDetails.some((image) => image.alt.length === 0 || image.src.length === 0)) {
+    mismatches.push("homepage gallery has an image without src or alt text");
+  }
+
+  smokeSummary.push({
+    imageCount,
+    imageDetails,
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "homepage-gallery-preview",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "homepage-gallery-preview-summary.json", {
+      galleryText,
+      imageDetails,
       mismatches,
     });
   }

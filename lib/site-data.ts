@@ -865,22 +865,20 @@ export const homeSecondarySplit: SplitSectionContent = {
 };
 
 export const homeGalleryHighlight = {
-  title: "Photo gallery",
+  title: "Gallery",
   copy:
-    "A few moments from the classroom, operatories, and hands-on sessions at the academy.",
+    "See recent student moments from hands-on dental assisting, radiography, BLS, and clinical safety training.",
+  ctaLabel: "View the full gallery",
   items: [
-    {
-      src: siteImages.homeGallery1,
-      alt: "Students practicing inside the Roseville Dental Academy clinic",
-    },
-    {
-      src: siteImages.homeGallery2,
-      alt: "Hands-on dental assisting instruction in the operatory",
-    },
-    {
-      src: siteImages.homeGallery3,
-      alt: "Clinical training setup inside the academy",
-    },
+    livePhoto("/assets/live/drive/class-group-scrubs.jpg", "Recent Roseville Dental Academy class group in scrubs"),
+    livePhoto("/assets/live/drive/certificate-celebration.jpg", "Students celebrating course completion certificates"),
+    livePhoto("/assets/live/drive/tree-class-photo.jpg", "Recent class group photo outside the academy"),
+    livePhoto("/assets/live/drive/typodont-practice.jpg", "Students practicing dental anatomy and typodont skills"),
+    livePhoto("/assets/live/photos/e49f18da-07a4-40eb-bbb6-fb3954968af5.jpg", "Dental assisting student practice"),
+    livePhoto("/assets/live/photos/fc50cf07-aeb2-428a-980d-851803e10d45.jpg", "Dental assisting students in the clinic"),
+    livePhoto("/assets/live/photos/64b30c90-dc2b-4e69-a6fb-6bfafd36160d.jpg", "X-ray training in the academy"),
+    livePhoto("/assets/live/photos/8021e43b-b453-4fa5-9d37-218c88a0a96d.jpg", "BLS students practicing CPR"),
+    livePhoto("/assets/live/photos/img-5918-2.jpg", "Clinical safety training practice"),
   ],
 };
 

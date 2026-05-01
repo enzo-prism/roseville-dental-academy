@@ -620,6 +620,26 @@ textarea {
   gap: 42px;
 }
 
+.rda-gallery-intro {
+  color: var(--rda-color-muted);
+  line-height: 1.7;
+  margin: -6px auto 26px;
+  max-width: 760px;
+  text-align: center;
+}
+
+.rda-gallery-section-home .rda-gallery-groups {
+  gap: 24px;
+}
+
+.rda-gallery-section-home .rda-gallery-grid {
+  gap: 12px;
+}
+
+.rda-gallery-section-home .rda-gallery-item {
+  border: 1px solid var(--rda-color-border-soft);
+}
+
 .rda-gallery-group h3 {
   font-family: var(--rda-font-heading);
   font-size: 24px;
@@ -651,6 +671,31 @@ textarea {
   height: 100%;
   object-fit: cover;
   width: 100%;
+}
+
+.rda-gallery-actions {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.rda-gallery-actions a {
+  align-items: center;
+  background: var(--rda-color-surface);
+  border: 1px solid var(--rda-color-primary);
+  color: var(--rda-color-primary);
+  display: inline-flex;
+  font-family: var(--rda-font-heading);
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 22px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.rda-gallery-actions a:hover,
+.rda-gallery-actions a:focus-visible {
+  border-color: var(--rda-color-accent-active);
+  color: var(--rda-color-accent-deep);
 }
 
 .rda-newsletter-section {
@@ -911,8 +956,19 @@ textarea {
   gap: 10px;
 }
 
-.rda-appointments-section {
+.rda-social-follow-section {
   text-align: center;
+}
+
+.rda-social-follow-copy {
+  color: var(--rda-color-muted);
+  line-height: 1.7;
+  margin: -6px auto 0;
+  max-width: 680px;
+}
+
+.rda-social-follow-section .rda-social-buttons {
+  margin-top: 24px;
 }
 
 .rda-social-buttons {
