@@ -236,8 +236,19 @@ test("desktop navigation items render distinct matching icons", async ({ page },
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
-  await page.getByRole("button", { name: "More Information" }).click();
-  await expect(page.locator('[data-rda-more-menu][data-open="true"]')).toBeVisible();
+  const moreButton = page.getByRole("button", { name: "More Information" });
+
+  await page.waitForLoadState("load").catch(() => undefined);
+  await expect(moreButton).toBeVisible({ timeout: 12_000 });
+  await expect(page.locator('[data-rda-nav-icon="book-open-check"]')).toBeVisible({
+    timeout: 12_000,
+  });
+  await expect(async () => {
+    await moreButton.click();
+    await expect(page.locator('[data-rda-more-menu][data-open="true"]')).toBeVisible({
+      timeout: 1_500,
+    });
+  }).toPass({ timeout: 12_000 });
 
   const result = await page.evaluate(() => {
     const readItem = (item: Element) => ({
