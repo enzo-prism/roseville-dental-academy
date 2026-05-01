@@ -232,6 +232,61 @@ test("contact us button replaces the shopping and profile utility icons", async 
   expect(mismatches).toEqual([]);
 });
 
+test("social media links render as branded buttons", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+
+  const buttons = page.locator("[data-rda-social-button]");
+  const result = await buttons.evaluateAll((links) =>
+    links.map((link) => ({
+      href: link.getAttribute("href") || "",
+      icon: link.getAttribute("data-rda-social-button") || "",
+      label: link.textContent?.replace(/\s+/g, " ").trim() || "",
+      svgCount: link.querySelectorAll("svg").length,
+      tagName: link.tagName.toLowerCase(),
+    })),
+  );
+  const mismatches: string[] = [];
+  const expected = [
+    ["facebook", "Facebook"],
+    ["instagram", "Instagram"],
+    ["tiktok", "TikTok"],
+  ];
+
+  if (result.length !== 6) {
+    mismatches.push(`expected 6 social buttons across contact and footer, found ${result.length}`);
+  }
+
+  for (const [icon, label] of expected) {
+    const matches = result.filter((entry) => entry.icon === icon && entry.label === label);
+
+    if (matches.length !== 2) {
+      mismatches.push(`expected 2 ${label} social buttons, found ${matches.length}`);
+    }
+
+    if (matches.some((entry) => entry.svgCount !== 1 || entry.tagName !== "a")) {
+      mismatches.push(`${label} social buttons are missing their branded SVG link treatment`);
+    }
+  }
+
+  smokeSummary.push({
+    mismatches,
+    result,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "branded-social-buttons",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "branded-social-buttons-summary.json", {
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("homepage course cards use unique descriptive copy", async ({ page }, testInfo) => {
   const snapshot = await captureSnapshot(page, `${localOrigin}/`, {
     viewport: { width: 1280, height: 900 },
@@ -368,6 +423,20 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     if (!reviewText.includes(phrase)) {
       mismatches.push(`review section missing ${phrase}`);
     }
+  }
+
+  for (const phrase of ["Reviews for Google", "5 out of 5 stars", "77 Google reviews"]) {
+    if (!reviewText.includes(phrase)) {
+      mismatches.push(`review section missing Google review marker: ${phrase}`);
+    }
+  }
+
+  if (!reviewText.includes("\u201cThe 9-week program was well-structured")) {
+    mismatches.push("review section does not show visible quote marks around review text");
+  }
+
+  if (/\s-\s(?:\d+\s)?(?:week|weeks|month|months|year|years)\sago/i.test(reviewText)) {
+    mismatches.push("review section still shows relative date metadata");
   }
 
   smokeSummary.push({

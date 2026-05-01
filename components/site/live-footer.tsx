@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { siteContact, socialLinks } from "@/lib/site-data";
+import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 
 const footerLinks = [
   { href: "/dental-assisting-program", label: "Dental Assisting Program" },
@@ -42,14 +43,8 @@ export function LiveFooter() {
             </Link>
           ))}
         </nav>
-        <div className="rda-footer-social" aria-label="Social links">
-          {socialLinks.map((link) => (
-            <a href={link.href} key={link.href} rel="noreferrer" target="_blank">
-              {link.label}
-            </a>
-          ))}
-        </div>
-        <p className="rda-footer-copy">Copyright © 2020 rosevilledental - All Rights Reserved.</p>
+        <SocialLinkButtons links={socialLinks} variant="footer" />
+        <p className="rda-footer-copy">Copyright © 2026 rosevilledental - All Rights Reserved.</p>
       </div>
     </footer>
   );

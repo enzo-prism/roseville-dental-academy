@@ -66,6 +66,7 @@ const iconMap = {
   facebook: FacebookMark,
   instagram: InstagramMark,
   music: Music2,
+  tiktok: Music2,
 } satisfies Record<string, IconComponent>;
 
 export type SiteIconName = keyof typeof iconMap;

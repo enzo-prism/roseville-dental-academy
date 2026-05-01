@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import type { LiveRoute } from "@/lib/live-route-data";
 import {
   boardApprovalHighlights,
@@ -194,13 +195,7 @@ function StableAppointments() {
         <span aria-hidden="true" />
       </div>
       <p>New services are coming soon!</p>
-      <div className="rda-social-row">
-        {socialLinks.map((link) => (
-          <a href={link.href} key={link.href} rel="noreferrer" target="_blank">
-            {link.label}
-          </a>
-        ))}
-      </div>
+      <SocialLinkButtons links={socialLinks} variant="inline" />
     </section>
   );
 }

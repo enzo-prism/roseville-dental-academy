@@ -511,6 +511,32 @@ function escapeHtml(value: string | number) {
     .replace(/'/g, "&#39;");
 }
 
+function renderGoogleReviewsLogoHtml() {
+  return `
+    <svg class="rda-google-reviews-logo" viewBox="0 0 92.3 132.3" aria-hidden="true" focusable="false">
+      <path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/>
+      <path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/>
+      <path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/>
+      <path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/>
+      <path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/>
+    </svg>`;
+}
+
+function renderRatingStarsHtml(rating: number) {
+  const stars = Array.from({ length: 5 }, (_, index) => {
+    const isFilled = index < rating;
+
+    return `
+      <svg class="rda-review-star${isFilled ? " is-filled" : ""}" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <path d="M10 1.7l2.5 5 5.5.8-4 3.9.9 5.5L10 14.3 5.1 16.9l.9-5.5-4-3.9 5.5-.8L10 1.7z"/>
+      </svg>`;
+  }).join("");
+
+  return `
+    <span class="rda-review-stars" aria-hidden="true">${stars}</span>
+    <span class="rda-review-rating-text">${escapeHtml(rating)} out of 5 stars</span>`;
+}
+
 function renderHomepageReviewHighlightsHtml() {
   const reviewCards = homepageReviewHighlights
     .map(
@@ -521,8 +547,8 @@ function renderHomepageReviewHighlightsHtml() {
           </figure>
           <div class="rda-review-photo-body">
             <p class="rda-review-photo-feature">${escapeHtml(review.feature)}</p>
-            <p class="rda-review-rating">${escapeHtml(review.rating)}.0 / 5</p>
-            <blockquote>${escapeHtml(review.quote)}</blockquote>
+            <p class="rda-review-rating" aria-label="${escapeHtml(review.rating)} out of 5 stars">${renderRatingStarsHtml(review.rating)}</p>
+            <blockquote>&ldquo;${escapeHtml(review.quote)}&rdquo;</blockquote>
             <div>
               <p class="rda-review-name">${escapeHtml(review.name)}</p>
               <p class="rda-review-meta">${escapeHtml(review.meta)}</p>
@@ -538,8 +564,11 @@ function renderHomepageReviewHighlightsHtml() {
         <h2 id="rda-home-review-highlights-title">What Students Are Saying</h2>
         <span aria-hidden="true"></span>
       </div>
-      <p class="rda-review-score">5.0 Roseville Dental Academy - 77 Google reviews</p>
-      <p class="rda-review-photo-intro">Recent student feedback paired with real moments from the academy gallery.</p>
+      <div class="rda-google-review-summary" aria-label="5 out of 5 stars from 77 Google reviews">
+        <p class="rda-google-review-brand">${renderGoogleReviewsLogoHtml()}<span>Reviews for Google</span></p>
+        <p class="rda-review-score">${renderRatingStarsHtml(5)}</p>
+        <p class="rda-review-photo-intro">77 Google reviews from students and alumni, paired with real moments from the academy gallery.</p>
+      </div>
       <div class="rda-review-photo-grid">
         ${reviewCards}
       </div>

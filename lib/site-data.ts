@@ -328,7 +328,7 @@ export const testimonials: TestimonialData[] = [
 export const homepageReviewHighlights: ReviewPhotoData[] = [
   {
     name: "Adriana Nebuloni",
-    meta: "Google review - 2 weeks ago",
+    meta: "Google review",
     rating: 5,
     feature: "9-week program",
     quote:
@@ -340,7 +340,7 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
   },
   {
     name: "Selene",
-    meta: "Google review - 3 months ago",
+    meta: "Google review",
     rating: 5,
     feature: "Hands-on training",
     quote:
@@ -352,7 +352,7 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
   },
   {
     name: "grace",
-    meta: "Google review - 3 months ago",
+    meta: "Google review",
     rating: 5,
     feature: "Career foundations",
     quote:
@@ -364,7 +364,7 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
   },
   {
     name: "Salvador Garcia",
-    meta: "Google review - 3 months ago",
+    meta: "Google review",
     rating: 5,
     feature: "Resume and job help",
     quote:
@@ -376,7 +376,7 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
   },
   {
     name: "Breana Donahue",
-    meta: "Google review - 3 months ago",
+    meta: "Google review",
     rating: 5,
     feature: "Internship support",
     quote:
@@ -388,7 +388,7 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
   },
   {
     name: "Jordyn Sturgeon",
-    meta: "Google review - 1 year ago",
+    meta: "Google review",
     rating: 5,
     feature: "Certification courses",
     quote:
@@ -2179,7 +2179,7 @@ export const socialLinks: SocialLink[] = [
   {
     label: "TikTok",
     href: "https://www.tiktok.com/@rosevilledentalacademy",
-    icon: "music",
+    icon: "tiktok",
   },
 ];
 
