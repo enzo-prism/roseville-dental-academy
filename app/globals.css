@@ -346,6 +346,109 @@ textarea {
   width: 64px;
 }
 
+.rda-section-intro {
+  color: var(--rda-color-muted);
+  line-height: 1.7;
+  margin: -10px auto 30px;
+  max-width: 760px;
+  text-align: center;
+}
+
+.rda-board-section,
+.rda-instructors-section,
+.rda-student-faq-section {
+  border-top: 1px solid var(--rda-color-border-soft);
+}
+
+.rda-board-grid,
+.rda-student-faq-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rda-board-card,
+.rda-student-faq-card {
+  border: 1px solid var(--rda-color-border-soft);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 24px;
+}
+
+.rda-board-card h3,
+.rda-student-faq-card h3,
+.rda-instructor-body h3 {
+  color: var(--rda-color-heading);
+  font-family: var(--rda-font-heading);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+
+.rda-board-card p,
+.rda-student-faq-card p,
+.rda-instructor-body p {
+  line-height: 1.7;
+  margin: 0;
+}
+
+.rda-board-card a {
+  color: var(--rda-color-primary);
+  font-family: var(--rda-font-heading);
+  margin-top: 18px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rda-instructor-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rda-instructor-card {
+  border: 1px solid var(--rda-color-border-soft);
+  display: grid;
+  grid-template-columns: minmax(170px, 0.8fr) minmax(0, 1.2fr);
+  min-width: 0;
+}
+
+.rda-instructor-photo {
+  aspect-ratio: 1;
+  background: rgba(49, 86, 88, 0.08);
+  margin: 0;
+  overflow: hidden;
+}
+
+.rda-instructor-photo img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.rda-instructor-body {
+  min-width: 0;
+  padding: 24px;
+}
+
+.rda-instructor-credential {
+  color: var(--rda-color-accent-deep);
+  font-family: var(--rda-font-heading);
+  font-size: 13px;
+  margin: 0 0 8px !important;
+}
+
+.rda-instructor-body ul {
+  display: grid;
+  gap: 7px;
+  line-height: 1.6;
+  margin: 18px 0 0;
+  padding-left: 18px;
+}
+
 .rda-review-score {
   font-family: var(--rda-font-heading);
   font-size: 18px;
@@ -906,6 +1009,15 @@ textarea {
   .rda-contact-us-button {
     font-size: 13px;
   }
+
+  .rda-board-grid,
+  .rda-student-faq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rda-instructor-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -932,6 +1044,9 @@ textarea {
 
   .rda-review-grid,
   .rda-review-photo-grid,
+  .rda-board-grid,
+  .rda-student-faq-grid,
+  .rda-instructor-card,
   .rda-gallery-grid,
   .rda-contact-grid,
   .rda-interest-options,

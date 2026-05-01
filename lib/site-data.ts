@@ -20,7 +20,7 @@ import type {
 } from "@/lib/site-types";
 
 export const announcement =
-  "Now accepting registration for 2026 programs and courses that meet California Dental Board standards, including dental assisting, radiation safety, infection control, coronal polish, sealants, and BLS certification.";
+  "Now accepting registration for 2026 Dental Assisting Training programs.";
 
 export const siteContact = {
   school: "Roseville Dental Academy",
@@ -72,6 +72,10 @@ export const siteImages = {
   coronal: "/assets/live/courses/coronal-polish.jpg",
   sealants: "/assets/live/courses/sealants.jpg",
   instructors: "/assets/live/instructors/meet-the-instructors.jpg",
+  instructorJessica: "/assets/live/instructors/jessica-teaching.jpg",
+  instructorSandra: "/assets/live/instructors/sandra.jpg",
+  instructorSajal: "/assets/live/instructors/sajal.jpg",
+  instructorKatelyn: "/assets/live/instructors/katelyn.jpg",
   homeGallery1: "/assets/live/gallery/home-gallery-1.jpg",
   homeGallery2: "/assets/live/gallery/home-gallery-2.jpg",
   homeGallery3: "/assets/live/gallery/home-gallery-3.jpg",
@@ -502,6 +506,122 @@ export const faqItems = [
   },
 ] as const;
 
+export const instructorBios = [
+  {
+    name: "Jessica",
+    credential: "RDA-OA Lead Instructor",
+    image: siteImages.instructorJessica,
+    imageAlt: "Jessica teaching hands-on chairside dental assisting skills at Roseville Dental Academy",
+    summary:
+      "Jessica has worked in dentistry since 2015 and is a Roseville Dental Academy graduate. After completing the program and earning her x-ray license, she was hired at Waikiki Dental, grew through chairside, co-assisting, and front office roles, and discovered a passion for helping interns learn with confidence.",
+    highlights: [
+      "Roseville Dental Academy alumna",
+      "RDA since 2017",
+      "Orthodontic Assistant permit",
+      "CPR/BLS instructor since 2019",
+    ],
+  },
+  {
+    name: "Sandra",
+    credential: "RDA Assistant Instructor",
+    image: siteImages.instructorSandra,
+    imageAlt: "Sandra, RDA Assistant Instructor at Roseville Dental Academy",
+    summary:
+      "Sandra completed the academy in May 2022 and brings a student-centered perspective to the classroom. She enjoys sharing what she has learned, helping students grow through hands-on practice, and is continuing her own path toward dental hygiene.",
+    highlights: [
+      "Roseville Dental Academy alumna",
+      "Registered Dental Assistant",
+      "Focused on student confidence",
+      "Future dental hygienist",
+    ],
+  },
+  {
+    name: "Sajal",
+    credential: "RDAEF2 Instructor",
+    image: siteImages.instructorSajal,
+    imageAlt: "Sajal, RDAEF2 Instructor at Roseville Dental Academy",
+    summary:
+      "Sajal brings advanced dental training and a careful, compassionate teaching style to the academy. His approach combines technical precision, patient care habits, and mentorship so students can build dependable clinical skills.",
+    highlights: [
+      "RDAEF2 instructor",
+      "Advanced clinical training",
+      "Mentorship-focused",
+      "Patient-care oriented",
+    ],
+  },
+  {
+    name: "Katelyn",
+    credential: "RDA Instructor",
+    image: siteImages.instructorKatelyn,
+    imageAlt: "Katelyn, RDA Instructor at Roseville Dental Academy",
+    summary:
+      "Katelyn attended Roseville Dental Academy in 2021 after moving from Indiana and has built her career around dental assisting and student support. She enjoys helping future dental assistants feel capable, prepared, and ready for the office.",
+    highlights: [
+      "Roseville Dental Academy alumna",
+      "Registered Dental Assistant",
+      "Dental hygiene student",
+      "Confidence-building coach",
+    ],
+  },
+] as const;
+
+export const boardApprovalHighlights = [
+  {
+    title: "Approved course lists",
+    summary:
+      "The Dental Board of California advises applicants to verify programs and courses through the official approved-provider lists before enrolling.",
+    href: "https://www.dbc.ca.gov/applicants/rda_courses.shtml",
+    ctaLabel: "View Dental Board lists",
+  },
+  {
+    title: "Roseville course approvals",
+    summary:
+      "Current public Dental Board lists show Roseville Dental Academy for Radiation Safety X1036, Infection Control IC189, Coronal Polishing CP148, and Pit and Fissure Sealants PF186.",
+    href: "https://www.dbc.ca.gov/applicants/rda_courses.shtml",
+    ctaLabel: "Verify provider numbers",
+  },
+  {
+    title: "Patient requirements",
+    summary:
+      "Clinical courses may require students to bring eligible patients. The academy team confirms the exact patient count, screening rules, and paperwork before registration.",
+    href: "/contact",
+    ctaLabel: "Ask admissions",
+  },
+] as const;
+
+export const studentFaqHighlights = [
+  {
+    question: "Are the courses Dental Board approved?",
+    answer:
+      "The academy points students to the Dental Board of California approved-provider lists so they can verify current course status before enrolling. Current public lists include Roseville Dental Academy for Radiation Safety, Infection Control, Coronal Polishing, and Pit and Fissure Sealants.",
+  },
+  {
+    question: "Do students need to provide patients?",
+    answer:
+      "Yes for clinical course requirements. Roseville Dental Academy does not provide patients, so students should plan ahead and confirm the exact patient requirements for their course with the office.",
+  },
+  {
+    question: "How old do students need to be?",
+    answer:
+      "The Dental Assisting Training Course is intended for students age 16 and older. Students under 18 should expect parent or guardian consent paperwork.",
+  },
+  {
+    question: "When are the next 2026 class dates?",
+    answer:
+      "The team shared upcoming dates of Friday, June 19, 2026 and Monday, July 13, 2026 for Dental Assisting Training. BLS is listed for May 2, 2026 and June 6, 2026, with several stand-alone courses scheduled in May.",
+  },
+  {
+    question: "What is the best next step to enroll?",
+    answer:
+      "Call the office at 916-888-9821 to confirm the right course path, schedule a tour if needed, and complete registration details.",
+  },
+  {
+    question: "Does the academy offer financial aid?",
+    answer:
+      "The academy does not list traditional financial aid. Students can call admissions to ask about current payment options and timing before choosing a course date.",
+  },
+] as const;
+
 const livePhoto = (src: string, alt: string) => ({ src, alt });
 
 export const photoGroups: GalleryGroup[] = [
@@ -601,6 +721,18 @@ export const photoGroups: GalleryGroup[] = [
       livePhoto("/assets/live/photos/img-5918-2.jpg", "Clinical safety training practice"),
       livePhoto("/assets/live/photos/img-5910.jpg", "Infection control hands-on instruction"),
       livePhoto("/assets/live/photos/img-1062-0001.jpg", "Dental office infection control training"),
+    ],
+  },
+  {
+    title: "Recent academy moments",
+    copy:
+      "New photos shared by the academy team showing recent students, certificates, and hands-on practice.",
+    items: [
+      livePhoto("/assets/live/drive/class-group-scrubs.jpg", "Recent Roseville Dental Academy class group in scrubs"),
+      livePhoto("/assets/live/drive/certificate-celebration.jpg", "Students celebrating course completion certificates"),
+      livePhoto("/assets/live/drive/tree-class-photo.jpg", "Recent class group photo outside the academy"),
+      livePhoto("/assets/live/drive/typodont-practice.jpg", "Students practicing dental anatomy and typodont skills"),
+      livePhoto("/assets/live/drive/xray-chairside.jpg", "Students practicing chairside and radiography workflow"),
     ],
   },
 ];

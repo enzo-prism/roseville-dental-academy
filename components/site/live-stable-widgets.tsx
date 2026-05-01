@@ -2,9 +2,12 @@ import Image from "next/image";
 
 import type { LiveRoute } from "@/lib/live-route-data";
 import {
+  boardApprovalHighlights,
   homeGalleryHighlight,
+  instructorBios,
   photoGroups,
   socialLinks,
+  studentFaqHighlights,
   testimonials,
 } from "@/lib/site-data";
 
@@ -17,6 +20,9 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
   return (
     <>
       {slots.has("reviews") ? <StableReviews /> : null}
+      {slots.has("board") ? <StableBoardApproval /> : null}
+      {slots.has("instructors") ? <StableInstructorBios /> : null}
+      {slots.has("faqs") ? <StableStudentFaqs /> : null}
       {slots.has("photos") ? <StableGallery full={route.route === "/photos"} /> : null}
       {route.route === "/contact" && slots.has("contact") ? <LiveContactSection /> : null}
       {slots.has("signup") ? (
@@ -27,6 +33,102 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       ) : null}
       {route.route === "/" ? <StableAppointments /> : null}
     </>
+  );
+}
+
+function StableBoardApproval() {
+  return (
+    <section className="rda-stable-section rda-board-section" data-rda-stable-widget="board">
+      <div className="rda-section-heading">
+        <h2>Dental Board Course Details</h2>
+        <span aria-hidden="true" />
+      </div>
+      <p className="rda-section-intro">
+        Student questions often start with approval status, requirements, and what to bring. These
+        details keep the next step clear before anyone enrolls.
+      </p>
+      <div className="rda-board-grid">
+        {boardApprovalHighlights.map((item) => (
+          <article className="rda-board-card" key={item.title}>
+            <h3>{item.title}</h3>
+            <p>{item.summary}</p>
+            <a
+              href={item.href}
+              rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+              target={item.href.startsWith("http") ? "_blank" : undefined}
+            >
+              {item.ctaLabel}
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StableInstructorBios() {
+  return (
+    <section
+      className="rda-stable-section rda-instructors-section"
+      data-rda-stable-widget="instructors"
+    >
+      <div className="rda-section-heading">
+        <h2>Instructor Bios</h2>
+        <span aria-hidden="true" />
+      </div>
+      <p className="rda-section-intro">
+        Meet the team behind the academy&apos;s hands-on coaching, chairside practice, and
+        student-first classroom feel.
+      </p>
+      <div className="rda-instructor-grid">
+        {instructorBios.map((instructor) => (
+          <article className="rda-instructor-card" key={instructor.name}>
+            <figure className="rda-instructor-photo">
+              <Image
+                alt={instructor.imageAlt}
+                height={720}
+                sizes="(max-width: 760px) 100vw, 25vw"
+                src={instructor.image}
+                width={900}
+              />
+            </figure>
+            <div className="rda-instructor-body">
+              <p className="rda-instructor-credential">{instructor.credential}</p>
+              <h3>{instructor.name}</h3>
+              <p>{instructor.summary}</p>
+              <ul>
+                {instructor.highlights.map((highlight) => (
+                  <li key={highlight}>{highlight}</li>
+                ))}
+              </ul>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StableStudentFaqs() {
+  return (
+    <section className="rda-stable-section rda-student-faq-section" data-rda-stable-widget="faqs">
+      <div className="rda-section-heading">
+        <h2>Common Student Questions</h2>
+        <span aria-hidden="true" />
+      </div>
+      <p className="rda-section-intro">
+        These answers are based on recent questions and course notes shared by the academy team,
+        with private student details removed.
+      </p>
+      <div className="rda-student-faq-grid">
+        {studentFaqHighlights.map((item) => (
+          <article className="rda-student-faq-card" key={item.question}>
+            <h3>{item.question}</h3>
+            <p>{item.answer}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

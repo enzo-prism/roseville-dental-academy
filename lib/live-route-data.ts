@@ -17,7 +17,15 @@ type ManifestRoute = (typeof manifestData.routes)[number];
 
 export type LiveRouteKind = "mirror" | "plain404";
 export type LiveShellVariant = "public" | "utility" | "plain404";
-export type LiveWidgetSlot = "contact" | "home" | "photos" | "reviews" | "signup";
+export type LiveWidgetSlot =
+  | "board"
+  | "contact"
+  | "faqs"
+  | "home"
+  | "instructors"
+  | "photos"
+  | "reviews"
+  | "signup";
 
 export type LiveRoute = ManifestRoute & {
   description: string;
@@ -131,11 +139,19 @@ function routeDescription(route: ManifestRoute) {
 
 function widgetSlotsForRoute(route: ManifestRoute): LiveWidgetSlot[] {
   if (route.route === "/") {
-    return ["home", "photos", "signup", "contact"];
+    return ["home", "board", "photos", "signup", "contact"];
   }
 
   if (route.route === "/contact") {
     return ["contact", "signup"];
+  }
+
+  if (route.route === "/faqs-1") {
+    return ["faqs", "signup"];
+  }
+
+  if (route.route === "/meet-the-instructors") {
+    return ["instructors", "signup"];
   }
 
   if (route.route === "/photos") {

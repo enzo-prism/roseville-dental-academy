@@ -274,6 +274,52 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
   expect(mismatches).toEqual([]);
 });
 
+test("Drive-derived homepage details render without private student data", async ({ page }, testInfo) => {
+  const snapshot = await captureSnapshot(page, `${localOrigin}/`, {
+    viewport: { width: 1280, height: 900 },
+  });
+  const requiredPhrases = [
+    "Now accepting registration for 2026 Dental Assisting Training programs.",
+    "Dental Board Course Details",
+    "Radiation Safety X1036",
+    "Infection Control IC189",
+    "Coronal Polishing CP148",
+    "Pit and Fissure Sealants PF186",
+  ];
+  const mismatches: string[] = [];
+
+  for (const phrase of requiredPhrases) {
+    if (!snapshot.bodyText.includes(phrase)) {
+      mismatches.push(`homepage missing Drive-derived phrase: ${phrase}`);
+    }
+  }
+
+  const homepagePrivateEmailScan = snapshot.bodyText.replace(
+    /rosevilledentalacademy@gmail\.com/gi,
+    "",
+  );
+
+  if (/@gmail\.com|@yahoo\.com|@outlook\.com/i.test(homepagePrivateEmailScan)) {
+    mismatches.push("homepage appears to expose a private student email address");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "drive-homepage-material",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "drive-homepage-material-summary.json", {
+      bodyText: snapshot.bodyText,
+      mismatches,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("homepage review photos appear directly below the hero", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
@@ -623,6 +669,72 @@ test("faq page preserves the live board-approval answers", async ({ page }, test
   expect(missingPhrases).toEqual([]);
 });
 
+test("Drive-derived FAQ and instructor material render on public pages", async ({ page }, testInfo) => {
+  const faqSnapshot = await captureSnapshot(page, `${localOrigin}/faqs-1`, {
+    viewport: { width: 1280, height: 900 },
+  });
+  const instructorSnapshot = await captureSnapshot(page, `${localOrigin}/meet-the-instructors`, {
+    viewport: { width: 1280, height: 900 },
+  });
+  const mismatches: string[] = [];
+
+  for (const phrase of [
+    "Common Student Questions",
+    "Do students need to provide patients?",
+    "Roseville Dental Academy does not provide patients",
+    "Friday, June 19, 2026",
+    "Monday, July 13, 2026",
+  ]) {
+    if (!faqSnapshot.bodyText.includes(phrase)) {
+      mismatches.push(`FAQ page missing Drive-derived phrase: ${phrase}`);
+    }
+  }
+
+  for (const phrase of [
+    "Instructor Bios",
+    "Jessica",
+    "Sandra",
+    "Sajal",
+    "Katelyn",
+    "RDA-OA Lead Instructor",
+  ]) {
+    if (!instructorSnapshot.bodyText.includes(phrase)) {
+      mismatches.push(`instructors page missing Drive-derived phrase: ${phrase}`);
+    }
+  }
+
+  for (const [routePath, snapshot] of [
+    ["/faqs-1", faqSnapshot],
+    ["/meet-the-instructors", instructorSnapshot],
+  ] as const) {
+    const publicSafeBodyText = snapshot.bodyText.replace(
+      /rosevilledentalacademy@gmail\.com/gi,
+      "",
+    );
+
+    if (/@gmail\.com|@yahoo\.com|@outlook\.com/i.test(publicSafeBodyText)) {
+      mismatches.push(`${routePath} appears to expose a private student email address`);
+    }
+  }
+
+  smokeSummary.push({
+    mismatches,
+    routes: ["/faqs-1", "/meet-the-instructors"],
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "drive-faq-instructors-material",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "drive-faq-instructors-material-summary.json", {
+      faqBodyText: faqSnapshot.bodyText,
+      instructorBodyText: instructorSnapshot.bodyText,
+      mismatches,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("photos page renders the full live-site gallery inventory", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${localOrigin}/photos`, { waitUntil: "domcontentloaded", timeout: 120_000 });
@@ -671,8 +783,8 @@ test("photos page renders the full live-site gallery inventory", async ({ page }
 
   const mismatches: string[] = [];
 
-  if (result.count !== 57) {
-    mismatches.push(`expected 57 live gallery photos, found ${result.count}`);
+  if (result.count !== 62) {
+    mismatches.push(`expected 62 live gallery photos, found ${result.count}`);
   }
 
   if (result.broken.length > 0) {

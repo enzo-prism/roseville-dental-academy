@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { announcement } from "@/lib/site-data";
+
 const logoSrc = "/assets/live/home/logo-academy.jpg";
 
 const primaryLinks = [
@@ -118,7 +120,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
   return (
     <header className="rda-live-header" data-rda-shell-header="true">
       <div className="rda-promo-banner" role="banner">
-        <span>Now accepting registration for 2026 programs and courses that meet California Dental</span>
+        <span>{announcement}</span>
       </div>
 
       <div className="rda-mobile-topbar">
