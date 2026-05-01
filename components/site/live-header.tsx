@@ -25,7 +25,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { announcement } from "@/lib/site-data";
+import { announcement, socialLinks } from "@/lib/site-data";
+
+import { SocialLinkButtons } from "./social-link-buttons";
 
 const logoSrc = "/assets/live/home/logo-academy.jpg";
 
@@ -245,6 +247,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
             <NavIcon Icon={Phone} iconKey="phone" />
             <span>Contact Us</span>
           </Link>
+          <SocialLinkButtons links={socialLinks} variant="nav" />
         </div>
       </nav>
 
@@ -341,6 +344,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                 <span>Contact Us</span>
               </span>
             </Link>
+            <SocialLinkButtons links={socialLinks} variant="nav" />
           </nav>
         </div>
       ) : null}

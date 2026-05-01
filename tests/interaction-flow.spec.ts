@@ -338,6 +338,40 @@ test.describe("live-style interaction flows", () => {
       await expect(banner).toBeHidden();
     });
 
+    test("homepage carousel hero presents a clear sign up path", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await gotoSettled(page, "/");
+
+      const hero = page.locator('[data-rda-home-hero="true"]');
+      const cta = page.locator('[data-rda-home-hero-signup="true"]');
+      const signup = page.locator("#quick-sign-up[data-rda-signup-section='true']");
+
+      await expect(hero.getByRole("heading", { level: 1 })).toHaveText(
+        "Begin Your Career in Dental Assisting",
+      );
+      await expect(hero.getByText("Train hands-on inside a working dental office")).toBeVisible();
+      await expect(hero.locator(".rda-home-hero-slide")).toHaveCount(3);
+      await expect(cta).toBeVisible();
+      await expect(cta).toHaveAttribute("href", "#quick-sign-up");
+      await expect(signup).toBeVisible();
+
+      await cta.click();
+      await expect(page).toHaveURL(/#quick-sign-up$/);
+
+      const position = await signup.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          bottom: Math.round(rect.bottom),
+          top: Math.round(rect.top),
+        };
+      });
+
+      expect(position.top).toBeGreaterThanOrEqual(0);
+      expect(position.top).toBeLessThan(80);
+      expect(position.bottom).toBeGreaterThan(300);
+    });
+
     test("quick sign up form is reusable and wired for class interest", async ({
       page,
     }) => {

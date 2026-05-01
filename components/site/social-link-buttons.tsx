@@ -2,7 +2,7 @@ import type { SocialLink } from "@/lib/site-types";
 
 type SocialLinkButtonsProps = {
   links: readonly SocialLink[];
-  variant: "footer" | "inline";
+  variant: "footer" | "inline" | "nav";
 };
 
 function FacebookLogo() {
@@ -154,7 +154,7 @@ export function SocialLinkButtons({ links, variant }: SocialLinkButtonsProps) {
           <span className="rda-social-button-icon" aria-hidden="true">
             <SocialLogo idPrefix={`rda-social-${variant}-${link.icon}`} link={link} />
           </span>
-          <span>{link.label}</span>
+          <span className="rda-social-button-label">{link.label}</span>
         </a>
       ))}
     </div>

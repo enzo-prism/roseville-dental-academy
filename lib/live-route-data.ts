@@ -117,6 +117,24 @@ const HOMEPAGE_HERO_WIDGET_REGEX =
 const HOMEPAGE_AFTER_HERO_WIDGET_MARKER =
   '<div id="f11e5afa-6606-44e2-847f-fe03d31d5b23" class="widget widget-countdown';
 
+const HOMEPAGE_HERO_SLIDES = [
+  {
+    alt: "Roseville Dental Academy students celebrating in scrubs inside Waikiki Dental.",
+    caption: "Hands-on dental assisting training",
+    src: "/__live/img1.wsimg.com/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_9043__788d74ec51.jpg",
+  },
+  {
+    alt: "Roseville Dental Academy students gathered for a class photo.",
+    caption: "Small classes with instructor support",
+    src: "/assets/live/drive/class-group-scrubs.jpg",
+  },
+  {
+    alt: "Roseville Dental Academy certificate celebration for recent students.",
+    caption: "Career-ready certificates and next steps",
+    src: "/assets/live/drive/certificate-celebration.jpg",
+  },
+] as const;
+
 function routeDescription(route: ManifestRoute) {
   if (route.route === "/") {
     return "Roseville Dental Academy training for dental assisting, x-ray, CPR, infection control, coronal polish, sealants, and front office skills.";
@@ -597,6 +615,49 @@ function insertHomepageReviewHighlights(html: string) {
   return `${html.slice(0, end)}${renderHomepageReviewHighlightsHtml()}${html.slice(end)}`;
 }
 
+function renderHomepageHeroHtml() {
+  const slides = HOMEPAGE_HERO_SLIDES.map(
+    (slide, index) => `
+      <figure class="rda-home-hero-slide" data-rda-home-hero-slide="${index + 1}">
+        <img src="${escapeHtml(slide.src)}" alt="${escapeHtml(slide.alt)}" loading="${index === 0 ? "eager" : "lazy"}" decoding="async" />
+        <figcaption>${escapeHtml(slide.caption)}</figcaption>
+      </figure>`,
+  ).join("");
+  const dots = HOMEPAGE_HERO_SLIDES.map(
+    (_, index) => `<span aria-hidden="true" style="--rda-slide-index: ${index}"></span>`,
+  ).join("");
+
+  return `
+    <section class="widget widget-introduction widget-introduction-introduction-1 rda-home-hero" data-rda-home-hero="true" aria-labelledby="rda-home-hero-title">
+      <div class="rda-home-hero-media" aria-label="Roseville Dental Academy training photos">
+        ${slides}
+        <div class="rda-home-hero-dots" aria-hidden="true">${dots}</div>
+      </div>
+      <div class="rda-home-hero-copy">
+        <p class="rda-home-hero-eyebrow">Roseville Dental Academy</p>
+        <h1 id="rda-home-hero-title">Begin Your Career in Dental Assisting</h1>
+        <p>Train hands-on inside a working dental office with small classes, instructor coaching, and a clear path to your next opportunity.</p>
+        <a class="rda-home-hero-button" data-rda-home-hero-signup="true" href="#quick-sign-up">Sign Up</a>
+      </div>
+    </section>`;
+}
+
+function replaceHomepageHero(html: string) {
+  if (html.includes('data-rda-home-hero="true"')) {
+    return html;
+  }
+
+  const match = html.match(HOMEPAGE_HERO_WIDGET_REGEX);
+
+  if (match?.index === undefined) {
+    return html;
+  }
+
+  const end = findClosingDiv(html, match.index + match[0].length);
+
+  return `${html.slice(0, match.index)}${renderHomepageHeroHtml()}${html.slice(end)}`;
+}
+
 function sanitizeSnapshotBody(bodyHtml: string) {
   const scriptFreeHtml = stripScriptTags(bodyHtml);
   const iframeFreeHtml = stripIframes(scriptFreeHtml);
@@ -632,7 +693,9 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
     bodyClass,
     bodyHtml:
       route.route === "/"
-        ? insertHomepageReviewHighlights(applyHomepageCourseCopyReplacements(sanitizedBodyHtml))
+        ? insertHomepageReviewHighlights(
+            replaceHomepageHero(applyHomepageCourseCopyReplacements(sanitizedBodyHtml)),
+          )
         : sanitizedBodyHtml,
     bodyScripts: [],
     description,

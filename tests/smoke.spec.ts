@@ -356,24 +356,36 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
     })),
   );
   const expected = [
-    ["facebook", "Facebook"],
-    ["instagram", "Instagram"],
-    ["tiktok", "TikTok"],
+    ["facebook", "Facebook", "https://www.facebook.com/557019148138561"],
+    ["instagram", "Instagram", "https://www.instagram.com/rosevilledentalacademy"],
+    ["tiktok", "TikTok", "https://www.tiktok.com/@rosevilledentalacademy"],
   ];
 
-  if (result.length !== 6) {
-    mismatches.push(`expected 6 social buttons across contact and footer, found ${result.length}`);
+  if (result.length !== 9) {
+    mismatches.push(`expected 9 social buttons across header, contact, and footer, found ${result.length}`);
   }
 
-  for (const [icon, label] of expected) {
+  for (const [icon, label, href] of expected) {
     const matches = result.filter((entry) => entry.icon === icon && entry.label === label);
+    const navMatch = await page
+      .locator(`.rda-desktop-nav [data-rda-social-button="${icon}"]`)
+      .first()
+      .evaluate((link) => ({
+        href: link.getAttribute("href") || "",
+        rel: link.getAttribute("rel") || "",
+        target: link.getAttribute("target") || "",
+      }));
 
-    if (matches.length !== 2) {
-      mismatches.push(`expected 2 ${label} social buttons, found ${matches.length}`);
+    if (matches.length !== 3) {
+      mismatches.push(`expected 3 ${label} social buttons, found ${matches.length}`);
     }
 
     if (matches.some((entry) => entry.svgCount !== 1 || entry.tagName !== "a")) {
       mismatches.push(`${label} social buttons are missing their branded SVG link treatment`);
+    }
+
+    if (navMatch.href !== href || navMatch.target !== "_blank" || !navMatch.rel.includes("noreferrer")) {
+      mismatches.push(`${label} header social link is not wired to open the correct page in a new tab`);
     }
   }
 

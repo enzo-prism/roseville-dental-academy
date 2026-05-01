@@ -88,6 +88,7 @@ export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSe
     <section
       className={compact ? "rda-stable-section rda-signup-section rda-signup-section-compact" : "rda-stable-section rda-signup-section"}
       data-rda-signup-section="true"
+      id="quick-sign-up"
       aria-labelledby={titleId}
     >
       <div className="rda-section-heading rda-signup-heading">
