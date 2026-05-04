@@ -139,6 +139,63 @@ test("GA4 analytics tag and event tracking are configured", async ({ page }, tes
   expect(mismatches).toEqual([]);
 });
 
+test("Hotjar analytics tag is configured", async ({ page }, testInfo) => {
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForLoadState("load").catch(() => undefined);
+  await page.waitForTimeout(1_000);
+
+  const result = await page.evaluate(() => {
+    const hotjarWindow = window as Window & {
+      _hjSettings?: {
+        hjid?: number;
+        hjsv?: number;
+      };
+      hj?: unknown;
+    };
+
+    return {
+      hasBootstrapScript: Boolean(document.querySelector("#rda-hotjar-analytics")),
+      hasHotjarScript: Boolean(
+        document.querySelector(
+          'script[src="https://static.hotjar.com/c/hotjar-6703871.js?sv=6"]',
+        ),
+      ),
+      hotjarReady: typeof hotjarWindow.hj === "function",
+      siteId: hotjarWindow._hjSettings?.hjid,
+      version: hotjarWindow._hjSettings?.hjsv,
+    };
+  });
+  const mismatches: string[] = [];
+
+  if (!result.hasBootstrapScript) {
+    mismatches.push("homepage is missing the React-owned Hotjar bootstrap");
+  }
+
+  if (!result.hasHotjarScript) {
+    mismatches.push("homepage is missing the Hotjar tracking script");
+  }
+
+  if (!result.hotjarReady || result.siteId !== 6703871 || result.version !== 6) {
+    mismatches.push("homepage did not initialize Hotjar settings");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "hotjar-analytics",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "hotjar-analytics-summary.json", {
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 for (const route of routeMappings) {
   test(`smoke ${route.label} serves the expected draft output`, async ({ page }, testInfo) => {
     const snapshot = await captureSnapshot(page, `${localOrigin}${route.localPath}`, {
