@@ -533,12 +533,7 @@ test.describe("live-style interaction flows", () => {
       await expect(phone).toHaveAttribute("required", "");
       await expect(notes).toBeVisible();
       await expect(options).toHaveCount(9);
-      await expect(optionIcons).toHaveCount(9);
-      await expect(form.locator('[data-rda-signup-icon="name"]')).toBeVisible();
-      await expect(form.locator('[data-rda-signup-icon="email"]')).toBeVisible();
-      await expect(form.locator('[data-rda-signup-icon="phone"]')).toBeVisible();
-      await expect(form.locator('[data-rda-signup-icon="notes"]')).toBeVisible();
-      await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
+      await expect(optionIcons).toHaveCount(0);
 
       await name.fill("Test Student");
       await email.fill("student@example.com");
@@ -550,7 +545,14 @@ test.describe("live-style interaction flows", () => {
       await expect(form.getByLabel("BLS / CPR")).toBeVisible();
 
       await gotoSettled(page, "/infection-control");
-      await expect(page.locator('form[data-rda-signup-form="true"]').first()).toBeVisible();
+      const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(courseForm).toBeVisible();
+      await expect(courseForm.locator(".rda-interest-option-icon[data-rda-signup-icon]")).toHaveCount(9);
+      await expect(courseForm.locator('[data-rda-signup-icon="name"]')).toBeVisible();
+      await expect(courseForm.locator('[data-rda-signup-icon="email"]')).toBeVisible();
+      await expect(courseForm.locator('[data-rda-signup-icon="phone"]')).toBeVisible();
+      await expect(courseForm.locator('[data-rda-signup-icon="notes"]')).toBeVisible();
+      await expect(courseForm.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
 
       await gotoSettled(page, "/contact");
       await expect(page.locator('form[data-rda-signup-form="true"]').first()).toBeVisible();

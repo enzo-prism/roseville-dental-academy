@@ -1064,6 +1064,10 @@ textarea {
   min-width: 0;
 }
 
+.rda-priority-signup-section .rda-interest-option-content {
+  display: block;
+}
+
 .rda-interest-option-icon {
   align-items: center;
   border: 1px solid var(--rda-color-border-soft);
@@ -1141,6 +1145,10 @@ textarea {
   font-size: 13px;
   line-height: 1.5;
   margin: 10px 0 0;
+}
+
+.rda-form-error[hidden] {
+  display: none;
 }
 
 .rda-newsletter-section form {
@@ -1705,6 +1713,29 @@ textarea {
   .rda-mobile-menu .rda-social-buttons-nav .rda-social-button-icon svg {
     height: 20px;
     width: 20px;
+  }
+
+  .rda-mobile-more-button[aria-expanded="true"] > svg:last-child {
+    transform: rotate(180deg);
+  }
+
+  .rda-mobile-more-button > svg:last-child {
+    transition: transform 160ms ease;
+  }
+
+  .rda-priority-signup-section .rda-interest-option {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 54px;
+    padding: 11px 12px;
+  }
+
+  .rda-priority-signup-section .rda-interest-option input {
+    height: 24px;
+    width: 24px;
+  }
+
+  .rda-priority-signup-section .rda-field-label {
+    display: block;
   }
 
   .rda-desktop-nav {

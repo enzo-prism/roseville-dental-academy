@@ -694,7 +694,6 @@ function renderHomepagePrioritySignupHtml() {
         <label class="rda-interest-option">
           <input name="Interested classes[]" type="checkbox" value="${escapeHtml(option.value)}" />
           <span class="rda-interest-option-content">
-            <span class="rda-interest-option-icon" data-rda-signup-icon="${escapeHtml(option.value)}" aria-hidden="true">+</span>
             <span>${escapeHtml(option.label)}</span>
           </span>
         </label>`,
@@ -704,7 +703,6 @@ function renderHomepagePrioritySignupHtml() {
   return `
     <section class="rda-stable-section rda-signup-section rda-priority-signup-section" data-rda-signup-section="true" id="quick-sign-up" aria-labelledby="rda-priority-signup-title">
       <div class="rda-section-heading rda-signup-heading">
-        <span class="rda-signup-heading-icon" data-rda-signup-icon="heading" aria-hidden="true">✓</span>
         <h2 id="rda-priority-signup-title">Quick Sign Up</h2>
         <span aria-hidden="true"></span>
       </div>
@@ -724,25 +722,25 @@ function renderHomepagePrioritySignupHtml() {
         </fieldset>
         <div class="rda-signup-fields">
           <label>
-            <span class="rda-field-label"><span data-rda-signup-icon="name" aria-hidden="true">•</span>Name</span>
+            <span class="rda-field-label">Name</span>
             <input autocomplete="name" name="Name" placeholder="Name" required type="text" />
           </label>
           <label>
-            <span class="rda-field-label"><span data-rda-signup-icon="email" aria-hidden="true">•</span>Email</span>
+            <span class="rda-field-label">Email</span>
             <input autocomplete="email" name="_replyto" placeholder="Email" required type="email" />
           </label>
           <label>
-            <span class="rda-field-label"><span data-rda-signup-icon="phone" aria-hidden="true">•</span>Phone</span>
+            <span class="rda-field-label">Phone</span>
             <input autocomplete="tel" name="Phone" placeholder="Phone" required type="tel" />
           </label>
         </div>
         <label class="rda-signup-notes">
-          <span class="rda-field-label"><span data-rda-signup-icon="notes" aria-hidden="true">•</span>Other notes</span>
+          <span class="rda-field-label">Other notes</span>
           <textarea name="Notes" placeholder="Schedule questions, goals, or anything helpful" rows="4"></textarea>
         </label>
         <div class="rda-signup-footer">
           <p class="rda-form-note rda-signup-note">Short form, quick follow-up. No payment is collected here.</p>
-          <button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">Send interest<span class="rda-signup-submit-icon" data-rda-signup-icon="submit" aria-hidden="true">→</span></button>
+          <button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">Send interest</button>
         </div>
       </form>
     </section>`;

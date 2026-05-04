@@ -119,6 +119,7 @@ function NavIcon({
 export function LiveHeader({ currentRoute }: { currentRoute: string }) {
   const activePath = useActivePath(currentRoute);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
@@ -155,6 +156,19 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
       document.body.classList.remove("rda-mobile-menu-open");
     };
   }, [mobileOpen]);
+
+  function closeMobileMenu() {
+    setMobileOpen(false);
+    setMobileMoreOpen(false);
+  }
+
+  function toggleMobileMenu() {
+    if (mobileOpen) {
+      setMobileMoreOpen(false);
+    }
+
+    setMobileOpen((value) => !value);
+  }
 
   const navLinks = primaryLinks.map((link) => (
     <Link
@@ -200,7 +214,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
           aria-expanded={mobileOpen}
           aria-label={mobileOpen ? "Close Site Navigation" : "Hamburger Site Navigation Icon"}
           className="rda-icon-button"
-          onClick={() => setMobileOpen((value) => !value)}
+          onClick={toggleMobileMenu}
           type="button"
         >
           {mobileOpen ? <X aria-hidden="true" size={32} /> : <Menu aria-hidden="true" size={36} />}
@@ -272,7 +286,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                 className="rda-mobile-link"
                 href={link.href}
                 key={link.href}
-                onClick={() => setMobileOpen(false)}
+                onClick={closeMobileMenu}
               >
                 <span className="rda-mobile-label">
                   <NavIcon
@@ -287,8 +301,8 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
             ))}
             <Link
               className="rda-mobile-link rda-mobile-signup"
-              href="/#quick-sign-up"
-              onClick={() => setMobileOpen(false)}
+              href={activePath === "/" ? "#quick-sign-up" : "/#quick-sign-up"}
+              onClick={closeMobileMenu}
             >
               <span className="rda-mobile-label">
                 <NavIcon
@@ -302,9 +316,10 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
             </Link>
             <div className="rda-mobile-more">
               <button
-                aria-expanded={moreOpen}
+                aria-expanded={mobileMoreOpen}
+                aria-haspopup="true"
                 className="rda-mobile-link rda-mobile-more-button"
-                onClick={() => setMoreOpen((value) => !value)}
+                onClick={() => setMobileMoreOpen((value) => !value)}
                 type="button"
               >
                 <span className="rda-mobile-label">
@@ -318,7 +333,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                 </span>
                 <ChevronDown aria-hidden="true" size={16} />
               </button>
-              {moreOpen ? (
+              {mobileMoreOpen ? (
                 <div className="rda-mobile-submenu" data-open="true" data-rda-more-menu="true">
                   {moreLinks.map((link) => (
                     <Link
@@ -326,7 +341,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                       className="rda-mobile-sublink"
                       href={link.href}
                       key={link.href}
-                      onClick={() => setMobileOpen(false)}
+                      onClick={closeMobileMenu}
                     >
                       <span className="rda-mobile-label">
                         <NavIcon
@@ -347,7 +362,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
               className="rda-mobile-link rda-mobile-contact"
               data-rda-contact-us="true"
               href="/contact"
-              onClick={() => setMobileOpen(false)}
+              onClick={closeMobileMenu}
             >
               <span className="rda-mobile-label">
                 <NavIcon
