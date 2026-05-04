@@ -3,6 +3,8 @@
 import { createElement, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 
+import { trackGaEvent } from "./google-analytics";
+
 const DEFAULT_AGENT_ID = "agent_6301kn20gh9denavkvn1bg9krf54";
 const ELEVENLABS_SCRIPT_SRC = "https://unpkg.com/@elevenlabs/convai-widget-embed";
 const ELEVENLABS_WIDGET_TEXT = {
@@ -39,6 +41,7 @@ function hasVisibleExpandedSheet(element: HTMLElement) {
 export function ElevenLabsAgentWidget() {
   const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID?.trim() || DEFAULT_AGENT_ID;
   const widgetRef = useRef<HTMLElement | null>(null);
+  const hasSyncedExpandedStateRef = useRef(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
@@ -54,7 +57,22 @@ export function ElevenLabsAgentWidget() {
       }
 
       const element = widgetRef.current;
-      setIsExpanded(Boolean(element && hasVisibleExpandedSheet(element)));
+      const nextExpanded = Boolean(element && hasVisibleExpandedSheet(element));
+
+      setIsExpanded((currentExpanded) => {
+        if (!hasSyncedExpandedStateRef.current) {
+          hasSyncedExpandedStateRef.current = true;
+          return nextExpanded;
+        }
+
+        if (currentExpanded !== nextExpanded) {
+          trackGaEvent(nextExpanded ? "elevenlabs_widget_expand" : "elevenlabs_widget_collapse", {
+            agent_id: agentId,
+          });
+        }
+
+        return nextExpanded;
+      });
     };
 
     const scheduleSync = () => {

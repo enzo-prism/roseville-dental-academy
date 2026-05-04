@@ -43,7 +43,11 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
             </dl>
           </div>
           <div className="rda-contact-actions">
-            <button onClick={() => setFormOpen((value) => !value)} type="button">
+            <button
+              data-rda-contact-form-toggle="true"
+              onClick={() => setFormOpen((value) => !value)}
+              type="button"
+            >
               Drop us a line!
             </button>
             <a href={directionsUrl} rel="noreferrer" target="_blank">

@@ -372,6 +372,64 @@ test.describe("live-style interaction flows", () => {
       expect(position.bottom).toBeGreaterThan(300);
     });
 
+    test("GA4 custom conversion events fire for key website actions", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(page, "/");
+
+      const events = await page.evaluate(() => {
+        const analyticsWindow = window as Window & {
+          __rdaTestGtagEvents?: unknown[][];
+          gtag?: (...args: unknown[]) => void;
+        };
+
+        analyticsWindow.__rdaTestGtagEvents = [];
+        analyticsWindow.gtag = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestGtagEvents?.push(args);
+        };
+        const dispatchClick = (selector: string) => {
+          document
+            .querySelector<HTMLElement>(selector)
+            ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        };
+
+        dispatchClick("[data-rda-home-hero-signup='true']");
+        dispatchClick("[data-rda-contact-us='true']");
+        dispatchClick("[data-rda-social-button='instagram']");
+        dispatchClick("a[href^='tel:']");
+        dispatchClick("a[href^='mailto:']");
+        dispatchClick("a[href*='google.com/maps']");
+        dispatchClick("[data-rda-contact-form-toggle='true']");
+        dispatchClick("[data-aid='FOOTER_COOKIE_CLOSE_RENDERED']");
+
+        const signupForm = document.querySelector<HTMLFormElement>("[data-rda-signup-form='true']");
+        const firstInterest = signupForm?.querySelector<HTMLInputElement>(
+          "input[name='Interested classes[]']",
+        );
+        if (signupForm && firstInterest) {
+          firstInterest.checked = true;
+          signupForm.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+        }
+
+        return analyticsWindow.__rdaTestGtagEvents ?? [];
+      });
+
+      const eventNames = events
+        .filter((event): event is ["event", string, Record<string, unknown>?] => event[0] === "event")
+        .map((event) => event[1]);
+
+      expect(eventNames).toEqual(
+        expect.arrayContaining([
+          "select_content",
+          "social_click",
+          "click_to_call",
+          "email_click",
+          "get_directions",
+          "cookie_accept",
+          "generate_lead",
+        ]),
+      );
+    });
+
     test("quick sign up form is reusable and wired for class interest", async ({
       page,
     }) => {

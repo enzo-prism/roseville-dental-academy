@@ -86,6 +86,59 @@ test("verify frozen snapshot inputs and required local resources", async ({ requ
   });
 });
 
+test("GA4 analytics tag and event tracking are configured", async ({ page }, testInfo) => {
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForLoadState("load").catch(() => undefined);
+  await page.waitForTimeout(1_000);
+
+  const result = await page.evaluate(() => {
+    const analyticsWindow = window as Window & {
+      dataLayer?: unknown[];
+      gtag?: unknown;
+    };
+
+    return {
+      dataLayerReady: Array.isArray(analyticsWindow.dataLayer),
+      gtagReady: typeof analyticsWindow.gtag === "function",
+      hasBootstrapScript: Boolean(document.querySelector("#rda-google-analytics")),
+      hasGtagScript: Boolean(
+        document.querySelector(
+          'script[src="https://www.googletagmanager.com/gtag/js?id=G-LKJFEYVM1Q"]',
+        ),
+      ),
+    };
+  });
+  const mismatches: string[] = [];
+
+  if (!result.hasGtagScript) {
+    mismatches.push("homepage is missing the GA4 gtag script");
+  }
+
+  if (!result.hasBootstrapScript) {
+    mismatches.push("homepage is missing the React-owned analytics bootstrap");
+  }
+
+  if (!result.dataLayerReady || !result.gtagReady) {
+    mismatches.push("homepage did not initialize the GA4 data layer");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "ga4-analytics",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "ga4-analytics-summary.json", {
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 for (const route of routeMappings) {
   test(`smoke ${route.label} serves the expected draft output`, async ({ page }, testInfo) => {
     const snapshot = await captureSnapshot(page, `${localOrigin}${route.localPath}`, {

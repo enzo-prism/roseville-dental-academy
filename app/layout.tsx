@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 
+import { GoogleAnalytics } from "@/components/site/google-analytics";
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
 import { getSiteUrl } from "../lib/site-config";
 
@@ -31,6 +32,7 @@ export default function RootLayout({
       </head>
       <body className={LIVE_BODY_CLASS}>
         {children}
+        <GoogleAnalytics />
         <Analytics mode={analyticsMode} />
       </body>
     </html>
