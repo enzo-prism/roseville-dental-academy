@@ -214,7 +214,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$85",
     summary:
-      "American Heart Association-aligned training for healthcare providers, with blended home study and an instructor-led skills evaluation. Next class: May 2nd 2026.",
+      "American Heart Association-aligned training for healthcare providers, with blended home study and an instructor-led skills evaluation. Next class: June 6th 2026.",
     href: "/bls-cpr-1",
     media: siteImages.bls,
     analyticsKey: "card-bls",
@@ -225,7 +225,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$395",
     summary:
-      "California Dental Board-aligned training with current CPR and Dental Practice Act prerequisites. Next class: May 2nd 2026.",
+      "California Dental Board-aligned training with current CPR and Dental Practice Act prerequisites. Next class: June 6th 2026.",
     href: "/infection-control",
     media: siteImages.infection,
     analyticsKey: "card-infection-control",
@@ -236,7 +236,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$695",
     summary:
-      "Radiography training, patient requirements, and documentation support for California dental professionals. Next class: May 2nd 2026.",
+      "Radiography training, patient requirements, and documentation support for California dental professionals. Next class: June 6th 2026.",
     href: "/radiation-safety",
     media: siteImages.radiation,
     analyticsKey: "card-radiation-safety",
@@ -247,7 +247,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$500",
     summary:
-      "Short-format polishing training designed around California certification requirements and clinical competency work. Next class: May 9th 2026.",
+      "Short-format polishing training designed around California certification requirements and clinical competency work. Next class: June 20th 2026.",
     href: "/coronal-polish",
     media: siteImages.coronal,
     analyticsKey: "card-coronal-polish",
@@ -258,7 +258,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$550",
     summary:
-      "Current RDA renewal support with clinical patient requirements and documentation expectations. Next class: May 9th 2026.",
+      "Current RDA renewal support with clinical patient requirements and documentation expectations. Next class: June 20th 2026.",
     href: "/sealants",
     media: siteImages.sealants,
     analyticsKey: "card-sealants",
@@ -608,7 +608,7 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "The team shared upcoming dates of Friday, June 19, 2026 and Monday, July 13, 2026 for Dental Assisting Training. BLS is listed for May 2, 2026 and June 6, 2026, with several stand-alone courses scheduled in May.",
+      "The team shared upcoming dates of Friday, June 19, 2026 and Monday, July 13, 2026 for Dental Assisting Training. BLS, Radiation Safety, and Infection Control are scheduled for June 6, 2026. Coronal Polish and Pit and Fissure Sealants are scheduled for June 20, 2026.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -749,21 +749,21 @@ export const registrationCourseOptions: RegistrationCourseOption[] = [
     key: "radiation-safety",
     label: "Radiation Safety / X-ray License",
     price: "$695.00",
-    note: "California Dental Board-approved radiography training with patient requirements. Next class: May 2nd 2026.",
+    note: "California Dental Board-approved radiography training with patient requirements. Next class: June 6th 2026.",
     icon: "scan",
   },
   {
     key: "infection-control",
     label: "8-Hour Infection Control Certification",
     price: "$395.00",
-    note: "Current compliance training for California dental professionals and students. Next class: May 2nd 2026.",
+    note: "Current compliance training for California dental professionals and students. Next class: June 6th 2026.",
     icon: "shield",
   },
   {
     key: "bls-cpr",
     label: "BLS / CPR",
     price: "$85.00",
-    note: "American Heart Association-aligned BLS training with instructor-led skills evaluation. Next class: May 2nd 2026.",
+    note: "American Heart Association-aligned BLS training with instructor-led skills evaluation. Next class: June 6th 2026.",
     icon: "heart",
   },
 ] as const;
@@ -793,11 +793,11 @@ export const homeHero: HeroContent = {
   panel: {
     title: "Upcoming class dates",
     copy:
-      "Stand-alone certifications are scheduled in May, and the next dental assisting cohort begins in June.",
+      "Stand-alone certifications are scheduled in June, and the next dental assisting cohort begins in June.",
     items: [
       "Dental Assisting Training Program: Friday, June 19th 2026",
-      "BLS / CPR, Infection Control, and Radiation Safety: May 2nd 2026",
-      "Coronal Polish and Pit and Fissure Sealants: May 9th 2026",
+      "BLS / CPR, Infection Control, and Radiation Safety: June 6th 2026",
+      "Coronal Polish and Pit and Fissure Sealants: June 20th 2026",
       "Now offering blended learning BLS",
     ],
   },

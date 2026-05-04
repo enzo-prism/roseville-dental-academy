@@ -323,6 +323,10 @@ textarea {
   color: var(--rda-color-accent);
 }
 
+.rda-mobile-signup {
+  color: var(--rda-color-primary);
+}
+
 .rda-mobile-menu .rda-social-buttons-nav {
   justify-content: flex-start;
   margin: 16px 0 0;
@@ -781,6 +785,11 @@ textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.rda-review-photo-grid-mobile,
+.rda-mobile-review-more {
+  display: none;
+}
+
 .rda-review-photo-card {
   background: var(--rda-color-surface);
   border: 1px solid var(--rda-color-border-soft);
@@ -905,6 +914,41 @@ textarea {
 .rda-gallery-actions a:focus-visible {
   border-color: var(--rda-color-accent-active);
   color: var(--rda-color-accent-deep);
+}
+
+.rda-board-accordion {
+  display: none;
+}
+
+.rda-board-accordion-item {
+  border: 1px solid var(--rda-color-border-soft);
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.rda-board-accordion-item summary {
+  color: var(--rda-color-heading);
+  cursor: pointer;
+  font-family: var(--rda-font-heading);
+  font-size: 19px;
+  line-height: 1.25;
+  list-style-position: inside;
+  padding: 16px;
+}
+
+.rda-board-accordion-item p {
+  line-height: 1.7;
+  margin: 0;
+  padding: 0 16px 14px;
+}
+
+.rda-board-accordion-item a {
+  color: var(--rda-color-primary);
+  display: inline-flex;
+  font-family: var(--rda-font-heading);
+  margin: 0 16px 16px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .rda-newsletter-section {
@@ -1613,20 +1657,72 @@ textarea {
     right: 18px;
   }
 
+  .rda-review-photo-grid-desktop {
+    display: none;
+  }
+
+  .rda-review-photo-grid-mobile {
+    display: grid;
+  }
+
+  .rda-mobile-review-more {
+    display: block;
+    margin-top: 18px;
+  }
+
+  .rda-mobile-review-more summary {
+    border: 1px solid var(--rda-color-primary);
+    color: var(--rda-color-primary);
+    cursor: pointer;
+    font-family: var(--rda-font-heading);
+    min-height: 46px;
+    padding: 13px 18px;
+    text-align: center;
+  }
+
+  .rda-mobile-review-more .rda-review-photo-grid {
+    margin-top: 18px;
+  }
+
+  .rda-board-grid-desktop {
+    display: none;
+  }
+
+  .rda-board-accordion {
+    display: block;
+  }
+
+  .rda-gallery-section-home .rda-gallery-item:nth-child(n + 5) {
+    display: none;
+  }
+
+  .rda-mobile-menu .rda-social-buttons-nav .rda-social-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .rda-mobile-menu .rda-social-buttons-nav .rda-social-button-icon,
+  .rda-mobile-menu .rda-social-buttons-nav .rda-social-button-icon svg {
+    height: 20px;
+    width: 20px;
+  }
+
   .rda-desktop-nav {
     display: none;
   }
 
   .rda-mobile-topbar {
     display: flex;
+    min-height: 56px;
+    padding: 6px 16px;
   }
 
   .rda-logo-masthead {
-    padding: 4px 18px 22px;
+    padding: 0 18px 10px;
   }
 
   .rda-live-logo {
-    width: min(210px, 100%);
+    width: min(120px, 100%);
   }
 
   .rda-stable-section,
@@ -1672,6 +1768,14 @@ textarea {
     width: min(320px, calc(100vw - 28px));
   }
 
+  .rda-live-shell:has(.rda-cookie-banner) .live-elevenlabs-widget:not(.is-expanded),
+  .rda-live-shell:has([data-aid="FOOTER_COOKIE_BANNER_RENDERED"])
+    .live-elevenlabs-widget:not(.is-expanded) {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(16px);
+  }
+
   .live-elevenlabs-widget.is-expanded {
     bottom: 0;
     height: min(620px, calc(100vh - 112px));
@@ -1689,10 +1793,28 @@ textarea {
 
   .rda-cookie-banner,
   [data-aid="FOOTER_COOKIE_BANNER_RENDERED"] {
-    bottom: calc(184px + max(12px, env(safe-area-inset-bottom)));
+    bottom: max(12px, env(safe-area-inset-bottom));
     left: 12px;
     max-width: none;
+    padding: 14px 16px;
     right: 12px;
+  }
+
+  .rda-cookie-banner h2,
+  [data-aid="FOOTER_COOKIE_BANNER_RENDERED"] h2 {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .rda-cookie-banner p,
+  [data-aid="FOOTER_COOKIE_BANNER_RENDERED"] p {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .rda-cookie-banner button,
+  [data-aid="FOOTER_COOKIE_BANNER_RENDERED"] button {
+    min-height: 44px;
   }
 
   .rda-live-shell:has(.live-elevenlabs-widget.is-expanded) .rda-cookie-banner,

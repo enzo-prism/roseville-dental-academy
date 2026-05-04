@@ -26,6 +26,7 @@ import {
 import { signupInterestOptions, siteContact } from "@/lib/site-data";
 
 type LiveSignupSectionProps = {
+  className?: string;
   compact?: boolean;
   sourceLabel: string;
 };
@@ -62,7 +63,11 @@ function SignupIcon({
   );
 }
 
-export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSectionProps) {
+export function LiveSignupSection({
+  className,
+  compact = false,
+  sourceLabel,
+}: LiveSignupSectionProps) {
   const formId = useId();
   const titleId = `${formId}-title`;
   const errorId = `${formId}-interest-error`;
@@ -86,7 +91,11 @@ export function LiveSignupSection({ compact = false, sourceLabel }: LiveSignupSe
 
   return (
     <section
-      className={compact ? "rda-stable-section rda-signup-section rda-signup-section-compact" : "rda-stable-section rda-signup-section"}
+      className={[
+        "rda-stable-section rda-signup-section",
+        compact ? "rda-signup-section-compact" : "",
+        className ?? "",
+      ].filter(Boolean).join(" ")}
       data-rda-signup-section="true"
       id="quick-sign-up"
       aria-labelledby={titleId}

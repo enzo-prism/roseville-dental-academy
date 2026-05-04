@@ -285,6 +285,21 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                 </span>
               </Link>
             ))}
+            <Link
+              className="rda-mobile-link rda-mobile-signup"
+              href="/#quick-sign-up"
+              onClick={() => setMobileOpen(false)}
+            >
+              <span className="rda-mobile-label">
+                <NavIcon
+                  className="rda-mobile-nav-icon"
+                  Icon={GraduationCap}
+                  iconKey="signup"
+                  size={16}
+                />
+                <span>Sign Up</span>
+              </span>
+            </Link>
             <div className="rda-mobile-more">
               <button
                 aria-expanded={moreOpen}

@@ -617,7 +617,7 @@ function ContactSection() {
               siteContact.phone,
               siteContact.email,
               "Dental Assisting: Friday, June 19th 2026",
-              "Stand-alone courses: May 2nd and May 9th 2026",
+              "Stand-alone courses: June 6th and June 20th 2026",
             ]}
             icon="phone"
             title="Reach admissions"

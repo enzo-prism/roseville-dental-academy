@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import manifestData from "@/snapshot/live/manifest.json";
 import { LIVE_SOURCE_ORIGIN } from "@/lib/site-config";
-import { homepageReviewHighlights } from "@/lib/site-data";
+import { homepageReviewHighlights, signupInterestOptions, siteContact } from "@/lib/site-data";
 
 export const LIVE_SITE_ORIGIN = LIVE_SOURCE_ORIGIN;
 export const LIVE_BODY_CLASS = "x x-fonts-adamina x-fonts-fjalla-one";
@@ -111,6 +111,28 @@ const HOMEPAGE_COURSE_COPY_REPLACEMENTS = [
   "Sealant certification training for qualified dental assistants and RDAs, including manikin practice, written testing, and supervised clinical patient requirements.",
   "Students move through a focused 210-hour schedule with class, clinical practice, homework, and an assigned externship day that connects classroom skills to real office workflow.",
 ] as const;
+
+const COURSE_DATE_REPLACEMENTS: Array<{
+  pattern: RegExp;
+  replacement: string;
+}> = [
+  {
+    pattern: /\bMay 2nd,? 2026\b/g,
+    replacement: "June 6th 2026",
+  },
+  {
+    pattern: /\bMay 2, 2026\b/g,
+    replacement: "June 6, 2026",
+  },
+  {
+    pattern: /\bMay 9th,? 2026\b/g,
+    replacement: "June 20th 2026",
+  },
+  {
+    pattern: /\bMay 9, 2026\b/g,
+    replacement: "June 20, 2026",
+  },
+];
 
 const HOMEPAGE_HERO_WIDGET_REGEX =
   /<div\b(?=[^>]*\bclass="[^"]*\bwidget-introduction-introduction-1\b[^"]*"[^>]*>)/i;
@@ -520,6 +542,13 @@ function applyHomepageCourseCopyReplacements(html: string) {
   );
 }
 
+function applyCourseDateReplacements(html: string) {
+  return COURSE_DATE_REPLACEMENTS.reduce(
+    (output, { pattern, replacement }) => output.replace(pattern, replacement),
+    html,
+  );
+}
+
 function escapeHtml(value: string | number) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -556,23 +585,32 @@ function renderRatingStarsHtml(rating: number) {
 }
 
 function renderHomepageReviewHighlightsHtml() {
-  const reviewCards = homepageReviewHighlights
+  const renderReviewCard = (review: (typeof homepageReviewHighlights)[number]) => `
+    <article class="rda-review-photo-card">
+      <figure class="rda-review-photo-media">
+        <img src="${escapeHtml(review.image.src)}" alt="${escapeHtml(review.image.alt)}" loading="lazy" decoding="async" width="640" height="853" />
+      </figure>
+      <div class="rda-review-photo-body">
+        <p class="rda-review-photo-feature">${escapeHtml(review.feature)}</p>
+        <p class="rda-review-rating" aria-label="${escapeHtml(review.rating)} out of 5 stars">${renderRatingStarsHtml(review.rating)}</p>
+        <blockquote>&ldquo;${escapeHtml(review.quote)}&rdquo;</blockquote>
+        <div>
+          <p class="rda-review-name">${escapeHtml(review.name)}</p>
+          <p class="rda-review-meta">${escapeHtml(review.meta)}</p>
+        </div>
+      </div>
+    </article>`;
+  const primaryReviewCards = homepageReviewHighlights
+    .slice(0, 3)
+    .map(renderReviewCard)
+    .join("");
+  const moreReviewCards = homepageReviewHighlights
+    .slice(3)
+    .map(renderReviewCard)
+    .join("");
+  const desktopReviewCards = homepageReviewHighlights
     .map(
-      (review) => `
-        <article class="rda-review-photo-card">
-          <figure class="rda-review-photo-media">
-            <img src="${escapeHtml(review.image.src)}" alt="${escapeHtml(review.image.alt)}" loading="lazy" decoding="async" width="640" height="853" />
-          </figure>
-          <div class="rda-review-photo-body">
-            <p class="rda-review-photo-feature">${escapeHtml(review.feature)}</p>
-            <p class="rda-review-rating" aria-label="${escapeHtml(review.rating)} out of 5 stars">${renderRatingStarsHtml(review.rating)}</p>
-            <blockquote>&ldquo;${escapeHtml(review.quote)}&rdquo;</blockquote>
-            <div>
-              <p class="rda-review-name">${escapeHtml(review.name)}</p>
-              <p class="rda-review-meta">${escapeHtml(review.meta)}</p>
-            </div>
-          </div>
-        </article>`,
+      renderReviewCard,
     )
     .join("");
 
@@ -587,9 +625,16 @@ function renderHomepageReviewHighlightsHtml() {
         <p class="rda-review-score">${renderRatingStarsHtml(5)}</p>
         <p class="rda-review-photo-intro">77 Google reviews from students and alumni, paired with real moments from the academy gallery.</p>
       </div>
-      <div class="rda-review-photo-grid">
-        ${reviewCards}
+      <div class="rda-review-photo-grid rda-review-photo-grid-desktop">
+        ${desktopReviewCards}
       </div>
+      <div class="rda-review-photo-grid rda-review-photo-grid-mobile">
+        ${primaryReviewCards}
+      </div>
+      <details class="rda-mobile-review-more">
+        <summary>Show more reviews</summary>
+        <div class="rda-review-photo-grid">${moreReviewCards}</div>
+      </details>
     </section>`;
 }
 
@@ -642,6 +687,67 @@ function renderHomepageHeroHtml() {
     </section>`;
 }
 
+function renderHomepagePrioritySignupHtml() {
+  const interestOptions = signupInterestOptions
+    .map(
+      (option) => `
+        <label class="rda-interest-option">
+          <input name="Interested classes[]" type="checkbox" value="${escapeHtml(option.value)}" />
+          <span class="rda-interest-option-content">
+            <span class="rda-interest-option-icon" data-rda-signup-icon="${escapeHtml(option.value)}" aria-hidden="true">+</span>
+            <span>${escapeHtml(option.label)}</span>
+          </span>
+        </label>`,
+    )
+    .join("");
+
+  return `
+    <section class="rda-stable-section rda-signup-section rda-priority-signup-section" data-rda-signup-section="true" id="quick-sign-up" aria-labelledby="rda-priority-signup-title">
+      <div class="rda-section-heading rda-signup-heading">
+        <span class="rda-signup-heading-icon" data-rda-signup-icon="heading" aria-hidden="true">✓</span>
+        <h2 id="rda-priority-signup-title">Quick Sign Up</h2>
+        <span aria-hidden="true"></span>
+      </div>
+      <p class="rda-signup-intro">Check the classes you are interested in and the academy team will follow up.</p>
+      <form action="${escapeHtml(siteContact.formspreeEndpoint)}" class="rda-signup-form" data-rda-signup-form="true" method="post" onsubmit="if(!Array.from(this.querySelectorAll('input[type=checkbox]')).some(function(input){return input.checked;})){this.querySelector('[data-rda-form-error]').hidden=false;return false;}">
+        <input name="_subject" type="hidden" value="Roseville Dental Academy class interest" />
+        <input name="Source page" type="hidden" value="Dental Assisting X Ray Class CPR Class - Rosevilledental" />
+        <fieldset class="rda-interest-fieldset">
+          <legend>
+            <span class="rda-interest-legend">
+              <span class="rda-signup-icon" aria-hidden="true">•</span>
+              Classes or certifications
+            </span>
+          </legend>
+          <div class="rda-interest-options">${interestOptions}</div>
+          <p class="rda-form-error" data-rda-form-error hidden role="alert">Choose at least one class or certification.</p>
+        </fieldset>
+        <div class="rda-signup-fields">
+          <label>
+            <span class="rda-field-label"><span data-rda-signup-icon="name" aria-hidden="true">•</span>Name</span>
+            <input autocomplete="name" name="Name" placeholder="Name" required type="text" />
+          </label>
+          <label>
+            <span class="rda-field-label"><span data-rda-signup-icon="email" aria-hidden="true">•</span>Email</span>
+            <input autocomplete="email" name="_replyto" placeholder="Email" required type="email" />
+          </label>
+          <label>
+            <span class="rda-field-label"><span data-rda-signup-icon="phone" aria-hidden="true">•</span>Phone</span>
+            <input autocomplete="tel" name="Phone" placeholder="Phone" required type="tel" />
+          </label>
+        </div>
+        <label class="rda-signup-notes">
+          <span class="rda-field-label"><span data-rda-signup-icon="notes" aria-hidden="true">•</span>Other notes</span>
+          <textarea name="Notes" placeholder="Schedule questions, goals, or anything helpful" rows="4"></textarea>
+        </label>
+        <div class="rda-signup-footer">
+          <p class="rda-form-note rda-signup-note">Short form, quick follow-up. No payment is collected here.</p>
+          <button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">Send interest<span class="rda-signup-submit-icon" data-rda-signup-icon="submit" aria-hidden="true">→</span></button>
+        </div>
+      </form>
+    </section>`;
+}
+
 function replaceHomepageHero(html: string) {
   if (html.includes('data-rda-home-hero="true"')) {
     return html;
@@ -655,7 +761,7 @@ function replaceHomepageHero(html: string) {
 
   const end = findClosingDiv(html, match.index + match[0].length);
 
-  return `${html.slice(0, match.index)}${renderHomepageHeroHtml()}${html.slice(end)}`;
+  return `${html.slice(0, match.index)}${renderHomepageHeroHtml()}${renderHomepagePrioritySignupHtml()}${html.slice(end)}`;
 }
 
 function sanitizeSnapshotBody(bodyHtml: string) {
@@ -687,7 +793,7 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
     route.description ||
     FALLBACK_DESCRIPTION;
   const styleBlocks = extractStyleBlocks(headHtml);
-  const sanitizedBodyHtml = sanitizeSnapshotBody(bodyHtml);
+  const sanitizedBodyHtml = applyCourseDateReplacements(sanitizeSnapshotBody(bodyHtml));
 
   return {
     bodyClass,

@@ -27,7 +27,7 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {slots.has("faqs") ? <StableStudentFaqs /> : null}
       {slots.has("photos") ? <StableGallery full={route.route === "/photos"} /> : null}
       {route.route === "/contact" && slots.has("contact") ? <LiveContactSection /> : null}
-      {slots.has("signup") ? (
+      {slots.has("signup") && route.route !== "/" ? (
         <LiveSignupSection compact={route.route !== "/"} sourceLabel={route.title} />
       ) : null}
       {route.route !== "/contact" && slots.has("contact") ? (
@@ -49,7 +49,7 @@ function StableBoardApproval() {
         Student questions often start with approval status, requirements, and what to bring. These
         details keep the next step clear before anyone enrolls.
       </p>
-      <div className="rda-board-grid">
+      <div className="rda-board-grid rda-board-grid-desktop">
         {boardApprovalHighlights.map((item) => (
           <article className="rda-board-card" key={item.title}>
             <h3>{item.title}</h3>
@@ -62,6 +62,21 @@ function StableBoardApproval() {
               {item.ctaLabel}
             </a>
           </article>
+        ))}
+      </div>
+      <div className="rda-board-accordion">
+        {boardApprovalHighlights.map((item, index) => (
+          <details className="rda-board-accordion-item" key={item.title} open={index === 0}>
+            <summary>{item.title}</summary>
+            <p>{item.summary}</p>
+            <a
+              href={item.href}
+              rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+              target={item.href.startsWith("http") ? "_blank" : undefined}
+            >
+              {item.ctaLabel}
+            </a>
+          </details>
         ))}
       </div>
     </section>

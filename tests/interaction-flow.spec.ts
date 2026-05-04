@@ -372,6 +372,84 @@ test.describe("live-style interaction flows", () => {
       expect(position.bottom).toBeGreaterThan(300);
     });
 
+    test("mobile homepage prioritizes signup and avoids overlay collisions", async ({ page }) => {
+      await page.setViewportSize({ height: 844, width: 390 });
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await gotoSettled(page, "/");
+
+      const headerHeight = await page.locator(".rda-live-header").evaluate((element) => {
+        return Math.round(element.getBoundingClientRect().height);
+      });
+      expect(headerHeight).toBeLessThan(260);
+
+      const heroCta = page.locator('[data-rda-home-hero-signup="true"]');
+      const cookie = page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]').first();
+      const widget = page.locator("[data-elevenlabs-widget-slot]");
+
+      await expect(heroCta).toBeVisible();
+      await expect(cookie).toBeVisible();
+      await expect(widget).toHaveCSS("opacity", "0");
+      await expect(widget).toHaveCSS("pointer-events", "none");
+
+      const overlap = await page.evaluate(() => {
+        const cta = document.querySelector<HTMLElement>("[data-rda-home-hero-signup='true']");
+        const banner = document.querySelector<HTMLElement>("[data-aid='FOOTER_COOKIE_BANNER_RENDERED']");
+        const ctaRect = cta?.getBoundingClientRect();
+        const bannerRect = banner?.getBoundingClientRect();
+
+        return Boolean(
+          ctaRect &&
+            bannerRect &&
+            ctaRect.left < bannerRect.right &&
+            ctaRect.right > bannerRect.left &&
+            ctaRect.top < bannerRect.bottom &&
+            ctaRect.bottom > bannerRect.top,
+        );
+      });
+      expect(overlap).toBe(false);
+
+      await heroCta.click();
+      await expect(page).toHaveURL(/#quick-sign-up$/);
+      const signupTop = await page.locator("#quick-sign-up").evaluate((element) => {
+        return Math.round(element.getBoundingClientRect().top);
+      });
+      expect(signupTop).toBeGreaterThanOrEqual(0);
+      expect(signupTop).toBeLessThan(80);
+    });
+
+    test("mobile menu and long homepage sections use progressive disclosure", async ({ page }) => {
+      await page.setViewportSize({ height: 844, width: 390 });
+      await gotoSettled(page, "/");
+
+      await page.getByRole("button", { name: "Hamburger Site Navigation Icon" }).click();
+      const mobileMenu = page.locator('[data-rda-mobile-menu="true"]');
+      await expect(mobileMenu.getByRole("link", { name: "Sign Up" })).toBeVisible();
+
+      const socialBox = await mobileMenu.locator('[data-rda-social-button="instagram"]').evaluate(
+        (element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            height: Math.round(rect.height),
+            width: Math.round(rect.width),
+          };
+        },
+      );
+      expect(socialBox.height).toBeGreaterThanOrEqual(44);
+      expect(socialBox.width).toBeGreaterThanOrEqual(44);
+
+      await page.getByRole("button", { name: "Close Site Navigation" }).click();
+
+      await expect(page.locator(".rda-review-photo-grid-mobile .rda-review-photo-card")).toHaveCount(3);
+      const reviewMore = page.locator(".rda-mobile-review-more");
+      await expect(reviewMore.getByText("Show more reviews")).toBeVisible();
+      await reviewMore.locator("summary").click();
+      await expect(reviewMore.locator(".rda-review-photo-card")).toHaveCount(3);
+
+      await expect(page.locator(".rda-board-accordion")).toBeVisible();
+      await expect(page.locator(".rda-board-grid-desktop")).toBeHidden();
+      await expect(page.locator(".rda-gallery-section-home .rda-gallery-item:visible")).toHaveCount(4);
+    });
+
     test("GA4 custom conversion events fire for key website actions", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
