@@ -121,31 +121,6 @@
       ]
     },
     {
-      "id": "front-office-program",
-      "route": "/front-office-program",
-      "sourcePath": "/front-office-program",
-      "aliases": [],
-      "status": 200,
-      "title": "Front Office Program | Roseville Dental Academy",
-      "htmlPath": "snapshot/live/html/front-office-program.html",
-      "assetRoot": "/__live",
-      "contentBaselinePath": "tests/baselines/live/content/front-office-program.json",
-      "visualBaselines": {
-        "desktop": "tests/baselines/live/visual/front-office-program-desktop.png",
-        "mobile": "tests/baselines/live/visual/front-office-program-mobile.png"
-      },
-      "visualMasks": [
-        {
-          "type": "selector",
-          "value": ".widget-trustedsite"
-        },
-        {
-          "type": "selector",
-          "value": ".live-elevenlabs-widget"
-        }
-      ]
-    },
-    {
       "id": "faqs-1",
       "route": "/faqs-1",
       "sourcePath": "/faqs-1",

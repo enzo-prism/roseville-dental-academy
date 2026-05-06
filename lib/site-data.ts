@@ -52,7 +52,6 @@ export const signupInterestOptions: SignupInterestOption[] = [
   { label: "Radiation Safety", value: "Radiation Safety" },
   { label: "Coronal Polish", value: "Coronal Polish" },
   { label: "Pit and Fissure Sealants", value: "Pit and Fissure Sealants" },
-  { label: "Front Office Program", value: "Front Office Program" },
   { label: "N95 Fit Test", value: "N95 Fit Test" },
   { label: "Not sure yet", value: "Not sure yet" },
 ];
@@ -64,8 +63,6 @@ export const siteImages = {
   registration: "/assets/live/home/registration.jpg",
   programHero: "/assets/live/programs/dental-assisting-hero.jpg",
   programOverview: "/assets/live/programs/dental-assisting-overview.jpg",
-  frontOfficeHero: "/assets/live/programs/front-office-hero.jpg",
-  frontOfficeOverview: "/assets/live/programs/front-office-overview.jpg",
   bls: "/assets/live/courses/bls.jpg",
   infection: "/assets/live/courses/infection-control.jpg",
   radiation: "/assets/live/courses/radiation-safety.jpg",
@@ -133,11 +130,6 @@ export const desktopNavGroups: NavGroup[] = [
         href: "/dental-assisting-program",
         description: "The academy's accelerated 9-week signature program.",
       },
-      {
-        label: "Front Office Program",
-        href: "/front-office-program",
-        description: "Administrative and patient-communication training.",
-      },
     ],
   },
   {
@@ -180,7 +172,6 @@ export const footerSections: FooterSection[] = [
     title: "Programs",
     links: [
       { label: "Dental Assisting Program", href: "/dental-assisting-program" },
-      { label: "Front Office Program", href: "/front-office-program" },
     ],
   },
   {
@@ -513,7 +504,7 @@ export const instructorBios = [
     image: siteImages.instructorJessica,
     imageAlt: "Jessica teaching hands-on chairside dental assisting skills at Roseville Dental Academy",
     summary:
-      "Jessica has worked in dentistry since 2015 and is a Roseville Dental Academy graduate. After completing the program and earning her x-ray license, she was hired at Waikiki Dental, grew through chairside, co-assisting, and front office roles, and discovered a passion for helping interns learn with confidence.",
+      "Jessica has worked in dentistry since 2015 and is a Roseville Dental Academy graduate. After completing the program and earning her x-ray license, she was hired at Waikiki Dental, grew through chairside, co-assisting, and patient administration roles, and discovered a passion for helping interns learn with confidence.",
     highlights: [
       "Roseville Dental Academy alumna",
       "RDA since 2017",
@@ -662,14 +653,14 @@ export const photoGroups: GalleryGroup[] = [
   {
     title: "Making a good first impression!",
     copy:
-      "Moments that spotlight professionalism, patient interaction, and front-of-house presence.",
+      "Moments that spotlight professionalism, patient interaction, and office-ready presentation.",
     items: [
-      livePhoto("/assets/live/photos/img-3077.jpg", "Front office professionalism practice"),
+      livePhoto("/assets/live/photos/img-3077.jpg", "Dental office professionalism practice"),
       livePhoto("/assets/live/photos/img-7738.jpg", "Patient-ready presentation training"),
       livePhoto("/assets/live/photos/aabc2fc5-4701-416f-ac09-25a6192dcdf7.jpg", "First-impression training in a dental office setting"),
       livePhoto("/assets/live/photos/ffd84999-f1fb-4fd1-acf8-4f69f268cf6a.jpg", "Dental office communication practice"),
       livePhoto("/assets/live/photos/img-7746.jpg", "Student practicing patient interaction"),
-      livePhoto("/assets/live/photos/img-3056.jpg", "Dental academy front office training"),
+      livePhoto("/assets/live/photos/img-3056.jpg", "Dental academy office-readiness training"),
       livePhoto("/assets/live/photos/img-3082.jpg", "Students preparing for patient-facing work"),
       livePhoto("/assets/live/photos/img-3064.jpg", "Dental office first impression training"),
       livePhoto("/assets/live/photos/img-3089-59f42e8.jpg", "Professional presentation practice"),
@@ -906,14 +897,6 @@ export const sitePages: SitePageDefinition[] = [
     description:
       "Launch a dental career in just 9 weeks with Roseville Dental Academy's hands-on dental assisting program, flexible schedules, and job-focused training.",
     kind: "program",
-    contactMode: "none",
-  },
-  {
-    slug: "front-office-program",
-    title: "Front Office Program | Roseville Dental Academy",
-    description:
-      "Enroll in our Front Office Program at Roseville Dental Academy for hands-on training, flexible schedules, and job assistance.",
-    kind: "front-office",
     contactMode: "none",
   },
   {
@@ -1172,72 +1155,6 @@ export const dentalProgramPage = {
       },
     ],
   },
-} as const;
-
-export const frontOfficePage = {
-  hero: {
-    eyebrow: "Administrative training",
-    title: "Front Office Program",
-    intro:
-      "Enroll in our Front Office Program for hands-on training in a live practice, flexible schedules, and job assistance.",
-    image: siteImages.frontOfficeHero,
-    imageAlt: "Front office student learning dental basics at a desk",
-    pills: ["40-hour internship", "Live practice", "Resume support"],
-    actions: [
-      {
-        label: "Ask about scheduling",
-        href: "/#contact",
-        variant: "default",
-        analyticsKey: "front-office-contact",
-      },
-      {
-        label: "Email admissions",
-        href: "mailto:rosevilledentalacademy@gmail.com",
-        variant: "secondary",
-        analyticsKey: "front-office-email",
-      },
-    ],
-    panel: {
-      title: "Program focus",
-      copy:
-        "Students sit alongside the front office staff to observe and practice the real systems used in a working dental office.",
-      items: ["Dental basics", "Dental systems and communication", "Insurance"],
-    },
-  } satisfies HeroContent,
-  split: {
-    title: "Hands-on experience in a live practice",
-    eyebrow: "Front desk immersion",
-    copy: [
-      "Students sit alongside the front office staff in a 40-hour internship to learn how the schedule, phone systems, and patient communication really work during the day.",
-      "The program is practical and job-oriented, pairing office exposure with resume and job assistance.",
-    ],
-    image: siteImages.frontOfficeOverview,
-    imageAlt: "Front office training in a live practice",
-    supporting: {
-      title: "Built around core office systems",
-      list: ["Convenient and flexible schedule", "Resume and job assistance"],
-    },
-  } satisfies SplitSectionContent,
-  features: [
-    {
-      title: "Dental Basics",
-      summary:
-        "Foundational office and patient-flow knowledge for working inside a dental practice.",
-      icon: "book-open",
-    },
-    {
-      title: "Dental Systems and Communication",
-      summary:
-        "Exposure to the systems and communication habits that support check-in, scheduling, and patient follow-up.",
-      icon: "users",
-    },
-    {
-      title: "Insurance",
-      summary:
-        "Practical familiarity with dental insurance discussions and workflow expectations inside the front office.",
-      icon: "clipboard-check",
-    },
-  ] satisfies FeatureItem[],
 } as const;
 
 export const instructorsPage = {

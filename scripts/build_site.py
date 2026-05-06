@@ -236,7 +236,6 @@ COURSE_ROUTES = [
 
 MORE_ROUTES = [
     ("dental-assisting-program", "Dental Assisting Program"),
-    ("front-office-program", "Front Office Program"),
     ("meet-the-instructors", "Meet the Instructors"),
     ("faqs-1", "FAQs"),
     ("photos", "Photos"),
@@ -252,7 +251,6 @@ ALL_ROUTES = [
     "coronal-polish",
     "sealants",
     "dental-assisting-program",
-    "front-office-program",
     "meet-the-instructors",
     "faqs-1",
     "photos",
@@ -274,7 +272,6 @@ PUBLIC_SITEMAP_ROUTES = [
     "coronal-polish",
     "sealants",
     "dental-assisting-program",
-    "front-office-program",
     "meet-the-instructors",
     "faqs-1",
     "photos",
@@ -1116,7 +1113,6 @@ def header(current_slug: str) -> str:
         [
             nav_link("/", "Home", slug=""),
             nav_link("/dental-assisting-program/", "Dental Assisting", slug="dental-assisting-program"),
-            nav_link("/front-office-program/", "Front Office Program", slug="front-office-program"),
             nav_link("/registration/", "Admissions", slug="registration"),
             nav_link("/#contact", "Contact"),
         ]
@@ -1842,76 +1838,6 @@ def registration_page() -> str:
     )
 
 
-def front_office_page() -> str:
-    body = []
-    body.append(
-        hero(
-            "Administrative training",
-            "Front Office Program",
-            "Enroll in our Front Office Program for hands-on training in a live practice, flexible schedules, and job assistance.",
-            IMAGE["admissions"],
-            buttons_html=buttons(
-                [
-                    ("Ask about scheduling", "/#contact", "button"),
-                    ("View the student portal", "/m/login/", "button-secondary"),
-                ]
-            ),
-            pills=["40-hour internship", "Live practice", "Resume support"],
-            panel_title="Program focus",
-            panel_copy="Students sit alongside the front office staff to observe and practice the real systems used in a working dental office.",
-            panel_items=["Dental Basics", "Dental Systems and Communication", "Insurance"],
-        )
-    )
-    body.append(
-        split_section(
-            "Hands-on experience in a live practice!",
-            "Front desk immersion",
-            [
-                "Students sit alongside the front office staff in a 40-hour internship to learn how the schedule, phone systems, and patient communication really work during the day.",
-                "The program is meant to be practical and job-oriented, pairing office exposure with resume and job assistance.",
-            ],
-            image=IMAGE["team"],
-            image_alt="Front office training",
-            secondary_title="Built around core office systems",
-            secondary_copy=["Convenient and Flexible Schedule", "Resume and Job Assistance"],
-            icon_name="briefcase",
-        )
-    )
-    body.append(
-        feature_grid(
-            "What to expect during the course!",
-            "Core topics",
-            "The live site outlines three broad content areas for the front office track.",
-            [
-                {
-                    "icon": "book-open",
-                    "title": "Dental Basics",
-                    "copy": "Foundational office and patient-flow knowledge for working inside a dental practice.",
-                },
-                {
-                    "icon": "users",
-                    "title": "Dental Systems and Communication",
-                    "copy": "Exposure to the systems and communication habits that support check-in, scheduling, and patient follow-up.",
-                },
-                {
-                    "icon": "clipboard-check",
-                    "title": "Insurance",
-                    "copy": "Practical familiarity with dental insurance discussions and workflow expectations inside the front office.",
-                },
-            ],
-            icon_name="briefcase",
-        )
-    )
-    body.append(contact_section())
-    return layout(
-        slug="front-office-program",
-        title="Front Office Program | Roseville Dental Academy",
-        description="Enroll in our Front Office Program at Roseville Dental Academy for hands-on training, flexible schedules, and job assistance.",
-        body="\n".join(body),
-        image=IMAGE["admissions"],
-    )
-
-
 def course_page(
     *,
     slug: str,
@@ -2325,7 +2251,6 @@ PAGES = {
     "": homepage,
     "registration": registration_page,
     "dental-assisting-program": program_page,
-    "front-office-program": front_office_page,
     "faqs-1": faq_page,
     "meet-the-instructors": instructors_page,
     "photos": photos_page,

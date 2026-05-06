@@ -11,7 +11,6 @@ const routes = [
   { slug: "", label: "home" },
   { slug: "registration", label: "registration" },
   { slug: "dental-assisting-program", label: "dental-assisting-program" },
-  { slug: "front-office-program", label: "front-office-program" },
   { slug: "faqs-1", label: "faqs-1" },
   { slug: "photos", label: "photos" },
   { slug: "m/login", label: "m-login" },

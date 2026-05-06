@@ -25,7 +25,6 @@ import {
   coursePages,
   dentalProgramPage,
   faqItems,
-  frontOfficePage,
   getPageBySlug,
   headerCtas,
   homeGalleryHighlight,
@@ -850,26 +849,6 @@ function ProgramPageContent() {
   );
 }
 
-function FrontOfficePageContent() {
-  return (
-    <>
-      <HeroSection hero={frontOfficePage.hero} />
-      <SplitSection content={frontOfficePage.split} />
-      <FeatureGrid
-        copy="The front office route focuses on the systems and patient communication patterns that make a working dental office run smoothly."
-        eyebrow="Front office focus"
-        items={frontOfficePage.features}
-        title="What the program covers"
-      />
-      <SupportRibbon
-        actions={frontOfficePage.hero.actions}
-        copy="Ask about current scheduling and whether the front office program is the right fit for the type of dental role you want next."
-        title="Talk through the schedule"
-      />
-    </>
-  );
-}
-
 function CoursePageContent({ page }: { page: CoursePageData }) {
   return (
     <>
@@ -1189,12 +1168,6 @@ export function SitePageRenderer({ slug = "" }: { slug?: string }) {
       return (
         <PublicSiteShell contactMode={page.contactMode}>
           <ProgramPageContent />
-        </PublicSiteShell>
-      );
-    case "front-office":
-      return (
-        <PublicSiteShell contactMode={page.contactMode}>
-          <FrontOfficePageContent />
         </PublicSiteShell>
       );
     case "course": {

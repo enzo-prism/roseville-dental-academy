@@ -25,7 +25,6 @@
 - `/radiation-safety`
 - `/sealants`
 - `/dental-assisting-program`
-- `/front-office-program`
 - `/meet-the-instructors`
 - `/faqs-1`
 - `/photos`

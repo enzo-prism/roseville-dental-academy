@@ -4,7 +4,6 @@
 - `/`
 - `/registration`
 - `/dental-assisting-program`
-- `/front-office-program`
 - `/faqs-1`
 - `/photos`
 - `/m/login`

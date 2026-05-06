@@ -33,14 +33,6 @@
       "smokeText": "DENTAL ASSISTING TRAINING PROGRAM"
     },
     {
-      "label": "front-office-program",
-      "livePath": "/front-office-program",
-      "localPath": "/front-office-program",
-      "expectedStatus": 200,
-      "expectedTitle": "Front Office Program | Roseville Dental Academy",
-      "smokeText": "FRONT OFFICE PROGRAM"
-    },
-    {
       "label": "faqs-1",
       "livePath": "/faqs-1",
       "localPath": "/faqs-1",
@@ -189,11 +181,6 @@
       "label": "dental-assisting-program",
       "livePath": "/dental-assisting-program",
       "localPath": "/dental-assisting-program"
-    },
-    {
-      "label": "front-office-program",
-      "livePath": "/front-office-program",
-      "localPath": "/front-office-program"
     },
     {
       "label": "infection-control",

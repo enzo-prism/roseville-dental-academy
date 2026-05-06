@@ -25,7 +25,6 @@ const eslintConfig = defineConfig([
     "coronal-polish/**",
     "dental-assisting-program/**",
     "faqs-1/**",
-    "front-office-program/**",
     "infection-control/**",
     "m/**",
     "meet-the-instructors/**",

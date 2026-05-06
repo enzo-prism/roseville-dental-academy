@@ -532,7 +532,7 @@ test.describe("live-style interaction flows", () => {
       await expect(phone).toHaveAttribute("type", "tel");
       await expect(phone).toHaveAttribute("required", "");
       await expect(notes).toBeVisible();
-      await expect(options).toHaveCount(9);
+      await expect(options).toHaveCount(8);
       await expect(optionIcons).toHaveCount(0);
 
       await name.fill("Test Student");
@@ -543,11 +543,12 @@ test.describe("live-style interaction flows", () => {
 
       await expect(form.getByLabel("Dental Assisting Program")).toBeVisible();
       await expect(form.getByLabel("BLS / CPR")).toBeVisible();
+      await expect(form.getByLabel("Front Office Program")).toHaveCount(0);
 
       await gotoSettled(page, "/infection-control");
       const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
       await expect(courseForm).toBeVisible();
-      await expect(courseForm.locator(".rda-interest-option-icon[data-rda-signup-icon]")).toHaveCount(9);
+      await expect(courseForm.locator(".rda-interest-option-icon[data-rda-signup-icon]")).toHaveCount(8);
       await expect(courseForm.locator('[data-rda-signup-icon="name"]')).toBeVisible();
       await expect(courseForm.locator('[data-rda-signup-icon="email"]')).toBeVisible();
       await expect(courseForm.locator('[data-rda-signup-icon="phone"]')).toBeVisible();

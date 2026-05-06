@@ -5,7 +5,6 @@ import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 
 const footerLinks = [
   { href: "/dental-assisting-program", label: "Dental Assisting Program" },
-  { href: "/front-office-program", label: "Front Office Program" },
   { href: "/faqs-1", label: "FAQs" },
   { href: "/photos", label: "Photos" },
   { href: "/contact", label: "Contact Us" },

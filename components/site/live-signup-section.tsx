@@ -6,7 +6,6 @@ import {
   AirVent,
   BadgeCheck,
   BadgeInfo,
-  BriefcaseBusiness,
   CircleHelp,
   ClipboardCheck,
   GraduationCap,
@@ -38,7 +37,6 @@ const interestIcons: Record<string, LucideIcon> = {
   "Radiation Safety": Radiation,
   "Coronal Polish": Sparkles,
   "Pit and Fissure Sealants": BadgeCheck,
-  "Front Office Program": BriefcaseBusiness,
   "N95 Fit Test": AirVent,
   "Not sure yet": CircleHelp,
 };

@@ -253,6 +253,50 @@ for (const route of routeMappings) {
   });
 }
 
+test("front office program is retired from public access and entry points", async ({ page, request }, testInfo) => {
+  const retiredPath = "/front-office-program";
+  const retiredResponse = await request.get(`${localOrigin}${retiredPath}`, {
+    headers: {
+      accept: "text/html,application/xhtml+xml",
+    },
+    timeout: 120_000,
+  });
+  const homeSnapshot = await captureSnapshot(page, `${localOrigin}/`, {
+    viewport: { width: 1280, height: 900 },
+  });
+  const mismatches: string[] = [];
+
+  if (retiredResponse.status() !== 404) {
+    mismatches.push(`${retiredPath} returned ${retiredResponse.status()} instead of 404`);
+  }
+
+  if (homeSnapshot.bodyText.includes("Front Office Program")) {
+    mismatches.push("homepage still shows Front Office Program copy");
+  }
+
+  if (homeSnapshot.visibleLinks.some((link) => link.href.includes(retiredPath))) {
+    mismatches.push("homepage still links to the retired front office route");
+  }
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "front-office-retirement-summary.json", {
+      homeSnapshot,
+      mismatches,
+      retiredPath,
+      retiredStatus: retiredResponse.status(),
+    });
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: retiredPath,
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "retired-route",
+  });
+
+  expect(mismatches).toEqual([]);
+});
+
 test("mobile homepage menu opens and reveals live information links", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
@@ -389,7 +433,6 @@ test("desktop navigation items render distinct matching icons", async ({ page },
     ["Meet the Instructors", "user-round-check"],
     ["FAQs", "circle-help"],
     ["Photos", "images"],
-    ["Front Office Program", "briefcase-business"],
     ["Resume Portal DR/OMS only", "file-user"],
   ]);
   const allItems = [...result.topLevel, ...result.dropdown];
@@ -622,10 +665,26 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
   const heroBox = await hero.boundingBox();
   const countdownBox = await countdown.boundingBox();
   const reviewBox = await reviewSection.boundingBox();
-  const cardCount = await reviewCards.count();
-  const imageSources = await reviewCards.locator("img").evaluateAll((images) =>
-    images.map((image) => image.getAttribute("src") || ""),
+  const visibleCardDetails = await reviewCards.evaluateAll((cards) =>
+    cards
+      .filter((card) => {
+        const style = window.getComputedStyle(card);
+        const rect = card.getBoundingClientRect();
+
+        return (
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          Number.parseFloat(style.opacity || "1") > 0 &&
+          rect.width > 0 &&
+          rect.height > 0
+        );
+      })
+      .map((card) => ({
+        imageSource: card.querySelector("img")?.getAttribute("src") || "",
+      })),
   );
+  const cardCount = visibleCardDetails.length;
+  const imageSources = visibleCardDetails.map((card) => card.imageSource);
   const uniqueImageSources = new Set(imageSources.filter(Boolean));
   const reviewText = (await reviewSection.textContent()) ?? "";
 
@@ -754,7 +813,7 @@ test("homepage gallery preview shows a larger photo showcase", async ({ page }, 
 
 test("key public pages render full-page image slots after lazy promotion", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  const checkedRoutes = ["/", "/front-office-program"];
+  const checkedRoutes = ["/", "/dental-assisting-program"];
   const results: Array<{
     blank: Array<{ aid: string; complete: boolean; height: number; index: number; naturalHeight: number; naturalWidth: number; src: string; width: number }>;
     broken: Array<{ aid: string; complete: boolean; height: number; index: number; naturalHeight: number; naturalWidth: number; src: string; width: number }>;
@@ -983,12 +1042,24 @@ test("legacy cookie banner stays out of the elevenlabs widget corner", async ({ 
       banner.style.padding = "16px";
       banner.style.position = "fixed";
       banner.style.width = "100vw";
-      document.body.appendChild(banner);
+      (document.querySelector(".rda-live-shell") ?? document.body).appendChild(banner);
 
       const widget = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
       const bannerRect = banner.getBoundingClientRect();
       const widgetRect = widget?.getBoundingClientRect() ?? new DOMRect();
+      const widgetStyle = widget ? window.getComputedStyle(widget) : undefined;
+      const widgetVisible = Boolean(
+        widget &&
+          widgetStyle &&
+          widgetStyle.display !== "none" &&
+          widgetStyle.visibility !== "hidden" &&
+          Number.parseFloat(widgetStyle.opacity || "1") > 0 &&
+          widgetStyle.pointerEvents !== "none" &&
+          widgetRect.width > 0 &&
+          widgetRect.height > 0,
+      );
       const overlaps =
+        widgetVisible &&
         bannerRect.left < widgetRect.right &&
         bannerRect.right > widgetRect.left &&
         bannerRect.top < widgetRect.bottom &&
@@ -1006,7 +1077,10 @@ test("legacy cookie banner stays out of the elevenlabs widget corner", async ({ 
         overlaps,
         widget: {
           bottom: Math.round(window.innerHeight - widgetRect.bottom),
+          opacity: widgetStyle?.opacity ?? "",
+          pointerEvents: widgetStyle?.pointerEvents ?? "",
           right: Math.round(window.innerWidth - widgetRect.right),
+          visible: widgetVisible,
           width: Math.round(widgetRect.width),
         },
       };

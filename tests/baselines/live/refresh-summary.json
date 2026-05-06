@@ -1,6 +1,6 @@
 {
-  "captureOrigin": "http://127.0.0.1:3000",
-  "generatedAt": "2026-05-01T02:19:42.878Z",
+  "captureOrigin": "http://127.0.0.1:3002",
+  "generatedAt": "2026-05-06T19:42:07.977Z",
   "liveOrigin": "https://rosevilledentalacademy.com",
   "results": [
     {
@@ -17,10 +17,6 @@
     },
     {
       "id": "dental-assisting-program",
-      "status": "updated"
-    },
-    {
-      "id": "front-office-program",
       "status": "updated"
     },
     {

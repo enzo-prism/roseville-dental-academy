@@ -183,7 +183,6 @@ export type SitePageDefinition = {
     | "home"
     | "registration"
     | "program"
-    | "front-office"
     | "course"
     | "faq"
     | "instructors"

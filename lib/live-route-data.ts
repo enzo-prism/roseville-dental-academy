@@ -93,11 +93,6 @@ const GENERATED_IMAGE_REPLACEMENTS: Array<{
       /\/__live\/img1\.wsimg\.com\/isteam\/ip\/f45bc53a-68c0-4338-bd3f-fe6fbc400a09\/guided%(?:20|2520)implant%(?:20|2520)surgery%(?:20|2520)picture__f5e7136df7\.jpg/g,
     replacement: "/assets/generated/roseville/homepage-implant-coaching.jpg",
   },
-  {
-    pattern:
-      /\/__live\/img1\.wsimg\.com\/isteam\/getty\/2166302030\/:\/[^"'\s]+?\.jpg/g,
-    replacement: "/assets/generated/roseville/front-office-insurance-documents.jpg",
-  },
 ];
 
 const HOMEPAGE_REFUND_POLICY_COPY_PATTERN =
@@ -134,6 +129,22 @@ const COURSE_DATE_REPLACEMENTS: Array<{
   },
 ];
 
+const RETIRED_PROGRAM_COPY_REPLACEMENTS: Array<{
+  pattern: RegExp;
+  replacement: string;
+}> = [
+  {
+    pattern:
+      /Additionally, payment plans are available for the dental assisting training and front office training programs\./gi,
+    replacement:
+      "Payment plans may be available for dental assisting training and certification courses.",
+  },
+  {
+    pattern: /Dental Assisting or Front Office roles/gi,
+    replacement: "Dental Assisting roles",
+  },
+];
+
 const HOMEPAGE_HERO_WIDGET_REGEX =
   /<div\b(?=[^>]*\bclass="[^"]*\bwidget-introduction-introduction-1\b[^"]*"[^>]*>)/i;
 const HOMEPAGE_AFTER_HERO_WIDGET_MARKER =
@@ -159,7 +170,7 @@ const HOMEPAGE_HERO_SLIDES = [
 
 function routeDescription(route: ManifestRoute) {
   if (route.route === "/") {
-    return "Roseville Dental Academy training for dental assisting, x-ray, CPR, infection control, coronal polish, sealants, and front office skills.";
+    return "Roseville Dental Academy training for dental assisting, x-ray, CPR, infection control, coronal polish, and sealants.";
   }
 
   if (route.route === "/contact") {
@@ -549,6 +560,13 @@ function applyCourseDateReplacements(html: string) {
   );
 }
 
+function applyRetiredProgramCopyReplacements(html: string) {
+  return RETIRED_PROGRAM_COPY_REPLACEMENTS.reduce(
+    (output, { pattern, replacement }) => output.replace(pattern, replacement),
+    html,
+  );
+}
+
 function escapeHtml(value: string | number) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -791,7 +809,9 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
     route.description ||
     FALLBACK_DESCRIPTION;
   const styleBlocks = extractStyleBlocks(headHtml);
-  const sanitizedBodyHtml = applyCourseDateReplacements(sanitizeSnapshotBody(bodyHtml));
+  const sanitizedBodyHtml = applyRetiredProgramCopyReplacements(
+    applyCourseDateReplacements(sanitizeSnapshotBody(bodyHtml)),
+  );
 
   return {
     bodyClass,

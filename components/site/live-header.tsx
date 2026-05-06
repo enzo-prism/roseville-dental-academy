@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
   BookOpenCheck,
-  BriefcaseBusiness,
   ChevronDown,
   CircleHelp,
   FileUser,
@@ -62,12 +61,6 @@ const moreLinks: NavLinkItem[] = [
   },
   { href: "/faqs-1", Icon: CircleHelp, iconKey: "circle-help", label: "FAQs" },
   { href: "/photos", Icon: Images, iconKey: "images", label: "Photos" },
-  {
-    href: "/front-office-program",
-    Icon: BriefcaseBusiness,
-    iconKey: "briefcase-business",
-    label: "Front Office Program",
-  },
   {
     href: "/resume-portal-dr%2Foms-only",
     Icon: FileUser,
