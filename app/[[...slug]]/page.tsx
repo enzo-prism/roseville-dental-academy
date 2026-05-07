@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { LiveCoursePage } from "@/components/site/live-course-page";
 import { LiveShell } from "@/components/site/live-shell";
 import { LiveStableWidgets } from "@/components/site/live-stable-widgets";
+import { getLiveCourseContent } from "@/lib/live-course-content";
 import {
   fetchLiveMirrorDocument,
   getLiveRouteForSlug,
@@ -46,6 +48,19 @@ export default async function LiveRoutePage({ params }: PageProps) {
 
   if (!route || route.kind === "plain404") {
     notFound();
+  }
+
+  const course = getLiveCourseContent(route.id);
+
+  if (course) {
+    return (
+      <LiveShell route={route}>
+        <main className="rda-live-main" data-rda-route={route.id}>
+          <LiveCoursePage course={course} />
+          <LiveStableWidgets route={route} />
+        </main>
+      </LiveShell>
+    );
   }
 
   const document = await fetchLiveMirrorDocument(route.route);
