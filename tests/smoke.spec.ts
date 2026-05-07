@@ -964,7 +964,7 @@ test("elevenlabs widget is embedded on every page shell", async ({ request }, te
     const hasWidget = html.includes("<elevenlabs-convai");
     const hasAgentId = html.includes(`agent-id="${elevenLabsAgentId}"`);
     const hasBrandOrbColors =
-      html.includes('avatar-orb-color-1="#315658"') &&
+      html.includes('avatar-orb-color-1="#2472A9"') &&
       html.includes('avatar-orb-color-2="#B78336"');
     const hasDisplayText =
       html.includes('action-text="Questions about classes?"') &&

@@ -2,8 +2,8 @@
   "theme": {
     "extend": {
       "colors": {
-        "primary": "#315658",
-        "primary-deep": "#24484a",
+        "primary": "#2472a9",
+        "primary-deep": "#16344f",
         "background": "#fbfaf8",
         "foreground": "#282522",
         "card": "#fffefd",
@@ -15,7 +15,7 @@
         "secondary-foreground": "#282522",
         "border": "#d8d0c4",
         "input": "#d8d0c4",
-        "ring": "#315658",
+        "ring": "#2472a9",
         "popover": "#fffefd",
         "popover-foreground": "#282522",
         "primary-foreground": "#ffffff"

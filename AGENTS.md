@@ -15,7 +15,7 @@ Keep these contracts separate:
 - For any task that changes UI, styling, layout, components, visual behavior, route chrome, widgets, or design tokens, read `/DESIGN.md` before editing.
 - Treat `/DESIGN.md` as the source of truth for visual decisions.
 - Preserve current visible written text, labels, placeholders, route titles, route aliases, status codes, third-party endpoints, and real academy imagery unless the user explicitly asks for content changes.
-- Use the shadcn/ui Sera direction from `/DESIGN.md`: taupe neutral foundation, Roseville teal primary token, Noto Sans body/nav/forms, Playfair Display headings, Lucide icons, Radix behavior, low-radius surfaces, and restrained borders/elevation.
+- Use the shadcn/ui Sera direction from `/DESIGN.md`: taupe neutral foundation, Roseville logo-blue primary token, Noto Sans body/nav/forms, Playfair Display headings, Lucide icons, Radix behavior, low-radius surfaces, and restrained borders/elevation.
 - Keep `snapshot/live/` as the migration/text/reference source, not the shared shell runtime or the long-term visual target.
 - Keep React shell behavior in stable components instead of injected repair scripts or third-party GoDaddy runtime code.
 - Prefer shadcn primitives and existing shell components before creating new patterns.

@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --rda-color-primary: #315658;
-  --rda-color-primary-deep: #24484a;
+  --rda-color-primary: #2472a9;
+  --rda-color-primary-deep: #16344f;
   --rda-color-surface: #fbfaf8;
   --rda-color-text: #282522;
   --rda-color-heading: #191716;
@@ -36,7 +36,7 @@
   --card-foreground: #282522;
   --popover: #fffefd;
   --popover-foreground: #282522;
-  --primary: #315658;
+  --primary: #2472a9;
   --primary-foreground: #ffffff;
   --secondary: #eee9e2;
   --secondary-foreground: #282522;
@@ -47,7 +47,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: #d8d0c4;
   --input: #d8d0c4;
-  --ring: #315658;
+  --ring: #2472a9;
   --chart-1: oklch(0.868 0.007 39.5);
   --chart-2: oklch(0.547 0.021 43.1);
   --chart-3: oklch(0.438 0.017 39.3);
@@ -56,12 +56,12 @@
   --radius: 0.35rem;
   --sidebar: #fffefd;
   --sidebar-foreground: #282522;
-  --sidebar-primary: #315658;
+  --sidebar-primary: #2472a9;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #eee9e2;
   --sidebar-accent-foreground: #282522;
   --sidebar-border: #d8d0c4;
-  --sidebar-ring: #315658;
+  --sidebar-ring: #2472a9;
 }
 
 @font-face {

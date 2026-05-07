@@ -182,7 +182,7 @@ async function captureContentSnapshot(page, url, assetMap) {
     )
       .filter((button) => isVisible(button))
       .map((button) => {
-        if ("value" in button && typeof button.value === "string" && button.value) {
+        if (button instanceof HTMLInputElement && typeof button.value === "string" && button.value) {
           return button.value;
         }
 

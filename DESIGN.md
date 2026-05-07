@@ -3,8 +3,8 @@ version: alpha
 name: Roseville Dental Academy Shadcn Sera System
 description: A modern shadcn/ui Sera editorial design contract for the Roseville Dental Academy Next.js site.
 colors:
-  primary: "#315658"
-  primary-deep: "#24484A"
+  primary: "#2472A9"
+  primary-deep: "#16344F"
   background: "#FBFAF8"
   foreground: "#282522"
   card: "#FFFEFD"
@@ -16,7 +16,7 @@ colors:
   secondary-foreground: "#282522"
   border: "#D8D0C4"
   input: "#D8D0C4"
-  ring: "#315658"
+  ring: "#2472A9"
   popover: "#FFFEFD"
   popover-foreground: "#282522"
   primary-foreground: "#FFFFFF"
@@ -142,14 +142,14 @@ components:
 
 ## Overview
 
-This contract defines the shipped visual direction for Roseville Dental Academy after the shadcn/ui redesign. The target is a modern academy site built from shadcn primitives with the official Sera direction: taupe neutral foundation, Noto Sans body typography, Playfair Display editorial headings, Lucide icons, Radix behavior, low-radius surfaces, understated borders, and Roseville teal as the semantic primary color.
+This contract defines the shipped visual direction for Roseville Dental Academy after the shadcn/ui redesign. The target is a modern academy site built from shadcn primitives with the official Sera direction: taupe neutral foundation, Noto Sans body typography, Playfair Display editorial headings, Lucide icons, Radix behavior, low-radius surfaces, understated borders, and Roseville logo blue as the semantic primary color.
 
 The written site content is locked. Visible route copy, headings, form labels, placeholders, button labels, link labels, auth text, cookie text, document titles, status codes, and third-party endpoint behavior must remain unchanged unless a user explicitly asks for copy changes.
 
 ## Sources Of Truth
 
 - `components.json` owns the shadcn style, base color, aliases, and icon library.
-- `app/globals.css` owns the Sera/taupe tokens and Roseville semantic teal primary.
+- `app/globals.css` owns the Sera/taupe tokens and Roseville semantic logo-blue primary.
 - `snapshot/live/` is the text and legacy content reference. It is not the visual runtime target.
 - React shell/components own the modern UI, interaction behavior, forms, navigation, footer, cookie banner, stable widgets, and auth/utility chrome.
 

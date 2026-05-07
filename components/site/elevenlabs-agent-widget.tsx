@@ -143,7 +143,7 @@ export function ElevenLabsAgentWidget() {
         {createElement("elevenlabs-convai", {
           "agent-id": agentId,
           "action-text": ELEVENLABS_WIDGET_TEXT.action,
-          "avatar-orb-color-1": "#315658",
+          "avatar-orb-color-1": "#2472A9",
           "avatar-orb-color-2": "#B78336",
           dismissible: "true",
           "end-call-text": ELEVENLABS_WIDGET_TEXT.endCall,
