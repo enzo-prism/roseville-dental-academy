@@ -57,7 +57,7 @@ export const signupInterestOptions: SignupInterestOption[] = [
 ];
 
 export const siteImages = {
-  logo: "/assets/live/home/logo-academy.jpg",
+  logo: "/assets/live/home/logo-academy.png",
   careerInfographic: "/assets/live/home/home-opportunity.png",
   hero: "/assets/live/home/home-hero.jpg",
   registration: "/assets/live/home/registration.jpg",

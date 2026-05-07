@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/sheet";
 import { announcement, socialLinks } from "@/lib/site-data";
 
-const logoSrc = "/assets/live/home/logo-academy.jpg";
+const logoSrc = "/assets/live/home/logo-academy.png";
 const resumePortalHref =
   "https://rosevilledental.godaddysites.com/m/login?r=%2Fresume-portal-dr%252Foms-only";
 
