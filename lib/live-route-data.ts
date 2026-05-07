@@ -161,6 +161,8 @@ const RETIRED_PROGRAM_COPY_REPLACEMENTS: Array<{
 
 const HOMEPAGE_HERO_WIDGET_REGEX =
   /<div\b(?=[^>]*\bclass="[^"]*\bwidget-introduction-introduction-1\b[^"]*"[^>]*>)/i;
+const MEET_INSTRUCTORS_INTRO_WIDGET_REGEX =
+  /<div\b(?=[^>]*\bclass="[^"]*\bwidget-introduction-introduction-1\b[^"]*"[^>]*>)/gi;
 const HOMEPAGE_AFTER_HERO_WIDGET_MARKER =
   '<div id="f11e5afa-6606-44e2-847f-fe03d31d5b23" class="widget widget-countdown';
 
@@ -801,6 +803,10 @@ function replaceHomepageHero(html: string) {
   return `${html.slice(0, match.index)}${renderHomepageHeroHtml()}${renderHomepagePrioritySignupHtml()}${html.slice(end)}`;
 }
 
+function removeMeetInstructorsIntro(html: string) {
+  return stripMatchedDivs(html, MEET_INSTRUCTORS_INTRO_WIDGET_REGEX).trim();
+}
+
 function sanitizeSnapshotBody(bodyHtml: string) {
   const scriptFreeHtml = stripScriptTags(bodyHtml);
   const iframeFreeHtml = stripIframes(scriptFreeHtml);
@@ -841,6 +847,8 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
         ? insertHomepageReviewHighlights(
             replaceHomepageHero(applyHomepageCourseCopyReplacements(sanitizedBodyHtml)),
           )
+        : route.route === "/meet-the-instructors"
+          ? removeMeetInstructorsIntro(sanitizedBodyHtml)
         : sanitizedBodyHtml,
     bodyScripts: [],
     description,

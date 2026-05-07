@@ -46,7 +46,7 @@
       "localPath": "/meet-the-instructors",
       "expectedStatus": 200,
       "expectedTitle": "Meet the Instructors | rosevilledental",
-      "smokeText": "WELCOME"
+      "smokeText": "Instructor Bios"
     },
     {
       "label": "photos",

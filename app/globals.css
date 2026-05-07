@@ -7,6 +7,7 @@
 :root {
   --rda-color-primary: #2472a9;
   --rda-color-primary-deep: #16344f;
+  --rda-color-primary-soft: #8ec5e8;
   --rda-color-surface: #fbfaf8;
   --rda-color-text: #282522;
   --rda-color-heading: #191716;
@@ -617,6 +618,30 @@ textarea {
   border-top: 1px solid var(--rda-color-border-soft);
 }
 
+.rda-instructors-section {
+  max-width: 1240px;
+}
+
+.rda-instructors-header {
+  align-items: end;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 0.7fr);
+  margin: 0 0 30px;
+}
+
+.rda-instructors-heading {
+  align-items: flex-start;
+  margin: 0;
+  text-align: left;
+}
+
+.rda-instructors-intro {
+  margin: 0;
+  max-width: 520px;
+  text-align: left;
+}
+
 .rda-board-grid,
 .rda-student-faq-grid {
   display: grid;
@@ -635,7 +660,7 @@ textarea {
 
 .rda-board-card h3,
 .rda-student-faq-card h3,
-.rda-instructor-body h3,
+.rda-instructor-header h3,
 .rda-board-card [data-slot="card-title"],
 .rda-student-faq-card [data-slot="card-title"] {
   color: var(--rda-color-heading);
@@ -663,49 +688,110 @@ textarea {
 
 .rda-instructor-grid {
   display: grid;
-  gap: 20px;
+  gap: 18px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .rda-instructor-card {
   border: 1px solid var(--rda-color-border-soft);
   display: grid;
-  grid-template-columns: minmax(170px, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(190px, 0.74fr) minmax(0, 1.26fr);
   min-width: 0;
+  padding: 0;
 }
 
 .rda-instructor-photo {
   aspect-ratio: 1;
-  background: rgba(49, 86, 88, 0.08);
+  align-self: start;
+  background: color-mix(in srgb, var(--rda-color-primary) 9%, var(--rda-color-surface));
+  border-right: 1px solid var(--rda-color-border-soft);
   margin: 0;
   overflow: hidden;
+  width: 100%;
 }
 
 .rda-instructor-photo img {
   display: block;
   height: 100%;
   object-fit: cover;
+  object-position: center center;
   width: 100%;
 }
 
-.rda-instructor-body {
+.rda-instructor-copy {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  padding: 24px;
+}
+
+.rda-instructor-header {
+  gap: 10px;
+  min-width: 0;
+  padding: 22px 24px 0;
+}
+
+.rda-instructor-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 24px 22px;
 }
 
 .rda-instructor-credential {
-  color: var(--rda-color-accent-deep);
-  font-family: var(--rda-font-heading);
+  align-items: center;
+  color: var(--rda-color-primary-deep);
+  display: inline-flex;
+  font-family: var(--rda-font-body);
   font-size: 13px;
-  margin: 0 0 8px !important;
+  height: auto;
+  justify-content: flex-start;
+  line-height: 1.25;
+  margin: 0 !important;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 5px 9px;
+  white-space: normal;
+}
+
+.rda-instructor-credential svg {
+  color: var(--rda-color-primary);
+  height: 14px;
+  width: 14px;
+}
+
+.rda-instructor-separator {
+  background: var(--rda-color-border-soft);
+  margin: 18px 0;
 }
 
 .rda-instructor-body ul {
   display: grid;
-  gap: 7px;
+  gap: 9px;
   line-height: 1.6;
-  margin: 18px 0 0;
-  padding-left: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rda-instructor-body li {
+  align-items: flex-start;
+  color: var(--rda-color-text);
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 16px minmax(0, 1fr);
+  min-width: 0;
+}
+
+.rda-instructor-body li svg {
+  color: var(--rda-color-primary);
+  height: 15px;
+  margin-top: 5px;
+  width: 15px;
+}
+
+.rda-instructor-body li span {
+  min-width: 0;
 }
 
 .rda-review-score {
@@ -1663,6 +1749,11 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .rda-instructors-header {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
   .rda-instructor-grid {
     grid-template-columns: 1fr;
   }
@@ -1831,6 +1922,25 @@ textarea {
   .rda-signup-fields,
   .rda-newsletter-section form {
     grid-template-columns: 1fr;
+  }
+
+  .rda-instructor-card {
+    padding-top: 18px;
+  }
+
+  .rda-instructor-photo {
+    border: 1px solid var(--rda-color-border-soft);
+    border-radius: 8px;
+    margin: 0 auto;
+    max-width: min(320px, calc(100% - 36px));
+  }
+
+  .rda-instructor-header {
+    padding: 20px 20px 0;
+  }
+
+  .rda-instructor-body {
+    padding: 0 20px 22px;
   }
 
   .rda-signup-form {

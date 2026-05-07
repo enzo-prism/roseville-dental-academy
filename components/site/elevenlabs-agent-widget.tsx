@@ -15,6 +15,10 @@ const ELEVENLABS_WIDGET_TEXT = {
   speaking: "Roseville Dental Academy is speaking",
   startCall: "Start a call",
 } as const;
+const ELEVENLABS_WIDGET_ORB_COLORS = {
+  primary: "#2472A9",
+  secondary: "#8EC5E8",
+} as const;
 const ELEVENLABS_MARKDOWN_ALLOWED_HOSTS =
   "rosevilledentalacademy.com,www.rosevilledentalacademy.com";
 
@@ -143,8 +147,8 @@ export function ElevenLabsAgentWidget() {
         {createElement("elevenlabs-convai", {
           "agent-id": agentId,
           "action-text": ELEVENLABS_WIDGET_TEXT.action,
-          "avatar-orb-color-1": "#2472A9",
-          "avatar-orb-color-2": "#B78336",
+          "avatar-orb-color-1": ELEVENLABS_WIDGET_ORB_COLORS.primary,
+          "avatar-orb-color-2": ELEVENLABS_WIDGET_ORB_COLORS.secondary,
           dismissible: "true",
           "end-call-text": ELEVENLABS_WIDGET_TEXT.endCall,
           "expand-text": ELEVENLABS_WIDGET_TEXT.expand,

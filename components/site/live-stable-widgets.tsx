@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Award, CheckCircle2 } from "lucide-react";
 
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import {
@@ -110,14 +111,16 @@ function StableInstructorBios() {
       className="rda-stable-section rda-instructors-section"
       data-rda-stable-widget="instructors"
     >
-      <div className="rda-section-heading">
-        <h2>Instructor Bios</h2>
-        <span aria-hidden="true" />
+      <div className="rda-instructors-header">
+        <div className="rda-section-heading rda-instructors-heading">
+          <h2>Instructor Bios</h2>
+          <span aria-hidden="true" />
+        </div>
+        <p className="rda-section-intro rda-instructors-intro">
+          Meet the team behind the academy&apos;s hands-on coaching, chairside practice, and
+          student-first classroom feel.
+        </p>
       </div>
-      <p className="rda-section-intro">
-        Meet the team behind the academy&apos;s hands-on coaching, chairside practice, and
-        student-first classroom feel.
-      </p>
       <div className="rda-instructor-grid">
         {instructorBios.map((instructor) => (
           <Card className="rda-instructor-card border-border bg-card" key={instructor.name}>
@@ -131,18 +134,27 @@ function StableInstructorBios() {
                 />
               </AspectRatio>
             </figure>
-            <CardContent className="rda-instructor-body">
-              <Badge className="rda-instructor-credential" variant="outline">
-                {instructor.credential}
-              </Badge>
-              <h3>{instructor.name}</h3>
-              <p>{instructor.summary}</p>
-              <ul>
-                {instructor.highlights.map((highlight) => (
-                  <li key={highlight}>{highlight}</li>
-                ))}
-              </ul>
-            </CardContent>
+            <div className="rda-instructor-copy">
+              <CardHeader className="rda-instructor-header">
+                <Badge className="rda-instructor-credential" variant="outline">
+                  <Award aria-hidden="true" />
+                  {instructor.credential}
+                </Badge>
+                <h3>{instructor.name}</h3>
+              </CardHeader>
+              <CardContent className="rda-instructor-body">
+                <p>{instructor.summary}</p>
+                <Separator className="rda-instructor-separator" />
+                <ul>
+                  {instructor.highlights.map((highlight) => (
+                    <li key={highlight}>
+                      <CheckCircle2 aria-hidden="true" />
+                      <span>{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </div>
           </Card>
         ))}
       </div>

@@ -965,7 +965,7 @@ test("elevenlabs widget is embedded on every page shell", async ({ request }, te
     const hasAgentId = html.includes(`agent-id="${elevenLabsAgentId}"`);
     const hasBrandOrbColors =
       html.includes('avatar-orb-color-1="#2472A9"') &&
-      html.includes('avatar-orb-color-2="#B78336"');
+      html.includes('avatar-orb-color-2="#8EC5E8"');
     const hasDisplayText =
       html.includes('action-text="Questions about classes?"') &&
       html.includes('start-call-text="Start a call"') &&
@@ -1186,6 +1186,16 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
   ]) {
     if (!instructorSnapshot.bodyText.includes(phrase)) {
       mismatches.push(`instructors page missing Drive-derived phrase: ${phrase}`);
+    }
+  }
+
+  for (const retiredPhrase of [
+    "There's much to see here",
+    "Find out more",
+    "Hello WELCOME",
+  ]) {
+    if (instructorSnapshot.bodyText.includes(retiredPhrase)) {
+      mismatches.push(`instructors page still includes retired intro copy: ${retiredPhrase}`);
     }
   }
 

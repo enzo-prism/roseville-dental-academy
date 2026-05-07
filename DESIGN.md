@@ -5,6 +5,7 @@ description: A modern shadcn/ui Sera editorial design contract for the Roseville
 colors:
   primary: "#2472A9"
   primary-deep: "#16344F"
+  primary-soft: "#8EC5E8"
   background: "#FBFAF8"
   foreground: "#282522"
   card: "#FFFEFD"

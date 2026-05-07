@@ -4,6 +4,7 @@
       "colors": {
         "primary": "#2472a9",
         "primary-deep": "#16344f",
+        "primary-soft": "#8ec5e8",
         "background": "#fbfaf8",
         "foreground": "#282522",
         "card": "#fffefd",
