@@ -1,253 +1,184 @@
 ---
 version: alpha
-name: Roseville Dental Academy Live-Faithful System
-description: A faithful, restrained GoDaddy-style design contract for the Roseville Dental Academy production-ready Next.js rebuild.
+name: Roseville Dental Academy Shadcn Sera System
+description: A modern shadcn/ui Sera editorial design contract for the Roseville Dental Academy Next.js site.
 colors:
   primary: "#315658"
   primary-deep: "#24484A"
-  surface: "#FFFFFF"
-  text: "#2B2B2B"
-  heading: "#242424"
-  nav-text: "#191919"
-  muted-text: "#666666"
-  subnav-text: "#505050"
-  accent: "#8C642D"
-  accent-active: "#B78336"
-  accent-deep: "#7A5524"
-  border: "#C9C9C9"
-  border-soft: "#E5E1DC"
+  background: "#FBFAF8"
+  foreground: "#282522"
+  card: "#FFFEFD"
+  muted: "#EEE9E2"
+  muted-foreground: "#766D63"
+  accent: "#E7DFD4"
+  accent-foreground: "#282522"
+  secondary: "#EEE9E2"
+  secondary-foreground: "#282522"
+  border: "#D8D0C4"
+  input: "#D8D0C4"
+  ring: "#315658"
+  popover: "#FFFEFD"
+  popover-foreground: "#282522"
+  primary-foreground: "#FFFFFF"
 typography:
   body:
-    fontFamily: "Adamina, Georgia, serif"
+    fontFamily: "Noto Sans, Arial, sans-serif"
     fontSize: 16px
     fontWeight: 400
     lineHeight: 1.7
     letterSpacing: "0px"
   body-sm:
-    fontFamily: "Adamina, Georgia, serif"
+    fontFamily: "Noto Sans, Arial, sans-serif"
     fontSize: 13px
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: "0px"
   heading-lg:
-    fontFamily: "Fjalla One, Arial, sans-serif"
-    fontSize: 42px
-    fontWeight: 400
-    lineHeight: 1.15
+    fontFamily: "Playfair Display, Georgia, serif"
+    fontSize: 44px
+    fontWeight: 600
+    lineHeight: 1.12
     letterSpacing: "0px"
   heading-md:
-    fontFamily: "Fjalla One, Arial, sans-serif"
-    fontSize: 26px
-    fontWeight: 400
-    lineHeight: 1.2
+    fontFamily: "Playfair Display, Georgia, serif"
+    fontSize: 28px
+    fontWeight: 600
+    lineHeight: 1.18
     letterSpacing: "0px"
   nav-label:
-    fontFamily: "Fjalla One, Arial, sans-serif"
+    fontFamily: "Noto Sans, Arial, sans-serif"
     fontSize: 14px
-    fontWeight: 400
+    fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "0px"
   utility-label:
-    fontFamily: "Fjalla One, Arial, sans-serif"
+    fontFamily: "Noto Sans, Arial, sans-serif"
     fontSize: 13px
-    fontWeight: 400
+    fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "0px"
 rounded:
   none: 0px
-  sm: 0px
-  widget: 18px
+  sm: 4px
+  md: 6px
+  lg: 8px
 spacing:
   xs: 4px
   sm: 8px
   md: 16px
   lg: 24px
   xl: 42px
-  section: 54px
+  section: 56px
 components:
   shell-banner:
     backgroundColor: "{colors.primary}"
-    textColor: "{colors.surface}"
-    typography: "{typography.body}"
+    textColor: "{colors.primary-foreground}"
+    typography: "{typography.body-sm}"
     rounded: "{rounded.none}"
     padding: 9px
   nav-link:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.nav-text}"
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.foreground}"
     typography: "{typography.nav-label}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.md}"
     padding: 0px
   nav-link-active:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.accent-active}"
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.accent-foreground}"
     typography: "{typography.nav-label}"
-    rounded: "{rounded.none}"
-    padding: 0px
-  nav-link-hover:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.accent}"
-    typography: "{typography.nav-label}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.md}"
     padding: 0px
   dropdown-item:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.subnav-text}"
+    backgroundColor: "{colors.popover}"
+    textColor: "{colors.popover-foreground}"
     typography: "{typography.nav-label}"
-    rounded: "{rounded.none}"
-    padding: 10px
-  dropdown-item-hover:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.accent-deep}"
-    typography: "{typography.nav-label}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.sm}"
     padding: 10px
   button-primary:
     backgroundColor: "{colors.primary}"
-    textColor: "{colors.surface}"
+    textColor: "{colors.primary-foreground}"
     typography: "{typography.nav-label}"
-    rounded: "{rounded.none}"
-    padding: 0px
-  button-primary-hover:
-    backgroundColor: "{colors.primary-deep}"
-    textColor: "{colors.surface}"
-    typography: "{typography.nav-label}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.md}"
     padding: 0px
   button-outline:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.nav-text}"
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.foreground}"
     typography: "{typography.nav-label}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.md}"
     padding: 0px
   section-heading:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.heading}"
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.foreground}"
     typography: "{typography.heading-lg}"
     rounded: "{rounded.none}"
     padding: 0px
   shell-footer:
     backgroundColor: "{colors.primary}"
-    textColor: "{colors.surface}"
+    textColor: "{colors.primary-foreground}"
     typography: "{typography.body}"
     rounded: "{rounded.none}"
     padding: 44px
   field:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.foreground}"
     typography: "{typography.body}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.md}"
     padding: 10px
-  control-border:
-    backgroundColor: "{colors.border}"
-    textColor: "{colors.heading}"
-    typography: "{typography.body-sm}"
-    rounded: "{rounded.none}"
-    padding: 0px
-  helper-text:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.muted-text}"
-    typography: "{typography.body-sm}"
-    rounded: "{rounded.none}"
-    padding: 0px
-  divider:
-    backgroundColor: "{colors.border-soft}"
-    textColor: "{colors.heading}"
-    typography: "{typography.body-sm}"
-    rounded: "{rounded.none}"
-    padding: 0px
-  review-card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
+  card:
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.foreground}"
     typography: "{typography.body}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.lg}"
     padding: 24px
+  divider:
+    backgroundColor: "{colors.border}"
+    textColor: "{colors.foreground}"
+    typography: "{typography.body-sm}"
+    rounded: "{rounded.none}"
+    padding: 0px
 ---
 
-# Design System: Roseville Dental Academy Live-Faithful System
+# Design System: Roseville Dental Academy Shadcn Sera System
 
 ## Overview
 
-This design contract protects the current Roseville Dental Academy live-site look while making the implementation maintainable in Next.js. The visual target is the restrained GoDaddy-style public site: centered navigation, a large white masthead with the academy logo, deep teal announcement/footer surfaces, simple squared buttons, real course imagery, serif body copy, condensed sans-serif headings, and modest section underlines.
+This contract defines the shipped visual direction for Roseville Dental Academy after the shadcn/ui redesign. The target is a modern academy site built from shadcn primitives with the official Sera direction: taupe neutral foundation, Noto Sans body typography, Playfair Display editorial headings, Lucide icons, Radix behavior, low-radius surfaces, understated borders, and Roseville teal as the semantic primary color.
 
-This is not a redesign brief. New work should feel like it belongs to the current live site, not like a SaaS landing page, a shadcn demo, or a modern rebrand. The frozen snapshot remains the content and visual reference, but the React shell owns shared behavior and should be kept stable.
+The written site content is locked. Visible route copy, headings, form labels, placeholders, button labels, link labels, auth text, cookie text, document titles, status codes, and third-party endpoint behavior must remain unchanged unless a user explicitly asks for copy changes.
 
-## Colors
+## Sources Of Truth
 
-- **Primary (`#315658`)** is the academy teal used for the announcement banner, footer, cookie banner, section underline, and primary actions.
-- **Primary deep (`#24484A`)** is reserved for deeper teal states if interaction contrast is needed.
-- **Surface (`#FFFFFF`)** is the dominant page canvas. Most shell areas are white and unframed.
-- **Text (`#2B2B2B`)** and **heading (`#242424`)** keep reading content warm and neutral, never stark black.
-- **Nav text (`#191919`)** is the primary navigation color.
-- **Accent (`#8C642D`)**, **accent active (`#B78336`)**, and **accent deep (`#7A5524`)** are restrained gold-brown interaction tones for hover, active nav, and dropdown emphasis. The active gold matches the live site; use the darker deep accent when stronger small-text contrast is needed.
-- **Muted text (`#666666`)** and **subnav text (`#505050`)** support metadata, helper copy, and mobile submenu labels.
-- **Border (`#C9C9C9`)** and **border soft (`#E5E1DC`)** are for simple rectangular controls and light dividers.
+- `components.json` owns the shadcn style, base color, aliases, and icon library.
+- `app/globals.css` owns the Sera/taupe tokens and Roseville semantic teal primary.
+- `snapshot/live/` is the text and legacy content reference. It is not the visual runtime target.
+- React shell/components own the modern UI, interaction behavior, forms, navigation, footer, cookie banner, stable widgets, and auth/utility chrome.
 
-Do not introduce broad new color families without updating this file. Avoid purple, purple-blue gradients, glassy effects, beige theme drift, and generic dark-blue SaaS palettes.
+## Tokens
+
+Use shadcn semantic tokens first: `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`, `ring-ring`, `bg-primary`, `text-primary-foreground`, `bg-popover`, and `bg-accent`.
+
+Do not introduce raw visual values inside components. If a new durable color, type, radius, or spacing decision is needed, add it here and map it through `app/globals.css`.
 
 ## Typography
 
-Typography is a major part of the live-site identity.
+Noto Sans is the body, nav, label, and form font. Playfair Display is the editorial heading font. Letter spacing stays at `0`; do not use negative tracking or viewport-width font scaling.
 
-- **Adamina** is the body and announcement font. Use it for paragraphs, addresses, footer copy, cookie copy, and content prose.
-- **Fjalla One** is the heading, navigation, button, and label font. It should stay crisp, condensed, and unpretentious.
-- **Poppins** exists in the mirrored snapshot and may appear in snapshot content, but new React shell work should prefer Adamina and Fjalla One.
-
-Letter spacing stays at `0`. Do not use negative tracking. Do not scale font sizes with viewport width except where the current shell already uses bounded `clamp()` for section headings.
+Snapshot HTML may still contain Adamina, Fjalla One, or GoDaddy-generated font references while content migration is in progress. New React-owned UI should use the Sera typography tokens.
 
 ## Layout
 
-The layout should remain simple, centered, and faithful.
+Public pages should feel calm, editorial, and academy-specific rather than like a generic SaaS landing page. Keep real course imagery and academy logo assets. Use full-width sections with constrained inner content; use cards for repeated items, forms, menus, modals, reviews, gallery items, and true framed tools.
 
-- Keep desktop navigation centered in one horizontal row where possible.
-- Keep the academy logo masthead centered and constrained: desktop `min(280px, 100%)`, mobile `min(210px, 100%)`.
-- Keep public sections full-width or unframed with constrained inner content. Do not place page sections inside decorative cards.
-- Use cards only for repeated items such as reviews, gallery items, forms, or true framed tools.
-- Keep mobile navigation as an explicit top menu that opens into a simple vertical list.
-- Keep fixed bottom widgets bounded and collision-tested: ElevenLabs bottom-right, cookie banner offset away from it.
-
-When preserving snapshot page bodies, avoid broad global CSS that changes layout unexpectedly. Scope overflow fixes to `.rda-snapshot-content` or a known shell element.
-
-## Elevation & Depth
-
-Depth is minimal. The live site relies on white space, color blocks, borders, and imagery more than heavy elevation.
-
-- Dropdowns and mobile menus may use soft shadows to separate from the page.
-- Cookie banner may use a stronger shadow because it is an overlay.
-- Review cards, forms, and galleries should use borders before shadows.
-- Do not add floating cards, gradient orbs, bokeh backgrounds, heavy blur, or decorative glassmorphism.
-
-## Shapes
-
-The shape language is squared and utilitarian.
-
-- Buttons are rectangular with no visible radius.
-- Form fields are rectangular with simple borders.
-- Review cards and contact forms are squared containers.
-- The only rounded visual exception currently owned by the shell is the third-party ElevenLabs widget, whose shape comes from the vendor component and should not be overridden.
+Keep the header, footer, cookie banner, ElevenLabs wrapper, forms, and stable widgets responsive across desktop, tablet, and mobile. The design must avoid horizontal overflow, header overlap, broken above-fold imagery, and widget/cookie collisions.
 
 ## Components
 
-- **Announcement banner:** Deep teal background, white Adamina text, centered, compact height.
-- **Desktop nav:** Fjalla One links, centered, minimal spacing, no cart/profile icons, explicit outlined `Contact Us` button.
-- **More Information menu:** Simple white dropdown, thin border, soft shadow, Fjalla One menu items.
-- **Mobile nav:** A hamburger button, a visible `Contact Us` button, and a vertical menu with the same link structure.
-- **Logo masthead:** Centered academy logo on white. Never let link overflow rules stretch it.
-- **Section heading:** Fjalla One heading with a short teal underline.
-- **Homepage review/photo highlights:** A white, bordered section directly after the homepage hero. Pair short Google review excerpts with real gallery images, one unique image per review, using squared review cards and the standard section heading underline.
-- **Quick sign-up form:** A lightweight Formspree-backed section for public pages. Keep it under one minute to complete: rectangular interest checkboxes, name, email, phone, optional notes, and one primary submit button. Use it instead of generic newsletter capture when the visitor is choosing classes or certifications.
-- **Primary actions:** Deep teal background, white text, rectangular.
-- **Secondary actions:** White background, teal or dark text, rectangular border when needed.
-- **Footer:** Deep teal background, centered white contact/nav/social blocks.
-- **Cookie banner:** Deep teal, lower-left on desktop, raised above the collapsed ElevenLabs widget on mobile. When the assistant is expanded on mobile, temporarily hide the cookie banner so it cannot sit behind or compete with the conversation surface.
-- **ElevenLabs widget:** Provider embed must remain bottom-right and bounded to its real visual state. Collapsed state stays compact (`320px x 160px` max). Expanded state uses a larger safe panel (`420px x 620px` max on desktop, full viewport width with a `620px` height cap on mobile, and top-shell clearance on short mobile screens) so the vendor conversation, visualizer, controls, and attribution render without clipping.
+- **Navigation:** Use shadcn/Radix navigation, dropdown, sheet, and button primitives. Preserve existing visible nav labels and route aliases.
+- **Forms:** Use `Field`, `FieldSet`, `FieldGroup`, `FieldLabel`, `FieldError`, `Input`, `Textarea`, `Checkbox`, and `Button`.
+- **Content surfaces:** Use `Card`, `Badge`, `Separator`, `AspectRatio`, and `Accordion` for stable widgets and repeated content.
+- **Feedback and overlays:** Use shadcn/Radix primitives such as `AlertDialog`, `Tooltip`, `DropdownMenu`, and `Sheet` when behavior is needed.
+- **Imagery:** Use existing real academy imagery and logo assets. Generated or external imagery must only be used when explicitly approved or already part of the current content inventory.
 
-## Do's and Don'ts
+## Validation
 
-- **Do** preserve live-site copy, imagery, hierarchy, and route behavior unless the user explicitly asks for content or brand changes.
-- **Do** prefer existing `rda-*` shell classes and tokens over one-off visual values.
-- **Do** update this file when introducing a genuinely new color, typography level, radius, or component pattern.
-- **Do** run design, UX, and parity checks after visual shell work.
-- **Don't** resurrect GoDaddy runtime scripts for shared chrome, TrustedSite, commerce/profile icons, dynamic galleries, reviews, maps, newsletter, or contact behavior.
-- **Don't** modernize the site into generic cards, large marketing heroes, decorative gradients, glass panels, or purple/blue SaaS styling.
-- **Don't** add broad global link/image/layout rules that can stretch the masthead logo or destabilize snapshot pages.
-- **Don't** hide production behavior behind DOM mutation repair loops when a real React component can own it.
+For UI/design changes, run `pnpm design:check`, `pnpm lint`, and `pnpm build`. For behavior and responsive confidence, run `pnpm test:interactions` and `pnpm test:ux`. Use `pnpm test:parity-content` to protect written text, labels, placeholders, route titles, and statuses while allowing intentional visual/layout changes. Replace visual baselines only after redesign approval.

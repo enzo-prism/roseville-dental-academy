@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
 const cookieStorageKey = "rda-cookie-accepted";
 
 export function LiveCookieBanner() {
@@ -26,22 +29,28 @@ export function LiveCookieBanner() {
   }
 
   return (
-    <section className="rda-cookie-banner" data-aid="FOOTER_COOKIE_BANNER_RENDERED">
-      <h2>This website uses cookies.</h2>
-      <p>
-        We use cookies to analyze website traffic and optimize your website experience. By
-        accepting our use of cookies, your data will be aggregated with all other user data.
-      </p>
-      <button
-        data-aid="FOOTER_COOKIE_CLOSE_RENDERED"
-        onClick={() => {
-          window.localStorage.setItem(cookieStorageKey, "true");
-          setDismissed(true);
-        }}
-        type="button"
-      >
-        Accept
-      </button>
-    </section>
+    <Card
+      className="rda-cookie-banner border-border bg-primary text-primary-foreground shadow-lg"
+      data-aid="FOOTER_COOKIE_BANNER_RENDERED"
+    >
+      <CardContent>
+        <h2>This website uses cookies.</h2>
+        <p>
+          We use cookies to analyze website traffic and optimize your website experience. By
+          accepting our use of cookies, your data will be aggregated with all other user data.
+        </p>
+        <Button
+          data-aid="FOOTER_COOKIE_CLOSE_RENDERED"
+          onClick={() => {
+            window.localStorage.setItem(cookieStorageKey, "true");
+            setDismissed(true);
+          }}
+          type="button"
+          variant="secondary"
+        >
+          Accept
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { Noto_Sans, Playfair_Display } from "next/font/google";
 
 import { GoogleAnalytics } from "@/components/site/google-analytics";
 import { HotjarAnalytics } from "@/components/site/hotjar-analytics";
@@ -9,6 +10,16 @@ import { getSiteUrl } from "../lib/site-config";
 import "./globals.css";
 
 const analyticsMode = process.env.VERCEL ? "auto" : "development";
+const notoSans = Noto_Sans({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-noto-sans",
+});
+const playfairDisplay = Playfair_Display({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-playfair-display",
+});
 
 export const metadata: Metadata = {
   title: "Roseville Dental Academy",
@@ -27,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${notoSans.variable} ${playfairDisplay.variable}`}>
       <head>
         <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
       </head>

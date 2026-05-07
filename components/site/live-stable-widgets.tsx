@@ -2,6 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import type { LiveRoute } from "@/lib/live-route-data";
 import {
   boardApprovalHighlights,
@@ -51,34 +62,44 @@ function StableBoardApproval() {
       </p>
       <div className="rda-board-grid rda-board-grid-desktop">
         {boardApprovalHighlights.map((item) => (
-          <article className="rda-board-card" key={item.title}>
-            <h3>{item.title}</h3>
-            <p>{item.summary}</p>
-            <a
-              href={item.href}
-              rel={item.href.startsWith("http") ? "noreferrer" : undefined}
-              target={item.href.startsWith("http") ? "_blank" : undefined}
-            >
-              {item.ctaLabel}
-            </a>
-          </article>
+          <Card className="rda-board-card border-border bg-card" key={item.title}>
+            <CardHeader>
+              <CardTitle>{item.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>{item.summary}</p>
+              <Button asChild className="mt-4 h-auto p-0" variant="link">
+                <a
+                  href={item.href}
+                  rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+                  target={item.href.startsWith("http") ? "_blank" : undefined}
+                >
+                  {item.ctaLabel}
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
         ))}
       </div>
-      <div className="rda-board-accordion">
-        {boardApprovalHighlights.map((item, index) => (
-          <details className="rda-board-accordion-item" key={item.title} open={index === 0}>
-            <summary>{item.title}</summary>
-            <p>{item.summary}</p>
-            <a
-              href={item.href}
-              rel={item.href.startsWith("http") ? "noreferrer" : undefined}
-              target={item.href.startsWith("http") ? "_blank" : undefined}
-            >
-              {item.ctaLabel}
-            </a>
-          </details>
+      <Accordion className="rda-board-accordion" type="single" defaultValue={boardApprovalHighlights[0]?.title}>
+        {boardApprovalHighlights.map((item) => (
+          <AccordionItem className="rda-board-accordion-item" key={item.title} value={item.title}>
+            <AccordionTrigger>{item.title}</AccordionTrigger>
+            <AccordionContent>
+              <p>{item.summary}</p>
+              <Button asChild className="mt-4 h-auto p-0" variant="link">
+                <a
+                  href={item.href}
+                  rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+                  target={item.href.startsWith("http") ? "_blank" : undefined}
+                >
+                  {item.ctaLabel}
+                </a>
+              </Button>
+            </AccordionContent>
+          </AccordionItem>
         ))}
-      </div>
+      </Accordion>
     </section>
   );
 }
@@ -99,18 +120,21 @@ function StableInstructorBios() {
       </p>
       <div className="rda-instructor-grid">
         {instructorBios.map((instructor) => (
-          <article className="rda-instructor-card" key={instructor.name}>
+          <Card className="rda-instructor-card border-border bg-card" key={instructor.name}>
             <figure className="rda-instructor-photo">
-              <Image
-                alt={instructor.imageAlt}
-                height={720}
-                sizes="(max-width: 760px) 100vw, 25vw"
-                src={instructor.image}
-                width={900}
-              />
+              <AspectRatio ratio={1}>
+                <Image
+                  alt={instructor.imageAlt}
+                  fill
+                  sizes="(max-width: 760px) 100vw, 25vw"
+                  src={instructor.image}
+                />
+              </AspectRatio>
             </figure>
-            <div className="rda-instructor-body">
-              <p className="rda-instructor-credential">{instructor.credential}</p>
+            <CardContent className="rda-instructor-body">
+              <Badge className="rda-instructor-credential" variant="outline">
+                {instructor.credential}
+              </Badge>
               <h3>{instructor.name}</h3>
               <p>{instructor.summary}</p>
               <ul>
@@ -118,8 +142,8 @@ function StableInstructorBios() {
                   <li key={highlight}>{highlight}</li>
                 ))}
               </ul>
-            </div>
-          </article>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </section>
@@ -139,10 +163,14 @@ function StableStudentFaqs() {
       </p>
       <div className="rda-student-faq-grid">
         {studentFaqHighlights.map((item) => (
-          <article className="rda-student-faq-card" key={item.question}>
-            <h3>{item.question}</h3>
-            <p>{item.answer}</p>
-          </article>
+          <Card className="rda-student-faq-card border-border bg-card" key={item.question}>
+            <CardHeader>
+              <CardTitle>{item.question}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>{item.answer}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </section>
@@ -159,12 +187,15 @@ function StableReviews() {
       <p className="rda-review-score">5.0 Roseville Dental Academy 77 Reviews</p>
       <div className="rda-review-grid">
         {testimonials.slice(0, 3).map((review) => (
-          <article className="rda-review-card" key={review.name}>
-            <p className="rda-review-rating">{review.rating}.0 / 5</p>
-            <blockquote>{review.quote}</blockquote>
-            <p className="rda-review-name">{review.name}</p>
-            <p className="rda-review-meta">{review.meta}</p>
-          </article>
+          <Card className="rda-review-card border-border bg-card" key={review.name}>
+            <CardContent>
+              <p className="rda-review-rating">{review.rating}.0 / 5</p>
+              <blockquote>{review.quote}</blockquote>
+              <Separator className="my-4" />
+              <p className="rda-review-name">{review.name}</p>
+              <p className="rda-review-meta">{review.meta}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </section>
@@ -196,9 +227,16 @@ function StableGallery({ full = false }: { full?: boolean }) {
             ) : null}
             <div className="rda-gallery-grid">
               {group.items.map((item) => (
-                <figure className="rda-gallery-item" key={item.src}>
-                  <Image alt={item.alt} height={420} sizes="(max-width: 760px) 100vw, 33vw" src={item.src} width={640} />
-                </figure>
+                <Card className="rda-gallery-item border-border bg-card" key={item.src}>
+                  <AspectRatio ratio={4 / 3}>
+                    <Image
+                      alt={item.alt}
+                      fill
+                      sizes="(max-width: 760px) 100vw, 33vw"
+                      src={item.src}
+                    />
+                  </AspectRatio>
+                </Card>
               ))}
             </div>
           </div>
@@ -206,7 +244,9 @@ function StableGallery({ full = false }: { full?: boolean }) {
       </div>
       {!full ? (
         <div className="rda-gallery-actions">
-          <Link href="/photos">{homeGalleryHighlight.ctaLabel}</Link>
+          <Button asChild variant="outline">
+            <Link href="/photos">{homeGalleryHighlight.ctaLabel}</Link>
+          </Button>
         </div>
       ) : null}
     </section>

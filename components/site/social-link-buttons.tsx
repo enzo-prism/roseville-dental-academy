@@ -1,6 +1,7 @@
 import type { SocialLink } from "@/lib/site-types";
 
 type SocialLinkButtonsProps = {
+  idScope?: string;
   links: readonly SocialLink[];
   variant: "footer" | "inline" | "nav";
 };
@@ -139,10 +140,12 @@ function SocialLogo({ idPrefix, link }: { idPrefix: string; link: SocialLink }) 
   return <TikTokLogo />;
 }
 
-export function SocialLinkButtons({ links, variant }: SocialLinkButtonsProps) {
+export function SocialLinkButtons({ idScope, links, variant }: SocialLinkButtonsProps) {
+  const iconIdScope = idScope ? `${variant}-${idScope}` : variant;
+
   return (
     <div className={`rda-social-buttons rda-social-buttons-${variant}`} aria-label="Social links">
-      {links.map((link) => (
+      {links.map((link, index) => (
         <a
           className={`rda-social-button rda-social-button-${link.icon}`}
           data-rda-social-button={link.icon}
@@ -152,7 +155,7 @@ export function SocialLinkButtons({ links, variant }: SocialLinkButtonsProps) {
           target="_blank"
         >
           <span className="rda-social-button-icon" aria-hidden="true">
-            <SocialLogo idPrefix={`rda-social-${variant}-${link.icon}`} link={link} />
+            <SocialLogo idPrefix={`rda-social-${iconIdScope}-${link.icon}-${index}`} link={link} />
           </span>
           <span className="rda-social-button-label">{link.label}</span>
         </a>

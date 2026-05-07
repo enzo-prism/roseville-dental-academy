@@ -18,16 +18,16 @@ Use this skill whenever a task changes the website UI, layout, shell behavior, s
    - stable widget replacements: `components/site/live-stable-widgets.tsx`
    - route/content registry: `lib/live-route-data.ts`
    - shell CSS: `app/globals.css`
-3. Preserve the live-faithful look unless the user explicitly requests a redesign.
-4. Prefer existing `rda-*` CSS classes and design tokens over raw one-off styling.
-5. Keep snapshot page bodies stable. Scope broad layout fixes to known shell classes or `.rda-snapshot-content`.
-6. Keep ElevenLabs, cookie, nav, contact, newsletter, and directions behavior stable and tested.
+3. Preserve visible written text, labels, placeholders, route titles, status codes, route aliases, endpoints, and real academy imagery unless the user explicitly asks for content changes.
+4. Prefer shadcn/ui primitives, semantic tokens, and existing shell components over raw one-off styling.
+5. Keep `snapshot/live/` as the text/content reference while React-owned components provide the modern Sera UI.
+6. Keep ElevenLabs, cookie, nav, contact, signup, and directions behavior stable and tested.
 
 ## Visual Rules
 
-- Use the deep teal, white canvas, and restrained gold interaction colors from `/DESIGN.md`.
-- Use Adamina for body/prose and Fjalla One for headings, nav, labels, and buttons.
-- Keep controls rectangular and restrained.
+- Use the shadcn/Sera taupe neutral foundation from `/DESIGN.md` with Roseville teal as semantic `primary`.
+- Use Noto Sans for body, nav, labels, and forms; use Playfair Display for editorial headings.
+- Keep controls low-radius, restrained, and token-driven.
 - Do not add decorative gradients, glass effects, bokeh/orb backgrounds, generic SaaS card grids, or a modernized rebrand.
 - Do not restore GoDaddy shared chrome, TrustedSite, cart/profile icons, or unstable runtime widgets.
 

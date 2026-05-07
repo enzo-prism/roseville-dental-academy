@@ -313,6 +313,10 @@ test("mobile homepage menu opens and reveals live information links", async ({ p
   await expect(mobileMenu.getByRole("link", { name: "Meet the Instructors" })).toBeVisible();
   await expect(mobileMenu.getByRole("link", { name: "FAQs" })).toBeVisible();
   await expect(mobileMenu.getByRole("link", { name: "Photos" })).toBeVisible();
+  await expect(mobileMenu.getByRole("link", { name: "Resume Portal DR/OMS only" })).toHaveAttribute(
+    "href",
+    "https://rosevilledental.godaddysites.com/m/login?r=%2Fresume-portal-dr%252Foms-only",
+  );
 
   smokeSummary.push({
     route: "/",
@@ -406,6 +410,7 @@ test("desktop navigation items render distinct matching icons", async ({ page },
 
   const result = await page.evaluate(() => {
     const readItem = (item: Element) => ({
+      href: item.getAttribute("href") || "",
       icon: item.querySelector("[data-rda-nav-icon]")?.getAttribute("data-rda-nav-icon") || "",
       label: item.textContent?.replace(/\s+/g, " ").trim() || "",
     });
@@ -436,6 +441,7 @@ test("desktop navigation items render distinct matching icons", async ({ page },
     ["Resume Portal DR/OMS only", "file-user"],
   ]);
   const allItems = [...result.topLevel, ...result.dropdown];
+  const portalHref = "https://rosevilledental.godaddysites.com/m/login?r=%2Fresume-portal-dr%252Foms-only";
   const mismatches: string[] = [];
 
   for (const [label, icon] of expected) {
@@ -446,6 +452,14 @@ test("desktop navigation items render distinct matching icons", async ({ page },
     } else if (match.icon !== icon) {
       mismatches.push(`${label} expected ${icon} icon, found ${match.icon || "none"}`);
     }
+  }
+
+  const portalMatch = allItems.find((item) => item.label === "Resume Portal DR/OMS only");
+
+  if (portalMatch?.href !== portalHref) {
+    mismatches.push(
+      `Resume Portal DR/OMS only expected external href ${portalHref}, found ${portalMatch?.href || "none"}`,
+    );
   }
 
   const icons = allItems

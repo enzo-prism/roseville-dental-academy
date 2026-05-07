@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repo is a production-ready, live-faithful Next.js rebuild of the Roseville Dental Academy site.
+This repo is a production-ready Next.js rebuild of the Roseville Dental Academy site, now moving to a modern shadcn/ui Sera editorial design system.
 
 Keep these contracts separate:
 
@@ -14,10 +14,11 @@ Keep these contracts separate:
 
 - For any task that changes UI, styling, layout, components, visual behavior, route chrome, widgets, or design tokens, read `/DESIGN.md` before editing.
 - Treat `/DESIGN.md` as the source of truth for visual decisions.
-- Preserve the current live-site look: GoDaddy-style restraint, centered nav, academy masthead, teal/white palette, Adamina body copy, Fjalla One headings/nav, simple rectangular controls, and real course imagery.
-- Keep `snapshot/live/` as the migration/reference source, not the shared shell runtime.
+- Preserve current visible written text, labels, placeholders, route titles, route aliases, status codes, third-party endpoints, and real academy imagery unless the user explicitly asks for content changes.
+- Use the shadcn/ui Sera direction from `/DESIGN.md`: taupe neutral foundation, Roseville teal primary token, Noto Sans body/nav/forms, Playfair Display headings, Lucide icons, Radix behavior, low-radius surfaces, and restrained borders/elevation.
+- Keep `snapshot/live/` as the migration/text/reference source, not the shared shell runtime or the long-term visual target.
 - Keep React shell behavior in stable components instead of injected repair scripts or third-party GoDaddy runtime code.
-- Prefer existing `rda-*` classes and shell components before creating new patterns.
+- Prefer shadcn primitives and existing shell components before creating new patterns.
 - Do not introduce raw hex colors, typography families, radii, or spacing scales casually. If a new visual token is truly needed, update `/DESIGN.md` in the same change.
 - Use `.agents/skills/ui-design-system/SKILL.md` for recurring frontend/design tasks.
 
@@ -34,7 +35,7 @@ For UI or design-system changes, run the smallest meaningful set first, then bro
 
 ## Review Guidelines
 
-- Flag visual changes that drift away from the live site unless the user explicitly requested a redesign.
+- Flag visible copy, label, placeholder, title, route, status, or endpoint changes unless explicitly requested.
 - Flag raw visual values not backed by `/DESIGN.md`.
 - Flag new shell behavior implemented through DOM mutation loops when React components can own it.
 - Flag widget changes that are not tested against cookie/banner collision and mobile viewport safety.

@@ -719,7 +719,11 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
     )
       .filter((button) => isVisible(button))
       .map((button) => {
-        if ("value" in button && typeof button.value === "string" && button.value) {
+        if (
+          button instanceof HTMLInputElement &&
+          typeof button.value === "string" &&
+          button.value
+        ) {
           return normalizeValue(button.value);
         }
 

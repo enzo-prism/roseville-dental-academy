@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { siteContact, socialLinks } from "@/lib/site-data";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
+import { Separator } from "@/components/ui/separator";
 
 const footerLinks = [
   { href: "/dental-assisting-program", label: "Dental Assisting Program" },
@@ -12,7 +13,7 @@ const footerLinks = [
 
 export function LiveFooter() {
   return (
-    <footer className="rda-live-footer" data-rda-shell-footer="true">
+    <footer className="rda-live-footer border-t border-border bg-primary text-primary-foreground" data-rda-shell-footer="true">
       <div className="rda-footer-inner">
         <div className="rda-footer-contact">
           <p className="rda-footer-name">{siteContact.school}</p>
@@ -35,6 +36,7 @@ export function LiveFooter() {
             </dl>
           </div>
         </div>
+        <Separator className="rda-footer-separator bg-primary-foreground/20" />
         <nav aria-label="Footer" className="rda-footer-links">
           {footerLinks.map((link) => (
             <Link href={link.href} key={link.href}>

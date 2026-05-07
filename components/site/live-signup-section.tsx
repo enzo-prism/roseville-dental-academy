@@ -22,6 +22,19 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { signupInterestOptions, siteContact } from "@/lib/site-data";
 
 type LiveSignupSectionProps = {
@@ -73,9 +86,9 @@ export function LiveSignupSection({
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const hasInterest = selectedInterests.length > 0;
 
-  function handleInterestChange(value: string, checked: boolean) {
+  function handleInterestChange(value: string, checked: boolean | "indeterminate") {
     setSelectedInterests((current) =>
-      checked ? [...current, value] : current.filter((interest) => interest !== value),
+      checked === true ? [...current, value] : current.filter((interest) => interest !== value),
     );
   }
 
@@ -89,6 +102,7 @@ export function LiveSignupSection({
 
   return (
     <section
+      aria-labelledby={titleId}
       className={[
         "rda-stable-section rda-signup-section",
         compact ? "rda-signup-section-compact" : "",
@@ -96,7 +110,6 @@ export function LiveSignupSection({
       ].filter(Boolean).join(" ")}
       data-rda-signup-section="true"
       id="quick-sign-up"
-      aria-labelledby={titleId}
     >
       <div className="rda-section-heading rda-signup-heading">
         <span className="rda-signup-heading-icon" data-rda-signup-icon="heading">
@@ -110,43 +123,43 @@ export function LiveSignupSection({
       </p>
       <form
         action={siteContact.formspreeEndpoint}
-        className="rda-signup-form"
+        className="rda-signup-form border border-border bg-card text-card-foreground shadow-sm"
         data-rda-signup-form="true"
         method="post"
         onSubmit={handleSubmit}
       >
         <input name="_subject" type="hidden" value="Roseville Dental Academy class interest" />
         <input name="Source page" type="hidden" value={sourceLabel} />
-        <fieldset
+        {selectedInterests.map((interest) => (
+          <input key={interest} name="Interested classes[]" type="hidden" value={interest} />
+        ))}
+        <FieldSet
           aria-describedby={attemptedSubmit && !hasInterest ? errorId : undefined}
           aria-invalid={attemptedSubmit && !hasInterest ? "true" : undefined}
           className="rda-interest-fieldset"
         >
-          <legend>
+          <FieldLegend>
             <span className="rda-interest-legend">
               <SignupIcon Icon={ListChecks} />
               Classes or certifications
             </span>
-          </legend>
-          <div className="rda-interest-options">
+          </FieldLegend>
+          <FieldGroup className="rda-interest-options" data-slot="checkbox-group">
             {signupInterestOptions.map((option) => {
               const isSelected = selectedInterests.includes(option.value);
               const InterestIcon = interestIcons[option.value] ?? BadgeCheck;
 
               return (
-                <label
+                <FieldLabel
                   className="rda-interest-option"
                   data-selected={isSelected ? "true" : undefined}
                   key={option.value}
                 >
-                  <input
+                  <Checkbox
                     checked={isSelected}
-                    name="Interested classes[]"
-                    onChange={(event) => handleInterestChange(option.value, event.target.checked)}
-                    type="checkbox"
-                    value={option.value}
+                    onCheckedChange={(checked) => handleInterestChange(option.value, checked)}
                   />
-                  <span className="rda-interest-option-content">
+                  <FieldContent className="rda-interest-option-content">
                     <span
                       className="rda-interest-option-icon"
                       data-rda-signup-icon={option.value}
@@ -154,66 +167,68 @@ export function LiveSignupSection({
                       <SignupIcon Icon={InterestIcon} />
                     </span>
                     <span>{option.label}</span>
-                  </span>
-                </label>
+                  </FieldContent>
+                </FieldLabel>
               );
             })}
-          </div>
+          </FieldGroup>
           {attemptedSubmit && !hasInterest ? (
-            <p className="rda-form-error" id={errorId} role="alert">
+            <FieldError className="rda-form-error" id={errorId}>
               Choose at least one class or certification.
-            </p>
+            </FieldError>
           ) : null}
-        </fieldset>
-        <div className="rda-signup-fields">
-          <label>
-            <span className="rda-field-label">
+        </FieldSet>
+        <FieldGroup className="rda-signup-fields">
+          <Field>
+            <FieldLabel className="rda-field-label" htmlFor={`${formId}-name`}>
               <SignupIcon Icon={UserRound} dataIcon="name" />
               Name
-            </span>
-            <input autoComplete="name" name="Name" placeholder="Name" required type="text" />
-          </label>
-          <label>
-            <span className="rda-field-label">
+            </FieldLabel>
+            <Input autoComplete="name" id={`${formId}-name`} name="Name" placeholder="Name" required type="text" />
+          </Field>
+          <Field>
+            <FieldLabel className="rda-field-label" htmlFor={`${formId}-email`}>
               <SignupIcon Icon={Mail} dataIcon="email" />
               Email
-            </span>
-            <input
+            </FieldLabel>
+            <Input
               autoComplete="email"
+              id={`${formId}-email`}
               name="_replyto"
               placeholder="Email"
               required
               type="email"
             />
-          </label>
-          <label>
-            <span className="rda-field-label">
+          </Field>
+          <Field>
+            <FieldLabel className="rda-field-label" htmlFor={`${formId}-phone`}>
               <SignupIcon Icon={Phone} dataIcon="phone" />
               Phone
-            </span>
-            <input autoComplete="tel" name="Phone" placeholder="Phone" required type="tel" />
-          </label>
-        </div>
-        <label className="rda-signup-notes">
-          <span className="rda-field-label">
+            </FieldLabel>
+            <Input autoComplete="tel" id={`${formId}-phone`} name="Phone" placeholder="Phone" required type="tel" />
+          </Field>
+        </FieldGroup>
+        <Field className="rda-signup-notes">
+          <FieldLabel className="rda-field-label" htmlFor={`${formId}-notes`}>
             <SignupIcon Icon={MessageSquareText} dataIcon="notes" />
             Other notes
-          </span>
-          <textarea
+          </FieldLabel>
+          <Textarea
+            id={`${formId}-notes`}
             name="Notes"
             placeholder="Schedule questions, goals, or anything helpful"
             rows={compact ? 3 : 4}
           />
-        </label>
+        </Field>
         <div className="rda-signup-footer">
           <p className="rda-form-note rda-signup-note">
             <SignupIcon Icon={BadgeInfo} dataIcon="note" />
             <span>Short form, quick follow-up. No payment is collected here.</span>
           </p>
-          <button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">
+          <Button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">
             Send interest
             <SignupIcon Icon={Send} className="rda-signup-submit-icon" dataIcon="submit" />
-          </button>
+          </Button>
         </div>
       </form>
     </section>

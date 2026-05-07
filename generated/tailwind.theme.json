@@ -4,36 +4,40 @@
       "colors": {
         "primary": "#315658",
         "primary-deep": "#24484a",
-        "surface": "#ffffff",
-        "text": "#2b2b2b",
-        "heading": "#242424",
-        "nav-text": "#191919",
-        "muted-text": "#666666",
-        "subnav-text": "#505050",
-        "accent": "#8c642d",
-        "accent-active": "#b78336",
-        "accent-deep": "#7a5524",
-        "border": "#c9c9c9",
-        "border-soft": "#e5e1dc"
+        "background": "#fbfaf8",
+        "foreground": "#282522",
+        "card": "#fffefd",
+        "muted": "#eee9e2",
+        "muted-foreground": "#766d63",
+        "accent": "#e7dfd4",
+        "accent-foreground": "#282522",
+        "secondary": "#eee9e2",
+        "secondary-foreground": "#282522",
+        "border": "#d8d0c4",
+        "input": "#d8d0c4",
+        "ring": "#315658",
+        "popover": "#fffefd",
+        "popover-foreground": "#282522",
+        "primary-foreground": "#ffffff"
       },
       "fontFamily": {
         "body": [
-          "Adamina, Georgia, serif"
+          "Noto Sans, Arial, sans-serif"
         ],
         "body-sm": [
-          "Adamina, Georgia, serif"
+          "Noto Sans, Arial, sans-serif"
         ],
         "heading-lg": [
-          "Fjalla One, Arial, sans-serif"
+          "Playfair Display, Georgia, serif"
         ],
         "heading-md": [
-          "Fjalla One, Arial, sans-serif"
+          "Playfair Display, Georgia, serif"
         ],
         "nav-label": [
-          "Fjalla One, Arial, sans-serif"
+          "Noto Sans, Arial, sans-serif"
         ],
         "utility-label": [
-          "Fjalla One, Arial, sans-serif"
+          "Noto Sans, Arial, sans-serif"
         ]
       },
       "fontSize": {
@@ -52,38 +56,39 @@
           }
         ],
         "heading-lg": [
-          "42px",
+          "44px",
           {
             "letterSpacing": "0px",
-            "fontWeight": "400"
+            "fontWeight": "600"
           }
         ],
         "heading-md": [
-          "26px",
+          "28px",
           {
             "letterSpacing": "0px",
-            "fontWeight": "400"
+            "fontWeight": "600"
           }
         ],
         "nav-label": [
           "14px",
           {
             "letterSpacing": "0px",
-            "fontWeight": "400"
+            "fontWeight": "600"
           }
         ],
         "utility-label": [
           "13px",
           {
             "letterSpacing": "0px",
-            "fontWeight": "400"
+            "fontWeight": "600"
           }
         ]
       },
       "borderRadius": {
         "none": "0px",
-        "sm": "0px",
-        "widget": "18px"
+        "sm": "4px",
+        "md": "6px",
+        "lg": "8px"
       },
       "spacing": {
         "xs": "4px",
@@ -91,7 +96,7 @@
         "md": "16px",
         "lg": "24px",
         "xl": "42px",
-        "section": "54px"
+        "section": "56px"
       }
     }
   }
