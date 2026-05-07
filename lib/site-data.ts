@@ -60,16 +60,16 @@ export const siteImages = {
   logo: "/assets/live/home/logo-academy.png",
   careerInfographic: "/assets/live/home/home-opportunity.png",
   hero: "/assets/live/home/home-hero.jpg",
-  registration: "/assets/live/home/registration.jpg",
-  programHero: "/assets/live/programs/dental-assisting-hero.jpg",
-  programOverview: "/assets/live/programs/dental-assisting-overview.jpg",
-  bls: "/assets/live/courses/bls.jpg",
-  infection: "/assets/live/courses/infection-control.jpg",
-  radiation: "/assets/live/courses/radiation-safety.jpg",
+  registration: "/assets/live/drive/recent-certificates-banner.jpg",
+  programHero: "/assets/live/programs/dental-assisting-chairside.jpg",
+  programOverview: "/assets/live/drive/chairside-coaching-closeup.jpg",
+  bls: "/assets/live/courses/bls-hands-on.jpg",
+  infection: "/assets/live/courses/infection-control-sterilization.jpg",
+  radiation: "/assets/live/programs/radiography-chairside.jpg",
   coronal: "/assets/live/courses/coronal-polish.jpg",
   sealants: "/assets/live/courses/sealants.jpg",
   instructors: "/assets/live/instructors/meet-the-instructors.jpg",
-  instructorJessica: "/assets/live/instructors/jessica-teaching.jpg",
+  instructorJessica: "/assets/live/instructors/jessica.jpg",
   instructorSandra: "/assets/live/instructors/sandra.jpg",
   instructorSajal: "/assets/live/instructors/sajal.jpg",
   instructorKatelyn: "/assets/live/instructors/katelyn.jpg",
@@ -89,6 +89,9 @@ export const siteImages = {
   gallery11: "/assets/live/gallery/suctioning-2.jpg",
   gallery12: "/assets/live/gallery/suctioning-3.jpg",
 } as const;
+
+export const dentalAssistingRegistrationFormHref =
+  "/__live/img1.wsimg.com/blobby/go/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/Dental%2520Assistant%2520Training%2520Program%2520Registration.pdf";
 
 const admissionsCta: CtaLink = {
   label: "Start registration",
@@ -205,7 +208,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$85",
     summary:
-      "American Heart Association-aligned training for healthcare providers, with blended home study and an instructor-led skills evaluation. Next class: June 6th 2026.",
+      "Initial or renewal BLS/CPR for healthcare providers. The course is 3 hours, costs $85, and lists May 2, 2026 and June 6, 2026 class dates.",
     href: "/bls-cpr-1",
     media: siteImages.bls,
     analyticsKey: "card-bls",
@@ -216,7 +219,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$395",
     summary:
-      "California Dental Board-aligned training with current CPR and Dental Practice Act prerequisites. Next class: June 6th 2026.",
+      "Board-approved 8-hour Infection Control training for unlicensed dental assistants. The listed May 2, 2026 date has passed, so call to confirm current availability.",
     href: "/infection-control",
     media: siteImages.infection,
     analyticsKey: "card-infection-control",
@@ -227,7 +230,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$695",
     summary:
-      "Radiography training, patient requirements, and documentation support for California dental professionals. Next class: June 6th 2026.",
+      "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. The listed May 2, 2026 date has passed, so call to confirm availability.",
     href: "/radiation-safety",
     media: siteImages.radiation,
     analyticsKey: "card-radiation-safety",
@@ -238,7 +241,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$500",
     summary:
-      "Short-format polishing training designed around California certification requirements and clinical competency work. Next class: June 20th 2026.",
+      "12-hour board-approved coronal polishing training with didactic, laboratory, manikin, written exam, and human patient requirements. Listed date: May 9, 2026.",
     href: "/coronal-polish",
     media: siteImages.coronal,
     analyticsKey: "card-coronal-polish",
@@ -249,7 +252,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$550",
     summary:
-      "Current RDA renewal support with clinical patient requirements and documentation expectations. Next class: June 20th 2026.",
+      "16-hour pit and fissure sealant training for eligible dental assistants and RDAs. Students may not perform sealants until licensed. Listed date: May 9, 2026.",
     href: "/sealants",
     media: siteImages.sealants,
     analyticsKey: "card-sealants",
@@ -325,8 +328,8 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
     quote:
       "The 9-week program was well-structured, hands-on, and incredibly informative. The instructors were supportive, knowledgeable, and genuinely invested in our success.",
     image: {
-      src: "/assets/live/photos/aeb507d7-8b3c-4bca-a21b-93ee9aef8677.jpg",
-      alt: "Roseville Dental Academy students celebrating completion certificates",
+      src: "/assets/live/drive/recent-certificates-banner.jpg",
+      alt: "Recent Roseville Dental Academy students holding completion certificates",
     },
   },
   {
@@ -337,8 +340,8 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
     quote:
       "Excellent dental assisting program with hands-on training and great support. Jessica is patient, knowledgeable, and truly invested in her students.",
     image: {
-      src: "/assets/live/photos/img-3089-59f42e8.jpg",
-      alt: "Instructor guiding a student through hands-on dental assisting practice",
+      src: "/assets/live/programs/dental-assisting-chairside.jpg",
+      alt: "Instructor guiding students through hands-on chairside dental assisting practice",
     },
   },
   {
@@ -349,8 +352,8 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
     quote:
       "During my 9-week course, I gained valuable knowledge in radiation safety, infection control, BLS, chairside assisting, and patient care.",
     image: {
-      src: "/assets/live/photos/64b30c90-dc2b-4e69-a6fb-6bfafd36160d.jpg",
-      alt: "Students learning together during a dental assisting class session",
+      src: "/assets/live/drive/recent-class-tree.jpg",
+      alt: "Recent Roseville Dental Academy class group outside the academy",
     },
   },
   {
@@ -373,8 +376,8 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
     quote:
       "I am confident in my skills after taking this program and excited to start my career. They help you find an internship and look for job opportunities.",
     image: {
-      src: "/assets/live/photos/e49f18da-07a4-40eb-bbb6-fb3954968af5.jpg",
-      alt: "Student practicing tray setup and dental assisting skills",
+      src: "/assets/live/drive/chairside-coaching-closeup.jpg",
+      alt: "Student practicing chairside skills with instructor support",
     },
   },
   {
@@ -385,7 +388,7 @@ export const homepageReviewHighlights: ReviewPhotoData[] = [
     quote:
       "As a DA I took a bunch of their classes working toward my RDA. Everyone was incredibly sweet, with great communication and teaching from the office.",
     image: {
-      src: "/assets/live/photos/blsaug21.png",
+      src: "/assets/live/courses/bls-hands-on.jpg",
       alt: "Students practicing BLS certification skills during class",
     },
   },
@@ -502,7 +505,7 @@ export const instructorBios = [
     name: "Jessica",
     credential: "RDA-OA Lead Instructor",
     image: siteImages.instructorJessica,
-    imageAlt: "Jessica teaching hands-on chairside dental assisting skills at Roseville Dental Academy",
+    imageAlt: "Jessica, RDA-OA Lead Instructor at Roseville Dental Academy",
     summary:
       "Jessica has worked in dentistry since 2015 and is a Roseville Dental Academy graduate. After completing the program and earning her x-ray license, she was hired at Waikiki Dental, grew through chairside, co-assisting, and patient administration roles, and discovered a passion for helping interns learn with confidence.",
     highlights: [
@@ -599,12 +602,12 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "The team shared upcoming dates of Friday, June 19, 2026 and Monday, July 13, 2026 for Dental Assisting Training. BLS, Radiation Safety, and Infection Control are scheduled for June 6, 2026. Coronal Polish and Pit and Fissure Sealants are scheduled for June 20, 2026.",
+      "Dental Assisting Training is listed for Friday, June 19, 2026 or Monday, July 13, 2026. BLS lists May 2, 2026 and June 6, 2026. Infection Control and Radiation Safety list May 2, 2026, which has passed, so students should call to confirm current availability. Coronal Polish and Pit and Fissure Sealants list May 9, 2026.",
   },
   {
     question: "What is the best next step to enroll?",
     answer:
-      "Call the office at 916-888-9821 to confirm the right course path, schedule a tour if needed, and complete registration details.",
+      "For Dental Assisting, download the registration form and call 916-888-9821 to enroll or schedule a tour. For stand-alone courses, call the office to confirm eligibility, patient requirements when relevant, current availability, and registration details.",
   },
   {
     question: "Does the academy offer financial aid?",
@@ -621,6 +624,8 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Hands-on chairside practice, instrument setup, and office-based learning moments.",
     items: [
+      livePhoto("/assets/live/programs/dental-assisting-chairside.jpg", "Students practicing chairside dental assisting skills"),
+      livePhoto("/assets/live/drive/chairside-coaching-closeup.jpg", "Instructor coaching a student through chairside dental assisting practice"),
       livePhoto("/assets/live/photos/e49f18da-07a4-40eb-bbb6-fb3954968af5.jpg", "Dental assisting student practice"),
       livePhoto("/assets/live/photos/fc50cf07-aeb2-428a-980d-851803e10d45.jpg", "Dental assisting students in the clinic"),
       livePhoto("/assets/live/photos/d5b6325b-61bf-461f-853a-90e2092845b8.jpg", "Dental assisting operatory training"),
@@ -634,6 +639,7 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Images that reflect radiography practice and patient positioning inside training.",
     items: [
+      livePhoto("/assets/live/programs/radiography-chairside.jpg", "Students practicing radiography and chairside workflow"),
       livePhoto("/assets/live/photos/6fe56dbe-0af9-4da8-b880-ce43dbec9238.jpg", "Radiography positioning practice"),
       livePhoto("/assets/live/photos/64b30c90-dc2b-4e69-a6fb-6bfafd36160d.jpg", "X-ray training in the academy"),
       livePhoto("/assets/live/photos/img-0287.jpg", "Students learning dental x-ray workflow"),
@@ -690,6 +696,7 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Basic life support training moments from CPR, AED, and healthcare-provider skills sessions.",
     items: [
+      livePhoto("/assets/live/courses/bls-hands-on.jpg", "Students practicing BLS skills with training manikins"),
       livePhoto("/assets/live/photos/8021e43b-b453-4fa5-9d37-218c88a0a96d.jpg", "BLS students practicing CPR"),
       livePhoto("/assets/live/photos/cpr-0001.jpg", "CPR training manikin practice"),
       livePhoto("/assets/live/photos/0207a208-aeca-4cea-895d-daa4acccb2d3.jpg", "Basic life support skills class"),
@@ -706,6 +713,8 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "Training photos from infection control, sterilization, PPE, and clinical safety sessions.",
     items: [
+      livePhoto("/assets/live/courses/infection-control-sterilization.jpg", "Students learning infection control and sterilization workflow"),
+      livePhoto("/assets/live/drive/sterilization-hands-on.jpg", "Hands-on sterilization and infection control training"),
       livePhoto("/assets/live/photos/img-5878.jpg", "Infection control course practice"),
       livePhoto("/assets/live/photos/blob-0010.png", "Sterilization and PPE training"),
       livePhoto("/assets/live/photos/img-5905.jpg", "Students learning infection control protocols"),
@@ -719,11 +728,15 @@ export const photoGroups: GalleryGroup[] = [
     copy:
       "New photos shared by the academy team showing recent students, certificates, and hands-on practice.",
     items: [
+      livePhoto("/assets/live/drive/recent-class-tree.jpg", "Recent Roseville Dental Academy class group outside the academy"),
+      livePhoto("/assets/live/drive/recent-certificates-banner.jpg", "Recent Roseville Dental Academy students holding completion certificates"),
+      livePhoto("/assets/live/drive/recent-outdoor-certificates.jpg", "Students celebrating course completion certificates outside the academy"),
+      livePhoto("/assets/live/drive/recent-indoor-certificates.jpg", "Recent Roseville Dental Academy students celebrating certificates indoors"),
       livePhoto("/assets/live/drive/class-group-scrubs.jpg", "Recent Roseville Dental Academy class group in scrubs"),
       livePhoto("/assets/live/drive/certificate-celebration.jpg", "Students celebrating course completion certificates"),
       livePhoto("/assets/live/drive/tree-class-photo.jpg", "Recent class group photo outside the academy"),
-      livePhoto("/assets/live/drive/typodont-practice.jpg", "Students practicing dental anatomy and typodont skills"),
-      livePhoto("/assets/live/drive/xray-chairside.jpg", "Students practicing chairside and radiography workflow"),
+      livePhoto("/assets/live/drive/chairside-coaching-closeup.jpg", "Instructor coaching a student through chairside dental assisting practice"),
+      livePhoto("/assets/live/drive/sterilization-hands-on.jpg", "Hands-on sterilization and infection control training"),
     ],
   },
 ];
@@ -733,28 +746,28 @@ export const registrationCourseOptions: RegistrationCourseOption[] = [
     key: "dental-assisting",
     label: "Dental Assisting Training Program",
     price: "$2500.00",
-    note: "Accelerated 9-week program with live-practice chairside training. Next cohort: Friday, June 19th 2026.",
+    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. Starts Friday, June 19, 2026 or Monday, July 13, 2026.",
     icon: "graduation",
   },
   {
     key: "radiation-safety",
     label: "Radiation Safety / X-ray License",
     price: "$695.00",
-    note: "California Dental Board-approved radiography training with patient requirements. Next class: June 6th 2026.",
+    note: "32-hour radiography course for dental personnel and dentists who want staff x-ray certified. Listed date: May 2, 2026; call to confirm current availability.",
     icon: "scan",
   },
   {
     key: "infection-control",
     label: "8-Hour Infection Control Certification",
     price: "$395.00",
-    note: "Current compliance training for California dental professionals and students. Next class: June 6th 2026.",
+    note: "Board-approved infection control course for unlicensed dental assistants. Listed date: May 2, 2026; call to confirm current availability.",
     icon: "shield",
   },
   {
     key: "bls-cpr",
     label: "BLS / CPR",
     price: "$85.00",
-    note: "American Heart Association-aligned BLS training with instructor-led skills evaluation. Next class: June 6th 2026.",
+    note: "Initial or renewal BLS/CPR for healthcare providers. 3 hours. Listed dates: May 2, 2026 and June 6, 2026.",
     icon: "heart",
   },
 ] as const;
@@ -766,6 +779,20 @@ export const homeHero: HeroContent = {
     "Achieve certification in only 9 weeks with a smaller, hands-on training environment that feels personal, practical, and career-focused from day one.",
   image: siteImages.hero,
   imageAlt: "Dental assisting student training at Roseville Dental Academy",
+  slides: [
+    {
+      image: siteImages.hero,
+      imageAlt: "Dental assisting student training at Roseville Dental Academy",
+    },
+    {
+      image: "/assets/live/drive/recent-class-tree.jpg",
+      imageAlt: "Recent Roseville Dental Academy class group outside the academy",
+    },
+    {
+      image: siteImages.programHero,
+      imageAlt: "Students practicing chairside dental assisting skills at Roseville Dental Academy",
+    },
+  ],
   pills: ["9-week program", "Waikiki Dental training site", "Small class sizes"],
   actions: [
     {
@@ -784,29 +811,29 @@ export const homeHero: HeroContent = {
   panel: {
     title: "Upcoming class dates",
     copy:
-      "Stand-alone certifications are scheduled in June, and the next dental assisting cohort begins in June.",
+      "Dental Assisting has June and July starts. Some certification dates from the course sheet have already passed, so students should call to confirm current availability before planning around them.",
     items: [
-      "Dental Assisting Training Program: Friday, June 19th 2026",
-      "BLS / CPR, Infection Control, and Radiation Safety: June 6th 2026",
-      "Coronal Polish and Pit and Fissure Sealants: June 20th 2026",
-      "Now offering blended learning BLS",
+      "Dental Assisting Training Course: Friday, June 19, 2026 or Monday, July 13, 2026",
+      "BLS / CPR: May 2, 2026 and June 6, 2026",
+      "Infection Control and Radiation Safety: May 2, 2026; call to confirm next availability",
+      "Coronal Polish and Pit and Fissure Sealants: May 9, 2026",
     ],
   },
 };
 
 export const homePrimarySplit: SplitSectionContent = {
-  title: "Dental Assisting Training Course - $2500.00",
+  title: "Dental Assisting Training Course - $2,500.00",
   eyebrow: "Signature program",
   copy: [
-    "Our dental assisting program is designed to be completed in just 9 weeks and prepares students for an entry-level position in a dental office.",
-    "All lectures and hands-on learning happen inside our office at Waikiki Dental, where class sizes stay small for stronger teacher-to-student focus.",
-    "Our goal is to set students up for success by teaching exactly what staff at the dental office expect you to know.",
+    "Our dental assisting program is designed for new students seeking entry-level dental assisting training.",
+    "The program is 9 weeks and 210 hours total, with online lectures, homework, chairside experience, and assigned externship hours.",
+    "Students complete a 64-hour internship component and receive resume and job assistance as part of the training path.",
   ],
   image: siteImages.programHero,
-  imageAlt: "Hands-on dental assisting instruction inside Waikiki Dental",
+  imageAlt: "Students practicing chairside dental assisting skills inside Waikiki Dental",
   supporting: {
-    title: "Next dental assisting cohort",
-    copy: ["Friday, June 19th 2026"],
+    title: "Dental assisting start dates",
+    copy: ["Friday, June 19, 2026 or Monday, July 13, 2026"],
     actions: [
       {
         label: "Learn more",
@@ -815,8 +842,8 @@ export const homePrimarySplit: SplitSectionContent = {
         analyticsKey: "home-signature-learn-more",
       },
       {
-        label: "Start registration",
-        href: "/registration?course=dental-assisting#registration-form",
+        label: "Download registration form",
+        href: dentalAssistingRegistrationFormHref,
         variant: "secondary",
         analyticsKey: "home-signature-register",
       },
@@ -861,15 +888,15 @@ export const homeGalleryHighlight = {
     "See recent student moments from hands-on dental assisting, radiography, BLS, and clinical safety training.",
   ctaLabel: "View the full gallery",
   items: [
-    livePhoto("/assets/live/drive/class-group-scrubs.jpg", "Recent Roseville Dental Academy class group in scrubs"),
-    livePhoto("/assets/live/drive/certificate-celebration.jpg", "Students celebrating course completion certificates"),
-    livePhoto("/assets/live/drive/tree-class-photo.jpg", "Recent class group photo outside the academy"),
-    livePhoto("/assets/live/drive/typodont-practice.jpg", "Students practicing dental anatomy and typodont skills"),
-    livePhoto("/assets/live/photos/e49f18da-07a4-40eb-bbb6-fb3954968af5.jpg", "Dental assisting student practice"),
-    livePhoto("/assets/live/photos/fc50cf07-aeb2-428a-980d-851803e10d45.jpg", "Dental assisting students in the clinic"),
-    livePhoto("/assets/live/photos/64b30c90-dc2b-4e69-a6fb-6bfafd36160d.jpg", "X-ray training in the academy"),
-    livePhoto("/assets/live/photos/8021e43b-b453-4fa5-9d37-218c88a0a96d.jpg", "BLS students practicing CPR"),
-    livePhoto("/assets/live/photos/img-5918-2.jpg", "Clinical safety training practice"),
+    livePhoto("/assets/live/drive/recent-class-tree.jpg", "Recent Roseville Dental Academy class group outside the academy"),
+    livePhoto("/assets/live/drive/recent-certificates-banner.jpg", "Recent Roseville Dental Academy students holding completion certificates"),
+    livePhoto("/assets/live/programs/dental-assisting-chairside.jpg", "Students practicing chairside dental assisting skills"),
+    livePhoto("/assets/live/courses/bls-hands-on.jpg", "Students practicing BLS skills with training manikins"),
+    livePhoto("/assets/live/courses/infection-control-sterilization.jpg", "Students learning infection control and sterilization workflow"),
+    livePhoto("/assets/live/programs/radiography-chairside.jpg", "Students practicing radiography and chairside workflow"),
+    livePhoto("/assets/live/drive/recent-outdoor-certificates.jpg", "Students celebrating course completion certificates outside the academy"),
+    livePhoto("/assets/live/drive/chairside-coaching-closeup.jpg", "Instructor coaching a student through chairside dental assisting practice"),
+    livePhoto("/assets/live/drive/sterilization-hands-on.jpg", "Hands-on sterilization and infection control training"),
   ],
 };
 
@@ -1038,14 +1065,14 @@ export const dentalProgramPage = {
     eyebrow: "Accelerated training",
     title: "Dental Assisting Program",
     intro:
-      "Launch a dental career in just 9 weeks with hands-on dental assisting training, small class sizes, and live-practice instruction inside Waikiki Dental.",
+      "Entry-level dental assisting training for students age 16 and older, with online lectures, homework, chairside experience, assigned externship hours, and resume and job assistance.",
     image: siteImages.programHero,
     imageAlt: "Students learning chairside technique in the dental assisting program",
-    pills: ["9 weeks", "210 hours", "Live-practice training"],
+    pills: ["9 weeks", "210 hours", "64-hour internship"],
     actions: [
       {
-        label: "Start registration",
-        href: "/registration?course=dental-assisting#registration-form",
+        label: "Download registration form",
+        href: dentalAssistingRegistrationFormHref,
         variant: "default",
         analyticsKey: "program-register",
       },
@@ -1059,10 +1086,10 @@ export const dentalProgramPage = {
     panel: {
       title: "Program snapshot",
       copy:
-        "The academy keeps class sizes small so students can learn what a dental office will expect on day one.",
+        "The program prepares students for an entry-level position in a dental office.",
       items: [
-        "Hands-on experience in a live practice with real patients",
-        "Mondays or Fridays with one assigned externship day",
+        "No prerequisites; students must be 16 or older",
+        "2 days a week: 1 class day and 1 assigned internship day",
         "Resume and job assistance",
       ],
     },
@@ -1071,23 +1098,23 @@ export const dentalProgramPage = {
     title: "Dental Assisting Training Program",
     eyebrow: "Program overview",
     copy: [
-      "Hands-on experience in a live practice with real patients.",
-      "The program is designed for students who want a shorter, more direct path into the dental field without losing the hands-on reality of chairside training.",
+      "Students receive dental assisting training with chairside experience and a 64-hour internship component.",
+      "The format combines online lectures, homework, chairside experience, and assigned externship hours across a 9-week, 210-hour schedule.",
     ],
     image: siteImages.programOverview,
     imageAlt: "Students practicing inside the operatory",
     supporting: {
       title: "What you can expect",
       list: [
-        "Convenient and flexible schedule",
-        "Affordable tuition",
+        "9 weeks; 210 hours total",
+        "2 days a week",
+        "1 assigned internship day and 1 class day",
         "Resume and job assistance",
-        "Clinical internships",
       ],
       actions: [
         {
-          label: "Start registration",
-          href: "/registration?course=dental-assisting#registration-form",
+          label: "Download registration form",
+          href: dentalAssistingRegistrationFormHref,
           variant: "secondary",
           analyticsKey: "program-secondary-register",
         },
@@ -1124,8 +1151,8 @@ export const dentalProgramPage = {
     {
       title: "Internship hosting and hours",
       items: [
-        "Internship hours are built into the 210-hour accelerated format",
-        "Externship placement is assigned as part of the schedule",
+        "Students complete a 64-hour internship component",
+        "Assigned externship hours are built into the schedule",
         "Students work inside an active office environment rather than a simulation-only space",
       ],
     },
@@ -1133,11 +1160,11 @@ export const dentalProgramPage = {
   ribbon: {
     title: "Admissions and registration",
     copy:
-      "The next course starts Friday, June 19th 2026. Reach out for current availability and registration details.",
+      "The course starts Friday, June 19, 2026 or Monday, July 13, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
     actions: [
       {
-        label: "Start registration",
-        href: "/registration?course=dental-assisting#registration-form",
+        label: "Download registration form",
+        href: dentalAssistingRegistrationFormHref,
         variant: "default",
         analyticsKey: "program-ribbon-register",
       },

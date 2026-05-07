@@ -166,6 +166,10 @@ function HeroSection({
   const pills = hero.pills ?? [];
   const actions = hero.actions ?? [];
   const hasPanel = Boolean(hero.panel);
+  const heroSlides = hero.slides?.length
+    ? hero.slides
+    : [{ image: hero.image, imageAlt: hero.imageAlt }];
+  const hasHeroSlideshow = heroSlides.length > 1;
 
   return (
     <section className="relative overflow-hidden pb-10 pt-4 sm:pb-16 sm:pt-10">
@@ -226,15 +230,21 @@ function HeroSection({
                   <HeroVisualFallback hero={hero} />
                 ) : (
                   <>
-                    <Image
-                      alt={hero.imageAlt}
-                      className="object-cover"
-                      fill
-                      loading={imagePriority ? "eager" : undefined}
-                      priority={imagePriority}
-                      sizes="(max-width: 1024px) 100vw, 46vw"
-                      src={hero.image}
-                    />
+                    <div className={cn("absolute inset-0", hasHeroSlideshow && "rda-hero-slideshow")}>
+                      {heroSlides.map((slide, index) => (
+                        <Image
+                          alt={slide.imageAlt}
+                          className={cn("object-cover", hasHeroSlideshow && "rda-hero-slide")}
+                          fill
+                          key={slide.image}
+                          loading={imagePriority && index === 0 ? "eager" : undefined}
+                          priority={imagePriority && index === 0}
+                          sizes="(max-width: 1024px) 100vw, 46vw"
+                          src={slide.image}
+                          style={hasHeroSlideshow ? { animationDelay: `${index * 5}s` } : undefined}
+                        />
+                      ))}
+                    </div>
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_40%,color-mix(in_oklab,var(--color-background)_35%,transparent))]" />
                     <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background/92 to-transparent" />
                   </>
@@ -615,8 +625,9 @@ function ContactSection() {
             details={[
               siteContact.phone,
               siteContact.email,
-              "Dental Assisting: Friday, June 19th 2026",
-              "Stand-alone courses: June 6th and June 20th 2026",
+              "Dental Assisting: June 19 or July 13, 2026",
+              "BLS: June 6, 2026; Coronal/Sealants: May 9, 2026",
+              "Infection Control/Radiation Safety: call to confirm",
             ]}
             icon="phone"
             title="Reach admissions"
@@ -746,7 +757,7 @@ function RegistrationPageContent() {
     intro:
       "Complete a registration request so admissions can confirm the right course, class date, and payment follow-up before your seat is reserved.",
     image: siteImages.registration,
-    imageAlt: "Dental training materials at Roseville Dental Academy",
+    imageAlt: "Recent Roseville Dental Academy students holding completion certificates",
     pills: ["Secure follow-up", "Multiple course routes", "Digital intake"],
     actions: [
       {
@@ -932,8 +943,8 @@ function PhotosPageContent() {
     title: "Classroom and student moments",
     intro:
       "Browse training moments from the classroom, operatory, and hands-on sessions across the academy.",
-    image: siteImages.gallery7,
-    imageAlt: "Academy gallery preview",
+    image: "/assets/live/drive/recent-class-tree.jpg",
+    imageAlt: "Recent Roseville Dental Academy class group outside the academy",
     actions: [
       {
         label: "Contact admissions",

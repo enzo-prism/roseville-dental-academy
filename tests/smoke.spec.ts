@@ -580,12 +580,12 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
   });
   const badRefundCopy = "Due to limited space all sales are final and no refunds will be issued";
   const requiredCourseCopy = [
-    "Initial and renewal BLS training for healthcare providers",
-    "California Dental Board-aligned infection control training",
-    "Board-aligned radiography training covering x-ray safety",
-    "Hands-on coronal polishing instruction",
-    "Sealant certification training for qualified dental assistants and RDAs",
-    "focused 210-hour schedule with class, clinical practice, homework",
+    "Initial and renewal BLS/CPR training for healthcare providers",
+    "Board-approved 8-hour Infection Control training for unlicensed dental assistants",
+    "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified",
+    "12-hour Coronal Polish training for eligible dental assistants",
+    "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs",
+    "Dental Assisting is a 9-week, 210-hour training course for students age 16 and older",
   ];
   const mismatches: string[] = [];
 
@@ -1269,8 +1269,8 @@ test("photos page renders the full live-site gallery inventory", async ({ page }
 
   const mismatches: string[] = [];
 
-  if (result.count !== 62) {
-    mismatches.push(`expected 62 live gallery photos, found ${result.count}`);
+  if (result.count !== 72) {
+    mismatches.push(`expected 72 live gallery photos, found ${result.count}`);
   }
 
   if (result.broken.length > 0) {

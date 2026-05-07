@@ -30,7 +30,7 @@
       "localPath": "/dental-assisting-program",
       "expectedStatus": 200,
       "expectedTitle": "Dental Assisting Program",
-      "smokeText": "DENTAL ASSISTING TRAINING PROGRAM"
+      "smokeText": "DENTAL ASSISTING TRAINING COURSE"
     },
     {
       "label": "faqs-1",
@@ -70,7 +70,7 @@
       "localPath": "/bls%2Fcpr-1",
       "expectedStatus": 200,
       "expectedTitle": "BLS CPR Training for Healthcare Providers",
-      "smokeText": "BLS CPR Training for Healthcare Providers"
+      "smokeText": "BLS CERTIFICATION COURSE - INITIAL OR RENEWAL"
     },
     {
       "label": "infection-control",
@@ -78,7 +78,7 @@
       "localPath": "/infection-control",
       "expectedStatus": 200,
       "expectedTitle": "Infection Control",
-      "smokeText": "Infection Control"
+      "smokeText": "8-HOUR INFECTION CONTROL COURSE"
     },
     {
       "label": "radiation-safety",
@@ -94,7 +94,7 @@
       "localPath": "/coronal-polish",
       "expectedStatus": 200,
       "expectedTitle": "Coronal Polish",
-      "smokeText": "Coronal Polish"
+      "smokeText": "CORONAL POLISH COURSE"
     },
     {
       "label": "sealants",
@@ -102,7 +102,7 @@
       "localPath": "/sealants",
       "expectedStatus": 200,
       "expectedTitle": "Sealants",
-      "smokeText": "Sealants"
+      "smokeText": "PIT AND FISSURE SEALANT COURSE"
     },
     {
       "label": "m-login",

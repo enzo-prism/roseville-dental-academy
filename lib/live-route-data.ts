@@ -99,12 +99,12 @@ const HOMEPAGE_REFUND_POLICY_COPY_PATTERN =
   /Due to limited space all sales are final and no refunds will be issued\.?(?:&nbsp;)?/;
 
 const HOMEPAGE_COURSE_COPY_REPLACEMENTS = [
-  "Initial and renewal BLS training for healthcare providers who need hands-on CPR, AED, ventilation, and team-resuscitation practice with an in-person skills evaluation.",
-  "California Dental Board-aligned infection control training covering required precautions, clinical safety habits, and compliance expectations for dental students and professionals.",
-  "Board-aligned radiography training covering x-ray safety, digital imaging, manikin practice, written testing, and supervised clinical patient requirements.",
-  "Hands-on coronal polishing instruction with didactic, laboratory, manikin, and clinical patient requirements for eligible dental assistants.",
-  "Sealant certification training for qualified dental assistants and RDAs, including manikin practice, written testing, and supervised clinical patient requirements.",
-  "Students move through a focused 210-hour schedule with class, clinical practice, homework, and an assigned externship day that connects classroom skills to real office workflow.",
+  "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and lists May 2, 2026 and June 6, 2026 class dates.",
+  "Board-approved 8-hour Infection Control training for unlicensed dental assistants. Current BLS through AHA or ARC plus a 2-hour Dental Practice Act certification are required. Listed date: May 2, 2026; call to confirm current availability.",
+  "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant. Listed date: May 2, 2026; call to confirm current availability.",
+  "12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements. Listed date: May 9, 2026.",
+  "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed. Listed date: May 9, 2026.",
+  "Dental Assisting is a 9-week, 210-hour training course for students age 16 and older, with online lectures, homework, chairside experience, resume and job assistance, and a 64-hour internship component.",
 ] as const;
 
 const COURSE_DATE_REPLACEMENTS: Array<{
@@ -112,20 +112,34 @@ const COURSE_DATE_REPLACEMENTS: Array<{
   replacement: string;
 }> = [
   {
+    pattern: /\bFriday,\s*June 19th,?\s*2026\b/g,
+    replacement: "Friday, June 19, 2026 or Monday, July 13, 2026",
+  },
+  {
     pattern: /\bMay 2nd,? 2026\b/g,
-    replacement: "June 6th 2026",
+    replacement: "May 2, 2026",
   },
   {
     pattern: /\bMay 2, 2026\b/g,
-    replacement: "June 6, 2026",
+    replacement: "May 2, 2026",
   },
   {
     pattern: /\bMay 9th,? 2026\b/g,
-    replacement: "June 20th 2026",
+    replacement: "May 9, 2026",
   },
   {
     pattern: /\bMay 9, 2026\b/g,
-    replacement: "June 20, 2026",
+    replacement: "May 9, 2026",
+  },
+];
+
+const COURSE_PRICE_REPLACEMENTS: Array<{
+  pattern: RegExp;
+  replacement: string;
+}> = [
+  {
+    pattern: /Dental Assisting Training Course -\s?\$2500\.00/g,
+    replacement: "Dental Assisting Training Course - $2,500.00",
   },
 ];
 
@@ -560,6 +574,13 @@ function applyCourseDateReplacements(html: string) {
   );
 }
 
+function applyCoursePriceReplacements(html: string) {
+  return COURSE_PRICE_REPLACEMENTS.reduce(
+    (output, { pattern, replacement }) => output.replace(pattern, replacement),
+    html,
+  );
+}
+
 function applyRetiredProgramCopyReplacements(html: string) {
   return RETIRED_PROGRAM_COPY_REPLACEMENTS.reduce(
     (output, { pattern, replacement }) => output.replace(pattern, replacement),
@@ -810,7 +831,7 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
     FALLBACK_DESCRIPTION;
   const styleBlocks = extractStyleBlocks(headHtml);
   const sanitizedBodyHtml = applyRetiredProgramCopyReplacements(
-    applyCourseDateReplacements(sanitizeSnapshotBody(bodyHtml)),
+    applyCoursePriceReplacements(applyCourseDateReplacements(sanitizeSnapshotBody(bodyHtml))),
   );
 
   return {

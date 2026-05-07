@@ -116,6 +116,10 @@ export type HeroContent = {
   intro: string;
   image: string;
   imageAlt: string;
+  slides?: readonly {
+    image: string;
+    imageAlt: string;
+  }[];
   pills?: readonly string[];
   actions?: readonly CtaLink[];
   panel?: {
