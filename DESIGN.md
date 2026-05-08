@@ -11,8 +11,8 @@ colors:
   card: "#FFFEFD"
   muted: "#EEE9E2"
   muted-foreground: "#766D63"
-  accent: "#E7DFD4"
-  accent-foreground: "#282522"
+  accent: "#8EC5E8"
+  accent-foreground: "#16344F"
   secondary: "#EEE9E2"
   secondary-foreground: "#282522"
   border: "#D8D0C4"
@@ -143,7 +143,7 @@ components:
 
 ## Overview
 
-This contract defines the shipped visual direction for Roseville Dental Academy after the shadcn/ui redesign. The target is a modern academy site built from shadcn primitives with the official Sera direction: taupe neutral foundation, Noto Sans body typography, Playfair Display editorial headings, Lucide icons, Radix behavior, low-radius surfaces, understated borders, and Roseville logo blue as the semantic primary color.
+This contract defines the shipped visual direction for Roseville Dental Academy after the shadcn/ui redesign. The target is a modern academy site built from shadcn primitives with the official Sera direction: taupe neutral foundation, Noto Sans body typography, Playfair Display editorial headings, Lucide icons, Radix behavior, low-radius surfaces, understated borders, Roseville logo blue as the semantic primary color, and the brand light blue as the accent color.
 
 The written site content is locked. Visible route copy, headings, form labels, placeholders, button labels, link labels, auth text, cookie text, document titles, status codes, and third-party endpoint behavior must remain unchanged unless a user explicitly asks for copy changes.
 
@@ -156,7 +156,7 @@ The written site content is locked. Visible route copy, headings, form labels, p
 
 ## Tokens
 
-Use shadcn semantic tokens first: `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`, `ring-ring`, `bg-primary`, `text-primary-foreground`, `bg-popover`, and `bg-accent`.
+Use shadcn semantic tokens first: `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`, `ring-ring`, `bg-primary`, `text-primary-foreground`, `bg-popover`, and `bg-accent`. `bg-accent` is the brand light blue and must pair with `text-accent-foreground`; use primary or primary-deep for hover/current text when light blue would not meet readable contrast.
 
 Do not introduce raw visual values inside components. If a new durable color, type, radius, or spacing decision is needed, add it here and map it through `app/globals.css`.
 
