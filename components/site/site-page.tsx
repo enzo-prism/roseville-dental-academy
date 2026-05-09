@@ -625,7 +625,7 @@ function ContactSection() {
             details={[
               siteContact.phone,
               siteContact.email,
-              "Dental Assisting: June 19 or July 13, 2026",
+              "Dental Assisting: July 13 or September 4, 2026",
               "BLS: June 6, 2026; Coronal/Sealants: May 9, 2026",
               "Infection Control/Radiation Safety: call to confirm",
             ]}

@@ -1168,8 +1168,8 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
     "Common Student Questions",
     "Do students need to provide patients?",
     "Roseville Dental Academy does not provide patients",
-    "Friday, June 19, 2026",
     "Monday, July 13, 2026",
+    "Friday, September 4, 2026",
   ]) {
     if (!faqSnapshot.bodyText.includes(phrase)) {
       mismatches.push(`FAQ page missing Drive-derived phrase: ${phrase}`);

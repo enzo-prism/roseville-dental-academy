@@ -1261,8 +1261,8 @@ def homepage() -> str:
             panel_title="The next Dental Assistant course is almost here!",
             panel_copy="The date is approaching fast and we're making preparations. Don't miss out on this exciting opportunity to change your career!",
             panel_items=[
-                "Friday, April 3rd 2026",
-                "Monday, April 20th 2026",
+                "Monday, July 13, 2026",
+                "Friday, September 4, 2026",
                 "Now offering blended learning BLS",
             ],
             panel_button=("Start registration", registration_href("dental-assisting"), "button-secondary"),
@@ -1281,7 +1281,7 @@ def homepage() -> str:
             image=IMAGE["about"],
             image_alt="Dental assisting classroom",
             secondary_title="Next course starts",
-            secondary_copy=["Friday, April 3rd 2026 or Monday, April 20th 2026"],
+            secondary_copy=["Monday, July 13, 2026 or Friday, September 4, 2026"],
             secondary_buttons=[
                 ("Learn more", "/dental-assisting-program/", "button"),
                 ("Start registration", registration_href("dental-assisting"), "button-secondary"),
@@ -1550,7 +1550,7 @@ def program_page() -> str:
     body.append(
         cta_ribbon(
             "Admissions and registration",
-            "The next course starts Friday, April 3rd 2026 or Monday, April 20th 2026. Reach out for current availability and registration details.",
+            "The next course starts Monday, July 13, 2026 or Friday, September 4, 2026. Reach out for current availability and registration details.",
             [
                 ("Start registration", registration_href("dental-assisting"), "button"),
                 ("Call admissions", "tel:9168889821", "button-secondary"),

@@ -602,7 +602,7 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for Friday, June 19, 2026 or Monday, July 13, 2026. BLS lists May 2, 2026 and June 6, 2026. Infection Control and Radiation Safety list May 2, 2026, which has passed, so students should call to confirm current availability. Coronal Polish and Pit and Fissure Sealants list May 9, 2026.",
+      "Dental Assisting Training is listed for Monday, July 13, 2026 or Friday, September 4, 2026. BLS lists May 2, 2026 and June 6, 2026. Infection Control and Radiation Safety list May 2, 2026, which has passed, so students should call to confirm current availability. Coronal Polish and Pit and Fissure Sealants list May 9, 2026.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -746,7 +746,7 @@ export const registrationCourseOptions: RegistrationCourseOption[] = [
     key: "dental-assisting",
     label: "Dental Assisting Training Program",
     price: "$2500.00",
-    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. Starts Friday, June 19, 2026 or Monday, July 13, 2026.",
+    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. Starts Monday, July 13, 2026 or Friday, September 4, 2026.",
     icon: "graduation",
   },
   {
@@ -811,9 +811,9 @@ export const homeHero: HeroContent = {
   panel: {
     title: "Upcoming class dates",
     copy:
-      "Dental Assisting has June and July starts. Some certification dates from the course sheet have already passed, so students should call to confirm current availability before planning around them.",
+      "Dental Assisting has July and September starts. Some certification dates from the course sheet have already passed, so students should call to confirm current availability before planning around them.",
     items: [
-      "Dental Assisting Training Course: Friday, June 19, 2026 or Monday, July 13, 2026",
+      "Dental Assisting Training Course: Monday, July 13, 2026 or Friday, September 4, 2026",
       "BLS / CPR: May 2, 2026 and June 6, 2026",
       "Infection Control and Radiation Safety: May 2, 2026; call to confirm next availability",
       "Coronal Polish and Pit and Fissure Sealants: May 9, 2026",
@@ -833,7 +833,7 @@ export const homePrimarySplit: SplitSectionContent = {
   imageAlt: "Students practicing chairside dental assisting skills inside Waikiki Dental",
   supporting: {
     title: "Dental assisting start dates",
-    copy: ["Friday, June 19, 2026 or Monday, July 13, 2026"],
+    copy: ["Monday, July 13, 2026 or Friday, September 4, 2026"],
     actions: [
       {
         label: "Learn more",
@@ -1160,7 +1160,7 @@ export const dentalProgramPage = {
   ribbon: {
     title: "Admissions and registration",
     copy:
-      "The course starts Friday, June 19, 2026 or Monday, July 13, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
+      "The course starts Monday, July 13, 2026 or Friday, September 4, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
     actions: [
       {
         label: "Download registration form",

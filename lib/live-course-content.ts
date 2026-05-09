@@ -57,7 +57,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $2,500.00.",
       "Duration 9 weeks; 210 hours total; 2 days a week with 1 assigned internship day and 1 class day.",
       "Format Online lectures, homework, chairside experience, and assigned externship hours.",
-      "Class start dates Friday, June 19, 2026 or Monday, July 13, 2026.",
+      "Class start dates Monday, July 13, 2026 or Friday, September 4, 2026.",
       "Best next step Download the registration form and call the office at 916-888-9821 to enroll or schedule a tour.",
     ].join(" "),
   },
