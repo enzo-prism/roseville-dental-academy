@@ -450,19 +450,25 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator(".rda-gallery-section-home .rda-gallery-item:visible")).toHaveCount(4);
     });
 
-    test("GA4 custom conversion events fire for key website actions", async ({ page }) => {
+    test("GA4 and Vercel custom conversion events fire for key website actions", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
       const events = await page.evaluate(() => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
+          __rdaTestVercelEvents?: unknown[][];
           gtag?: (...args: unknown[]) => void;
+          va?: (...args: unknown[]) => void;
         };
 
         analyticsWindow.__rdaTestGtagEvents = [];
+        analyticsWindow.__rdaTestVercelEvents = [];
         analyticsWindow.gtag = (...args: unknown[]) => {
           analyticsWindow.__rdaTestGtagEvents?.push(args);
+        };
+        analyticsWindow.va = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestVercelEvents?.push(args);
         };
         const dispatchClick = (selector: string) => {
           document
@@ -488,14 +494,25 @@ test.describe("live-style interaction flows", () => {
           signupForm.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
         }
 
-        return analyticsWindow.__rdaTestGtagEvents ?? [];
+        return {
+          ga: analyticsWindow.__rdaTestGtagEvents ?? [],
+          vercel: analyticsWindow.__rdaTestVercelEvents ?? [],
+        };
       });
 
-      const eventNames = events
-        .filter((event): event is ["event", string, Record<string, unknown>?] => event[0] === "event")
-        .map((event) => event[1]);
+      const gaEvents = events.ga.filter(
+        (event): event is ["event", string, Record<string, unknown>?] => event[0] === "event",
+      );
+      const gaEventNames = gaEvents.map((event) => event[1]);
+      const leadEvent = gaEvents.find((event) => event[1] === "generate_lead")?.[2] ?? {};
+      const selectContentEvent = gaEvents.find((event) => event[1] === "select_content")?.[2] ?? {};
+      const vercelEventNames = events.vercel
+        .filter((event): event is ["event", { name: string; data?: Record<string, unknown> }] => {
+          return event[0] === "event" && typeof event[1] === "object" && event[1] !== null && "name" in event[1];
+        })
+        .map((event) => event[1].name);
 
-      expect(eventNames).toEqual(
+      expect(gaEventNames).toEqual(
         expect.arrayContaining([
           "select_content",
           "social_click",
@@ -504,6 +521,30 @@ test.describe("live-style interaction flows", () => {
           "get_directions",
           "cookie_accept",
           "generate_lead",
+          "cta_click",
+          "contact_action",
+          "lead_form_submit",
+        ]),
+      );
+      expect(leadEvent).toMatchObject({
+        form_id: "quick_sign_up",
+        lead_source: "website_quick_sign_up",
+        lead_type: "quick_sign_up",
+        selected_count: 1,
+      });
+      expect(selectContentEvent).toEqual(
+        expect.objectContaining({
+          content_id: expect.any(String),
+          content_type: expect.any(String),
+        }),
+      );
+      expect(vercelEventNames).toEqual(
+        expect.arrayContaining([
+          "cta_click",
+          "social_click",
+          "contact_action",
+          "cookie_accept",
+          "lead_form_submit",
         ]),
       );
     });

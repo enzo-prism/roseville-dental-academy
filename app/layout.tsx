@@ -4,6 +4,7 @@ import { Noto_Sans, Playfair_Display } from "next/font/google";
 
 import { GoogleAnalytics } from "@/components/site/google-analytics";
 import { HotjarAnalytics } from "@/components/site/hotjar-analytics";
+import { InteractionAnalytics } from "@/components/site/interaction-analytics";
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
 import { getSiteUrl } from "../lib/site-config";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
         <GoogleAnalytics />
         <HotjarAnalytics />
         <Analytics mode={analyticsMode} />
+        <InteractionAnalytics />
       </body>
     </html>
   );

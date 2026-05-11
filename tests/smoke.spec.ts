@@ -139,6 +139,52 @@ test("GA4 analytics tag and event tracking are configured", async ({ page }, tes
   expect(mismatches).toEqual([]);
 });
 
+test("Vercel Analytics tag and custom event function are configured", async ({ page }, testInfo) => {
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForLoadState("load").catch(() => undefined);
+  await page.waitForTimeout(1_000);
+
+  const result = await page.evaluate(() => {
+    const analyticsWindow = window as Window & {
+      va?: unknown;
+      vam?: string;
+    };
+
+    return {
+      hasNextAnalyticsScript: Boolean(
+        document.querySelector('script[data-sdkn="@vercel/analytics/next"]'),
+      ),
+      mode: analyticsWindow.vam,
+      vaReady: typeof analyticsWindow.va === "function",
+    };
+  });
+  const mismatches: string[] = [];
+
+  if (!result.hasNextAnalyticsScript) {
+    mismatches.push("homepage is missing the Vercel Analytics Next.js script");
+  }
+
+  if (!result.vaReady) {
+    mismatches.push("homepage did not initialize the Vercel Analytics event function");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "vercel-analytics",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "vercel-analytics-summary.json", {
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("Hotjar analytics tag is configured", async ({ page }, testInfo) => {
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.waitForLoadState("load").catch(() => undefined);

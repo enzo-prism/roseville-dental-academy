@@ -83,6 +83,7 @@ export function RegistrationForm() {
       <form
         action={siteContact.formspreeEndpoint}
         className="space-y-5 sm:space-y-6"
+        data-rda-registration-form="true"
         method="POST"
         onSubmit={(event) => {
           if (
