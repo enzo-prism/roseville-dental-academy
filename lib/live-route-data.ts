@@ -704,20 +704,23 @@ function insertHomepageReviewHighlights(html: string) {
 function renderHomepageHeroHtml() {
   const slides = HOMEPAGE_HERO_SLIDES.map(
     (slide, index) => `
-      <figure class="rda-home-hero-slide" data-rda-home-hero-slide="${index + 1}">
+      <figure class="rda-home-hero-slide" data-rda-home-hero-slide="${index + 1}" aria-hidden="${index === 0 ? "false" : "true"}">
         <img src="${escapeHtml(slide.src)}" alt="${escapeHtml(slide.alt)}" loading="${index === 0 ? "eager" : "lazy"}" decoding="async" />
         <figcaption>${escapeHtml(slide.caption)}</figcaption>
       </figure>`,
   ).join("");
   const dots = HOMEPAGE_HERO_SLIDES.map(
-    (_, index) => `<span aria-hidden="true" style="--rda-slide-index: ${index}"></span>`,
+    (slide, index) =>
+      `<button aria-current="${index === 0 ? "true" : "false"}" aria-label="Show slide ${index + 1}: ${escapeHtml(slide.caption)}" aria-pressed="${index === 0 ? "true" : "false"}" data-rda-home-hero-control="${index + 1}" disabled style="--rda-slide-index: ${index}" type="button"></button>`,
   ).join("");
 
   return `
     <section class="widget widget-introduction widget-introduction-introduction-1 rda-home-hero" data-rda-home-hero="true" aria-labelledby="rda-home-hero-title">
       <div class="rda-home-hero-media" aria-label="Roseville Dental Academy training photos">
         ${slides}
-        <div class="rda-home-hero-dots" aria-hidden="true">${dots}</div>
+        <button aria-label="Previous hero slide" class="rda-home-hero-arrow rda-home-hero-arrow-previous" data-rda-home-hero-previous disabled type="button"></button>
+        <button aria-label="Next hero slide" class="rda-home-hero-arrow rda-home-hero-arrow-next" data-rda-home-hero-next disabled type="button"></button>
+        <div class="rda-home-hero-dots" aria-label="Choose hero slide">${dots}</div>
       </div>
       <div class="rda-home-hero-copy">
         <p class="rda-home-hero-eyebrow">Roseville Dental Academy</p>
@@ -735,6 +738,7 @@ function renderHomepagePrioritySignupHtml() {
         <label class="rda-interest-option">
           <input name="Interested classes[]" type="checkbox" value="${escapeHtml(option.value)}" />
           <span class="rda-interest-option-content">
+            <span class="rda-interest-option-icon" aria-hidden="true"></span>
             <span>${escapeHtml(option.label)}</span>
           </span>
         </label>`,
@@ -744,6 +748,7 @@ function renderHomepagePrioritySignupHtml() {
   return `
     <section class="rda-stable-section rda-signup-section rda-priority-signup-section" data-rda-signup-section="true" id="quick-sign-up" aria-labelledby="rda-priority-signup-title">
       <div class="rda-section-heading rda-signup-heading">
+        <span class="rda-signup-heading-icon" data-rda-signup-icon="heading" aria-hidden="true"></span>
         <h2 id="rda-priority-signup-title">Quick Sign Up</h2>
         <span aria-hidden="true"></span>
       </div>

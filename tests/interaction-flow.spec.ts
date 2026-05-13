@@ -352,9 +352,130 @@ test.describe("live-style interaction flows", () => {
       );
       await expect(hero.getByText("Train hands-on inside a working dental office")).toBeVisible();
       await expect(hero.locator(".rda-home-hero-slide")).toHaveCount(3);
+      await expect(hero).toHaveClass(/is-interactive/);
+
+      const heroControls = hero.locator("[data-rda-home-hero-control]");
+      const heroPrevious = hero.locator("[data-rda-home-hero-previous]");
+      const heroNext = hero.locator("[data-rda-home-hero-next]");
+
+      await expect(heroControls).toHaveCount(3);
+      await expect(heroPrevious).toBeVisible();
+      await expect(heroNext).toBeVisible();
+      await expect(heroPrevious).toBeEnabled();
+      await expect(heroNext).toBeEnabled();
+      await expect(heroControls.nth(0)).toBeEnabled();
+      await expect(hero).toHaveAttribute("data-rda-active-slide", "1");
+      await expect(heroControls.nth(0)).toHaveAttribute("aria-current", "true");
+
+      const heroControlDesign = await hero.evaluate((element) => {
+        const arrow = element.querySelector<HTMLElement>("[data-rda-home-hero-next]");
+        const dot = element.querySelector<HTMLElement>("[data-rda-home-hero-control]");
+        const arrowRect = arrow?.getBoundingClientRect();
+        const dotRect = dot?.getBoundingClientRect();
+
+        return {
+          arrowBorderRadius: arrow ? getComputedStyle(arrow).borderRadius : "",
+          arrowHeight: arrowRect ? Math.round(arrowRect.height) : 0,
+          arrowWidth: arrowRect ? Math.round(arrowRect.width) : 0,
+          dotHeight: dotRect ? Math.round(dotRect.height) : 0,
+          dotPointerEvents: dot ? getComputedStyle(dot).pointerEvents : "",
+          overflowX:
+            element.ownerDocument.documentElement.scrollWidth -
+            element.ownerDocument.documentElement.clientWidth,
+        };
+      });
+
+      expect(heroControlDesign).toMatchObject({
+        arrowBorderRadius: "8px",
+        arrowHeight: 44,
+        arrowWidth: 44,
+        dotHeight: 5,
+        dotPointerEvents: "auto",
+        overflowX: 0,
+      });
+
+      await heroControls.nth(1).click();
+      await expect(hero).toHaveAttribute("data-rda-active-slide", "2");
+      await expect(hero.locator('[data-rda-home-hero-slide="2"]')).toHaveAttribute(
+        "aria-hidden",
+        "false",
+      );
+      await expect(heroControls.nth(1)).toHaveAttribute("aria-current", "true");
+      await heroNext.click();
+      await expect(hero).toHaveAttribute("data-rda-active-slide", "3");
+      await heroPrevious.click();
+      await expect(hero).toHaveAttribute("data-rda-active-slide", "2");
       await expect(cta).toBeVisible();
       await expect(cta).toHaveAttribute("href", "#quick-sign-up");
       await expect(signup).toBeVisible();
+
+      const signupDesign = await signup.evaluate((element) => {
+        const form = element.querySelector<HTMLElement>("[data-rda-signup-form='true']");
+        const options = element.querySelector<HTMLElement>(".rda-interest-options");
+        const option = element.querySelector<HTMLElement>(".rda-interest-option");
+        const input = element.querySelector<HTMLElement>(".rda-signup-fields input");
+        const button = element.querySelector<HTMLElement>("button[type='submit']");
+        const headingIcon = element.querySelector<HTMLElement>(".rda-signup-heading-icon");
+        const columnCount = (value: string | undefined) =>
+          value ? value.split(" ").filter(Boolean).length : 0;
+
+        return {
+          buttonRadius: button ? getComputedStyle(button).borderRadius : "",
+          formColumnCount: form ? columnCount(getComputedStyle(form).gridTemplateColumns) : 0,
+          formRadius: form ? getComputedStyle(form).borderRadius : "",
+          headingIconVisible: headingIcon ? getComputedStyle(headingIcon).display !== "none" : false,
+          inputRadius: input ? getComputedStyle(input).borderRadius : "",
+          optionColumnCount: options ? columnCount(getComputedStyle(options).gridTemplateColumns) : 0,
+          optionIconCount: element.querySelectorAll(".rda-interest-option-icon").length,
+          optionRadius: option ? getComputedStyle(option).borderRadius : "",
+          overflowX:
+            element.ownerDocument.documentElement.scrollWidth -
+            element.ownerDocument.documentElement.clientWidth,
+        };
+      });
+
+      expect(signupDesign).toMatchObject({
+        buttonRadius: "6px",
+        formColumnCount: 2,
+        formRadius: "8px",
+        headingIconVisible: true,
+        inputRadius: "6px",
+        optionColumnCount: 2,
+        optionIconCount: 8,
+        optionRadius: "8px",
+        overflowX: 0,
+      });
+
+      const reviewCard = page.locator(".rda-review-photo-grid-desktop .rda-review-photo-card").first();
+      const reviewCardBefore = await reviewCard.evaluate((element) => {
+        const image = element.querySelector<HTMLElement>(".rda-review-photo-media img");
+
+        return {
+          borderColor: getComputedStyle(element).borderColor,
+          boxShadow: getComputedStyle(element).boxShadow,
+          imageTransform: image ? getComputedStyle(image).transform : "",
+          transform: getComputedStyle(element).transform,
+        };
+      });
+
+      await expect(page.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible();
+      await expect(page.locator(".rda-review-photo-grid-desktop .rda-review-photo-card")).toHaveCount(6);
+      await reviewCard.hover();
+      const reviewCardHover = await reviewCard.evaluate((element) => {
+        const image = element.querySelector<HTMLElement>(".rda-review-photo-media img");
+
+        return {
+          borderColor: getComputedStyle(element).borderColor,
+          boxShadow: getComputedStyle(element).boxShadow,
+          imageTransform: image ? getComputedStyle(image).transform : "",
+          transform: getComputedStyle(element).transform,
+        };
+      });
+
+      expect(reviewCardHover.borderColor).not.toBe(reviewCardBefore.borderColor);
+      expect(reviewCardHover.boxShadow).not.toBe(reviewCardBefore.boxShadow);
+      expect(reviewCardHover.imageTransform).not.toBe(reviewCardBefore.imageTransform);
+      expect(reviewCardHover.transform).not.toBe(reviewCardBefore.transform);
 
       await cta.click();
       await expect(page).toHaveURL(/#quick-sign-up$/);
@@ -383,10 +504,17 @@ test.describe("live-style interaction flows", () => {
       expect(headerHeight).toBeLessThan(260);
 
       const heroCta = page.locator('[data-rda-home-hero-signup="true"]');
+      const mobileHero = page.locator('[data-rda-home-hero="true"]');
+      const mobileHeroNext = page.locator("[data-rda-home-hero-next]");
       const cookie = page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]').first();
       const widget = page.locator("[data-elevenlabs-widget-slot]");
 
       await expect(heroCta).toBeVisible();
+      await expect(mobileHero).toHaveClass(/is-interactive/);
+      await expect(mobileHeroNext).toBeVisible();
+      await expect(mobileHeroNext).toBeEnabled();
+      await mobileHeroNext.click();
+      await expect(mobileHero).toHaveAttribute("data-rda-active-slide", "2");
       await expect(cookie).toBeVisible();
       await expect(widget).toHaveCSS("opacity", "0");
       await expect(widget).toHaveCSS("pointer-events", "none");
@@ -415,6 +543,31 @@ test.describe("live-style interaction flows", () => {
       });
       expect(signupTop).toBeGreaterThanOrEqual(0);
       expect(signupTop).toBeLessThan(80);
+
+      const mobileSignupDesign = await page.locator("#quick-sign-up").evaluate((element) => {
+        const form = element.querySelector<HTMLElement>("[data-rda-signup-form='true']");
+        const options = element.querySelector<HTMLElement>(".rda-interest-options");
+        const option = element.querySelector<HTMLElement>(".rda-interest-option");
+        const formRect = form?.getBoundingClientRect();
+        const optionRect = option?.getBoundingClientRect();
+        const columnCount = (value: string | undefined) =>
+          value ? value.split(" ").filter(Boolean).length : 0;
+
+        return {
+          formColumnCount: form ? columnCount(getComputedStyle(form).gridTemplateColumns) : 0,
+          formWidth: formRect ? Math.round(formRect.width) : 0,
+          optionColumnCount: options ? columnCount(getComputedStyle(options).gridTemplateColumns) : 0,
+          optionWidth: optionRect ? Math.round(optionRect.width) : 0,
+          overflowX:
+            element.ownerDocument.documentElement.scrollWidth -
+            element.ownerDocument.documentElement.clientWidth,
+        };
+      });
+
+      expect(mobileSignupDesign.formColumnCount).toBe(1);
+      expect(mobileSignupDesign.optionColumnCount).toBe(1);
+      expect(mobileSignupDesign.optionWidth).toBeLessThanOrEqual(mobileSignupDesign.formWidth);
+      expect(mobileSignupDesign.overflowX).toBe(0);
     });
 
     test("mobile menu and long homepage sections use progressive disclosure", async ({ page }) => {
@@ -442,6 +595,15 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator(".rda-review-photo-grid-mobile .rda-review-photo-card")).toHaveCount(3);
       const reviewMore = page.locator(".rda-mobile-review-more");
       await expect(reviewMore.getByText("Show more reviews")).toBeVisible();
+      await reviewMore.locator("summary").hover();
+      const reviewMoreSummary = await reviewMore.locator("summary").evaluate((element) => {
+        return {
+          backgroundColor: getComputedStyle(element).backgroundColor,
+          borderRadius: getComputedStyle(element).borderRadius,
+        };
+      });
+      expect(reviewMoreSummary.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+      expect(reviewMoreSummary.borderRadius).toBe("6px");
       await reviewMore.locator("summary").click();
       await expect(reviewMore.locator(".rda-review-photo-card")).toHaveCount(3);
 
