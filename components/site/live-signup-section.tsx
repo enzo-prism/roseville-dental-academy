@@ -85,6 +85,7 @@ export function LiveSignupSection({
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const hasInterest = selectedInterests.length > 0;
+  const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
 
   function handleInterestChange(value: string, checked: boolean | "indeterminate") {
     setSelectedInterests((current) =>
@@ -130,6 +131,17 @@ export function LiveSignupSection({
       >
         <input name="_subject" type="hidden" value="Roseville Dental Academy class interest" />
         <input name="Source page" type="hidden" value={sourceLabel} />
+        <input name="site" type="hidden" value={siteContact.formspreeOps.site} />
+        <input name="form_key" type="hidden" value={siteContact.formspreeOps.formKey} />
+        <input name="environment" type="hidden" value={environment} />
+        <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
+        <input name="page_path" type="hidden" value={sourceLabel} />
+        <input name="referrer" type="hidden" value="" />
+        <input name="utm_source" type="hidden" value="" />
+        <input name="utm_medium" type="hidden" value="" />
+        <input name="utm_campaign" type="hidden" value="" />
+        <input name="utm_term" type="hidden" value="" />
+        <input name="utm_content" type="hidden" value="" />
         {selectedInterests.map((interest) => (
           <input key={interest} name="Interested classes[]" type="hidden" value={interest} />
         ))}

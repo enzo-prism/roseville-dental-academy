@@ -22,6 +22,7 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
   const formId = useId();
   const [formOpen, setFormOpen] = useState(false);
   const [updates, setUpdates] = useState(false);
+  const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
 
   return (
     <section className={compact ? "rda-contact-section rda-contact-section-compact" : "rda-contact-section"}>
@@ -72,6 +73,23 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
             </div>
           </CardContent>
         </Card>
+        {!compact ? (
+          <Card
+            aria-label="Roseville Dental Academy Google Maps location"
+            className="rda-contact-map-card border-border bg-card"
+          >
+            <CardContent className="rda-contact-map-content">
+              <iframe
+                allowFullScreen
+                data-rda-google-map="true"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={siteContact.mapsEmbedUrl}
+                title="Google Maps location for Roseville Dental Academy"
+              />
+            </CardContent>
+          </Card>
+        ) : null}
         <Card
           className="rda-contact-form-card border-border bg-card"
           data-aid="CONTACT_FORM_CONTAINER_REND"
@@ -80,6 +98,17 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
           <CardContent>
             <form action={siteContact.formspreeEndpoint} data-rda-contact-form="true" method="post">
               {updates ? <input name="updates" type="hidden" value="yes" /> : null}
+              <input name="site" type="hidden" value={siteContact.formspreeOps.site} />
+              <input name="form_key" type="hidden" value={siteContact.formspreeOps.formKey} />
+              <input name="environment" type="hidden" value={environment} />
+              <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
+              <input name="page_path" type="hidden" value="/#contact" />
+              <input name="referrer" type="hidden" value="" />
+              <input name="utm_source" type="hidden" value="" />
+              <input name="utm_medium" type="hidden" value="" />
+              <input name="utm_campaign" type="hidden" value="" />
+              <input name="utm_term" type="hidden" value="" />
+              <input name="utm_content" type="hidden" value="" />
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor={`${formId}-name`}>Name</FieldLabel>

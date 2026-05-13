@@ -751,6 +751,17 @@ function renderHomepagePrioritySignupHtml() {
       <form action="${escapeHtml(siteContact.formspreeEndpoint)}" class="rda-signup-form" data-rda-signup-form="true" method="post" onsubmit="if(!Array.from(this.querySelectorAll('input[type=checkbox]')).some(function(input){return input.checked;})){this.querySelector('[data-rda-form-error]').hidden=false;return false;}">
         <input name="_subject" type="hidden" value="Roseville Dental Academy class interest" />
         <input name="Source page" type="hidden" value="Dental Assisting X Ray Class CPR Class - Rosevilledental" />
+        <input name="site" type="hidden" value="${escapeHtml(siteContact.formspreeOps.site)}" />
+        <input name="form_key" type="hidden" value="${escapeHtml(siteContact.formspreeOps.formKey)}" />
+        <input name="environment" type="hidden" value="production" />
+        <input name="${escapeHtml(siteContact.formspreeOps.qaField)}" type="hidden" value="false" />
+        <input name="page_path" type="hidden" value="/" />
+        <input name="referrer" type="hidden" value="" />
+        <input name="utm_source" type="hidden" value="" />
+        <input name="utm_medium" type="hidden" value="" />
+        <input name="utm_campaign" type="hidden" value="" />
+        <input name="utm_term" type="hidden" value="" />
+        <input name="utm_content" type="hidden" value="" />
         <fieldset class="rda-interest-fieldset">
           <legend>
             <span class="rda-interest-legend">

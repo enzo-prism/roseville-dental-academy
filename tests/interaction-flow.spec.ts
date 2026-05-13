@@ -621,6 +621,23 @@ test.describe("live-style interaction flows", () => {
       await expect(page.getByText("Saturday").first()).toBeVisible();
       await expect(page.getByText("Closed").first()).toBeVisible();
 
+      const mapFrame = page.locator('iframe[data-rda-google-map="true"]');
+
+      await expect(mapFrame).toHaveCount(1);
+      await expect(mapFrame).toBeVisible();
+      await expect(mapFrame).toHaveAttribute(
+        "src",
+        /google\.com\/maps\/embed\?pb=.*Roseville%20Dental%20Academy/,
+      );
+      await expect(mapFrame).toHaveAttribute(
+        "title",
+        "Google Maps location for Roseville Dental Academy",
+      );
+
+      const mapBox = await mapFrame.boundingBox();
+      expect(mapBox?.width ?? 0).toBeGreaterThanOrEqual(200);
+      expect(mapBox?.height ?? 0).toBeGreaterThanOrEqual(200);
+
       await page.getByRole("button", { name: "Drop us a line!" }).click();
 
       const formContainer = page.locator('[data-aid="CONTACT_FORM_CONTAINER_REND"]').first();

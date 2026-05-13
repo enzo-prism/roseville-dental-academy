@@ -9,6 +9,9 @@ from textwrap import dedent
 ROOT = Path(__file__).resolve().parents[1]
 SITE_URL = "https://roseville-dental-academy.vercel.app"
 FORMSPREE_ENDPOINT = "https://formspree.io/f/xzdkgaeg"
+FORMSPREE_OPS_SITE = "roseville"
+FORMSPREE_OPS_FORM_KEY = "registration"
+FORMSPREE_OPS_QA_FIELD = "_codex_test"
 ANNOUNCEMENT = (
     "Now accepting registration for 2026 programs that meet California Dental Board standards, "
     "including our comprehensive dental radiography course and radiation safety certification."
@@ -1627,6 +1630,17 @@ def registration_page() -> str:
                 <input type="hidden" name="Form type" value="Digital registration request" />
                 <input type="hidden" name="Page source" value="/registration/" data-form-context="page" />
                 <input type="hidden" name="Referrer" value="" data-form-context="referrer" />
+                <input type="hidden" name="site" value="{FORMSPREE_OPS_SITE}" />
+                <input type="hidden" name="form_key" value="{FORMSPREE_OPS_FORM_KEY}" />
+                <input type="hidden" name="environment" value="production" />
+                <input type="hidden" name="{FORMSPREE_OPS_QA_FIELD}" value="false" />
+                <input type="hidden" name="page_path" value="/registration/" data-form-context="path" />
+                <input type="hidden" name="referrer" value="" data-form-context="referrer" />
+                <input type="hidden" name="utm_source" value="" data-form-context="utm" />
+                <input type="hidden" name="utm_medium" value="" data-form-context="utm" />
+                <input type="hidden" name="utm_campaign" value="" data-form-context="utm" />
+                <input type="hidden" name="utm_term" value="" data-form-context="utm" />
+                <input type="hidden" name="utm_content" value="" data-form-context="utm" />
 
                 <div class="form-status" data-form-status hidden tabindex="-1"></div>
 

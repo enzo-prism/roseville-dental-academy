@@ -258,8 +258,14 @@
       if (field.dataset.formContext === 'page') {
         field.value = `${window.location.pathname}${window.location.search}`;
       }
+      if (field.dataset.formContext === 'path') {
+        field.value = window.location.pathname;
+      }
       if (field.dataset.formContext === 'referrer') {
         field.value = document.referrer;
+      }
+      if (field.dataset.formContext === 'utm') {
+        field.value = params.get(field.name) || '';
       }
     });
 

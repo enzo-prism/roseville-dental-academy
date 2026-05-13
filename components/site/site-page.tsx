@@ -656,6 +656,21 @@ function ContactSection() {
                   tabIndex={-1}
                   type="text"
                 />
+                <input type="hidden" name="site" value={siteContact.formspreeOps.site} />
+                <input type="hidden" name="form_key" value={siteContact.formspreeOps.formKey} />
+                <input
+                  type="hidden"
+                  name="environment"
+                  value={process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production"}
+                />
+                <input type="hidden" name={siteContact.formspreeOps.qaField} value="false" />
+                <input type="hidden" name="page_path" value="/contact" />
+                <input type="hidden" name="referrer" value="" />
+                <input type="hidden" name="utm_source" value="" />
+                <input type="hidden" name="utm_medium" value="" />
+                <input type="hidden" name="utm_campaign" value="" />
+                <input type="hidden" name="utm_term" value="" />
+                <input type="hidden" name="utm_content" value="" />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="contact-name">Full name</Label>

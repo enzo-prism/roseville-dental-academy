@@ -59,6 +59,8 @@ export function RegistrationForm() {
   const [acknowledged, setAcknowledged] = React.useState(false);
   const [referrer, setReferrer] = React.useState("");
   const [formError, setFormError] = React.useState<string | null>(null);
+  const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
+  const utmFields = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
 
   React.useEffect(() => {
     setReferrer(document.referrer);
@@ -114,6 +116,15 @@ export function RegistrationForm() {
         <input type="hidden" name="Form type" value="Digital registration request" />
         <input type="hidden" name="Page source" value="/registration" />
         <input type="hidden" name="Referrer" value={referrer} />
+        <input type="hidden" name="site" value={siteContact.formspreeOps.site} />
+        <input type="hidden" name="form_key" value={siteContact.formspreeOps.formKey} />
+        <input type="hidden" name="environment" value={environment} />
+        <input type="hidden" name={siteContact.formspreeOps.qaField} value="false" />
+        <input type="hidden" name="page_path" value="/registration" />
+        <input type="hidden" name="referrer" value={referrer} />
+        {utmFields.map((field) => (
+          <input key={field} type="hidden" name={field} value={searchParams.get(field) ?? ""} />
+        ))}
         <input
           type="hidden"
           name="Preferred contact method"

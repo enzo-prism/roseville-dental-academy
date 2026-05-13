@@ -42,7 +42,18 @@ export const siteContact = {
   ],
   directionsUrl:
     "https://maps.google.com/?q=1271+Pleasant+Grove+Boulevard+Roseville+CA+95747",
+  mapsEmbedUrl:
+    "https://www.google.com/maps/embed?pb=" +
+    "!1m18!1m12!1m3!1d3110.647842783047!2d-121.31548719999999!3d38.7717804" +
+    "!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2" +
+    "!1s0x809b21cb837e88cd%3A0xa12c63470152cb3b!2sRoseville%20Dental%20Academy" +
+    "!5e0!3m2!1sen!2sus!4v1778632833810!5m2!1sen!2sus",
   formspreeEndpoint: "https://formspree.io/f/xzdkgaeg",
+  formspreeOps: {
+    site: "roseville",
+    formKey: "registration",
+    qaField: "_codex_test",
+  },
 } as const;
 
 export const signupInterestOptions: SignupInterestOption[] = [

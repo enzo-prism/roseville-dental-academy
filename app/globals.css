@@ -1354,9 +1354,14 @@ textarea {
 }
 
 .rda-contact-grid {
+  align-items: start;
   display: grid;
   gap: 34px;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+}
+
+.rda-contact-section:not(.rda-contact-section-compact) .rda-contact-grid {
+  grid-template-columns: minmax(0, 0.9fr) minmax(340px, 1.1fr);
 }
 
 .rda-contact-copy h3 {
@@ -1410,9 +1415,33 @@ textarea {
   gap: 12px;
 }
 
+.rda-contact-map-card {
+  padding: 0;
+}
+
+.rda-contact-map-content {
+  display: block;
+  flex: none;
+  height: 340px;
+  min-height: 0;
+  padding: 0;
+}
+
+.rda-contact-map-content iframe {
+  border: 0;
+  display: block;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
 .rda-contact-form-card {
   border: 1px solid var(--rda-color-border-soft);
   padding: 22px;
+}
+
+.rda-contact-section:not(.rda-contact-section-compact) .rda-contact-form-card {
+  grid-column: 1 / -1;
 }
 
 .rda-contact-form-card[hidden] {
@@ -1962,6 +1991,11 @@ textarea {
 
   .rda-contact-grid {
     gap: 22px;
+  }
+
+  .rda-contact-map-content,
+  .rda-contact-map-content iframe {
+    height: 280px;
   }
 
   .live-elevenlabs-widget {
