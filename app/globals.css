@@ -1752,10 +1752,12 @@ textarea {
   align-items: center;
   background: var(--rda-color-surface);
   border: 1px solid var(--rda-color-border);
+  border-radius: var(--radius);
   color: var(--rda-color-heading);
   display: inline-flex;
-  font-family: var(--rda-font-heading);
+  font-family: var(--rda-font-body);
   font-size: 14px;
+  font-weight: 700;
   gap: 9px;
   justify-content: center;
   line-height: 1.2;
@@ -1790,6 +1792,53 @@ textarea {
   height: 24px;
   max-width: none;
   width: 24px;
+}
+
+.rda-social-brand-logo {
+  display: block;
+  max-width: none;
+}
+
+.rda-social-media-frame {
+  aspect-ratio: 4 / 5;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  contain: layout paint;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.rda-social-media-frame-video {
+  background: #111;
+}
+
+.rda-social-video {
+  background: #111;
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.rda-social-video-badge {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 5px;
+  left: 12px;
+  line-height: 1;
+  padding: 7px 9px;
+  pointer-events: none;
+  position: absolute;
+  top: 12px;
 }
 
 .rda-social-buttons-nav {

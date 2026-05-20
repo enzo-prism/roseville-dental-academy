@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { SiteIcon, type SiteIconName } from "@/components/site/site-icon";
+import { SocialBrandLogo } from "@/components/site/social-brand-logo";
 import { SmartLink } from "@/components/site/smart-link";
 import { Separator } from "@/components/ui/separator";
 import { footerSections, siteContact, siteImages, socialLinks } from "@/lib/site-data";
@@ -84,7 +84,11 @@ export function SiteFooter() {
                 href={link.href}
                 className="flex items-center gap-2 rounded-full border border-border/70 bg-card/85 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/20 hover:text-primary sm:py-2 sm:text-sm"
               >
-                <SiteIcon className="size-4" name={link.icon as SiteIconName} />
+                <SocialBrandLogo
+                  className="size-4"
+                  idPrefix={`rda-site-footer-${link.icon}`}
+                  platform={link.icon}
+                />
                 {link.label}
               </SmartLink>
             ))}

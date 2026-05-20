@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
+import { socialChannelPages } from "@/lib/social-channel-data";
 import {
   aliasMappings,
   baselineDir,
@@ -299,6 +300,297 @@ for (const route of routeMappings) {
   });
 }
 
+test("official social channel pages render follow paths", async ({ page }, testInfo) => {
+  const results: Array<Record<string, unknown>> = [];
+  const mismatches: string[] = [];
+  const viewports = [
+    { height: 900, label: "desktop", width: 1280 },
+    { height: 844, label: "mobile", width: 390 },
+  ] as const;
+
+  for (const channel of socialChannelPages) {
+    let desktopBodyText = "";
+    let desktopTitle = "";
+    const viewportResults: Array<Record<string, unknown>> = [];
+
+    for (const viewport of viewports) {
+      const snapshot = await captureSnapshot(page, `${localOrigin}${channel.path}`, {
+        viewport: { height: viewport.height, width: viewport.width },
+      });
+
+      if (viewport.label === "desktop") {
+        desktopBodyText = snapshot.bodyText;
+        desktopTitle = snapshot.title;
+      }
+
+      if (snapshot.status !== 200) {
+        mismatches.push(`${channel.path} ${viewport.label} returned ${snapshot.status}`);
+      }
+
+      if (snapshot.ui.overflowX > 0) {
+        mismatches.push(`${channel.path} ${viewport.label} has horizontal overflow`);
+      }
+
+      if (snapshot.ui.aboveFoldPlaceholderImages.length > 0) {
+        mismatches.push(`${channel.path} ${viewport.label} has above-fold placeholder images`);
+      }
+
+      const heroButtonContrasts = await page
+        .locator(`main[data-rda-route="${channel.slug}"] section:first-of-type a[data-slot="button"]`)
+        .evaluateAll((buttons) => {
+          function parseRgb(value: string) {
+            const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+
+            if (!match) {
+              return undefined;
+            }
+
+            return [Number(match[1]), Number(match[2]), Number(match[3])] as const;
+          }
+
+          function channelToLinear(value: number) {
+            const normalized = value / 255;
+
+            return normalized <= 0.03928
+              ? normalized / 12.92
+              : Math.pow((normalized + 0.055) / 1.055, 2.4);
+          }
+
+          function luminance(rgb: readonly [number, number, number]) {
+            return (
+              0.2126 * channelToLinear(rgb[0]) +
+              0.7152 * channelToLinear(rgb[1]) +
+              0.0722 * channelToLinear(rgb[2])
+            );
+          }
+
+          function contrastRatio(
+            foreground: readonly [number, number, number],
+            background: readonly [number, number, number],
+          ) {
+            const lighter = Math.max(luminance(foreground), luminance(background));
+            const darker = Math.min(luminance(foreground), luminance(background));
+
+            return (lighter + 0.05) / (darker + 0.05);
+          }
+
+          return buttons.map((button) => {
+            const styles = window.getComputedStyle(button);
+            const color = parseRgb(styles.color);
+            const backgroundColor = parseRgb(styles.backgroundColor);
+
+            return {
+              backgroundColor: styles.backgroundColor,
+              color: styles.color,
+              contrast:
+                color && backgroundColor
+                  ? Number(contrastRatio(color, backgroundColor).toFixed(2))
+                  : 0,
+              text: button.textContent?.replace(/\s+/g, " ").trim() || "",
+            };
+          });
+        });
+
+      for (const button of heroButtonContrasts) {
+        if (button.contrast < 4.5) {
+          mismatches.push(
+            `${channel.path} ${viewport.label} hero button "${button.text}" contrast ${button.contrast}`,
+          );
+        }
+      }
+
+      viewportResults.push({
+        heroButtonContrasts,
+        overflowX: snapshot.ui.overflowX,
+        status: snapshot.status,
+        title: snapshot.title,
+        viewport: viewport.label,
+      });
+    }
+
+    const profileLinks = await page
+      .locator(`main[data-rda-route="${channel.slug}"] a[href="${channel.profileHref}"]`)
+      .evaluateAll((links) =>
+        links.map((link) => ({
+          rel: link.getAttribute("rel") || "",
+          target: link.getAttribute("target") || "",
+          text: link.textContent?.replace(/\s+/g, " ").trim() || "",
+        })),
+      );
+    const internalCrossLinks = await page
+      .locator(`main[data-rda-route="${channel.slug}"] a[href^="/"]`)
+      .evaluateAll((links) =>
+        links.map((link) => ({
+          href: link.getAttribute("href") || "",
+          text: link.textContent?.replace(/\s+/g, " ").trim() || "",
+        })),
+      );
+    const officialBrandLogoCount = await page
+      .locator(
+        `main[data-rda-route="${channel.slug}"] [data-rda-social-brand-logo="${channel.slug}"]`,
+      )
+      .count();
+    const postCards = await page
+      .locator(`main[data-rda-route="${channel.slug}"] [data-rda-social-post-card="${channel.slug}"]`)
+      .evaluateAll((cards) =>
+        cards.map((card) => ({
+          embedCount: card.querySelectorAll("[data-rda-social-official-embed]").length,
+          externalLinkCount: card.querySelectorAll('a[href^="https://"][target="_blank"]').length,
+          imageCount: card.querySelectorAll('[data-rda-social-local-media="image"] img').length,
+          localMediaCount: card.querySelectorAll("[data-rda-social-local-media]").length,
+          logoCount: card.querySelectorAll(
+            `[data-rda-social-brand-logo="${card.getAttribute("data-rda-social-post-card")}"]`,
+          ).length,
+          videoCount: card.querySelectorAll(
+            '[data-rda-social-local-media="video"] video[controls][preload="metadata"]',
+          ).length,
+          videoPosterCount: card.querySelectorAll(
+            '[data-rda-social-local-media="video"] video[poster]',
+          ).length,
+          url: card.getAttribute("data-rda-social-post-url") || "",
+        })),
+      );
+    const blockerCount = await page
+      .locator(
+        `main[data-rda-route="${channel.slug}"] [data-rda-social-import-blocker="${channel.slug}"]`,
+      )
+      .count();
+    const thirdPartyEmbedScriptCount = await page
+      .locator(
+        [
+          'script[src*="instagram.com/embed"]',
+          'script[src*="tiktok.com/embed"]',
+          'script[src*="connect.facebook.net"][src*="sdk.js"]',
+        ].join(","),
+      )
+      .count();
+    const expectedHost = {
+      facebook: "facebook.com",
+      instagram: "instagram.com",
+      tiktok: "tiktok.com",
+    }[channel.slug];
+
+    if (desktopTitle !== channel.metaTitle) {
+      mismatches.push(`${channel.path} title "${desktopTitle}" !== "${channel.metaTitle}"`);
+    }
+
+    if (!desktopBodyText.includes(`Follow Roseville Dental Academy on ${channel.platform}`)) {
+      mismatches.push(`${channel.path} is missing the platform heading`);
+    }
+
+    if (!desktopBodyText.includes(channel.followLabel)) {
+      mismatches.push(`${channel.path} is missing the follow call to action`);
+    }
+
+    if (profileLinks.length < 2) {
+      mismatches.push(`${channel.path} should expose repeated official profile links`);
+    }
+
+    if (officialBrandLogoCount < (channel.scrapeStatus.status === "ready" ? 10 : 4)) {
+      mismatches.push(
+        `${channel.path} should render the official ${channel.platform} logo in its platform UI`,
+      );
+    }
+
+    if (channel.scrapeStatus.status === "ready") {
+      if (postCards.length < channel.scrapeStatus.requiredCount) {
+        mismatches.push(
+          `${channel.path} should render at least ${channel.scrapeStatus.requiredCount} imported post cards`,
+        );
+      }
+
+      if (blockerCount > 0) {
+        mismatches.push(`${channel.path} should not show an import blocker when posts are ready`);
+      }
+
+      if (thirdPartyEmbedScriptCount > 0) {
+        mismatches.push(`${channel.path} should not load third-party social embed scripts`);
+      }
+
+      postCards.forEach((postCard, index) => {
+        if (!postCard.url.startsWith("https://") || !postCard.url.includes(expectedHost)) {
+          mismatches.push(`${channel.path} post ${index + 1} has an invalid external URL`);
+        }
+
+        if (postCard.logoCount < 1) {
+          mismatches.push(`${channel.path} post ${index + 1} is missing its platform logo`);
+        }
+
+        if (postCard.embedCount > 0) {
+          mismatches.push(`${channel.path} post ${index + 1} should use local media, not embeds`);
+        }
+
+        if (postCard.localMediaCount < 1) {
+          mismatches.push(`${channel.path} post ${index + 1} is missing local media`);
+        }
+
+        if (postCard.videoCount > 0 && postCard.videoPosterCount < postCard.videoCount) {
+          mismatches.push(`${channel.path} post ${index + 1} video is missing a poster`);
+        }
+
+        if (postCard.videoCount === 0 && postCard.imageCount === 0) {
+          mismatches.push(`${channel.path} post ${index + 1} is missing playable media`);
+        }
+
+        if (postCard.externalLinkCount < 1) {
+          mismatches.push(`${channel.path} post ${index + 1} is missing its source link`);
+        }
+      });
+    } else {
+      if (blockerCount !== 1) {
+        mismatches.push(`${channel.path} should show a single public import blocker`);
+      }
+
+      if (postCards.length > 0) {
+        mismatches.push(`${channel.path} should not render fabricated post cards while blocked`);
+      }
+
+      if (channel.scrapeStatus.foundCount >= channel.scrapeStatus.requiredCount) {
+        mismatches.push(`${channel.path} blocker should only be used below the import threshold`);
+      }
+    }
+
+    if (
+      profileLinks.some(
+        (link) => link.target !== "_blank" || !String(link.rel).includes("noreferrer"),
+      )
+    ) {
+      mismatches.push(`${channel.path} profile links should open the official account safely`);
+    }
+
+    if (!internalCrossLinks.some((link) => link.href === "/#quick-sign-up")) {
+      mismatches.push(`${channel.path} should keep a path back to class interest`);
+    }
+
+    results.push({
+      internalCrossLinks,
+      path: channel.path,
+      profileLinks,
+      officialBrandLogoCount,
+      postCards,
+      scrapeStatus: channel.scrapeStatus,
+      title: desktopTitle,
+      viewportResults,
+    });
+  }
+
+  smokeSummary.push({
+    mismatches,
+    results,
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "official-social-pages",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "official-social-pages-summary.json", {
+      mismatches,
+      results,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("front office program is retired from public access and entry points", async ({ page, request }, testInfo) => {
   const retiredPath = "/front-office-program";
   const retiredResponse = await request.get(`${localOrigin}${retiredPath}`, {
@@ -564,6 +856,7 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
       href: link.getAttribute("href") || "",
       icon: link.getAttribute("data-rda-social-button") || "",
       label: link.textContent?.replace(/\s+/g, " ").trim() || "",
+      logo: link.querySelector("[data-rda-social-brand-logo]")?.getAttribute("data-rda-social-brand-logo") || "",
       svgCount: link.querySelectorAll("svg").length,
       tagName: link.tagName.toLowerCase(),
     })),
@@ -595,6 +888,10 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
 
     if (matches.some((entry) => entry.svgCount !== 1 || entry.tagName !== "a")) {
       mismatches.push(`${label} social buttons are missing their branded SVG link treatment`);
+    }
+
+    if (matches.some((entry) => entry.logo !== icon)) {
+      mismatches.push(`${label} social buttons are not using the official ${label} logo asset`);
     }
 
     if (navMatch.href !== href || navMatch.target !== "_blank" || !navMatch.rel.includes("noreferrer")) {

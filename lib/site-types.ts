@@ -10,8 +10,10 @@ export type LinkItem = {
   href: string;
 };
 
+export type SocialBrand = "facebook" | "instagram" | "tiktok";
+
 export type SocialLink = LinkItem & {
-  icon: string;
+  icon: SocialBrand;
 };
 
 export type CtaLink = LinkItem & {
