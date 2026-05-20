@@ -1011,17 +1011,30 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
   await page.waitForLoadState("load").catch(() => undefined);
 
   const hero = page.locator(".widget-introduction-introduction-1").first();
-  const countdown = page.locator(".widget-countdown-countdown-1").first();
   const reviewSection = page.locator('[data-rda-home-review-highlights="true"]');
+  const courseSystem = page.locator('[data-rda-home-course-system="true"]');
   const reviewCards = reviewSection.locator(".rda-review-photo-card");
   const mismatches: string[] = [];
 
   await expect(reviewSection).toBeVisible({ timeout: 12_000 });
   await expect(reviewSection.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible();
+  await expect(courseSystem).toBeVisible({ timeout: 12_000 });
 
   const heroBox = await hero.boundingBox();
-  const countdownBox = await countdown.boundingBox();
   const reviewBox = await reviewSection.boundingBox();
+  const courseBox = await courseSystem.boundingBox();
+  const legacyCourseWidgetCount = await page
+    .locator(
+      [
+        ".widget-countdown-countdown-1",
+        '[id="2009b5dd-c84c-4596-9a42-e54428494e26"]',
+        '[id="4dc12e4b-c2cf-4fef-aa22-43ee15d1afc8"]',
+        '[id="266dc504-a138-4f78-9cc8-779377f6b972"]',
+        '[id="0c353bbb-1b60-4fa3-aed9-de2e739a4807"]',
+        '[id="db5c88e6-f24c-47cf-a362-5819da7f2ba5"]',
+      ].join(","),
+    )
+    .count();
   const visibleCardDetails = await reviewCards.evaluateAll((cards) =>
     cards
       .filter((card) => {
@@ -1051,10 +1064,14 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     mismatches.push("review photo section is not positioned directly after the hero");
   }
 
-  if (!countdownBox || !reviewBox) {
-    mismatches.push("could not measure countdown and review section placement");
-  } else if (reviewBox.y > countdownBox.y) {
-    mismatches.push("review photo section rendered after the countdown/course area");
+  if (legacyCourseWidgetCount !== 0) {
+    mismatches.push(`homepage still renders ${legacyCourseWidgetCount} legacy course widgets`);
+  }
+
+  if (!courseBox || !reviewBox) {
+    mismatches.push("could not measure review and course redesign placement");
+  } else if (courseBox.y < reviewBox.y + reviewBox.height - 4) {
+    mismatches.push("course redesign rendered before the review photo section");
   }
 
   if (cardCount !== 6) {

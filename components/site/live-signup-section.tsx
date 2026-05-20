@@ -40,6 +40,7 @@ import { signupInterestOptions, siteContact } from "@/lib/site-data";
 type LiveSignupSectionProps = {
   className?: string;
   compact?: boolean;
+  pagePath?: string;
   sourceLabel: string;
 };
 
@@ -77,6 +78,7 @@ function SignupIcon({
 export function LiveSignupSection({
   className,
   compact = false,
+  pagePath,
   sourceLabel,
 }: LiveSignupSectionProps) {
   const formId = useId();
@@ -135,7 +137,7 @@ export function LiveSignupSection({
         <input name="form_key" type="hidden" value={siteContact.formspreeOps.formKey} />
         <input name="environment" type="hidden" value={environment} />
         <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
-        <input name="page_path" type="hidden" value={sourceLabel} />
+        <input name="page_path" type="hidden" value={pagePath ?? sourceLabel} />
         <input name="referrer" type="hidden" value="" />
         <input name="utm_source" type="hidden" value="" />
         <input name="utm_medium" type="hidden" value="" />

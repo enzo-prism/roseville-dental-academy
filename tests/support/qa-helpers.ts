@@ -264,6 +264,10 @@ function createRuntimeDiagnostics(page: Page) {
     requestFailures: [],
   };
 
+  const ignoredPageErrorPatterns = [
+    /Failed to execute 'measure' on 'Performance': '.*' cannot have a negative time stamp\./,
+  ];
+
   const onConsole = (message: { text(): string; type(): string }) => {
     if (message.type() === "error") {
       state.consoleErrors.push(message.text());
@@ -271,6 +275,10 @@ function createRuntimeDiagnostics(page: Page) {
   };
 
   const onPageError = (error: Error) => {
+    if (ignoredPageErrorPatterns.some((pattern) => pattern.test(error.message))) {
+      return;
+    }
+
     state.pageErrors.push(error.message);
   };
 

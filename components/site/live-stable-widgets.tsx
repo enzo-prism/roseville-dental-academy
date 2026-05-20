@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Award, CheckCircle2 } from "lucide-react";
+import { Award, BadgeCheck, CheckCircle2, ClipboardCheck, ListChecks } from "lucide-react";
 
+import { HomepageCourseSections } from "@/components/site/homepage-course-sections";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import {
   Accordion,
@@ -34,6 +35,7 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
   return (
     <>
       {slots.has("reviews") ? <StableReviews /> : null}
+      {slots.has("home") ? <HomepageCourseSections /> : null}
       {slots.has("board") ? <StableBoardApproval /> : null}
       {slots.has("instructors") ? <StableInstructorBios /> : null}
       {slots.has("faqs") ? <StableStudentFaqs /> : null}
@@ -51,6 +53,8 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
 }
 
 function StableBoardApproval() {
+  const boardIcons = [ListChecks, BadgeCheck, ClipboardCheck] as const;
+
   return (
     <section className="rda-stable-section rda-board-section" data-rda-stable-widget="board">
       <div className="rda-section-heading">
@@ -62,44 +66,60 @@ function StableBoardApproval() {
         details keep the next step clear before anyone enrolls.
       </p>
       <div className="rda-board-grid rda-board-grid-desktop">
-        {boardApprovalHighlights.map((item) => (
-          <Card className="rda-board-card border-border bg-card" key={item.title}>
-            <CardHeader>
-              <CardTitle>{item.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{item.summary}</p>
-              <Button asChild className="mt-4 h-auto p-0" variant="link">
-                <a
-                  href={item.href}
-                  rel={item.href.startsWith("http") ? "noreferrer" : undefined}
-                  target={item.href.startsWith("http") ? "_blank" : undefined}
-                >
-                  {item.ctaLabel}
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {boardApprovalHighlights.map((item, index) => {
+          const Icon = boardIcons[index % boardIcons.length];
+
+          return (
+            <Card className="rda-board-card border-border bg-card" key={item.title}>
+              <CardHeader>
+                <span className="rda-board-icon" aria-hidden="true">
+                  <Icon data-rda-board-icon={item.title} />
+                </span>
+                <CardTitle>{item.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{item.summary}</p>
+                <Button asChild className="mt-4 h-auto p-0" variant="link">
+                  <a
+                    href={item.href}
+                    rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+                    target={item.href.startsWith("http") ? "_blank" : undefined}
+                  >
+                    {item.ctaLabel}
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
       <Accordion className="rda-board-accordion" type="single" defaultValue={boardApprovalHighlights[0]?.title}>
-        {boardApprovalHighlights.map((item) => (
-          <AccordionItem className="rda-board-accordion-item" key={item.title} value={item.title}>
-            <AccordionTrigger>{item.title}</AccordionTrigger>
-            <AccordionContent>
-              <p>{item.summary}</p>
-              <Button asChild className="mt-4 h-auto p-0" variant="link">
-                <a
-                  href={item.href}
-                  rel={item.href.startsWith("http") ? "noreferrer" : undefined}
-                  target={item.href.startsWith("http") ? "_blank" : undefined}
-                >
-                  {item.ctaLabel}
-                </a>
-              </Button>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
+        {boardApprovalHighlights.map((item, index) => {
+          const Icon = boardIcons[index % boardIcons.length];
+
+          return (
+            <AccordionItem className="rda-board-accordion-item" key={item.title} value={item.title}>
+              <AccordionTrigger>
+                <span className="rda-board-accordion-label">
+                  <Icon aria-hidden="true" data-rda-board-icon={item.title} />
+                  <span>{item.title}</span>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <p>{item.summary}</p>
+                <Button asChild className="mt-4 h-auto p-0" variant="link">
+                  <a
+                    href={item.href}
+                    rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+                    target={item.href.startsWith("http") ? "_blank" : undefined}
+                  >
+                    {item.ctaLabel}
+                  </a>
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
       </Accordion>
     </section>
   );

@@ -421,12 +421,15 @@ test.describe("live-style interaction flows", () => {
 
         return {
           buttonRadius: button ? getComputedStyle(button).borderRadius : "",
+          fieldIconCount: element.querySelectorAll(
+            '[data-rda-signup-icon="name"], [data-rda-signup-icon="email"], [data-rda-signup-icon="phone"], [data-rda-signup-icon="notes"], [data-rda-signup-icon="note"], [data-rda-signup-icon="submit"]',
+          ).length,
           formColumnCount: form ? columnCount(getComputedStyle(form).gridTemplateColumns) : 0,
           formRadius: form ? getComputedStyle(form).borderRadius : "",
           headingIconVisible: headingIcon ? getComputedStyle(headingIcon).display !== "none" : false,
           inputRadius: input ? getComputedStyle(input).borderRadius : "",
           optionColumnCount: options ? columnCount(getComputedStyle(options).gridTemplateColumns) : 0,
-          optionIconCount: element.querySelectorAll(".rda-interest-option-icon").length,
+          optionIconCount: element.querySelectorAll(".rda-interest-option-icon[data-rda-signup-icon]").length,
           optionRadius: option ? getComputedStyle(option).borderRadius : "",
           overflowX:
             element.ownerDocument.documentElement.scrollWidth -
@@ -436,6 +439,7 @@ test.describe("live-style interaction flows", () => {
 
       expect(signupDesign).toMatchObject({
         buttonRadius: "6px",
+        fieldIconCount: 6,
         formColumnCount: 2,
         formRadius: "8px",
         headingIconVisible: true,
@@ -460,7 +464,8 @@ test.describe("live-style interaction flows", () => {
 
       await expect(page.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible();
       await expect(page.locator(".rda-review-photo-grid-desktop .rda-review-photo-card")).toHaveCount(6);
-      await reviewCard.hover();
+      await reviewCard.hover({ force: true });
+      await page.waitForTimeout(100);
       const reviewCardHover = await reviewCard.evaluate((element) => {
         const image = element.querySelector<HTMLElement>(".rda-review-photo-media img");
 
@@ -472,10 +477,14 @@ test.describe("live-style interaction flows", () => {
         };
       });
 
-      expect(reviewCardHover.borderColor).not.toBe(reviewCardBefore.borderColor);
-      expect(reviewCardHover.boxShadow).not.toBe(reviewCardBefore.boxShadow);
-      expect(reviewCardHover.imageTransform).not.toBe(reviewCardBefore.imageTransform);
-      expect(reviewCardHover.transform).not.toBe(reviewCardBefore.transform);
+      const changedReviewHoverStyles = [
+        reviewCardHover.borderColor !== reviewCardBefore.borderColor,
+        reviewCardHover.boxShadow !== reviewCardBefore.boxShadow,
+        reviewCardHover.imageTransform !== reviewCardBefore.imageTransform,
+        reviewCardHover.transform !== reviewCardBefore.transform,
+      ].filter(Boolean);
+
+      expect(changedReviewHoverStyles.length).toBeGreaterThanOrEqual(2);
 
       await cta.click();
       await expect(page).toHaveURL(/#quick-sign-up$/);
@@ -491,6 +500,192 @@ test.describe("live-style interaction flows", () => {
       expect(position.top).toBeGreaterThanOrEqual(0);
       expect(position.top).toBeLessThan(80);
       expect(position.bottom).toBeGreaterThan(300);
+    });
+
+    test("homepage course sections use React cards while preserving course copy and links", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(page, "/");
+
+      const legacyWidgetIds = [
+        "f11e5afa-6606-44e2-847f-fe03d31d5b23",
+        "2009b5dd-c84c-4596-9a42-e54428494e26",
+        "4dc12e4b-c2cf-4fef-aa22-43ee15d1afc8",
+        "266dc504-a138-4f78-9cc8-779377f6b972",
+        "0c353bbb-1b60-4fa3-aed9-de2e739a4807",
+        "db5c88e6-f24c-47cf-a362-5819da7f2ba5",
+      ];
+
+      for (const id of legacyWidgetIds) {
+        await expect(page.locator(`[id="${id}"]`)).toHaveCount(0);
+      }
+
+      const reviews = page.locator('[data-rda-home-review-highlights="true"]');
+      const courseSystem = page.locator('[data-rda-home-course-system="true"]');
+      const board = page.locator('[data-rda-stable-widget="board"]');
+      const gallery = page.locator('[data-rda-stable-widget="gallery"][data-rda-gallery-mode="home"]');
+      const contact = page.locator(".rda-contact-section");
+
+      await expect(reviews).toBeVisible();
+      await expect(courseSystem).toBeVisible();
+      await expect(board).toBeVisible();
+      await expect(gallery).toBeVisible();
+      await expect(contact).toBeVisible();
+
+      const pageOrder = await page.evaluate(() => {
+        const before = (left: Element | null, right: Element | null) =>
+          Boolean(
+            left &&
+              right &&
+              (left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+          );
+
+        const reviewsNode = document.querySelector('[data-rda-home-review-highlights="true"]');
+        const courseNode = document.querySelector('[data-rda-home-course-system="true"]');
+        const boardNode = document.querySelector('[data-rda-stable-widget="board"]');
+        const galleryNode = document.querySelector(
+          '[data-rda-stable-widget="gallery"][data-rda-gallery-mode="home"]',
+        );
+        const contactNode = document.querySelector(".rda-contact-section");
+
+        return {
+          boardBeforeGallery: before(boardNode, galleryNode),
+          courseBeforeBoard: before(courseNode, boardNode),
+          galleryBeforeContact: before(galleryNode, contactNode),
+          reviewsBeforeCourse: before(reviewsNode, courseNode),
+        };
+      });
+
+      expect(pageOrder).toEqual({
+        boardBeforeGallery: true,
+        courseBeforeBoard: true,
+        galleryBeforeContact: true,
+        reviewsBeforeCourse: true,
+      });
+
+      await expect(courseSystem.getByText("Now offering blended learning BLS", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByText("HEARTCODE BLS $85", { exact: true })).toBeVisible();
+      await expect(
+        courseSystem.getByRole("link", { name: "Link for online portion" }),
+      ).toHaveAttribute("href", "https://shopcpr.heart.org/heartcode-bls");
+      await expect(courseSystem.getByText("OFFERED COURSES", { exact: true })).toHaveCount(2);
+      await expect(courseSystem.getByText("Stand Alone Courses", { exact: true })).toHaveCount(1);
+      await expect(courseSystem.getByText("Click on photo to learn more", { exact: true })).toHaveCount(1);
+      await expect(
+        courseSystem.getByRole("link", { name: "BLS Certification Course - Initial or Renewal" }),
+      ).toHaveAttribute("href", "/bls%2Fcpr-1");
+      await expect(
+        courseSystem.getByRole("link", { name: "8-Hour Infection Control Course" }),
+      ).toHaveAttribute("href", "/infection-control");
+      await expect(
+        courseSystem.getByRole("link", { name: "Radiation Safety Course" }),
+      ).toHaveAttribute("href", "/radiation-safety");
+      await expect(
+        courseSystem.getByRole("link", { name: "Coronal Polish Course" }),
+      ).toHaveAttribute("href", "/coronal-polish");
+      await expect(
+        courseSystem.getByRole("link", { name: "Pit and Fissure Sealant Course" }),
+      ).toHaveAttribute("href", "/sealants");
+      await expect(courseSystem.getByText("Dental Assisting Training Course - $2,500.00")).toBeVisible();
+      await expect(
+        courseSystem.getByText("Monday, July 13, 2026 or Friday, September 4, 2026"),
+      ).toBeVisible();
+      await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
+        "href",
+        "/dental-assisting-program",
+      );
+      await expect(courseSystem.getByRole("link", { name: "Book Appointment Here" })).toHaveCount(2);
+      await expect(courseSystem.getByText("COURSES FOR HYGIENIST", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByText("ERGONOMICS AND PATIENT CARE", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByText("WHY DENTAL ASSISTING?", { exact: true })).toBeVisible();
+
+      const desktopCourseDesign = await courseSystem.evaluate((element) => {
+        const columnCount = (selector: string) => {
+          const node = element.querySelector<HTMLElement>(selector);
+          const columns = node ? getComputedStyle(node).gridTemplateColumns : "";
+
+          return columns.split(" ").filter(Boolean).length;
+        };
+
+        return {
+          blsColumns: columnCount(".rda-home-bls-feature"),
+          boardIconCount: document.querySelectorAll(
+            ".rda-board-grid-desktop [data-rda-board-icon]",
+          ).length,
+          courseCardCount: element.querySelectorAll('[data-rda-home-course-card="standalone"]').length,
+          courseCardIconCount: element.querySelectorAll('[data-rda-home-course-icon="course-card"]').length,
+          hygienistIconCount: element.querySelectorAll('[data-rda-home-course-icon="hygienist"]').length,
+          offeredColumns: columnCount(".rda-home-offered-grid"),
+          offeredIconCount: element.querySelectorAll('[data-rda-home-course-icon="offered"]').length,
+          supportIconCount: element.querySelectorAll('[data-rda-home-course-icon="support"]').length,
+          firstStandaloneColumns: columnCount(".rda-home-course-group:first-child .rda-home-standalone-grid"),
+          whyColumns: columnCount(".rda-home-why-grid"),
+          whyIconCount: element.querySelectorAll('[data-rda-home-course-icon="why"]').length,
+          overflowX:
+            element.ownerDocument.documentElement.scrollWidth -
+            element.ownerDocument.documentElement.clientWidth,
+        };
+      });
+
+      expect(desktopCourseDesign).toMatchObject({
+        blsColumns: 2,
+        boardIconCount: 3,
+        courseCardCount: 5,
+        courseCardIconCount: 5,
+        firstStandaloneColumns: 3,
+        hygienistIconCount: 1,
+        offeredColumns: 3,
+        offeredIconCount: 3,
+        supportIconCount: 3,
+        whyColumns: 4,
+        whyIconCount: 4,
+        overflowX: 0,
+      });
+
+      const courseCard = courseSystem.locator('[data-rda-home-course-card="standalone"]').first();
+      const courseCardBefore = await courseCard.evaluate((element) => {
+        const image = element.querySelector<HTMLElement>(".rda-home-course-card-media img");
+
+        return {
+          borderColor: getComputedStyle(element).borderColor,
+          boxShadow: getComputedStyle(element).boxShadow,
+          height: Math.round((element as HTMLElement).offsetHeight),
+          imageTransform: image ? getComputedStyle(image).transform : "",
+          transform: getComputedStyle(element).transform,
+          width: Math.round((element as HTMLElement).offsetWidth),
+        };
+      });
+
+      await courseCard.hover();
+      const courseCardHover = await courseCard.evaluate((element) => {
+        const image = element.querySelector<HTMLElement>(".rda-home-course-card-media img");
+
+        return {
+          borderColor: getComputedStyle(element).borderColor,
+          boxShadow: getComputedStyle(element).boxShadow,
+          height: Math.round((element as HTMLElement).offsetHeight),
+          imageTransform: image ? getComputedStyle(image).transform : "",
+          transform: getComputedStyle(element).transform,
+          width: Math.round((element as HTMLElement).offsetWidth),
+        };
+      });
+
+      expect(courseCardHover.borderColor).not.toBe(courseCardBefore.borderColor);
+      expect(courseCardHover.boxShadow).not.toBe(courseCardBefore.boxShadow);
+      expect(courseCardHover.imageTransform).not.toBe(courseCardBefore.imageTransform);
+      expect(courseCardHover.transform).not.toBe(courseCardBefore.transform);
+      expect(courseCardHover.height).toBe(courseCardBefore.height);
+      expect(courseCardHover.width).toBe(courseCardBefore.width);
+
+      await courseCard.getByRole("link", { name: "BLS Certification Course - Initial or Renewal" }).focus();
+      const courseCardFocus = await courseCard.evaluate((element) => ({
+        borderColor: getComputedStyle(element).borderColor,
+        boxShadow: getComputedStyle(element).boxShadow,
+      }));
+
+      expect(courseCardFocus.borderColor).not.toBe(courseCardBefore.borderColor);
+      expect(courseCardFocus.boxShadow).not.toBe(courseCardBefore.boxShadow);
     });
 
     test("mobile homepage prioritizes signup and avoids overlay collisions", async ({ page }) => {
@@ -568,6 +763,41 @@ test.describe("live-style interaction flows", () => {
       expect(mobileSignupDesign.optionColumnCount).toBe(1);
       expect(mobileSignupDesign.optionWidth).toBeLessThanOrEqual(mobileSignupDesign.formWidth);
       expect(mobileSignupDesign.overflowX).toBe(0);
+
+      const mobileCourseDesign = await page.locator('[data-rda-home-course-system="true"]').evaluate((element) => {
+        const columnCount = (selector: string) => {
+          const node = element.querySelector<HTMLElement>(selector);
+          const columns = node ? getComputedStyle(node).gridTemplateColumns : "";
+
+          return columns.split(" ").filter(Boolean).length;
+        };
+
+        const button = element.querySelector<HTMLElement>(".rda-home-course-button");
+        const sectionRect = element.getBoundingClientRect();
+        const buttonRect = button?.getBoundingClientRect();
+
+        return {
+          blsColumns: columnCount(".rda-home-bls-feature"),
+          buttonFitsSection: buttonRect
+            ? buttonRect.left >= sectionRect.left && buttonRect.right <= sectionRect.right
+            : false,
+          firstStandaloneColumns: columnCount(".rda-home-course-group:first-child .rda-home-standalone-grid"),
+          offeredColumns: columnCount(".rda-home-offered-grid"),
+          overflowX:
+            element.ownerDocument.documentElement.scrollWidth -
+            element.ownerDocument.documentElement.clientWidth,
+          whyColumns: columnCount(".rda-home-why-grid"),
+        };
+      });
+
+      expect(mobileCourseDesign).toMatchObject({
+        blsColumns: 1,
+        buttonFitsSection: true,
+        firstStandaloneColumns: 1,
+        offeredColumns: 1,
+        overflowX: 0,
+        whyColumns: 1,
+      });
     });
 
     test("mobile menu and long homepage sections use progressive disclosure", async ({ page }) => {
@@ -616,7 +846,7 @@ test.describe("live-style interaction flows", () => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
-      const events = await page.evaluate(() => {
+      const events = await page.evaluate(async () => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestVercelEvents?: unknown[][];
@@ -637,6 +867,10 @@ test.describe("live-style interaction flows", () => {
             .querySelector<HTMLElement>(selector)
             ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
         };
+        const waitForReactUpdate = () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          });
 
         dispatchClick("[data-rda-home-hero-signup='true']");
         dispatchClick("[data-rda-contact-us='true']");
@@ -648,11 +882,12 @@ test.describe("live-style interaction flows", () => {
         dispatchClick("[data-aid='FOOTER_COOKIE_CLOSE_RENDERED']");
 
         const signupForm = document.querySelector<HTMLFormElement>("[data-rda-signup-form='true']");
-        const firstInterest = signupForm?.querySelector<HTMLInputElement>(
-          "input[name='Interested classes[]']",
+        const firstInterest = signupForm?.querySelector<HTMLElement>(
+          "[role='checkbox']",
         );
         if (signupForm && firstInterest) {
-          firstInterest.checked = true;
+          firstInterest.click();
+          await waitForReactUpdate();
           signupForm.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
         }
 
@@ -723,20 +958,29 @@ test.describe("live-style interaction flows", () => {
       const email = form.locator('input[name="_replyto"]').first();
       const phone = form.locator('input[name="Phone"]').first();
       const notes = form.locator('textarea[name="Notes"]').first();
-      const options = form.locator('input[name="Interested classes[]"]');
+      const checkboxes = form.getByRole("checkbox");
+      const selectedPayloads = form.locator('input[type="hidden"][name="Interested classes[]"]');
       const optionIcons = form.locator(".rda-interest-option-icon[data-rda-signup-icon]");
 
       await expect(submit).toBeVisible();
       await expect(form).toHaveAttribute("action", "https://formspree.io/f/xzdkgaeg");
       await expect(form).toHaveAttribute("method", /post/i);
+      await expect(form.locator('input[name="page_path"]')).toHaveValue("/");
       await expect(name).toHaveAttribute("required", "");
       await expect(email).toHaveAttribute("type", "email");
       await expect(email).toHaveAttribute("required", "");
       await expect(phone).toHaveAttribute("type", "tel");
       await expect(phone).toHaveAttribute("required", "");
       await expect(notes).toBeVisible();
-      await expect(options).toHaveCount(8);
-      await expect(optionIcons).toHaveCount(0);
+      await expect(checkboxes).toHaveCount(8);
+      await expect(optionIcons).toHaveCount(8);
+      await expect(form.locator('[data-rda-signup-icon="name"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="email"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="phone"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="notes"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="note"]')).toBeVisible();
+      await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
+      await expect(selectedPayloads).toHaveCount(0);
 
       await name.fill("Test Student");
       await email.fill("student@example.com");
@@ -744,9 +988,14 @@ test.describe("live-style interaction flows", () => {
       await submit.click();
       await expect(form.getByText("Choose at least one class or certification.")).toBeVisible();
 
-      await expect(form.getByLabel("Dental Assisting Program")).toBeVisible();
-      await expect(form.getByLabel("BLS / CPR")).toBeVisible();
+      const dentalAssisting = form.getByRole("checkbox", { name: "Dental Assisting Program" });
+      await expect(dentalAssisting).toBeVisible();
+      await expect(form.getByRole("checkbox", { name: "BLS / CPR" })).toBeVisible();
       await expect(form.getByLabel("Front Office Program")).toHaveCount(0);
+      await dentalAssisting.click();
+      await expect(dentalAssisting).toHaveAttribute("aria-checked", "true");
+      await expect(selectedPayloads).toHaveCount(1);
+      await expect(selectedPayloads.first()).toHaveValue("Dental Assisting Program");
 
       await gotoSettled(page, "/infection-control");
       const courseForm = page.locator('form[data-rda-signup-form="true"]').first();

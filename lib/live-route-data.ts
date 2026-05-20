@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import manifestData from "@/snapshot/live/manifest.json";
 import { LIVE_SOURCE_ORIGIN } from "@/lib/site-config";
-import { homepageReviewHighlights, signupInterestOptions, siteContact } from "@/lib/site-data";
+import { homepageReviewHighlights } from "@/lib/site-data";
 
 export const LIVE_SITE_ORIGIN = LIVE_SOURCE_ORIGIN;
 export const LIVE_BODY_CLASS = "x x-fonts-adamina x-fonts-fjalla-one";
@@ -165,6 +165,9 @@ const MEET_INSTRUCTORS_INTRO_WIDGET_REGEX =
   /<div\b(?=[^>]*\bclass="[^"]*\bwidget-introduction-introduction-1\b[^"]*"[^>]*>)/gi;
 const HOMEPAGE_AFTER_HERO_WIDGET_MARKER =
   '<div id="f11e5afa-6606-44e2-847f-fe03d31d5b23" class="widget widget-countdown';
+const HOMEPAGE_SIGNUP_SLOT_HTML = '<div data-rda-homepage-signup-slot="true"></div>';
+const HOMEPAGE_LEGACY_COURSE_WIDGET_REGEX =
+  /<div\b(?=[^>]*\bid="(?:f11e5afa-6606-44e2-847f-fe03d31d5b23|2009b5dd-c84c-4596-9a42-e54428494e26|4dc12e4b-c2cf-4fef-aa22-43ee15d1afc8|266dc504-a138-4f78-9cc8-779377f6b972|0c353bbb-1b60-4fa3-aed9-de2e739a4807|db5c88e6-f24c-47cf-a362-5819da7f2ba5)"[^>]*>)/gi;
 
 const HOMEPAGE_HERO_SLIDES = [
   {
@@ -701,6 +704,10 @@ function insertHomepageReviewHighlights(html: string) {
   return `${html.slice(0, end)}${renderHomepageReviewHighlightsHtml()}${html.slice(end)}`;
 }
 
+function removeHomepageLegacyCourseWidgets(html: string) {
+  return stripMatchedDivs(html, HOMEPAGE_LEGACY_COURSE_WIDGET_REGEX);
+}
+
 function renderHomepageHeroHtml() {
   const slides = HOMEPAGE_HERO_SLIDES.map(
     (slide, index) => `
@@ -731,78 +738,6 @@ function renderHomepageHeroHtml() {
     </section>`;
 }
 
-function renderHomepagePrioritySignupHtml() {
-  const interestOptions = signupInterestOptions
-    .map(
-      (option) => `
-        <label class="rda-interest-option">
-          <input name="Interested classes[]" type="checkbox" value="${escapeHtml(option.value)}" />
-          <span class="rda-interest-option-content">
-            <span class="rda-interest-option-icon" aria-hidden="true"></span>
-            <span>${escapeHtml(option.label)}</span>
-          </span>
-        </label>`,
-    )
-    .join("");
-
-  return `
-    <section class="rda-stable-section rda-signup-section rda-priority-signup-section" data-rda-signup-section="true" id="quick-sign-up" aria-labelledby="rda-priority-signup-title">
-      <div class="rda-section-heading rda-signup-heading">
-        <span class="rda-signup-heading-icon" data-rda-signup-icon="heading" aria-hidden="true"></span>
-        <h2 id="rda-priority-signup-title">Quick Sign Up</h2>
-        <span aria-hidden="true"></span>
-      </div>
-      <p class="rda-signup-intro">Check the classes you are interested in and the academy team will follow up.</p>
-      <form action="${escapeHtml(siteContact.formspreeEndpoint)}" class="rda-signup-form" data-rda-signup-form="true" method="post" onsubmit="if(!Array.from(this.querySelectorAll('input[type=checkbox]')).some(function(input){return input.checked;})){this.querySelector('[data-rda-form-error]').hidden=false;return false;}">
-        <input name="_subject" type="hidden" value="Roseville Dental Academy class interest" />
-        <input name="Source page" type="hidden" value="Dental Assisting X Ray Class CPR Class - Rosevilledental" />
-        <input name="site" type="hidden" value="${escapeHtml(siteContact.formspreeOps.site)}" />
-        <input name="form_key" type="hidden" value="${escapeHtml(siteContact.formspreeOps.formKey)}" />
-        <input name="environment" type="hidden" value="production" />
-        <input name="${escapeHtml(siteContact.formspreeOps.qaField)}" type="hidden" value="false" />
-        <input name="page_path" type="hidden" value="/" />
-        <input name="referrer" type="hidden" value="" />
-        <input name="utm_source" type="hidden" value="" />
-        <input name="utm_medium" type="hidden" value="" />
-        <input name="utm_campaign" type="hidden" value="" />
-        <input name="utm_term" type="hidden" value="" />
-        <input name="utm_content" type="hidden" value="" />
-        <fieldset class="rda-interest-fieldset">
-          <legend>
-            <span class="rda-interest-legend">
-              <span class="rda-signup-icon" aria-hidden="true">•</span>
-              Classes or certifications
-            </span>
-          </legend>
-          <div class="rda-interest-options">${interestOptions}</div>
-          <p class="rda-form-error" data-rda-form-error hidden role="alert">Choose at least one class or certification.</p>
-        </fieldset>
-        <div class="rda-signup-fields">
-          <label>
-            <span class="rda-field-label">Name</span>
-            <input autocomplete="name" name="Name" placeholder="Name" required type="text" />
-          </label>
-          <label>
-            <span class="rda-field-label">Email</span>
-            <input autocomplete="email" name="_replyto" placeholder="Email" required type="email" />
-          </label>
-          <label>
-            <span class="rda-field-label">Phone</span>
-            <input autocomplete="tel" name="Phone" placeholder="Phone" required type="tel" />
-          </label>
-        </div>
-        <label class="rda-signup-notes">
-          <span class="rda-field-label">Other notes</span>
-          <textarea name="Notes" placeholder="Schedule questions, goals, or anything helpful" rows="4"></textarea>
-        </label>
-        <div class="rda-signup-footer">
-          <p class="rda-form-note rda-signup-note">Short form, quick follow-up. No payment is collected here.</p>
-          <button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">Send interest</button>
-        </div>
-      </form>
-    </section>`;
-}
-
 function replaceHomepageHero(html: string) {
   if (html.includes('data-rda-home-hero="true"')) {
     return html;
@@ -816,7 +751,7 @@ function replaceHomepageHero(html: string) {
 
   const end = findClosingDiv(html, match.index + match[0].length);
 
-  return `${html.slice(0, match.index)}${renderHomepageHeroHtml()}${renderHomepagePrioritySignupHtml()}${html.slice(end)}`;
+  return `${html.slice(0, match.index)}${renderHomepageHeroHtml()}${HOMEPAGE_SIGNUP_SLOT_HTML}${html.slice(end)}`;
 }
 
 function removeMeetInstructorsIntro(html: string) {
@@ -860,8 +795,10 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
     bodyClass,
     bodyHtml:
       route.route === "/"
-        ? insertHomepageReviewHighlights(
-            replaceHomepageHero(applyHomepageCourseCopyReplacements(sanitizedBodyHtml)),
+        ? removeHomepageLegacyCourseWidgets(
+            insertHomepageReviewHighlights(
+              replaceHomepageHero(applyHomepageCourseCopyReplacements(sanitizedBodyHtml)),
+            ),
           )
         : route.route === "/meet-the-instructors"
           ? removeMeetInstructorsIntro(sanitizedBodyHtml)

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { HomepageSignupPortal } from "@/components/site/homepage-signup-portal";
 import { LiveCoursePage } from "@/components/site/live-course-page";
 import { LiveShell } from "@/components/site/live-shell";
 import { LiveStableWidgets } from "@/components/site/live-stable-widgets";
@@ -75,6 +76,7 @@ export default async function LiveRoutePage({ params }: PageProps) {
           className="rda-snapshot-content"
           dangerouslySetInnerHTML={{ __html: document.bodyHtml }}
         />
+        {route.route === "/" ? <HomepageSignupPortal sourceLabel={route.title} /> : null}
         <LiveStableWidgets route={route} />
       </main>
     </LiveShell>
