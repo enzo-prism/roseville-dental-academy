@@ -29,6 +29,7 @@ test.describe("live-style interaction flows", () => {
                 this.attachShadow({ mode: "open" });
               }
               this.expanded = false;
+              this.dismissed = false;
               this.render();
             }
 
@@ -43,11 +44,17 @@ test.describe("live-style interaction flows", () => {
                 '<p class="mock-elevenlabs-powered">Powered by ElevenAgents</p>',
                 "</div>",
               ].join("");
+              const minimizedMarkup = [
+                '<div class="mock-elevenlabs-overlay">',
+                '<button class="mock-elevenlabs-open" aria-label="Open chat"></button>',
+                "</div>",
+              ].join("");
               const collapsedMarkup = [
                 '<div class="mock-elevenlabs-overlay">',
                 '<div class="mock-elevenlabs-card">',
                 '<div class="mock-elevenlabs-row">Need help?</div>',
-                '<button class="mock-elevenlabs-row">Start a call</button>',
+                '<button aria-label="Start a call" class="mock-elevenlabs-row">Start a call</button>',
+                '<button aria-label="Dismiss" class="mock-elevenlabs-dismiss">Dismiss</button>',
                 "</div>",
                 "</div>",
               ].join("");
@@ -71,6 +78,14 @@ test.describe("live-style interaction flows", () => {
                 "overflow: hidden;",
                 "}",
                 ".mock-elevenlabs-card { padding: 4px; width: 256px; }",
+                ".mock-elevenlabs-open {",
+                "background: radial-gradient(circle at 35% 35%, #8EC5E8, #2472A9 62%, #16344F);",
+                "border: 0;",
+                "border-radius: 999px;",
+                "box-shadow: 0 14px 28px rgba(0, 0, 0, .18);",
+                "height: 48px;",
+                "width: 48px;",
+                "}",
                 ".mock-elevenlabs-row {",
                 "align-items: center;",
                 "box-sizing: border-box;",
@@ -79,6 +94,7 @@ test.describe("live-style interaction flows", () => {
                 "padding: 0 12px;",
                 "}",
                 "button.mock-elevenlabs-row { border: 0; width: 100%; }",
+                ".mock-elevenlabs-dismiss { height: 36px; margin-left: auto; width: 44px; }",
                 ".mock-elevenlabs-sheet {",
                 "bottom: 80px;",
                 "height: calc(100% - 120px);",
@@ -126,12 +142,29 @@ test.describe("live-style interaction flows", () => {
                 "right: 0;",
                 "}",
                 "</style>",
-                this.expanded ? expandedMarkup : collapsedMarkup,
+                this.expanded ? expandedMarkup : this.dismissed ? minimizedMarkup : collapsedMarkup,
               ].join("");
 
-              this.shadowRoot.querySelector("button")?.addEventListener("click", (event) => {
+              this.shadowRoot.querySelector('[aria-label="Open chat"]')?.addEventListener("click", (event) => {
                 event.preventDefault();
-                this.expanded = !this.expanded;
+                this.dismissed = false;
+                this.render();
+              });
+              this.shadowRoot.querySelector('[aria-label="Dismiss"]')?.addEventListener("click", (event) => {
+                event.preventDefault();
+                this.dismissed = true;
+                this.expanded = false;
+                this.render();
+              });
+              this.shadowRoot.querySelector('[aria-label="Start a call"]')?.addEventListener("click", (event) => {
+                event.preventDefault();
+                this.dismissed = false;
+                this.expanded = true;
+                this.render();
+              });
+              this.shadowRoot.querySelector('[aria-label="Collapse"]')?.addEventListener("click", (event) => {
+                event.preventDefault();
+                this.expanded = false;
                 this.render();
               });
             }
@@ -251,9 +284,43 @@ test.describe("live-style interaction flows", () => {
 
     await page.setViewportSize({ height: 667, width: 390 });
     await gotoSettled(page, "/");
-    await page.locator("elevenlabs-convai").evaluate((element) => {
-      element.shadowRoot?.querySelector<HTMLButtonElement>("button")?.click();
+    await expect(
+      page.locator('[data-elevenlabs-widget-slot][data-elevenlabs-mobile-minimized="true"]'),
+    ).toBeVisible();
+
+    const mobileDefaultFit = await page.evaluate(() => {
+      const slot = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
+      const widget = document.querySelector<HTMLElement>("elevenlabs-convai");
+      const openButton =
+        widget?.shadowRoot?.querySelector<HTMLElement>('[aria-label="Open chat"]');
+      const startButton =
+        widget?.shadowRoot?.querySelector<HTMLElement>('[aria-label="Start a call"]');
+      const slotRect = slot?.getBoundingClientRect();
+      const openRect = openButton?.getBoundingClientRect();
+
+      return {
+        openButtonHeight: Math.round(openRect?.height ?? 0),
+        openButtonInViewport:
+          Boolean(openRect) &&
+          openRect!.bottom <= window.innerHeight &&
+          openRect!.right <= window.innerWidth,
+        slotHeight: Math.round(slotRect?.height ?? 0),
+        slotWidth: Math.round(slotRect?.width ?? 0),
+        startButtonVisible: Boolean(startButton && startButton.getBoundingClientRect().width > 1),
+      };
     });
+
+    expect(mobileDefaultFit.slotWidth).toBeLessThanOrEqual(72);
+    expect(mobileDefaultFit.slotHeight).toBeLessThanOrEqual(72);
+    expect(mobileDefaultFit.openButtonHeight).toBe(48);
+    expect(mobileDefaultFit.openButtonInViewport).toBeTruthy();
+    expect(mobileDefaultFit.startButtonVisible).toBe(false);
+
+    await page.locator('elevenlabs-convai button[aria-label="Open chat"]').click();
+    await expect(
+      page.locator('[data-elevenlabs-widget-slot][data-elevenlabs-mobile-minimized="false"]'),
+    ).toBeVisible();
+    await page.locator('elevenlabs-convai button[aria-label="Start a call"]').click();
     await expect(page.locator('[data-elevenlabs-widget-expanded="true"]')).toBeVisible();
     await page.waitForTimeout(250);
 
@@ -267,15 +334,13 @@ test.describe("live-style interaction flows", () => {
       const slotRect = slot?.getBoundingClientRect();
       const sheetRect = sheet?.getBoundingClientRect();
       const collapseRect = collapseButton?.getBoundingClientRect();
-      const cookieStyle = cookieBanner ? window.getComputedStyle(cookieBanner) : null;
 
       return {
         collapseInViewport:
           Boolean(collapseRect) &&
           collapseRect!.bottom <= window.innerHeight &&
           collapseRect!.right <= window.innerWidth,
-        cookieOpacity: cookieStyle?.opacity,
-        cookiePointerEvents: cookieStyle?.pointerEvents,
+        cookiePresent: Boolean(cookieBanner),
         sheetBottom: Math.round(window.innerHeight - (sheetRect?.bottom ?? 0)),
         sheetHeight: Math.round(sheetRect?.height ?? 0),
         slotHeight: Math.round(slotRect?.height ?? 0),
@@ -290,8 +355,7 @@ test.describe("live-style interaction flows", () => {
     expect(mobileExpandedFit.sheetHeight).toBeGreaterThanOrEqual(360);
     expect(mobileExpandedFit.sheetBottom).toBeGreaterThanOrEqual(79);
     expect(mobileExpandedFit.collapseInViewport).toBeTruthy();
-    expect(mobileExpandedFit.cookieOpacity).toBe("0");
-    expect(mobileExpandedFit.cookiePointerEvents).toBe("none");
+    expect(mobileExpandedFit.cookiePresent).toBe(false);
   });
 
   test.describe("without third-party widget noise", () => {
@@ -318,7 +382,7 @@ test.describe("live-style interaction flows", () => {
       ).toBeVisible();
     });
 
-    test("cookie banner Accept dismisses the banner and persists locally", async ({ page }) => {
+    test("cookie banner is not rendered", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
@@ -326,16 +390,12 @@ test.describe("live-style interaction flows", () => {
         page.locator('#trustedsite-tm-image, [title="TrustedSite Certified"]'),
       ).toHaveCount(0);
 
-      const banner = page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]').first();
-      const accept = page.locator('[data-aid="FOOTER_COOKIE_CLOSE_RENDERED"]').first();
-
-      await expect(banner).toBeVisible();
-      await accept.click();
-      await expect(banner).toBeHidden();
+      await expect(page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]')).toHaveCount(0);
+      await expect(page.locator('[data-aid="FOOTER_COOKIE_CLOSE_RENDERED"]')).toHaveCount(0);
+      await expect(page.getByText("This website uses cookies.")).toHaveCount(0);
 
       await page.reload({ waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(1_000);
-      await expect(banner).toBeHidden();
+      await expect(page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]')).toHaveCount(0);
     });
 
     test("homepage carousel hero presents a clear sign up path", async ({ page }) => {
@@ -644,32 +704,43 @@ test.describe("live-style interaction flows", () => {
       });
 
       const courseCard = courseSystem.locator('[data-rda-home-course-card="standalone"]').first();
-      const courseCardBefore = await courseCard.evaluate((element) => {
-        const image = element.querySelector<HTMLElement>(".rda-home-course-card-media img");
+      const readCourseCardStyle = () =>
+        courseCard.evaluate((element) => {
+          const image = element.querySelector<HTMLElement>(".rda-home-course-card-media img");
 
-        return {
-          borderColor: getComputedStyle(element).borderColor,
-          boxShadow: getComputedStyle(element).boxShadow,
-          height: Math.round((element as HTMLElement).offsetHeight),
-          imageTransform: image ? getComputedStyle(image).transform : "",
-          transform: getComputedStyle(element).transform,
-          width: Math.round((element as HTMLElement).offsetWidth),
-        };
-      });
+          return {
+            borderColor: getComputedStyle(element).borderColor,
+            boxShadow: getComputedStyle(element).boxShadow,
+            height: Math.round((element as HTMLElement).offsetHeight),
+            imageTransform: image ? getComputedStyle(image).transform : "",
+            transform: getComputedStyle(element).transform,
+            width: Math.round((element as HTMLElement).offsetWidth),
+          };
+        });
+
+      const courseCardBefore = await readCourseCardStyle();
 
       await courseCard.hover();
-      const courseCardHover = await courseCard.evaluate((element) => {
-        const image = element.querySelector<HTMLElement>(".rda-home-course-card-media img");
 
-        return {
-          borderColor: getComputedStyle(element).borderColor,
-          boxShadow: getComputedStyle(element).boxShadow,
-          height: Math.round((element as HTMLElement).offsetHeight),
-          imageTransform: image ? getComputedStyle(image).transform : "",
-          transform: getComputedStyle(element).transform,
-          width: Math.round((element as HTMLElement).offsetWidth),
-        };
-      });
+      await expect
+        .poll(async () => {
+          const style = await readCourseCardStyle();
+
+          return {
+            borderColor: style.borderColor !== courseCardBefore.borderColor,
+            boxShadow: style.boxShadow !== courseCardBefore.boxShadow,
+            imageTransform: style.imageTransform !== courseCardBefore.imageTransform,
+            transform: style.transform !== courseCardBefore.transform,
+          };
+        })
+        .toEqual({
+          borderColor: true,
+          boxShadow: true,
+          imageTransform: true,
+          transform: true,
+        });
+
+      const courseCardHover = await readCourseCardStyle();
 
       expect(courseCardHover.borderColor).not.toBe(courseCardBefore.borderColor);
       expect(courseCardHover.boxShadow).not.toBe(courseCardBefore.boxShadow);
@@ -679,13 +750,19 @@ test.describe("live-style interaction flows", () => {
       expect(courseCardHover.width).toBe(courseCardBefore.width);
 
       await courseCard.getByRole("link", { name: "BLS Certification Course - Initial or Renewal" }).focus();
-      const courseCardFocus = await courseCard.evaluate((element) => ({
-        borderColor: getComputedStyle(element).borderColor,
-        boxShadow: getComputedStyle(element).boxShadow,
-      }));
+      await expect
+        .poll(async () => {
+          const style = await readCourseCardStyle();
 
-      expect(courseCardFocus.borderColor).not.toBe(courseCardBefore.borderColor);
-      expect(courseCardFocus.boxShadow).not.toBe(courseCardBefore.boxShadow);
+          return {
+            borderColor: style.borderColor !== courseCardBefore.borderColor,
+            boxShadow: style.boxShadow !== courseCardBefore.boxShadow,
+          };
+        })
+        .toEqual({
+          borderColor: true,
+          boxShadow: true,
+        });
     });
 
     test("mobile homepage prioritizes signup and avoids overlay collisions", async ({ page }) => {
@@ -701,8 +778,9 @@ test.describe("live-style interaction flows", () => {
       const heroCta = page.locator('[data-rda-home-hero-signup="true"]');
       const mobileHero = page.locator('[data-rda-home-hero="true"]');
       const mobileHeroNext = page.locator("[data-rda-home-hero-next]");
-      const cookie = page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]').first();
+      const cookie = page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]');
       const widget = page.locator("[data-elevenlabs-widget-slot]");
+      const widgetElement = page.locator("elevenlabs-convai");
 
       await expect(heroCta).toBeVisible();
       await expect(mobileHero).toHaveClass(/is-interactive/);
@@ -710,23 +788,24 @@ test.describe("live-style interaction flows", () => {
       await expect(mobileHeroNext).toBeEnabled();
       await mobileHeroNext.click();
       await expect(mobileHero).toHaveAttribute("data-rda-active-slide", "2");
-      await expect(cookie).toBeVisible();
-      await expect(widget).toHaveCSS("opacity", "0");
+      await expect(cookie).toHaveCount(0);
+      await expect(widget).toBeVisible();
       await expect(widget).toHaveCSS("pointer-events", "none");
+      await expect(widgetElement).toHaveCSS("pointer-events", "auto");
 
       const overlap = await page.evaluate(() => {
         const cta = document.querySelector<HTMLElement>("[data-rda-home-hero-signup='true']");
-        const banner = document.querySelector<HTMLElement>("[data-aid='FOOTER_COOKIE_BANNER_RENDERED']");
+        const widget = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
         const ctaRect = cta?.getBoundingClientRect();
-        const bannerRect = banner?.getBoundingClientRect();
+        const widgetRect = widget?.getBoundingClientRect();
 
         return Boolean(
           ctaRect &&
-            bannerRect &&
-            ctaRect.left < bannerRect.right &&
-            ctaRect.right > bannerRect.left &&
-            ctaRect.top < bannerRect.bottom &&
-            ctaRect.bottom > bannerRect.top,
+            widgetRect &&
+            ctaRect.left < widgetRect.right &&
+            ctaRect.right > widgetRect.left &&
+            ctaRect.top < widgetRect.bottom &&
+            ctaRect.bottom > widgetRect.top,
         );
       });
       expect(overlap).toBe(false);
@@ -837,6 +916,16 @@ test.describe("live-style interaction flows", () => {
       await reviewMore.locator("summary").click();
       await expect(reviewMore.locator(".rda-review-photo-card")).toHaveCount(3);
 
+      const googleReviewLibrary = page.locator(".rda-google-review-library");
+      await expect(googleReviewLibrary.getByText("All 77 Google reviews")).toBeVisible();
+      await expect(googleReviewLibrary.locator(".rda-google-review-card")).toHaveCount(77);
+      await googleReviewLibrary.locator("summary").click();
+      await expect(googleReviewLibrary.locator(".rda-google-review-card").first()).toBeVisible();
+      await expect(googleReviewLibrary.getByRole("link", { name: "Open Google reviews" })).toHaveAttribute(
+        "href",
+        /maps\.google\.com/,
+      );
+
       await expect(page.locator(".rda-board-accordion")).toBeVisible();
       await expect(page.locator(".rda-board-grid-desktop")).toBeHidden();
       await expect(page.locator(".rda-gallery-section-home .rda-gallery-item:visible")).toHaveCount(4);
@@ -879,7 +968,6 @@ test.describe("live-style interaction flows", () => {
         dispatchClick("a[href^='mailto:']");
         dispatchClick("a[href*='google.com/maps']");
         dispatchClick("[data-rda-contact-form-toggle='true']");
-        dispatchClick("[data-aid='FOOTER_COOKIE_CLOSE_RENDERED']");
 
         const signupForm = document.querySelector<HTMLFormElement>("[data-rda-signup-form='true']");
         const firstInterest = signupForm?.querySelector<HTMLElement>(
@@ -916,7 +1004,6 @@ test.describe("live-style interaction flows", () => {
           "click_to_call",
           "email_click",
           "get_directions",
-          "cookie_accept",
           "generate_lead",
           "cta_click",
           "contact_action",
@@ -940,7 +1027,6 @@ test.describe("live-style interaction flows", () => {
           "cta_click",
           "social_click",
           "contact_action",
-          "cookie_accept",
           "lead_form_submit",
         ]),
       );
@@ -1070,6 +1156,53 @@ test.describe("live-style interaction flows", () => {
       await popup.waitForLoadState("domcontentloaded").catch(() => undefined);
       expect(popup.url()).toContain("google.com/maps/dir/");
       await popup.close();
+    });
+
+    test("mobile contact map stacks without creating blank space", async ({ page }) => {
+      await page.setViewportSize({ height: 844, width: 390 });
+      await gotoSettled(page, "/contact");
+
+      const mobileContactLayout = await page.locator(".rda-contact-section").evaluate((section) => {
+        const grid = section.querySelector<HTMLElement>(".rda-contact-grid");
+        const copy = section.querySelector<HTMLElement>(".rda-contact-copy");
+        const map = section.querySelector<HTMLElement>(".rda-contact-map-card");
+        const signup = document.querySelector<HTMLElement>(".rda-signup-section");
+        const read = (element: HTMLElement | null) => {
+          const rect = element?.getBoundingClientRect();
+
+          return rect
+            ? {
+                bottom: Math.round(rect.bottom),
+                height: Math.round(rect.height),
+                left: Math.round(rect.left),
+                right: Math.round(rect.right),
+                top: Math.round(rect.top),
+                width: Math.round(rect.width),
+              }
+            : null;
+        };
+        const gridColumns = grid ? getComputedStyle(grid).gridTemplateColumns : "";
+
+        return {
+          blankAfterMap:
+            signup && map
+              ? Math.round(signup.getBoundingClientRect().top - map.getBoundingClientRect().bottom)
+              : 0,
+          columnCount: gridColumns.split(" ").filter(Boolean).length,
+          copy: read(copy),
+          grid: read(grid),
+          map: read(map),
+          overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+
+      expect(mobileContactLayout.columnCount).toBe(1);
+      expect(mobileContactLayout.copy?.width ?? 0).toBeGreaterThanOrEqual(320);
+      expect(mobileContactLayout.map?.width ?? 0).toBeGreaterThanOrEqual(320);
+      expect(mobileContactLayout.map?.top ?? 0).toBeGreaterThan(mobileContactLayout.copy?.bottom ?? 0);
+      expect(mobileContactLayout.copy?.height ?? 0).toBeLessThan(760);
+      expect(mobileContactLayout.blankAfterMap).toBeLessThanOrEqual(72);
+      expect(mobileContactLayout.overflowX).toBe(0);
     });
   });
 });

@@ -145,14 +145,14 @@ components:
 
 This contract defines the shipped visual direction for Roseville Dental Academy after the shadcn/ui redesign. The target is a modern academy site built from shadcn primitives with the official Sera direction: taupe neutral foundation, Noto Sans body typography, Playfair Display editorial headings, Lucide icons, Radix behavior, low-radius surfaces, understated borders, Roseville logo blue as the semantic primary color, and the brand light blue as the accent color.
 
-The written site content is locked. Visible route copy, headings, form labels, placeholders, button labels, link labels, auth text, cookie text, document titles, status codes, and third-party endpoint behavior must remain unchanged unless a user explicitly asks for copy changes.
+The written site content is locked. Visible route copy, headings, form labels, placeholders, button labels, link labels, auth text, document titles, status codes, and third-party endpoint behavior must remain unchanged unless a user explicitly asks for copy changes.
 
 ## Sources Of Truth
 
 - `components.json` owns the shadcn style, base color, aliases, and icon library.
 - `app/globals.css` owns the Sera/taupe tokens and Roseville semantic logo-blue primary.
 - `snapshot/live/` is the text and legacy content reference. It is not the visual runtime target.
-- React shell/components own the modern UI, interaction behavior, forms, navigation, footer, cookie banner, stable widgets, and auth/utility chrome.
+- React shell/components own the modern UI, interaction behavior, forms, navigation, footer, stable widgets, and auth/utility chrome.
 
 ## Tokens
 
@@ -170,7 +170,7 @@ Snapshot HTML may still contain Adamina, Fjalla One, or GoDaddy-generated font r
 
 Public pages should feel calm, editorial, and academy-specific rather than like a generic SaaS landing page. Keep real course imagery and academy logo assets. Use full-width sections with constrained inner content; use cards for repeated items, forms, menus, modals, reviews, gallery items, and true framed tools.
 
-Keep the header, footer, cookie banner, ElevenLabs wrapper, forms, and stable widgets responsive across desktop, tablet, and mobile. The design must avoid horizontal overflow, header overlap, broken above-fold imagery, and widget/cookie collisions.
+Keep the header, footer, ElevenLabs wrapper, forms, and stable widgets responsive across desktop, tablet, and mobile. The design must avoid horizontal overflow, header overlap, broken above-fold imagery, and widget collisions.
 
 ## Components
 

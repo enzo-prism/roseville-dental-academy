@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { ElevenLabsAgentWidget } from "@/components/site/elevenlabs-agent-widget";
-import { LiveCookieBanner } from "@/components/site/live-cookie-banner";
 import { fetchLiveMirrorDocument } from "@/lib/live-route-data";
 
 export const metadata: Metadata = {
@@ -24,7 +23,6 @@ export default async function NotFound() {
         className="rda-snapshot-content rda-not-found-content"
         dangerouslySetInnerHTML={{ __html: document.bodyHtml }}
       />
-      <LiveCookieBanner />
       <ElevenLabsAgentWidget />
     </div>
   );

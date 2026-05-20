@@ -387,16 +387,6 @@ function trackClickEvent(target: Element) {
     trackGaCtaClick("drop_us_a_line", getLocation(button), "contact_form");
     return;
   }
-
-  if (button?.matches("[data-aid='FOOTER_COOKIE_CLOSE_RENDERED']")) {
-    trackSiteEvent("cookie_accept", {
-      location: getLocation(button),
-    });
-    trackSafeGaEvent("cookie_accept", {
-      consent_action: "accept",
-      link_location: getLocation(button),
-    });
-  }
 }
 
 function getFormValues(formData: FormData, name: string) {

@@ -1014,6 +1014,7 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
   const reviewSection = page.locator('[data-rda-home-review-highlights="true"]');
   const courseSystem = page.locator('[data-rda-home-course-system="true"]');
   const reviewCards = reviewSection.locator(".rda-review-photo-card");
+  const googleReviewCards = reviewSection.locator(".rda-google-review-card");
   const mismatches: string[] = [];
 
   await expect(reviewSection).toBeVisible({ timeout: 12_000 });
@@ -1054,6 +1055,10 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
       })),
   );
   const cardCount = visibleCardDetails.length;
+  const googleReviewCardCount = await googleReviewCards.count();
+  const googleReviewGridCount = await reviewSection
+    .locator(".rda-google-review-grid")
+    .getAttribute("data-rda-google-review-count");
   const imageSources = visibleCardDetails.map((card) => card.imageSource);
   const uniqueImageSources = new Set(imageSources.filter(Boolean));
   const reviewText = (await reviewSection.textContent()) ?? "";
@@ -1078,17 +1083,36 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     mismatches.push(`expected 6 review cards, found ${cardCount}`);
   }
 
+  if (googleReviewCardCount !== 77 || googleReviewGridCount !== "77") {
+    mismatches.push(
+      `expected all 77 Google review entries, found ${googleReviewCardCount} cards with grid count ${googleReviewGridCount}`,
+    );
+  }
+
   if (uniqueImageSources.size !== imageSources.length) {
     mismatches.push("review cards do not use unique gallery photos");
   }
 
-  for (const phrase of ["Adriana Nebuloni", "Selene", "Salvador Garcia", "Breana Donahue"]) {
+  for (const phrase of [
+    "Adriana Nebuloni",
+    "Selene",
+    "Salvador Garcia",
+    "Breana Donahue",
+    "Ñåwìd Žãźāį",
+    "Daisy Sifuentes",
+  ]) {
     if (!reviewText.includes(phrase)) {
       mismatches.push(`review section missing ${phrase}`);
     }
   }
 
-  for (const phrase of ["Reviews for Google", "5 out of 5 stars", "77 Google reviews"]) {
+  for (const phrase of [
+    "Reviews for Google",
+    "5 out of 5 stars",
+    "77 Google reviews",
+    "All 77 Google reviews",
+    "Updated May 19, 2026",
+  ]) {
     if (!reviewText.includes(phrase)) {
       mismatches.push(`review section missing Google review marker: ${phrase}`);
     }
@@ -1104,6 +1128,7 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
 
   smokeSummary.push({
     cardCount,
+    googleReviewCardCount,
     imageSources,
     mismatches,
     route: "/",
@@ -1114,6 +1139,8 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
   if (mismatches.length > 0) {
     writeJsonArtifact(testInfo, "homepage-review-photos-summary.json", {
       cardCount,
+      googleReviewCardCount,
+      googleReviewGridCount,
       imageSources,
       mismatches,
     });
@@ -1394,90 +1421,44 @@ test("elevenlabs widget is embedded on every page shell", async ({ request }, te
   expect(mismatches).toEqual([]);
 });
 
-test("legacy cookie banner stays out of the elevenlabs widget corner", async ({ page }, testInfo) => {
+test("cookie banner is absent from rendered pages", async ({ page }, testInfo) => {
   const results: Array<Record<string, unknown>> = [];
   const mismatches: string[] = [];
 
-  for (const viewport of [
-    { height: 900, label: "desktop", width: 1280 },
-    { height: 844, label: "mobile", width: 390 },
-  ]) {
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  for (const route of ["/", "/contact", "/m/login", "/registration"]) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${localOrigin}${route}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await page.waitForLoadState("load").catch(() => undefined);
 
     const result = await page.evaluate(() => {
-      const banner = document.createElement("div");
-
-      banner.setAttribute("data-aid", "FOOTER_COOKIE_BANNER_RENDERED");
-      banner.textContent =
-        "This website uses cookies. We use cookies to analyze website traffic and optimize your website experience.";
-      banner.style.background = "rgb(43, 83, 85)";
-      banner.style.color = "#fff";
-      banner.style.padding = "16px";
-      banner.style.position = "fixed";
-      banner.style.width = "100vw";
-      (document.querySelector(".rda-live-shell") ?? document.body).appendChild(banner);
-
-      const widget = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
-      const bannerRect = banner.getBoundingClientRect();
-      const widgetRect = widget?.getBoundingClientRect() ?? new DOMRect();
-      const widgetStyle = widget ? window.getComputedStyle(widget) : undefined;
-      const widgetVisible = Boolean(
-        widget &&
-          widgetStyle &&
-          widgetStyle.display !== "none" &&
-          widgetStyle.visibility !== "hidden" &&
-          Number.parseFloat(widgetStyle.opacity || "1") > 0 &&
-          widgetStyle.pointerEvents !== "none" &&
-          widgetRect.width > 0 &&
-          widgetRect.height > 0,
-      );
-      const overlaps =
-        widgetVisible &&
-        bannerRect.left < widgetRect.right &&
-        bannerRect.right > widgetRect.left &&
-        bannerRect.top < widgetRect.bottom &&
-        bannerRect.bottom > widgetRect.top;
-
-      banner.remove();
+      const bodyText = document.body.innerText;
 
       return {
-        banner: {
-          bottom: Math.round(window.innerHeight - bannerRect.bottom),
-          left: Math.round(bannerRect.left),
-          right: Math.round(window.innerWidth - bannerRect.right),
-          width: Math.round(bannerRect.width),
-        },
-        overlaps,
-        widget: {
-          bottom: Math.round(window.innerHeight - widgetRect.bottom),
-          opacity: widgetStyle?.opacity ?? "",
-          pointerEvents: widgetStyle?.pointerEvents ?? "",
-          right: Math.round(window.innerWidth - widgetRect.right),
-          visible: widgetVisible,
-          width: Math.round(widgetRect.width),
-        },
+        acceptButtonCount: document.querySelectorAll("[data-aid='FOOTER_COOKIE_CLOSE_RENDERED']")
+          .length,
+        bannerCount: document.querySelectorAll("[data-aid='FOOTER_COOKIE_BANNER_RENDERED']").length,
+        cookieTextPresent: bodyText.includes("This website uses cookies."),
       };
     });
 
-    if (result.overlaps) {
-      mismatches.push(`${viewport.label} cookie banner overlaps ElevenLabs widget`);
+    if (result.bannerCount > 0 || result.acceptButtonCount > 0 || result.cookieTextPresent) {
+      mismatches.push(`${route} rendered cookie banner content`);
     }
 
     results.push({
       ...result,
-      viewport: viewport.label,
+      route,
     });
   }
 
   smokeSummary.push({
     mismatches,
     status: mismatches.length === 0 ? "passed" : "failed",
-    type: "cookie-widget-corner",
+    type: "cookie-banner-removed",
   });
 
   if (mismatches.length > 0) {
-    writeJsonArtifact(testInfo, "cookie-widget-corner-summary.json", {
+    writeJsonArtifact(testInfo, "cookie-banner-removed-summary.json", {
       mismatches,
       results,
     });

@@ -4,7 +4,6 @@ import type { LiveRoute } from "@/lib/live-route-data";
 
 import { ElevenLabsAgentWidget } from "./elevenlabs-agent-widget";
 import { HomeHeroCarouselController } from "./home-hero-carousel-controller";
-import { LiveCookieBanner } from "./live-cookie-banner";
 import { LiveFooter } from "./live-footer";
 import { LiveHeader } from "./live-header";
 
@@ -20,7 +19,6 @@ export function LiveShell({ children, route }: LiveShellProps) {
       {children}
       <HomeHeroCarouselController enabled={route.route === "/"} />
       <LiveFooter />
-      <LiveCookieBanner />
       <ElevenLabsAgentWidget />
     </div>
   );
