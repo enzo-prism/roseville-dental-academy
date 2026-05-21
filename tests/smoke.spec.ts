@@ -923,6 +923,11 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
   });
   const badRefundCopy = "Due to limited space all sales are final and no refunds will be issued";
   const requiredCourseCopy = [
+    "2026 Class Schedule",
+    "Dates are penciled in and may change; admissions will confirm current availability.",
+    "June 19",
+    "Full",
+    "July 13, 2026",
     "Initial and renewal BLS/CPR training for healthcare providers",
     "Board-approved 8-hour Infection Control training for unlicensed dental assistants",
     "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified",
@@ -934,6 +939,12 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
 
   if (snapshot.bodyText.includes(badRefundCopy)) {
     mismatches.push("homepage still renders the repeated refund policy copy");
+  }
+
+  for (const staleDate of ["May 2, 2026", "May 9, 2026"]) {
+    if (snapshot.bodyText.includes(staleDate)) {
+      mismatches.push(`homepage still renders stale course date: ${staleDate}`);
+    }
   }
 
   for (const phrase of requiredCourseCopy) {
@@ -1509,8 +1520,9 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
     "Common Student Questions",
     "Do students need to provide patients?",
     "Roseville Dental Academy does not provide patients",
-    "Monday, July 13, 2026",
-    "Friday, September 4, 2026",
+    "June 19, 2026 (full)",
+    "July 13, 2026",
+    "December 12, 2026",
   ]) {
     if (!faqSnapshot.bodyText.includes(phrase)) {
       mismatches.push(`FAQ page missing Drive-derived phrase: ${phrase}`);

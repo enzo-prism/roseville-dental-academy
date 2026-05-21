@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
+import { CalendarDays } from "lucide-react";
 
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { courseScheduleNote, getCourseSchedule } from "@/lib/course-schedule";
 import type { LiveCourseContent, LiveCourseLink } from "@/lib/live-course-content";
 
 type LiveCourseSection = {
@@ -197,6 +199,50 @@ function CourseSectionCard({
   );
 }
 
+function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
+  const scheduleEntries = getCourseSchedule(course.id);
+
+  if (!scheduleEntries.length) {
+    return null;
+  }
+
+  return (
+    <Card className="rounded-lg border-border bg-card shadow-sm">
+      <CardHeader className="gap-3">
+        <h2>
+          <Badge
+            className="h-auto max-w-full rounded-md border-border bg-background px-3 py-1 text-left font-heading text-base leading-snug text-foreground whitespace-normal"
+            variant="outline"
+          >
+            Upcoming Class Dates
+          </Badge>
+        </h2>
+      </CardHeader>
+      <Separator />
+      <CardContent className="grid gap-4 pt-1">
+        <div className="flex flex-wrap gap-2">
+          {scheduleEntries.map((entry) => (
+            <Badge
+              className="h-auto min-h-8 rounded-md border-border bg-background px-3 py-1.5 text-sm leading-snug text-foreground"
+              key={entry.isoDate}
+              variant="outline"
+            >
+              <CalendarDays aria-hidden="true" />
+              <time dateTime={entry.isoDate}>{entry.date}</time>
+              {entry.status === "full" ? (
+                <span className="ml-1 rounded-sm bg-primary px-1.5 py-0.5 text-primary-foreground">
+                  Full
+                </span>
+              ) : null}
+            </Badge>
+          ))}
+        </div>
+        <p className="text-sm leading-6 text-muted-foreground">{courseScheduleNote}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   const [hero, ...sections] = splitCourseSections(course);
   const featureCount = course.variant === "program" ? 2 : 1;
@@ -233,6 +279,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               ) : null}
             </div>
           ) : null}
+          <CourseSchedulePanel course={course} />
           <div className="grid gap-4">
             {featureSections.map((section) => (
               <CourseSectionCard

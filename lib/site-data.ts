@@ -219,7 +219,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$85",
     summary:
-      "Initial or renewal BLS/CPR for healthcare providers. The course is 3 hours, costs $85, and lists May 2, 2026 and June 6, 2026 class dates.",
+      "Initial or renewal BLS/CPR for healthcare providers. The course is 3 hours, costs $85, and upcoming 2026 dates begin June 6.",
     href: "/bls-cpr-1",
     media: siteImages.bls,
     analyticsKey: "card-bls",
@@ -230,7 +230,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$395",
     summary:
-      "Board-approved 8-hour Infection Control training for unlicensed dental assistants. The listed May 2, 2026 date has passed, so call to confirm current availability.",
+      "Board-approved 8-hour Infection Control training for unlicensed dental assistants, scheduled alongside the BLS and X-ray course dates.",
     href: "/infection-control",
     media: siteImages.infection,
     analyticsKey: "card-infection-control",
@@ -241,7 +241,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$695",
     summary:
-      "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. The listed May 2, 2026 date has passed, so call to confirm availability.",
+      "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified, with upcoming 2026 X-ray dates beginning June 6.",
     href: "/radiation-safety",
     media: siteImages.radiation,
     analyticsKey: "card-radiation-safety",
@@ -252,7 +252,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$500",
     summary:
-      "12-hour board-approved coronal polishing training with didactic, laboratory, manikin, written exam, and human patient requirements. Listed date: May 9, 2026.",
+      "12-hour board-approved coronal polishing training with didactic, laboratory, manikin, written exam, and human patient requirements.",
     href: "/coronal-polish",
     media: siteImages.coronal,
     analyticsKey: "card-coronal-polish",
@@ -263,7 +263,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$550",
     summary:
-      "16-hour pit and fissure sealant training for eligible dental assistants and RDAs. Students may not perform sealants until licensed. Listed date: May 9, 2026.",
+      "16-hour pit and fissure sealant training for eligible dental assistants and RDAs. Students may not perform sealants until licensed.",
     href: "/sealants",
     media: siteImages.sealants,
     analyticsKey: "card-sealants",
@@ -703,7 +703,7 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for Monday, July 13, 2026 or Friday, September 4, 2026. BLS lists May 2, 2026 and June 6, 2026. Infection Control and Radiation Safety list May 2, 2026, which has passed, so students should call to confirm current availability. Coronal Polish and Pit and Fissure Sealants list May 9, 2026.",
+      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026, September 4, 2026, October 5, 2026, and November 20, 2026. BLS, X-rays/Radiation Safety, and Infection Control are listed for June 6, July 18, August 1, September 5, October 3, November 7, and December 5, 2026. Coronal Polish and Pit and Fissure Sealants are listed for June 20, July 25, August 8, September 12, October 10, November 14, and December 12, 2026. Dates are penciled in and admissions will confirm current availability.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -847,28 +847,28 @@ export const registrationCourseOptions: RegistrationCourseOption[] = [
     key: "dental-assisting",
     label: "Dental Assisting Training Program",
     price: "$2500.00",
-    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. Starts Monday, July 13, 2026 or Friday, September 4, 2026.",
+    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. The June 19, 2026 start is full; the next available start is July 13, 2026.",
     icon: "graduation",
   },
   {
     key: "radiation-safety",
     label: "Radiation Safety / X-ray License",
     price: "$695.00",
-    note: "32-hour radiography course for dental personnel and dentists who want staff x-ray certified. Listed date: May 2, 2026; call to confirm current availability.",
+    note: "32-hour radiography course for dental personnel and dentists who want staff x-ray certified. Upcoming penciled-in dates begin June 6, 2026.",
     icon: "scan",
   },
   {
     key: "infection-control",
     label: "8-Hour Infection Control Certification",
     price: "$395.00",
-    note: "Board-approved infection control course for unlicensed dental assistants. Listed date: May 2, 2026; call to confirm current availability.",
+    note: "Board-approved infection control course for unlicensed dental assistants. Upcoming penciled-in dates begin June 6, 2026.",
     icon: "shield",
   },
   {
     key: "bls-cpr",
     label: "BLS / CPR",
     price: "$85.00",
-    note: "Initial or renewal BLS/CPR for healthcare providers. 3 hours. Listed dates: May 2, 2026 and June 6, 2026.",
+    note: "Initial or renewal BLS/CPR for healthcare providers. 3 hours. Upcoming penciled-in dates begin June 6, 2026.",
     icon: "heart",
   },
 ] as const;
@@ -912,12 +912,11 @@ export const homeHero: HeroContent = {
   panel: {
     title: "Upcoming class dates",
     copy:
-      "Dental Assisting has July and September starts. Some certification dates from the course sheet have already passed, so students should call to confirm current availability before planning around them.",
+      "Dates are penciled in and may change; admissions will confirm current availability before students plan around them.",
     items: [
-      "Dental Assisting Training Course: Monday, July 13, 2026 or Friday, September 4, 2026",
-      "BLS / CPR: May 2, 2026 and June 6, 2026",
-      "Infection Control and Radiation Safety: May 2, 2026; call to confirm next availability",
-      "Coronal Polish and Pit and Fissure Sealants: May 9, 2026",
+      "Dental Assisting Training Course: June 19, 2026 is full; next available start is July 13, 2026",
+      "BLS / CPR, X-rays, and Infection Control: June 6, July 18, August 1, September 5, October 3, November 7, and December 5, 2026",
+      "Coronal Polish and Pit and Fissure Sealants: June 20, July 25, August 8, September 12, October 10, November 14, and December 12, 2026",
     ],
   },
 };
@@ -934,7 +933,7 @@ export const homePrimarySplit: SplitSectionContent = {
   imageAlt: "Students practicing chairside dental assisting skills inside Waikiki Dental",
   supporting: {
     title: "Dental assisting start dates",
-    copy: ["Monday, July 13, 2026 or Friday, September 4, 2026"],
+    copy: ["June 19, 2026 is full. Next available starts: July 13, September 4, October 5, and November 20, 2026."],
     actions: [
       {
         label: "Learn more",
@@ -1261,7 +1260,7 @@ export const dentalProgramPage = {
   ribbon: {
     title: "Admissions and registration",
     copy:
-      "The course starts Monday, July 13, 2026 or Friday, September 4, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
+      "The June 19, 2026 course is full. The next available starts are July 13, September 4, October 5, and November 20, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
     actions: [
       {
         label: "Download registration form",

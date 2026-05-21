@@ -777,6 +777,116 @@ textarea {
   margin: 10px 0 0;
 }
 
+.rda-home-schedule-section {
+  display: grid;
+  gap: 24px;
+}
+
+.rda-home-schedule-heading {
+  margin-bottom: 0;
+}
+
+.rda-home-schedule-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rda-home-schedule-month-card {
+  border: 1px solid var(--rda-color-border-soft);
+  border-radius: 8px;
+  gap: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.rda-home-schedule-month-header {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  padding: 18px 18px 14px;
+}
+
+.rda-home-schedule-month-header [data-slot="card-title"] {
+  color: var(--rda-color-heading);
+  font-family: var(--rda-font-heading);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.18;
+  margin: 0;
+}
+
+.rda-home-schedule-separator {
+  background: var(--rda-color-border-soft);
+}
+
+.rda-home-schedule-month-body {
+  display: grid;
+  gap: 0;
+  padding: 0;
+}
+
+.rda-home-schedule-date-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 104px minmax(0, 1fr);
+  padding: 14px 18px;
+}
+
+.rda-home-schedule-date-row + .rda-home-schedule-date-row {
+  border-top: 1px solid var(--rda-color-border-soft);
+}
+
+.rda-home-schedule-date-row time {
+  color: var(--rda-color-primary-deep);
+  font-family: var(--rda-font-body);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rda-home-schedule-course-list {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rda-home-schedule-course-wrap {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rda-home-schedule-course-chip {
+  border-color: var(--rda-color-border-soft);
+  border-radius: 6px;
+  color: var(--rda-color-subnav);
+  font-family: var(--rda-font-body);
+  height: auto;
+  min-height: 28px;
+  white-space: normal;
+}
+
+.rda-home-schedule-course-chip:hover,
+.rda-home-schedule-course-chip:focus-visible {
+  background: var(--rda-color-accent-surface);
+  color: var(--rda-color-primary-deep);
+}
+
+.rda-home-schedule-status {
+  background: var(--rda-color-primary);
+  border-radius: 6px;
+  color: var(--primary-foreground);
+  font-family: var(--rda-font-body);
+  height: auto;
+  min-height: 26px;
+}
+
 .rda-home-course-icon-shell {
   align-items: center;
   background: var(--rda-color-accent-surface);
@@ -2583,6 +2693,7 @@ textarea {
 
   .rda-home-bls-feature,
   .rda-home-offered-grid,
+  .rda-home-schedule-grid,
   .rda-home-hygienist-section {
     grid-template-columns: 1fr;
   }
@@ -2824,8 +2935,17 @@ textarea {
     margin-bottom: 20px;
   }
 
+  .rda-home-schedule-heading {
+    margin-bottom: 0;
+  }
+
+  .rda-home-schedule-date-row {
+    grid-template-columns: 1fr;
+  }
+
   .rda-home-standalone-grid,
   .rda-home-offered-grid,
+  .rda-home-schedule-grid,
   .rda-home-why-grid {
     grid-template-columns: 1fr;
   }

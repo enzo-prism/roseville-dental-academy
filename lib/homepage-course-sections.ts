@@ -20,36 +20,36 @@ export const homepageCourseSections = {
     {
       courses: [
         {
-          date: "May 2, 2026",
           description:
-            "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and lists May 2, 2026 and June 6, 2026 class dates.",
+            "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and includes live skills practice and certification support.",
           href: "/bls%2Fcpr-1",
           icon: "heart",
           image:
             "/__live/img1.wsimg.com/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/blob-0401488__349c00ba12.png",
           price: "$85",
+          scheduleId: "bls-cpr-1",
           title: "BLS Certification Course - Initial or Renewal",
         },
         {
-          date: "May 2, 2026",
           description:
-            "Board-approved 8-hour Infection Control training for unlicensed dental assistants. Current BLS through AHA or ARC plus a 2-hour Dental Practice Act certification are required. Listed date: May 2, 2026; call to confirm current availability.",
+            "Board-approved 8-hour Infection Control training for unlicensed dental assistants. Current BLS through AHA or ARC plus a 2-hour Dental Practice Act certification are required.",
           href: "/infection-control",
           icon: "shield",
           image:
             "/__live/img1.wsimg.com/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/blob-0009__25a3069064.png",
           price: "$395",
+          scheduleId: "infection-control",
           title: "8-Hour Infection Control Course",
         },
         {
-          date: "May 2, 2026",
           description:
-            "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant. Listed date: May 2, 2026; call to confirm current availability.",
+            "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant.",
           href: "/radiation-safety",
           icon: "radiation",
           image:
             "/__live/img1.wsimg.com/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_6818__921b2e18d8.jpg",
           price: "$695",
+          scheduleId: "radiation-safety",
           title: "Radiation Safety Course",
         },
       ],
@@ -60,25 +60,25 @@ export const homepageCourseSections = {
     {
       courses: [
         {
-          date: "May 9, 2026",
           description:
-            "12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements. Listed date: May 9, 2026.",
+            "12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements.",
           href: "/coronal-polish",
           icon: "sparkles",
           image:
             "/__live/img1.wsimg.com/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/coronal%2520polish-0001__ace57ddf8e.jpg",
           price: "$500",
+          scheduleId: "coronal-polish",
           title: "Coronal Polish Course",
         },
         {
-          date: "May 9, 2026",
           description:
-            "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed. Listed date: May 9, 2026.",
+            "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed.",
           href: "/sealants",
           icon: "badge",
           image:
             "/__live/img1.wsimg.com/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/Pit%2520and%2520Fissure%2520Sealants%2520pic__d0612b8113.jpg",
           price: "$550",
+          scheduleId: "sealants",
           title: "Pit and Fissure Sealant Course",
         },
       ],
@@ -96,8 +96,9 @@ export const homepageCourseSections = {
         ctaLabel: "Learn more",
         icon: "graduation",
         image: "/assets/generated/roseville/homepage-typodont-training.jpg",
-        nextCourseDate: "Monday, July 13, 2026 or Friday, September 4, 2026",
-        nextCourseLabel: "Next course starts:",
+        nextCourseDate: "July 13, 2026. Additional starts are September 4, October 5, and November 20, 2026.",
+        nextCourseLabel: "Next available start:",
+        scheduleId: "dental-assisting-program",
         title: "Dental Assisting Training Course - $2,500.00",
       },
       {

@@ -630,6 +630,12 @@ test.describe("live-style interaction flows", () => {
         courseSystem.getByRole("link", { name: "Link for online portion" }),
       ).toHaveAttribute("href", "https://shopcpr.heart.org/heartcode-bls");
       await expect(courseSystem.getByText("OFFERED COURSES", { exact: true })).toHaveCount(2);
+      await expect(courseSystem.getByText("2026 Class Schedule", { exact: true })).toBeVisible();
+      await expect(
+        courseSystem.getByText("Dates are penciled in and may change; admissions will confirm current availability.", { exact: true }),
+      ).toBeVisible();
+      await expect(courseSystem.getByText("June 19", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByText("Full", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("Stand Alone Courses", { exact: true })).toHaveCount(1);
       await expect(courseSystem.getByText("Click on photo to learn more", { exact: true })).toHaveCount(1);
       await expect(
@@ -649,7 +655,7 @@ test.describe("live-style interaction flows", () => {
       ).toHaveAttribute("href", "/sealants");
       await expect(courseSystem.getByText("Dental Assisting Training Course - $2,500.00")).toBeVisible();
       await expect(
-        courseSystem.getByText("Monday, July 13, 2026 or Friday, September 4, 2026"),
+        courseSystem.getByText("July 13, 2026. Additional starts are September 4, October 5, and November 20, 2026."),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",

@@ -99,11 +99,11 @@ const HOMEPAGE_REFUND_POLICY_COPY_PATTERN =
   /Due to limited space all sales are final and no refunds will be issued\.?(?:&nbsp;)?/;
 
 const HOMEPAGE_COURSE_COPY_REPLACEMENTS = [
-  "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and lists May 2, 2026 and June 6, 2026 class dates.",
-  "Board-approved 8-hour Infection Control training for unlicensed dental assistants. Current BLS through AHA or ARC plus a 2-hour Dental Practice Act certification are required. Listed date: May 2, 2026; call to confirm current availability.",
-  "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant. Listed date: May 2, 2026; call to confirm current availability.",
-  "12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements. Listed date: May 9, 2026.",
-  "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed. Listed date: May 9, 2026.",
+  "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and upcoming 2026 dates begin June 6.",
+  "Board-approved 8-hour Infection Control training for unlicensed dental assistants. Current BLS through AHA or ARC plus a 2-hour Dental Practice Act certification are required.",
+  "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant.",
+  "12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements.",
+  "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed.",
   "Dental Assisting is a 9-week, 210-hour training course for students age 16 and older, with online lectures, homework, chairside experience, resume and job assistance, and a 64-hour internship component.",
 ] as const;
 
@@ -113,23 +113,23 @@ const COURSE_DATE_REPLACEMENTS: Array<{
 }> = [
   {
     pattern: /\bFriday,\s*June 19th,?\s*2026\b/g,
-    replacement: "Monday, July 13, 2026 or Friday, September 4, 2026",
+    replacement: "June 19, 2026 (Full), July 13, September 4, October 5, and November 20, 2026",
   },
   {
     pattern: /\bMay 2nd,? 2026\b/g,
-    replacement: "May 2, 2026",
+    replacement: "June 6, 2026",
   },
   {
     pattern: /\bMay 2, 2026\b/g,
-    replacement: "May 2, 2026",
+    replacement: "June 6, 2026",
   },
   {
     pattern: /\bMay 9th,? 2026\b/g,
-    replacement: "May 9, 2026",
+    replacement: "June 20, 2026",
   },
   {
     pattern: /\bMay 9, 2026\b/g,
-    replacement: "May 9, 2026",
+    replacement: "June 20, 2026",
   },
 ];
 

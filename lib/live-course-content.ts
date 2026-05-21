@@ -1,3 +1,8 @@
+import {
+  courseScheduleNote,
+  getCourseScheduleDateList,
+} from "@/lib/course-schedule";
+
 export type LiveCourseId =
   | "bls-cpr-1"
   | "coronal-polish"
@@ -25,6 +30,10 @@ export type LiveCourseContent = {
 
 const dentalAssistingPdfHref =
   "/__live/img1.wsimg.com/blobby/go/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/Dental%2520Assistant%2520Training%2520Program%2520Registration.pdf";
+
+function classDateSentence(courseId: LiveCourseId, label = "Class date(s)") {
+  return `${label} ${getCourseScheduleDateList(courseId)}. ${courseScheduleNote}`;
+}
 
 export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
   "dental-assisting-program": {
@@ -57,7 +66,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $2,500.00.",
       "Duration 9 weeks; 210 hours total; 2 days a week with 1 assigned internship day and 1 class day.",
       "Format Online lectures, homework, chairside experience, and assigned externship hours.",
-      "Class start dates Monday, July 13, 2026 or Friday, September 4, 2026.",
+      `${classDateSentence("dental-assisting-program", "Class start dates")} The June 19, 2026 start is full; July 13, 2026 is the next available start.`,
       "Best next step Download the registration form and call the office at 916-888-9821 to enroll or schedule a tour.",
     ].join(" "),
   },
@@ -88,7 +97,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $85.",
       "Duration 3 hours.",
       "Format Instructor-led course with classroom instruction, live skills practice, skills testing, and a written exam. The academy also notes a blended HeartCode BLS option with online learning followed by an in-person skills evaluation.",
-      "Class date(s) May 2, 2026 and June 6, 2026. Call to confirm the currently available date.",
+      classDateSentence("bls-cpr-1"),
       "Best next step Call 916-888-9821 to schedule and register.",
     ].join(" "),
   },
@@ -118,7 +127,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $395.",
       "Duration 8 hours.",
       "Format Didactic, laboratory, and clinical instruction, with precourse work, competencies, and a written exam.",
-      "Class date(s) May 2, 2026. This listed date has passed; call to confirm the next available class date.",
+      classDateSentence("infection-control"),
       "Best next step Call 916-888-9821 to finalize registration and confirm the class date.",
     ].join(" "),
   },
@@ -148,7 +157,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $695.",
       "Duration 32 hours.",
       "Format Didactic, laboratory, and clinical application focused on x-ray safety, digital imaging, and evaluation.",
-      "Class date(s) May 2, 2026. This listed date has passed; call to confirm the next available class date.",
+      classDateSentence("radiation-safety"),
       "Best next step Call the office to register and confirm availability.",
     ].join(" "),
   },
@@ -178,7 +187,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $500.",
       "Duration 12 hours.",
       "Format Didactic, laboratory, and clinical application, including manikin work, written exam, and human patient clinical requirements.",
-      "Class date(s) May 9, 2026.",
+      classDateSentence("coronal-polish"),
       "Best next step Call the office to register and make sure you understand the patient requirements for the clinical portion.",
     ].join(" "),
   },
@@ -208,7 +217,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $550.",
       "Duration 16 hours.",
       "Format Didactic, laboratory, and clinical.",
-      "Class date(s) May 9, 2026.",
+      classDateSentence("sealants"),
       "Best next step Call the office to confirm eligibility and register.",
     ].join(" "),
   },

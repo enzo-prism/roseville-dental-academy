@@ -24,6 +24,13 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  courseScheduleCourseDetails,
+  courseScheduleMonths,
+  courseScheduleNote,
+  getNextAvailableCourseDate,
+} from "@/lib/course-schedule";
 import { homepageCourseSections } from "@/lib/homepage-course-sections";
 
 function CourseIconGlyph({
@@ -31,7 +38,14 @@ function CourseIconGlyph({
   marker,
 }: {
   icon: string;
-  marker: "bls" | "course-card" | "hygienist" | "offered" | "support" | "why";
+  marker:
+    | "bls"
+    | "course-card"
+    | "hygienist"
+    | "offered"
+    | "schedule"
+    | "support"
+    | "why";
 }) {
   const iconProps = {
     "aria-hidden": true,
@@ -84,6 +98,7 @@ function IconShell({
     | "course-card"
     | "hygienist"
     | "offered"
+    | "schedule"
     | "support"
     | "why";
 }) {
@@ -91,6 +106,52 @@ function IconShell({
     <span className="rda-home-course-icon-shell" aria-hidden="true">
       <CourseIconGlyph icon={icon} marker={marker} />
     </span>
+  );
+}
+
+function HomepageScheduleSection() {
+  return (
+    <div className="rda-home-schedule-section" data-rda-home-course-block="schedule">
+      <div className="rda-home-course-heading rda-home-schedule-heading">
+        <p className="rda-home-course-kicker">2026 dates</p>
+        <h2>2026 Class Schedule</h2>
+        <p>{courseScheduleNote}</p>
+      </div>
+      <div className="rda-home-schedule-grid">
+        {courseScheduleMonths.map((month) => (
+          <Card className="rda-home-schedule-month-card border-border bg-card" key={month.month}>
+            <CardHeader className="rda-home-schedule-month-header">
+              <IconShell icon="calendar" marker="schedule" />
+              <CardTitle>{month.month}</CardTitle>
+            </CardHeader>
+            <Separator className="rda-home-schedule-separator" />
+            <CardContent className="rda-home-schedule-month-body">
+              {month.entries.map((entry) => (
+                <div className="rda-home-schedule-date-row" key={entry.isoDate}>
+                  <time dateTime={entry.isoDate}>{entry.day}</time>
+                  <div className="rda-home-schedule-course-list">
+                    {entry.courses.map((course) => (
+                      <span className="rda-home-schedule-course-wrap" key={course.id}>
+                        <Badge asChild className="rda-home-schedule-course-chip" variant="outline">
+                          <Link href={courseScheduleCourseDetails[course.id].href}>
+                            {course.label}
+                          </Link>
+                        </Badge>
+                        {course.status === "full" ? (
+                          <Badge className="rda-home-schedule-status" variant="secondary">
+                            Full
+                          </Badge>
+                        ) : null}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -136,6 +197,8 @@ export function HomepageCourseSections() {
         </div>
       </div>
 
+      <HomepageScheduleSection />
+
       <div className="rda-home-standalone-sections" data-rda-home-course-block="standalone">
         <div className="rda-home-course-group">
           {"kicker" in standaloneHeading && standaloneHeading.kicker ? (
@@ -146,48 +209,54 @@ export function HomepageCourseSections() {
             <p>{standaloneHeading.intro}</p>
           </div>
           <div className="rda-home-standalone-grid">
-            {standaloneCourses.map((course) => (
-              <Card
-                className="rda-home-course-card rda-home-standalone-card border-border bg-card"
-                data-rda-home-course-card="standalone"
-                key={course.title}
-              >
-                <Link
-                  aria-hidden="true"
-                  className="rda-home-course-card-media-link"
-                  href={course.href}
-                  tabIndex={-1}
+            {standaloneCourses.map((course) => {
+              const nextDate = getNextAvailableCourseDate(course.scheduleId);
+
+              return (
+                <Card
+                  className="rda-home-course-card rda-home-standalone-card border-border bg-card"
+                  data-rda-home-course-card="standalone"
+                  key={course.title}
                 >
-                  <AspectRatio className="rda-home-course-card-media" ratio={4 / 3}>
-                    <Image
-                      alt=""
-                      fill
-                      sizes="(max-width: 760px) 100vw, 32vw"
-                      src={course.image}
-                    />
-                  </AspectRatio>
-                </Link>
-                <CardHeader className="rda-home-course-card-header">
-                  <IconShell icon={course.icon} marker="course-card" />
-                  <CardTitle>
-                    <Link href={course.href}>{course.title}</Link>
-                  </CardTitle>
-                  <div className="rda-home-course-card-meta">
-                    <Badge variant="outline">
-                      <CircleDollarSign aria-hidden="true" />
-                      {course.price}
-                    </Badge>
-                    <Badge variant="outline">
-                      <CalendarDays aria-hidden="true" />
-                      {course.date}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="rda-home-course-card-body">
-                  <p>{course.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+                  <Link
+                    aria-hidden="true"
+                    className="rda-home-course-card-media-link"
+                    href={course.href}
+                    tabIndex={-1}
+                  >
+                    <AspectRatio className="rda-home-course-card-media" ratio={4 / 3}>
+                      <Image
+                        alt=""
+                        fill
+                        sizes="(max-width: 760px) 100vw, 32vw"
+                        src={course.image}
+                      />
+                    </AspectRatio>
+                  </Link>
+                  <CardHeader className="rda-home-course-card-header">
+                    <IconShell icon={course.icon} marker="course-card" />
+                    <CardTitle>
+                      <Link href={course.href}>{course.title}</Link>
+                    </CardTitle>
+                    <div className="rda-home-course-card-meta">
+                      <Badge variant="outline">
+                        <CircleDollarSign aria-hidden="true" />
+                        {course.price}
+                      </Badge>
+                      {nextDate ? (
+                        <Badge variant="outline">
+                          <CalendarDays aria-hidden="true" />
+                          Next: {nextDate}
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="rda-home-course-card-body">
+                    <p>{course.description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </div>
