@@ -55,6 +55,53 @@ type FrozenManifest = {
 const FALLBACK_DESCRIPTION =
   "Roseville Dental Academy offers dental assisting and dental certification training in Roseville, California.";
 
+const ROUTE_TITLE_OVERRIDES: Record<string, string> = {
+  "/":
+    "Roseville Dental Academy | Dental Assisting & Certification Training in Roseville, CA",
+  "/dental-assisting-program":
+    "Dental Assisting Program | Roseville Dental Academy",
+  "/meet-the-instructors":
+    "Meet the Instructors | Roseville Dental Academy",
+  "/photos": "Academy Photos & Student Moments | Roseville Dental Academy",
+  "/bls%2Fcpr-1":
+    "BLS/CPR Certification for Healthcare Providers | Roseville Dental Academy",
+  "/infection-control":
+    "Dental Infection Control Course (IC189) | Roseville Dental Academy",
+  "/radiation-safety":
+    "Dental Radiation Safety & X-Ray Course (X1036) | Roseville Dental Academy",
+  "/coronal-polish":
+    "Coronal Polish Certification (CP148) | Roseville Dental Academy",
+  "/sealants":
+    "Pit & Fissure Sealants Certification (PF186) | Roseville Dental Academy",
+  "/faqs-1": "Dental Assisting Program FAQs | Roseville Dental Academy",
+  "/contact": "Contact Roseville Dental Academy | Roseville, CA",
+};
+
+const ROUTE_DESCRIPTION_OVERRIDES: Record<string, string> = {
+  "/":
+    "Train as a dental assistant in 9 weeks at Roseville Dental Academy. Hands-on classes for dental assisting, BLS/CPR, infection control, radiation safety, coronal polish, and sealants in Roseville, California.",
+  "/dental-assisting-program":
+    "Roseville Dental Academy's 9-week, 210-hour Dental Assisting Program combines online lectures, chairside training, a 64-hour internship, and resume and job assistance for students 16 and older.",
+  "/meet-the-instructors":
+    "Meet the licensed instructors at Roseville Dental Academy — Jessica, Sandra, Sajal, and Katelyn — who lead hands-on dental assisting and certification training in Roseville, California.",
+  "/photos":
+    "Student moments, hands-on training, and graduation photos from Roseville Dental Academy's dental assisting and certification courses in Roseville, California.",
+  "/bls%2Fcpr-1":
+    "Initial and renewal BLS/CPR certification for healthcare providers at Roseville Dental Academy — a 3-hour, $85 course with 2026 dates beginning June 6.",
+  "/infection-control":
+    "California Dental Board approved 8-hour Infection Control course (provider IC189) for unlicensed dental assistants at Roseville Dental Academy.",
+  "/radiation-safety":
+    "California Dental Board approved 32-hour Radiation Safety and dental X-ray course (provider X1036) at Roseville Dental Academy. Prepare for chairside imaging in California dental offices.",
+  "/coronal-polish":
+    "California Dental Board approved 12-hour Coronal Polish course (provider CP148) for eligible dental assistants. Includes didactic, lab, manikin, written exam, and clinical requirements.",
+  "/sealants":
+    "California Dental Board approved 16-hour Pit and Fissure Sealants course (provider PF186) for eligible dental assistants and RDAs at Roseville Dental Academy.",
+  "/faqs-1":
+    "Answers to common questions about Roseville Dental Academy's dental assisting program, course approvals, payment plans, accelerated format, and certificates.",
+  "/contact":
+    "Contact Roseville Dental Academy for hours, address, phone number, email, directions, and questions about dental assisting and certification programs in Roseville, California.",
+};
+
 const EXCLUDED_WIDGET_CLASS_PREFIXES = [
   "widget-header",
   "widget-footer",
@@ -188,12 +235,9 @@ const HOMEPAGE_HERO_SLIDES = [
 ] as const;
 
 function routeDescription(route: ManifestRoute) {
-  if (route.route === "/") {
-    return "Roseville Dental Academy training for dental assisting, x-ray, CPR, infection control, coronal polish, and sealants.";
-  }
-
-  if (route.route === "/contact") {
-    return "Contact Roseville Dental Academy for hours, address, phone number, email, directions, and questions about programs.";
+  const override = ROUTE_DESCRIPTION_OVERRIDES[route.route];
+  if (override) {
+    return override;
   }
 
   if (route.route.startsWith("/m/") || route.route.includes("resume-portal")) {
@@ -205,6 +249,10 @@ function routeDescription(route: ManifestRoute) {
   }
 
   return `${route.title} at Roseville Dental Academy.`;
+}
+
+function routeTitle(route: ManifestRoute) {
+  return ROUTE_TITLE_OVERRIDES[route.route] ?? route.title;
 }
 
 function widgetSlotsForRoute(route: ManifestRoute): LiveWidgetSlot[] {
@@ -264,6 +312,7 @@ function decorateRoute(route: ManifestRoute): LiveRoute {
 
   return {
     ...route,
+    title: routeTitle(route),
     description: routeDescription(route),
     kind: route.status === 404 ? "plain404" : "mirror",
     noindex,

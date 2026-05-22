@@ -1,4 +1,7 @@
-import { getPublicSitemapRoutes } from "@/lib/live-route-data";
+import {
+  getPublicSitemapRoutes,
+  type LiveRoute,
+} from "@/lib/live-route-data";
 import { SITE_URL } from "@/lib/site-config";
 import { socialChannelPages } from "@/lib/social-channel-data";
 
@@ -12,17 +15,42 @@ function escapeXml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
-export function GET() {
-  const updatedAt = new Date("2026-04-30T00:00:00.000Z").toISOString().slice(0, 10);
-  const routes = [
-    ...getPublicSitemapRoutes().map((route) => route.route),
-    ...socialChannelPages.map((page) => page.path),
-  ];
-  const urls = routes
-    .map((route) => {
-      const loc = `${SITE_URL}${route === "/" ? "" : route}`;
-      const priority = route === "/" ? "1" : route === "/contact" ? "0.7" : "0.5";
+function canonicalPathFor(route: LiveRoute): string {
+  // Prefer a clean alias (e.g. /bls-cpr-1) over the encoded original (/bls%2Fcpr-1).
+  if (route.route.includes("%2F") && route.aliases.length > 0) {
+    return route.aliases[0];
+  }
+  return route.route;
+}
 
+function priorityFor(path: string): string {
+  if (path === "/") return "1.0";
+  if (path === "/contact" || path === "/dental-assisting-program") return "0.8";
+  if (path === "/registration") return "0.7";
+  return "0.6";
+}
+
+export function GET() {
+  const updatedAt = new Date().toISOString().slice(0, 10);
+  const seen = new Set<string>();
+  const entries: { path: string; priority: string }[] = [];
+
+  for (const route of getPublicSitemapRoutes()) {
+    const path = canonicalPathFor(route);
+    if (seen.has(path)) continue;
+    seen.add(path);
+    entries.push({ path, priority: priorityFor(path) });
+  }
+
+  for (const page of socialChannelPages) {
+    if (seen.has(page.path)) continue;
+    seen.add(page.path);
+    entries.push({ path: page.path, priority: "0.4" });
+  }
+
+  const urls = entries
+    .map(({ path, priority }) => {
+      const loc = `${SITE_URL}${path === "/" ? "" : path}`;
       return `<url><loc>${escapeXml(loc)}</loc><lastmod>${updatedAt}</lastmod><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
     })
     .join("");

@@ -1,12 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Noto_Sans, Playfair_Display } from "next/font/google";
 
 import { GoogleAnalytics } from "@/components/site/google-analytics";
+import { GlobalStructuredData } from "@/components/site/structured-data";
 import { HotjarAnalytics } from "@/components/site/hotjar-analytics";
 import { InteractionAnalytics } from "@/components/site/interaction-analytics";
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
-import { getSiteUrl } from "../lib/site-config";
+import { buildPageMetadata } from "../lib/site-metadata";
 
 import "./globals.css";
 
@@ -22,15 +24,12 @@ const playfairDisplay = Playfair_Display({
   variable: "--font-playfair-display",
 });
 
-export const metadata: Metadata = {
-  title: "Roseville Dental Academy",
-  description: "Roseville Dental Academy",
-  metadataBase: new URL(getSiteUrl()),
-  icons: {
-    icon: "/assets/favicon.png",
-    shortcut: "/assets/favicon.png",
-    apple: "/assets/favicon.png",
-  },
+export const metadata: Metadata = buildPageMetadata();
+
+export const viewport: Viewport = {
+  themeColor: "#4682b4",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -40,14 +39,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${notoSans.variable} ${playfairDisplay.variable}`}>
-      <head>
-        <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
-      </head>
       <body className={LIVE_BODY_CLASS}>
+        <GlobalStructuredData />
         {children}
         <GoogleAnalytics />
         <HotjarAnalytics />
         <Analytics mode={analyticsMode} />
+        <SpeedInsights />
         <InteractionAnalytics />
       </body>
     </html>

@@ -5,7 +5,7 @@
       "livePath": "/",
       "localPath": "/",
       "expectedStatus": 200,
-      "expectedTitle": "Dental Assisting X Ray Class CPR Class - Rosevilledental",
+      "expectedTitle": "Roseville Dental Academy | Dental Assisting & Certification Training in Roseville, CA",
       "smokeText": "ROSEVILLE DENTAL ACADEMY"
     },
     {
@@ -13,7 +13,7 @@
       "livePath": "/contact",
       "localPath": "/contact",
       "expectedStatus": 200,
-      "expectedTitle": "Contact | Roseville Dental Academy",
+      "expectedTitle": "Contact Roseville Dental Academy | Roseville, CA",
       "smokeText": "Better yet, come see us in person!"
     },
     {
@@ -21,7 +21,7 @@
       "livePath": "/registration",
       "localPath": "/registration",
       "expectedStatus": 404,
-      "expectedTitle": "404 Not Found",
+      "expectedTitle": "404 Not Found | Roseville Dental Academy",
       "smokeText": "File not found (404 error)"
     },
     {
@@ -29,7 +29,7 @@
       "livePath": "/dental-assisting-program",
       "localPath": "/dental-assisting-program",
       "expectedStatus": 200,
-      "expectedTitle": "Dental Assisting Program",
+      "expectedTitle": "Dental Assisting Program | Roseville Dental Academy",
       "smokeText": "DENTAL ASSISTING TRAINING COURSE"
     },
     {
@@ -37,7 +37,7 @@
       "livePath": "/faqs-1",
       "localPath": "/faqs-1",
       "expectedStatus": 200,
-      "expectedTitle": "Dental Assisting Program FAQs - Roseville Dental Academy",
+      "expectedTitle": "Dental Assisting Program FAQs | Roseville Dental Academy",
       "smokeText": "Dental Assisting Program FAQs"
     },
     {
@@ -45,7 +45,7 @@
       "livePath": "/meet-the-instructors",
       "localPath": "/meet-the-instructors",
       "expectedStatus": 200,
-      "expectedTitle": "Meet the Instructors | rosevilledental",
+      "expectedTitle": "Meet the Instructors | Roseville Dental Academy",
       "smokeText": "Instructor Bios"
     },
     {
@@ -53,7 +53,7 @@
       "livePath": "/photos",
       "localPath": "/photos",
       "expectedStatus": 200,
-      "expectedTitle": "Photos",
+      "expectedTitle": "Academy Photos & Student Moments | Roseville Dental Academy",
       "smokeText": "Photo Gallery"
     },
     {
@@ -69,7 +69,7 @@
       "livePath": "/bls%2Fcpr-1",
       "localPath": "/bls%2Fcpr-1",
       "expectedStatus": 200,
-      "expectedTitle": "BLS CPR Training for Healthcare Providers",
+      "expectedTitle": "BLS/CPR Certification for Healthcare Providers | Roseville Dental Academy",
       "smokeText": "BLS CERTIFICATION COURSE - INITIAL OR RENEWAL"
     },
     {
@@ -77,7 +77,7 @@
       "livePath": "/infection-control",
       "localPath": "/infection-control",
       "expectedStatus": 200,
-      "expectedTitle": "Infection Control",
+      "expectedTitle": "Dental Infection Control Course (IC189) | Roseville Dental Academy",
       "smokeText": "8-HOUR INFECTION CONTROL COURSE"
     },
     {
@@ -85,7 +85,7 @@
       "livePath": "/radiation-safety",
       "localPath": "/radiation-safety",
       "expectedStatus": 200,
-      "expectedTitle": "Radiation Safety Course for Dental Professionals",
+      "expectedTitle": "Dental Radiation Safety & X-Ray Course (X1036) | Roseville Dental Academy",
       "smokeText": "Radiation Safety Course"
     },
     {
@@ -93,7 +93,7 @@
       "livePath": "/coronal-polish",
       "localPath": "/coronal-polish",
       "expectedStatus": 200,
-      "expectedTitle": "Coronal Polish",
+      "expectedTitle": "Coronal Polish Certification (CP148) | Roseville Dental Academy",
       "smokeText": "CORONAL POLISH COURSE"
     },
     {
@@ -101,7 +101,7 @@
       "livePath": "/sealants",
       "localPath": "/sealants",
       "expectedStatus": 200,
-      "expectedTitle": "Sealants",
+      "expectedTitle": "Pit & Fissure Sealants Certification (PF186) | Roseville Dental Academy",
       "smokeText": "PIT AND FISSURE SEALANT COURSE"
     },
     {

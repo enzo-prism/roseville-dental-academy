@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import {
+  BreadcrumbStructuredData,
+  CourseStructuredData,
+  FaqStructuredData,
+} from "@/components/site/structured-data";
 import { HomepageSignupPortal } from "@/components/site/homepage-signup-portal";
 import { LiveCoursePage } from "@/components/site/live-course-page";
 import { LiveShell } from "@/components/site/live-shell";
@@ -11,6 +16,7 @@ import {
   getLiveRouteForSlug,
   getStaticRouteParams,
 } from "@/lib/live-route-data";
+import { buildPageMetadata } from "@/lib/site-metadata";
 
 type PageProps = {
   params: Promise<{
@@ -26,21 +32,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const route = getLiveRouteForSlug(slug);
 
-  if (!route) {
-    return {
-      robots: { follow: false, index: false },
-      title: "404 Not Found",
-    };
+  if (!route || route.kind === "plain404") {
+    return buildPageMetadata({
+      title: "404 Not Found | Roseville Dental Academy",
+      description: "The page you are looking for was not found.",
+      noindex: true,
+    });
   }
 
-  return {
-    description: route.description,
-    robots: {
-      follow: !route.noindex,
-      index: !route.noindex,
-    },
-    title: route.title,
-  };
+  return buildPageMetadata({ route });
+}
+
+function getBreadcrumbName(route: { route: string; title: string }) {
+  if (route.route === "/") {
+    return "Home";
+  }
+
+  return route.title.split(" | ")[0]?.trim() || route.title;
 }
 
 export default async function LiveRoutePage({ params }: PageProps) {
@@ -51,11 +59,23 @@ export default async function LiveRoutePage({ params }: PageProps) {
     notFound();
   }
 
+  const canonicalPath =
+    route.route === "/" ? "/" : route.aliases?.[0] ?? route.route;
+  const breadcrumbItems =
+    route.route === "/"
+      ? []
+      : [
+          { name: "Home", path: "/" },
+          { name: getBreadcrumbName(route), path: canonicalPath },
+        ];
+
   const course = getLiveCourseContent(route.id);
 
   if (course) {
     return (
       <LiveShell route={route}>
+        <CourseStructuredData path={canonicalPath} />
+        <BreadcrumbStructuredData items={breadcrumbItems} />
         <main className="rda-live-main" data-rda-route={route.id}>
           <LiveCoursePage course={course} />
           <LiveStableWidgets route={route} />
@@ -68,6 +88,9 @@ export default async function LiveRoutePage({ params }: PageProps) {
 
   return (
     <LiveShell route={route}>
+      <CourseStructuredData path={canonicalPath} />
+      {route.route === "/faqs-1" ? <FaqStructuredData /> : null}
+      <BreadcrumbStructuredData items={breadcrumbItems} />
       {document.headStylesHtml ? (
         <div dangerouslySetInnerHTML={{ __html: document.headStylesHtml }} />
       ) : null}
