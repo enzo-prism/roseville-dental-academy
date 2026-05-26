@@ -101,6 +101,9 @@ Important env vars:
 - `.github/workflows/release-gate.yml` runs the local production gate on pull requests and pushes to `main`.
 - `.github/workflows/vercel-preview-verify.yml` runs smoke, parity, UX, and visual checks against successful Vercel preview deployment URLs.
 - Both workflows upload Playwright/test artifacts on failure.
+- Release QA and visual-baseline triage are documented in [docs/release-qa.md](docs/release-qa.md).
+
+Visual parity failures should be triaged from the uploaded artifacts before changing code or baselines. If a visual drift is intentional, content parity and UX stability should pass first, then only the affected baseline PNGs should be refreshed. Do not raise the visual tolerance to approve an intentional redesign.
 
 ## Deployment Notes
 

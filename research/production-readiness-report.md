@@ -1,5 +1,7 @@
 # Production Readiness Report
 
+Historical note: this March 2026 report describes the earlier static-site generation pass. The current production runtime is the Next.js shell-first hybrid documented in `README.md`, `DESIGN.md`, and `docs/release-qa.md`.
+
 Date: 2026-03-31
 Scope: refreshed static site generated from `scripts/build_site.py`, shared styles in `assets/site.css`, shared behavior in `assets/site.js`
 Local QA target: `http://127.0.0.1:4322/`

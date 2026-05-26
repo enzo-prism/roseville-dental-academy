@@ -1,5 +1,7 @@
 ## Roseville Dental Academy Clone Audit
 
+Historical note: this audit captures the original clone/static-deploy phase. For current production operation, use `README.md`, `DESIGN.md`, and `docs/release-qa.md`; the shipped runtime is now a Next.js shell-first hybrid.
+
 ### Source
 
 - Primary domain: `https://rosevilledentalacademy.com`
