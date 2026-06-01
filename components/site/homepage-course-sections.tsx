@@ -131,14 +131,22 @@ function HomepageScheduleSection() {
                   <time dateTime={entry.isoDate}>{entry.day}</time>
                   <div className="rda-home-schedule-course-list">
                     {entry.courses.map((course) => (
-                      <span className="rda-home-schedule-course-wrap" key={course.id}>
+                      <span
+                        className="rda-home-schedule-course-wrap"
+                        data-status={course.status === "full" ? "full" : undefined}
+                        key={course.id}
+                      >
                         <Badge asChild className="rda-home-schedule-course-chip" variant="outline">
                           <Link href={courseScheduleCourseDetails[course.id].href}>
                             {course.label}
                           </Link>
                         </Badge>
                         {course.status === "full" ? (
-                          <Badge className="rda-home-schedule-status" variant="secondary">
+                          <Badge
+                            aria-label={`${course.label} is full on ${entry.day}`}
+                            className="rda-home-schedule-status"
+                            variant="secondary"
+                          >
                             Full
                           </Badge>
                         ) : null}
@@ -170,9 +178,7 @@ export function HomepageCourseSections() {
     >
       <div className="rda-home-bls-feature" data-rda-home-course-block="bls">
         <figure className="rda-home-bls-media">
-          <AspectRatio ratio={4 / 3}>
-            <Image alt="" fill sizes="(max-width: 760px) 100vw, 46vw" src={bls.image} />
-          </AspectRatio>
+          <Image alt="" fill sizes="(max-width: 760px) 100vw, 46vw" src={bls.image} />
         </figure>
         <div className="rda-home-bls-copy">
           <Badge className="rda-home-course-eyebrow" variant="outline">

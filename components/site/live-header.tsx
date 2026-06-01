@@ -354,7 +354,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                   <Button className="rda-nav-link rda-nav-button gap-1.5 px-1" variant="ghost">
                     <NavIcon Icon={BookOpenCheck} iconKey="book-open-check" />
                     <span>More Information</span>
-                    <ChevronDown aria-hidden="true" size={16} />
+                    <ChevronDown aria-hidden="true" className="rda-nav-chevron" size={16} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent

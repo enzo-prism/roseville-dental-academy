@@ -83,8 +83,21 @@ const blsXrayInfectionCourses = [
   course("infection-control"),
 ] satisfies CourseScheduleCourse[];
 
+// June 6, 2026: BLS, X-rays, and Infection Control are all fully booked.
+const juneSixFullCourses = [
+  course("bls-cpr-1", "full"),
+  course("radiation-safety", "full"),
+  course("infection-control", "full"),
+] satisfies CourseScheduleCourse[];
+
 const coronalSealantsCourses = [
   course("coronal-polish"),
+  course("sealants"),
+] satisfies CourseScheduleCourse[];
+
+// June 20, 2026: Coronal Polish is full; Pit and Fissure Sealants still has space.
+const juneTwentyCourses = [
+  course("coronal-polish", "full"),
   course("sealants"),
 ] satisfies CourseScheduleCourse[];
 
@@ -96,7 +109,7 @@ export const courseScheduleMonths = [
         date: "June 6, 2026",
         day: "June 6",
         isoDate: "2026-06-06",
-        courses: blsXrayInfectionCourses,
+        courses: juneSixFullCourses,
       },
       {
         date: "June 19, 2026",
@@ -108,7 +121,7 @@ export const courseScheduleMonths = [
         date: "June 20, 2026",
         day: "June 20",
         isoDate: "2026-06-20",
-        courses: coronalSealantsCourses,
+        courses: juneTwentyCourses,
       },
     ],
   },

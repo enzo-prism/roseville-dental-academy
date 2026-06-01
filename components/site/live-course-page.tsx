@@ -223,14 +223,15 @@ function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
         <div className="flex flex-wrap gap-2">
           {scheduleEntries.map((entry) => (
             <Badge
-              className="h-auto min-h-8 rounded-md border-border bg-background px-3 py-1.5 text-sm leading-snug text-foreground"
+              className="rda-course-date h-auto min-h-8 rounded-md border-border bg-background px-3 py-1.5 text-sm leading-snug text-foreground"
+              data-status={entry.status === "full" ? "full" : undefined}
               key={entry.isoDate}
               variant="outline"
             >
               <CalendarDays aria-hidden="true" />
               <time dateTime={entry.isoDate}>{entry.date}</time>
               {entry.status === "full" ? (
-                <span className="ml-1 rounded-sm bg-primary px-1.5 py-0.5 text-primary-foreground">
+                <span aria-label={`${entry.date} is full`} className="rda-course-date-flag ml-1">
                   Full
                 </span>
               ) : null}
@@ -252,7 +253,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   return (
     <section className="bg-background" data-rda-live-course={course.id}>
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.78fr)] lg:items-start lg:px-8 lg:py-16">
-        <Card className="overflow-hidden rounded-lg border-border bg-card shadow-sm lg:order-2">
+        <div className="overflow-hidden rounded-lg bg-card shadow-sm ring-1 ring-foreground/10 lg:order-2">
           <AspectRatio ratio={4 / 3}>
             {/* eslint-disable-next-line @next/next/no-img-element -- Keep the literal live asset URL for parity checks. */}
             <img
@@ -262,7 +263,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               src={course.image.src}
             />
           </AspectRatio>
-        </Card>
+        </div>
 
         <div className="space-y-6 lg:order-1">
           {hero ? (

@@ -703,7 +703,7 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026, September 4, 2026, October 5, 2026, and November 20, 2026. BLS, X-rays/Radiation Safety, and Infection Control are listed for June 6, July 18, August 1, September 5, October 3, November 7, and December 5, 2026. Coronal Polish and Pit and Fissure Sealants are listed for June 20, July 25, August 8, September 12, October 10, November 14, and December 12, 2026. Dates are penciled in and admissions will confirm current availability.",
+      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026, September 4, 2026, October 5, 2026, and November 20, 2026. BLS, X-rays/Radiation Safety, and Infection Control are listed for June 6, 2026 (full), July 18, August 1, September 5, October 3, November 7, and December 5, 2026. Coronal Polish and Pit and Fissure Sealants are listed for June 20, 2026 (Coronal Polish full; Sealants open), July 25, August 8, September 12, October 10, November 14, and December 12, 2026. Dates are penciled in and admissions will confirm current availability.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -915,8 +915,9 @@ export const homeHero: HeroContent = {
       "Dates are penciled in and may change; admissions will confirm current availability before students plan around them.",
     items: [
       "Dental Assisting Training Course: June 19, 2026 is full; next available start is July 13, 2026",
-      "BLS / CPR, X-rays, and Infection Control: June 6, July 18, August 1, September 5, October 3, November 7, and December 5, 2026",
-      "Coronal Polish and Pit and Fissure Sealants: June 20, July 25, August 8, September 12, October 10, November 14, and December 12, 2026",
+      "BLS / CPR, X-rays, and Infection Control: June 6 is full; next available is July 18, then August 1, September 5, October 3, November 7, and December 5, 2026",
+      "Coronal Polish: June 20 is full; next available is July 25, then August 8, September 12, October 10, November 14, and December 12, 2026",
+      "Pit and Fissure Sealants: June 20, July 25, August 8, September 12, October 10, November 14, and December 12, 2026",
     ],
   },
 };
