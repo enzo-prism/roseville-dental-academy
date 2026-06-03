@@ -819,6 +819,81 @@ textarea {
   text-align: center;
 }
 
+.rda-tiktok-follow-section {
+  border-top: 1px solid var(--rda-color-border-soft);
+  max-width: 1240px;
+}
+
+.rda-tiktok-follow-inner {
+  align-items: center;
+  display: grid;
+  gap: 36px;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+}
+
+.rda-tiktok-video-frame {
+  background: var(--card);
+  border: 1px solid var(--rda-color-border-soft);
+  border-radius: 8px;
+  box-shadow: var(--rda-shadow-menu);
+  margin: 0;
+  overflow: hidden;
+  padding: 10px;
+  width: min(100%, 380px);
+}
+
+.rda-tiktok-follow-video {
+  aspect-ratio: 9 / 16;
+  background: var(--rda-color-accent-surface);
+  border-radius: 6px;
+  display: block;
+  height: auto;
+  object-fit: cover;
+  width: 100%;
+}
+
+.rda-tiktok-follow-copy {
+  display: grid;
+  gap: 18px;
+  max-width: 620px;
+  min-width: 0;
+}
+
+.rda-tiktok-follow-logo {
+  display: block;
+}
+
+.rda-tiktok-follow-copy h2 {
+  color: var(--rda-color-heading);
+  font-family: var(--rda-font-heading);
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.rda-tiktok-follow-copy p:not(.rda-home-course-kicker) {
+  color: var(--rda-color-text);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.rda-tiktok-follow-button {
+  align-self: start;
+  border-radius: 6px;
+  font-family: var(--rda-font-heading);
+  gap: 10px;
+  justify-self: start;
+  min-height: 46px;
+  padding: 0 18px;
+  text-transform: uppercase;
+}
+
+.rda-tiktok-follow-button-logo {
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
 .rda-home-course-system {
   border-top: 1px solid var(--rda-color-border-soft);
   display: grid;
@@ -2833,8 +2908,19 @@ textarea {
   .rda-home-bls-feature,
   .rda-home-offered-grid,
   .rda-home-schedule-grid,
-  .rda-home-hygienist-section {
+  .rda-home-hygienist-section,
+  .rda-tiktok-follow-inner {
     grid-template-columns: 1fr;
+  }
+
+  .rda-tiktok-video-frame {
+    justify-self: center;
+  }
+
+  .rda-tiktok-follow-copy {
+    justify-items: center;
+    margin: 0 auto;
+    text-align: center;
   }
 
   .rda-home-bls-media {
@@ -3063,6 +3149,29 @@ textarea {
 
   .rda-home-course-system {
     gap: 42px;
+  }
+
+  .rda-tiktok-follow-inner {
+    gap: 26px;
+  }
+
+  .rda-tiktok-video-frame {
+    padding: 8px;
+    width: min(100%, 320px);
+  }
+
+  .rda-tiktok-follow-copy {
+    gap: 16px;
+  }
+
+  .rda-tiktok-follow-copy h2 {
+    font-size: 32px;
+  }
+
+  .rda-tiktok-follow-button {
+    align-self: stretch;
+    justify-self: stretch;
+    width: 100%;
   }
 
   .rda-home-course-system h2 {

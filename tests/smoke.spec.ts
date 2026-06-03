@@ -1080,6 +1080,7 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
 
   const hero = page.locator(".widget-introduction-introduction-1").first();
   const reviewSection = page.locator('[data-rda-home-review-highlights="true"]');
+  const tiktokFollow = page.locator('[data-rda-stable-widget="tiktok-follow"]');
   const courseSystem = page.locator('[data-rda-home-course-system="true"]');
   const reviewCards = reviewSection.locator(".rda-review-photo-card");
   const googleReviewCards = reviewSection.locator(".rda-google-review-card");
@@ -1087,10 +1088,13 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
 
   await expect(reviewSection).toBeVisible({ timeout: 12_000 });
   await expect(reviewSection.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible();
+  await expect(tiktokFollow).toBeVisible({ timeout: 12_000 });
+  await expect(tiktokFollow.getByRole("heading", { name: "Help us reach 1,000 followers." })).toBeVisible();
   await expect(courseSystem).toBeVisible({ timeout: 12_000 });
 
   const heroBox = await hero.boundingBox();
   const reviewBox = await reviewSection.boundingBox();
+  const tiktokBox = await tiktokFollow.boundingBox();
   const courseBox = await courseSystem.boundingBox();
   const legacyCourseWidgetCount = await page
     .locator(
@@ -1141,10 +1145,16 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     mismatches.push(`homepage still renders ${legacyCourseWidgetCount} legacy course widgets`);
   }
 
-  if (!courseBox || !reviewBox) {
-    mismatches.push("could not measure review and course redesign placement");
-  } else if (courseBox.y < reviewBox.y + reviewBox.height - 4) {
-    mismatches.push("course redesign rendered before the review photo section");
+  if (!tiktokBox || !reviewBox) {
+    mismatches.push("could not measure review and TikTok section placement");
+  } else if (tiktokBox.y < reviewBox.y + reviewBox.height - 4) {
+    mismatches.push("TikTok follow section rendered before the review photo section");
+  }
+
+  if (!courseBox || !tiktokBox) {
+    mismatches.push("could not measure TikTok and course redesign placement");
+  } else if (courseBox.y < tiktokBox.y + tiktokBox.height - 4) {
+    mismatches.push("course redesign rendered before the TikTok follow section");
   }
 
   if (cardCount !== 6) {

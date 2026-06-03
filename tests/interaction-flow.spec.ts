@@ -582,12 +582,14 @@ test.describe("live-style interaction flows", () => {
       }
 
       const reviews = page.locator('[data-rda-home-review-highlights="true"]');
+      const tiktokFollow = page.locator('[data-rda-stable-widget="tiktok-follow"]');
       const courseSystem = page.locator('[data-rda-home-course-system="true"]');
       const board = page.locator('[data-rda-stable-widget="board"]');
       const gallery = page.locator('[data-rda-stable-widget="gallery"][data-rda-gallery-mode="home"]');
       const contact = page.locator(".rda-contact-section");
 
       await expect(reviews).toBeVisible();
+      await expect(tiktokFollow).toBeVisible();
       await expect(courseSystem).toBeVisible();
       await expect(board).toBeVisible();
       await expect(gallery).toBeVisible();
@@ -602,6 +604,7 @@ test.describe("live-style interaction flows", () => {
           );
 
         const reviewsNode = document.querySelector('[data-rda-home-review-highlights="true"]');
+        const tiktokNode = document.querySelector('[data-rda-stable-widget="tiktok-follow"]');
         const courseNode = document.querySelector('[data-rda-home-course-system="true"]');
         const boardNode = document.querySelector('[data-rda-stable-widget="board"]');
         const galleryNode = document.querySelector(
@@ -613,7 +616,8 @@ test.describe("live-style interaction flows", () => {
           boardBeforeGallery: before(boardNode, galleryNode),
           courseBeforeBoard: before(courseNode, boardNode),
           galleryBeforeContact: before(galleryNode, contactNode),
-          reviewsBeforeCourse: before(reviewsNode, courseNode),
+          reviewsBeforeTiktok: before(reviewsNode, tiktokNode),
+          tiktokBeforeCourse: before(tiktokNode, courseNode),
         };
       });
 
@@ -621,8 +625,64 @@ test.describe("live-style interaction flows", () => {
         boardBeforeGallery: true,
         courseBeforeBoard: true,
         galleryBeforeContact: true,
-        reviewsBeforeCourse: true,
+        reviewsBeforeTiktok: true,
+        tiktokBeforeCourse: true,
       });
+
+      await expect(tiktokFollow.getByText("Follow along on TikTok", { exact: true })).toBeVisible();
+      await expect(
+        tiktokFollow.getByRole("heading", { name: "Help us reach 1,000 followers." }),
+      ).toBeVisible();
+      const tiktokButton = tiktokFollow.getByRole("link", { name: "Follow on TikTok" });
+      await expect(tiktokButton).toHaveAttribute(
+        "href",
+        "https://www.tiktok.com/@rosevilledentalacademy?_r=1&_t=ZP-96u9ZhtrfJu",
+      );
+      await expect(tiktokButton).toHaveAttribute("target", "_blank");
+      await expect(tiktokButton).toHaveAttribute("rel", "noreferrer");
+      await expect(tiktokFollow.locator("video")).toHaveAttribute("autoplay", "");
+      await expect(tiktokFollow.locator("video")).toHaveAttribute("loop", "");
+      await expect(tiktokFollow.locator("video")).toHaveAttribute("muted", "");
+      await expect(tiktokFollow.locator("video")).toHaveAttribute("playsinline", "");
+      await expect(tiktokFollow.locator("video")).toHaveJSProperty("muted", true);
+      await expect(tiktokFollow.locator("video source")).toHaveAttribute(
+        "src",
+        "/assets/social/tiktok/homepage-follow-1000.mp4",
+      );
+      await expect(tiktokFollow.locator('img[src="/assets/brand/tiktok-dark.svg"]')).toHaveCount(1);
+      await expect(
+        tiktokButton.locator('img[src="/assets/brand/tiktok-light.svg"]'),
+      ).toHaveCount(1);
+
+      const desktopTiktokDesign = await tiktokFollow.evaluate((element) => {
+        const inner = element.querySelector<HTMLElement>(".rda-tiktok-follow-inner");
+        const video = element.querySelector<HTMLVideoElement>("video");
+        const button = element.querySelector<HTMLElement>('[data-rda-social-button="tiktok"]');
+        const sectionRect = element.getBoundingClientRect();
+        const videoRect = video?.getBoundingClientRect();
+        const buttonRect = button?.getBoundingClientRect();
+        const columnCount = (value: string | undefined) =>
+          value ? value.split(" ").filter(Boolean).length : 0;
+
+        return {
+          buttonFitsSection: buttonRect
+            ? buttonRect.left >= sectionRect.left && buttonRect.right <= sectionRect.right
+            : false,
+          columns: inner ? columnCount(getComputedStyle(inner).gridTemplateColumns) : 0,
+          overflowX:
+            element.ownerDocument.documentElement.scrollWidth -
+            element.ownerDocument.documentElement.clientWidth,
+          videoHeight: Math.round(videoRect?.height ?? 0),
+          videoWidth: Math.round(videoRect?.width ?? 0),
+        };
+      });
+
+      expect(desktopTiktokDesign).toMatchObject({
+        buttonFitsSection: true,
+        columns: 2,
+        overflowX: 0,
+      });
+      expect(desktopTiktokDesign.videoHeight).toBeGreaterThan(desktopTiktokDesign.videoWidth);
 
       await expect(courseSystem.getByText("Now offering blended learning BLS", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("HEARTCODE BLS $85", { exact: true })).toBeVisible();
@@ -635,7 +695,9 @@ test.describe("live-style interaction flows", () => {
         courseSystem.getByText("Dates are penciled in and may change; admissions will confirm current availability.", { exact: true }),
       ).toBeVisible();
       await expect(courseSystem.getByText("June 19", { exact: true })).toBeVisible();
-      await expect(courseSystem.getByText("Full", { exact: true })).toBeVisible();
+      await expect(
+        courseSystem.getByLabel("Dental Assisting Training is full on June 19"),
+      ).toBeVisible();
       await expect(courseSystem.getByText("Stand Alone Courses", { exact: true })).toHaveCount(1);
       await expect(courseSystem.getByText("Click on photo to learn more", { exact: true })).toHaveCount(1);
       await expect(
@@ -848,6 +910,39 @@ test.describe("live-style interaction flows", () => {
       expect(mobileSignupDesign.optionColumnCount).toBe(1);
       expect(mobileSignupDesign.optionWidth).toBeLessThanOrEqual(mobileSignupDesign.formWidth);
       expect(mobileSignupDesign.overflowX).toBe(0);
+
+      const mobileTiktok = page.locator('[data-rda-stable-widget="tiktok-follow"]');
+      await expect(mobileTiktok).toBeVisible();
+      const mobileTiktokDesign = await mobileTiktok.evaluate((element) => {
+        const inner = element.querySelector<HTMLElement>(".rda-tiktok-follow-inner");
+        const button = element.querySelector<HTMLElement>('[data-rda-social-button="tiktok"]');
+        const video = element.querySelector<HTMLElement>("video");
+        const sectionRect = element.getBoundingClientRect();
+        const buttonRect = button?.getBoundingClientRect();
+        const videoRect = video?.getBoundingClientRect();
+        const columnCount = (value: string | undefined) =>
+          value ? value.split(" ").filter(Boolean).length : 0;
+
+        return {
+          buttonFitsSection: buttonRect
+            ? buttonRect.left >= sectionRect.left && buttonRect.right <= sectionRect.right
+            : false,
+          columns: inner ? columnCount(getComputedStyle(inner).gridTemplateColumns) : 0,
+          overflowX:
+            element.ownerDocument.documentElement.scrollWidth -
+            element.ownerDocument.documentElement.clientWidth,
+          videoFitsSection: videoRect
+            ? videoRect.left >= sectionRect.left && videoRect.right <= sectionRect.right
+            : false,
+        };
+      });
+
+      expect(mobileTiktokDesign).toMatchObject({
+        buttonFitsSection: true,
+        columns: 1,
+        overflowX: 0,
+        videoFitsSection: true,
+      });
 
       const mobileCourseDesign = await page.locator('[data-rda-home-course-system="true"]').evaluate((element) => {
         const columnCount = (selector: string) => {

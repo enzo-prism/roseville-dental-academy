@@ -29,12 +29,20 @@ import {
 import { LiveContactSection } from "./live-contact-section";
 import { LiveSignupSection } from "./live-signup-section";
 
+const TIKTOK_FOLLOW_URL =
+  "https://www.tiktok.com/@rosevilledentalacademy?_r=1&_t=ZP-96u9ZhtrfJu";
+const TIKTOK_FOLLOW_VIDEO_POSTER = "/assets/social/tiktok/homepage-follow-1000-poster.jpg";
+const TIKTOK_FOLLOW_VIDEO_SRC = "/assets/social/tiktok/homepage-follow-1000.mp4";
+const TIKTOK_LOGO_DARK = "/assets/brand/tiktok-dark.svg";
+const TIKTOK_LOGO_LIGHT = "/assets/brand/tiktok-light.svg";
+
 export function LiveStableWidgets({ route }: { route: LiveRoute }) {
   const slots = new Set(route.widgetSlots);
 
   return (
     <>
       {slots.has("reviews") ? <StableReviews /> : null}
+      {slots.has("home") ? <HomepageTikTokFollow /> : null}
       {slots.has("home") ? <HomepageCourseSections /> : null}
       {slots.has("board") ? <StableBoardApproval /> : null}
       {slots.has("instructors") ? <StableInstructorBios /> : null}
@@ -49,6 +57,71 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       ) : null}
       {route.route === "/" ? <StableSocialFollow /> : null}
     </>
+  );
+}
+
+function HomepageTikTokFollow() {
+  return (
+    <section
+      aria-labelledby="rda-tiktok-follow-title"
+      className="rda-stable-section rda-tiktok-follow-section"
+      data-rda-stable-widget="tiktok-follow"
+    >
+      <div className="rda-tiktok-follow-inner">
+        <figure className="rda-tiktok-video-frame">
+          <video
+            aria-label="Roseville Dental Academy TikTok preview"
+            autoPlay
+            className="rda-tiktok-follow-video"
+            loop
+            muted
+            playsInline
+            poster={TIKTOK_FOLLOW_VIDEO_POSTER}
+            preload="metadata"
+          >
+            <source src={TIKTOK_FOLLOW_VIDEO_SRC} type="video/mp4" />
+          </video>
+        </figure>
+        <div className="rda-tiktok-follow-copy">
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="rda-tiktok-follow-logo"
+            height={42}
+            src={TIKTOK_LOGO_DARK}
+            unoptimized
+            width={37}
+          />
+          <div>
+            <p className="rda-home-course-kicker">Follow along on TikTok</p>
+            <h2 id="rda-tiktok-follow-title">Help us reach 1,000 followers.</h2>
+          </div>
+          <p>
+            Watch class moments, quick course reminders, and behind-the-scenes updates from the
+            academy.
+          </p>
+          <Button asChild className="rda-tiktok-follow-button" variant="default">
+            <a
+              data-rda-social-button="tiktok"
+              href={TIKTOK_FOLLOW_URL}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <Image
+                alt=""
+                aria-hidden="true"
+                className="rda-tiktok-follow-button-logo"
+                height={18}
+                src={TIKTOK_LOGO_LIGHT}
+                unoptimized
+                width={16}
+              />
+              Follow on TikTok
+            </a>
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }
 
