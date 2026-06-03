@@ -243,6 +243,63 @@ test("Hotjar analytics tag is configured", async ({ page }, testInfo) => {
   expect(mismatches).toEqual([]);
 });
 
+test("Snapchat pixel tag is configured", async ({ page }, testInfo) => {
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForLoadState("load").catch(() => undefined);
+  await page.waitForTimeout(1_000);
+
+  const result = await page.evaluate(() => {
+    const snapWindow = window as Window & {
+      snaptr?: unknown;
+    };
+    const bootstrapScript = document.querySelector<HTMLScriptElement>("#rda-snapchat-pixel");
+
+    return {
+      hasBootstrapScript: Boolean(bootstrapScript),
+      hasPixelId: Boolean(
+        bootstrapScript?.textContent?.includes("9fb9fda4-0f1c-49a7-a359-3755082e1788"),
+      ),
+      hasSnapScript: Boolean(
+        document.querySelector('script[src="https://sc-static.net/scevent.min.js"]'),
+      ),
+      snaptrReady: typeof snapWindow.snaptr === "function",
+    };
+  });
+  const mismatches: string[] = [];
+
+  if (!result.hasBootstrapScript) {
+    mismatches.push("homepage is missing the Snapchat Pixel bootstrap");
+  }
+
+  if (!result.hasPixelId) {
+    mismatches.push("homepage Snapchat Pixel bootstrap has the wrong pixel ID");
+  }
+
+  if (!result.hasSnapScript) {
+    mismatches.push("homepage is missing the Snapchat Pixel tracking script");
+  }
+
+  if (!result.snaptrReady) {
+    mismatches.push("homepage did not initialize the Snapchat snaptr function");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "snapchat-pixel",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "snapchat-pixel-summary.json", {
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 for (const route of routeMappings) {
   test(`smoke ${route.label} serves the expected draft output`, async ({ page }, testInfo) => {
     const snapshot = await captureSnapshot(page, `${localOrigin}${route.localPath}`, {
