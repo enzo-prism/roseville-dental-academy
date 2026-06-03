@@ -3332,6 +3332,59 @@ textarea {
   }
 }
 
+.rda-journey-road-line {
+  animation: rda-journey-road-draw 1100ms var(--rda-ease-premium) 180ms both;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.rda-journey-step-card {
+  animation: rda-journey-card-rise 520ms var(--rda-ease-premium) both;
+}
+
+ol > li:nth-child(2) .rda-journey-step-card {
+  animation-delay: 70ms;
+}
+
+ol > li:nth-child(3) .rda-journey-step-card {
+  animation-delay: 140ms;
+}
+
+ol > li:nth-child(4) .rda-journey-step-card {
+  animation-delay: 210ms;
+}
+
+ol > li:nth-child(5) .rda-journey-step-card {
+  animation-delay: 280ms;
+}
+
+ol > li:nth-child(6) .rda-journey-step-card {
+  animation-delay: 350ms;
+}
+
+.rda-journey-step-card:hover,
+.rda-journey-step-card:focus-visible {
+  transform: translateY(-2px);
+}
+
+@keyframes rda-journey-road-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes rda-journey-card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -3339,7 +3392,9 @@ textarea {
 
   .rda-home-hero-slide,
   .rda-home-hero-dots button,
-  .rda-hero-slideshow .rda-hero-slide {
+  .rda-hero-slideshow .rda-hero-slide,
+  .rda-journey-road-line,
+  .rda-journey-step-card {
     animation: none;
   }
 
@@ -3352,7 +3407,8 @@ textarea {
   .rda-home-course-card-media img,
   .rda-home-hygienist-media img,
   .rda-home-program-media img,
-  .rda-board-card {
+  .rda-board-card,
+  .rda-journey-step-card {
     transition: none;
   }
 
@@ -3363,7 +3419,9 @@ textarea {
   .rda-home-course-card:hover .rda-home-course-card-media img,
   .rda-home-hygienist-section:hover .rda-home-hygienist-media img,
   .rda-board-card:hover,
-  .rda-board-card:focus-within {
+  .rda-board-card:focus-within,
+  .rda-journey-step-card:hover,
+  .rda-journey-step-card:focus-visible {
     transform: none;
   }
 
@@ -3404,6 +3462,10 @@ textarea {
   .rda-hero-slideshow .rda-hero-slide:first-child,
   .rda-home-hero-slide:first-child {
     opacity: 1;
+  }
+
+  .rda-journey-road-line {
+    stroke-dashoffset: 0;
   }
 }
 

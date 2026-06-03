@@ -371,6 +371,7 @@ test.describe("live-style interaction flows", () => {
 
       const menu = page.locator('[data-rda-more-menu][data-open="true"]');
       await expect(menu).toBeVisible();
+      await expect(menu.getByRole("menuitem", { name: "Career Journey" })).toBeVisible();
       await expect(menu.getByRole("menuitem", { name: "Meet the Instructors" })).toBeVisible();
       await expect(menu.getByRole("menuitem", { name: "FAQs" })).toBeVisible();
       await expect(menu.getByRole("menuitem", { name: "Photos" })).toBeVisible();
@@ -380,6 +381,64 @@ test.describe("live-style interaction flows", () => {
       await expect(
         page.locator("main").getByText("Dental Assisting Program FAQs", { exact: true }),
       ).toBeVisible();
+    });
+
+    test("career journey page guides students through the DA to RDA roadmap", async ({
+      page,
+      request,
+    }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(page, "/journey");
+
+      const journey = page.locator('[data-rda-journey-page="true"]');
+      await expect(
+        journey.getByRole("heading", { name: "DA to RDA Career Journey" }),
+      ).toBeVisible();
+      await expect(
+        journey.getByRole("link", { name: /Start with the 9-week program/ }),
+      ).toHaveAttribute("href", "/dental-assisting-program");
+      await expect(page.locator("footer").getByRole("link", { name: "Career Journey" })).toHaveAttribute(
+        "href",
+        "/journey",
+      );
+
+      const alreadyWorking = journey.getByRole("button", { name: /Already working/ });
+      await alreadyWorking.click();
+      await expect(alreadyWorking).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator('[data-rda-journey-next-action="true"]')).toContainText(
+        "Confirm your work-experience documentation",
+      );
+
+      await journey.getByRole("button", { name: /Apply and Pass Exam/ }).click();
+      await expect(page.locator('[data-rda-journey-active-step="true"]')).toContainText(
+        "After the Dental Board processes a complete application",
+      );
+
+      await expect(
+        journey.getByRole("link", {
+          name: "Open official source: Dental Board RDA applicants",
+        }),
+      ).toHaveAttribute(
+        "href",
+        "https://www.dbc.ca.gov/applicants/become_licensed_rda.shtml",
+      );
+
+      const sitemapResponse = await request.get(`${localOrigin}/sitemap.website.xml`);
+      expect(await sitemapResponse.text()).toContain("/journey");
+
+      const desktopOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(desktopOverflow).toBe(0);
+
+      await page.setViewportSize({ height: 844, width: 390 });
+      await gotoSettled(page, "/journey");
+      await expect(journey.getByRole("button", { name: /Ready for RDA steps/ })).toBeVisible();
+      await expect(journey.getByRole("button", { name: /Complete RDA Courses/ })).toBeVisible();
+      const mobileOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(mobileOverflow).toBe(0);
     });
 
     test("cookie banner is not rendered", async ({ page }) => {

@@ -129,6 +129,7 @@ export const mobilePrimaryNavLinks = [
 ] as const;
 
 export const resourceLinks = [
+  { label: "Career Journey", href: "/journey" },
   { label: "Meet the instructors", href: "/meet-the-instructors" },
   { label: "FAQs", href: "/faqs-1" },
   { label: "Photos", href: "/photos" },
@@ -143,6 +144,11 @@ export const desktopNavGroups: NavGroup[] = [
         label: "Dental Assisting Program",
         href: "/dental-assisting-program",
         description: "The academy's accelerated 9-week signature program.",
+      },
+      {
+        label: "Career Journey",
+        href: "/journey",
+        description: "A guided DA to RDA roadmap for California dental assistants.",
       },
     ],
   },

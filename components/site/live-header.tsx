@@ -16,6 +16,7 @@ import {
   Menu,
   Phone,
   Radiation,
+  Route,
   ShieldCheck,
   Sparkles,
   UserRoundCheck,
@@ -74,6 +75,12 @@ const moreLinks: NavLinkItem[] = [
     Icon: GraduationCap,
     iconKey: "graduation-cap",
     label: "Dental Assisting Program",
+  },
+  {
+    href: "/journey",
+    Icon: Route,
+    iconKey: "route",
+    label: "Career Journey",
   },
   {
     href: "/meet-the-instructors",

@@ -2,6 +2,7 @@ import {
   getPublicSitemapRoutes,
   type LiveRoute,
 } from "@/lib/live-route-data";
+import { journeyRoute } from "@/lib/journey-roadmap-data";
 import { SITE_URL } from "@/lib/site-config";
 import { socialChannelPages } from "@/lib/social-channel-data";
 
@@ -26,6 +27,7 @@ function canonicalPathFor(route: LiveRoute): string {
 function priorityFor(path: string): string {
   if (path === "/") return "1.0";
   if (path === "/contact" || path === "/dental-assisting-program") return "0.8";
+  if (path === "/journey") return "0.8";
   if (path === "/registration") return "0.7";
   return "0.6";
 }
@@ -36,6 +38,13 @@ export function GET() {
   const entries: { path: string; priority: string }[] = [];
 
   for (const route of getPublicSitemapRoutes()) {
+    const path = canonicalPathFor(route);
+    if (seen.has(path)) continue;
+    seen.add(path);
+    entries.push({ path, priority: priorityFor(path) });
+  }
+
+  for (const route of [journeyRoute]) {
     const path = canonicalPathFor(route);
     if (seen.has(path)) continue;
     seen.add(path);

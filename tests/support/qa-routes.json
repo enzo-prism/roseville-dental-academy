@@ -33,6 +33,14 @@
       "smokeText": "DENTAL ASSISTING TRAINING COURSE"
     },
     {
+      "label": "journey",
+      "livePath": "/journey",
+      "localPath": "/journey",
+      "expectedStatus": 200,
+      "expectedTitle": "DA to RDA Career Journey | Roseville Dental Academy",
+      "smokeText": "DA to RDA Career Journey"
+    },
+    {
       "label": "faqs-1",
       "livePath": "/faqs-1",
       "localPath": "/faqs-1",
@@ -239,6 +247,7 @@
     "/",
     "/contact",
     "/dental-assisting-program",
+    "/journey",
     "/infection-control",
     "/m/login",
     "/registration"

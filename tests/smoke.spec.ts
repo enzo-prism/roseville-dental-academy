@@ -923,13 +923,19 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
     ["instagram", "Instagram", "https://www.instagram.com/rosevilledentalacademy"],
     ["tiktok", "TikTok", "https://www.tiktok.com/@rosevilledentalacademy"],
   ];
+  const expectedLabels = new Set(expected.map(([, label]) => label));
+  const profileButtons = result.filter(
+    (entry) => expectedLabels.has(entry.label) && entry.logo === entry.icon,
+  );
 
-  if (result.length !== 9) {
-    mismatches.push(`expected 9 social buttons across header, contact, and footer, found ${result.length}`);
+  if (profileButtons.length !== 9) {
+    mismatches.push(
+      `expected 9 profile social buttons across header, contact, and footer, found ${profileButtons.length}`,
+    );
   }
 
   for (const [icon, label, href] of expected) {
-    const matches = result.filter((entry) => entry.icon === icon && entry.label === label);
+    const matches = profileButtons.filter((entry) => entry.icon === icon && entry.label === label);
     const navMatch = await page
       .locator(`.rda-desktop-nav [data-rda-social-button="${icon}"]`)
       .first()

@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 
 const footerLinks = [
   { href: "/dental-assisting-program", label: "Dental Assisting Program" },
+  { href: "/journey", label: "Career Journey" },
   { href: "/faqs-1", label: "FAQs" },
   { href: "/photos", label: "Photos" },
   { href: "/contact", label: "Contact Us" },
