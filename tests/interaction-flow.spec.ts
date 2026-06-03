@@ -525,6 +525,7 @@ test.describe("live-style interaction flows", () => {
       await heroPrevious.click();
       await expect(hero).toHaveAttribute("data-rda-active-slide", "2");
       await expect(cta).toBeVisible();
+      await expect(cta).toHaveText("Ask About Classes");
       await expect(cta).toHaveAttribute("href", "#quick-sign-up");
       await expect(signup).toBeVisible();
 
@@ -619,6 +620,37 @@ test.describe("live-style interaction flows", () => {
       expect(position.top).toBeGreaterThanOrEqual(0);
       expect(position.top).toBeLessThan(80);
       expect(position.bottom).toBeGreaterThan(300);
+    });
+
+    test("homepage quick sign up stays mounted after client navigation", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(page, "/");
+
+      const signup = page.locator("#quick-sign-up[data-rda-signup-section='true']");
+
+      await expect(signup).toHaveCount(1);
+      await expect(signup).toBeVisible();
+
+      await page.getByRole("link", { name: "BLS/CPR" }).first().click();
+      await expect(page).toHaveURL(/\/bls%2Fcpr-1$/);
+      await expect(page.locator("[data-rda-homepage-signup-slot='true']")).toHaveCount(0);
+
+      await page.getByRole("link", { name: "Roseville Dental Academy" }).first().click();
+      await expect(page).toHaveURL(`${localOrigin}/`);
+      await expect(page.locator("[data-rda-homepage-signup-slot='true']")).toHaveCount(1);
+      await expect(signup).toHaveCount(1);
+      await expect(signup).toBeVisible();
+      await expect(
+        page.locator(
+          "[data-rda-homepage-signup-slot='true'] > #quick-sign-up[data-rda-signup-section='true']",
+        ),
+      ).toHaveCount(1);
+
+      await page.locator("[data-rda-home-hero-signup='true']").click();
+      await expect(page).toHaveURL(/#quick-sign-up$/);
+      await expect
+        .poll(() => signup.evaluate((element) => Math.round(element.getBoundingClientRect().top)))
+        .toBeLessThan(80);
     });
 
     test("homepage course sections use React cards while preserving course copy and links", async ({
@@ -1045,7 +1077,7 @@ test.describe("live-style interaction flows", () => {
 
       await page.getByRole("button", { name: "Hamburger Site Navigation Icon" }).click();
       const mobileMenu = page.locator('[data-rda-mobile-menu="true"]');
-      await expect(mobileMenu.getByRole("link", { name: "Sign Up" })).toBeVisible();
+      await expect(mobileMenu.getByRole("link", { name: "Ask About Classes" })).toBeVisible();
 
       const socialBox = await mobileMenu.locator('[data-rda-social-button="instagram"]').evaluate(
         (element) => {
@@ -1209,8 +1241,14 @@ test.describe("live-style interaction flows", () => {
       const optionIcons = form.locator(".rda-interest-option-icon[data-rda-signup-icon]");
 
       await expect(submit).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Request Course Info" })).toBeVisible();
+      await expect(page.getByText("This is the first step, not a reserved seat.")).toBeVisible();
+      await expect(page.locator(".rda-signup-next-steps li")).toHaveCount(3);
       await expect(form).toHaveAttribute("action", "https://formspree.io/f/xzdkgaeg");
       await expect(form).toHaveAttribute("method", /post/i);
+      await expect(form.locator('input[name="_subject"]')).toHaveValue(
+        "Roseville Dental Academy course info request",
+      );
       await expect(form.locator('input[name="page_path"]')).toHaveValue("/");
       await expect(name).toHaveAttribute("required", "");
       await expect(email).toHaveAttribute("type", "email");
@@ -1226,6 +1264,14 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="notes"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="note"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
+      await expect(form.getByText("Classes or certifications to ask about")).toBeVisible();
+      await expect(form.getByText("Next open date: July 13, 2026")).toBeVisible();
+      await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(3);
+      await expect(form.getByText("Next open date: July 25, 2026")).toBeVisible();
+      await expect(form.getByText("Next open date: June 20, 2026")).toBeVisible();
+      await expect(form.getByText("By appointment")).toBeVisible();
+      await expect(form.getByText("Team can recommend a starting point")).toBeVisible();
+      await expect(submit).toHaveText(/Request next steps/);
       await expect(selectedPayloads).toHaveCount(0);
 
       await name.fill("Test Student");

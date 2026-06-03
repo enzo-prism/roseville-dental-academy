@@ -12,6 +12,17 @@ type LiveShellProps = {
   route: LiveRoute;
 };
 
+const compactWidgetRoutes = new Set([
+  "/bls%2Fcpr-1",
+  "/bls-cpr-1",
+  "/coronal-polish",
+  "/dental-assisting-program",
+  "/infection-control",
+  "/journey",
+  "/radiation-safety",
+  "/sealants",
+]);
+
 export function LiveShell({ children, route }: LiveShellProps) {
   return (
     <div
@@ -24,7 +35,7 @@ export function LiveShell({ children, route }: LiveShellProps) {
       {children}
       <HomeHeroCarouselController enabled={route.route === "/"} />
       <LiveFooter />
-      <ElevenLabsAgentWidget compactDefault={route.route === "/journey"} />
+      <ElevenLabsAgentWidget compactDefault={compactWidgetRoutes.has(route.route)} />
     </div>
   );
 }

@@ -272,7 +272,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                       iconKey="signup"
                       size={16}
                     />
-                    <span>Sign Up</span>
+                    <span>Ask About Classes</span>
                   </span>
                 </Link>
               </SheetClose>

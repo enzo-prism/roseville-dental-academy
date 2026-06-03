@@ -57,14 +57,34 @@ export const siteContact = {
 } as const;
 
 export const signupInterestOptions: SignupInterestOption[] = [
-  { label: "Dental Assisting Program", value: "Dental Assisting Program" },
-  { label: "BLS / CPR", value: "BLS / CPR" },
-  { label: "Infection Control", value: "Infection Control" },
-  { label: "Radiation Safety", value: "Radiation Safety" },
-  { label: "Coronal Polish", value: "Coronal Polish" },
-  { label: "Pit and Fissure Sealants", value: "Pit and Fissure Sealants" },
-  { label: "N95 Fit Test", value: "N95 Fit Test" },
-  { label: "Not sure yet", value: "Not sure yet" },
+  {
+    label: "Dental Assisting Program",
+    scheduleId: "dental-assisting-program",
+    value: "Dental Assisting Program",
+  },
+  { label: "BLS / CPR", scheduleId: "bls-cpr-1", value: "BLS / CPR" },
+  {
+    label: "Infection Control",
+    scheduleId: "infection-control",
+    value: "Infection Control",
+  },
+  { label: "Radiation Safety", scheduleId: "radiation-safety", value: "Radiation Safety" },
+  { label: "Coronal Polish", scheduleId: "coronal-polish", value: "Coronal Polish" },
+  {
+    label: "Pit and Fissure Sealants",
+    scheduleId: "sealants",
+    value: "Pit and Fissure Sealants",
+  },
+  {
+    availabilityLabel: "By appointment",
+    label: "N95 Fit Test",
+    value: "N95 Fit Test",
+  },
+  {
+    availabilityLabel: "Team can recommend a starting point",
+    label: "Not sure yet",
+    value: "Not sure yet",
+  },
 ];
 
 export const siteImages = {

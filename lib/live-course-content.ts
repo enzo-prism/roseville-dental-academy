@@ -23,6 +23,10 @@ export type LiveCourseContent = {
     alt: string;
     src: string;
   };
+  supportingImages?: Array<{
+    alt: string;
+    src: string;
+  }>;
   links?: LiveCourseLink[];
   markers: string[];
   variant: "certification" | "program";
@@ -40,9 +44,19 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "dental-assisting-program",
     variant: "program",
     image: {
-      alt: "Dental assisting students practicing chairside technique on a dental mannequin with an instructor.",
-      src: "/assets/live/courses/generated/dental-assisting-hero.jpg",
+      alt: "Roseville Dental Academy student practicing chairside technique with instructor support.",
+      src: "/assets/live/programs/dental-assisting-chairside.jpg",
     },
+    supportingImages: [
+      {
+        alt: "Students practicing dental assisting skills on typodonts during class.",
+        src: "/assets/live/drive/typodont-practice.jpg",
+      },
+      {
+        alt: "Roseville Dental Academy class group gathered in scrubs.",
+        src: "/assets/live/drive/class-group-scrubs.jpg",
+      },
+    ],
     links: [
       { href: dentalAssistingPdfHref, text: "Download the registration form" },
       { href: "tel:9168889821", text: "916-888-9821" },
@@ -74,9 +88,19 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "bls-cpr-1",
     variant: "certification",
     image: {
-      alt: "Healthcare students practicing BLS CPR skills on training manikins with an instructor.",
-      src: "/assets/live/courses/generated/bls-cpr-hero.jpg",
+      alt: "Roseville Dental Academy students practicing BLS CPR skills on training manikins.",
+      src: "/assets/live/courses/bls-hands-on.jpg",
     },
+    supportingImages: [
+      {
+        alt: "BLS student practicing ventilation during hands-on skills evaluation.",
+        src: "/assets/live/courses/bls.jpg",
+      },
+      {
+        alt: "Roseville Dental Academy BLS class practicing with CPR training manikins.",
+        src: "/assets/live/photos/cpr-0001.jpg",
+      },
+    ],
     links: [{ href: "tel:9168889821", text: "916-888-9821" }],
     markers: [
       "BLS CERTIFICATION COURSE - INITIAL OR RENEWAL",
@@ -105,9 +129,19 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "infection-control",
     variant: "certification",
     image: {
-      alt: "Dental assistant students learning infection control and sterilization workflow with an instructor.",
-      src: "/assets/live/courses/generated/infection-control-hero.jpg",
+      alt: "Roseville Dental Academy student preparing sterilization materials during infection control training.",
+      src: "/assets/live/courses/infection-control-sterilization.jpg",
     },
+    supportingImages: [
+      {
+        alt: "Students learning operatory infection control setup at Roseville Dental Academy.",
+        src: "/assets/live/courses/infection-control.jpg",
+      },
+      {
+        alt: "Student practicing sterilization workflow in the dental office.",
+        src: "/assets/live/drive/sterilization-hands-on.jpg",
+      },
+    ],
     markers: [
       "8-HOUR INFECTION CONTROL COURSE",
       "Who is it for?",
@@ -135,9 +169,19 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "radiation-safety",
     variant: "certification",
     image: {
-      alt: "Dental personnel practicing x-ray sensor positioning on a mannequin during radiation safety training.",
-      src: "/assets/live/courses/generated/radiation-safety-hero.jpg",
+      alt: "Roseville Dental Academy students reviewing dental x-ray imaging during radiation safety training.",
+      src: "/assets/live/drive/xray-chairside.jpg",
     },
+    supportingImages: [
+      {
+        alt: "Student positioning a dental mannequin for radiation safety practice.",
+        src: "/assets/live/courses/radiation-safety.jpg",
+      },
+      {
+        alt: "Instructor guiding chairside radiography practice in the operatory.",
+        src: "/assets/live/programs/radiography-chairside.jpg",
+      },
+    ],
     markers: [
       "RADIATION SAFETY COURSE",
       "Who is it for?",
@@ -165,9 +209,19 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "coronal-polish",
     variant: "certification",
     image: {
-      alt: "Dental assistant student practicing coronal polishing on a typodont while an instructor observes.",
-      src: "/assets/live/courses/generated/coronal-polish-hero.jpg",
+      alt: "Roseville Dental Academy student practicing coronal polish technique with instructor guidance.",
+      src: "/assets/live/courses/coronal-polish.jpg",
     },
+    supportingImages: [
+      {
+        alt: "Students practicing hands-on dental technique during coronal polish lab work.",
+        src: "/assets/live/photos/img-3082.jpg",
+      },
+      {
+        alt: "Student preparing dental materials during coronal polish training.",
+        src: "/assets/live/photos/img-3064.jpg",
+      },
+    ],
     markers: [
       "CORONAL POLISH COURSE",
       "Who is it for?",
@@ -195,9 +249,19 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "sealants",
     variant: "certification",
     image: {
-      alt: "Dental students practicing pit and fissure sealant placement on a typodont with instructor guidance.",
-      src: "/assets/live/courses/generated/sealants-hero.jpg",
+      alt: "Roseville Dental Academy students practicing sealant placement on a dental mannequin.",
+      src: "/assets/live/courses/sealants.jpg",
     },
+    supportingImages: [
+      {
+        alt: "Students practicing on typodonts during pit and fissure sealants training.",
+        src: "/assets/live/drive/typodont-practice.jpg",
+      },
+      {
+        alt: "Close-up dental typodont practice for sealants and chairside technique.",
+        src: "/assets/live/photos/suctioning.png",
+      },
+    ],
     markers: [
       "PIT AND FISSURE SEALANT COURSE",
       "Who is it for?",

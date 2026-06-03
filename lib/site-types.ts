@@ -1,3 +1,5 @@
+import type { CourseScheduleId } from "@/lib/course-schedule";
+
 export type SiteButtonVariant =
   | "default"
   | "secondary"
@@ -64,7 +66,9 @@ export type ReviewPhotoData = TestimonialData & {
 };
 
 export type SignupInterestOption = {
+  availabilityLabel?: string;
   label: string;
+  scheduleId?: CourseScheduleId;
   value: string;
 };
 

@@ -809,7 +809,7 @@ function renderHomepageHeroHtml() {
         <p class="rda-home-hero-eyebrow">Roseville Dental Academy</p>
         <h1 id="rda-home-hero-title">Begin Your Career in Dental Assisting</h1>
         <p>Train hands-on inside a working dental office with small classes, instructor coaching, and a clear path to your next opportunity.</p>
-        <a class="rda-home-hero-button" data-rda-home-hero-signup="true" href="#quick-sign-up">Sign Up</a>
+        <a class="rda-home-hero-button" data-rda-home-hero-signup="true" href="#quick-sign-up">Ask About Classes</a>
       </div>
     </section>`;
 }

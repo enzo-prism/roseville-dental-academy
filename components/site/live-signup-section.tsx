@@ -6,6 +6,7 @@ import {
   AirVent,
   BadgeCheck,
   BadgeInfo,
+  CalendarDays,
   CircleHelp,
   ClipboardCheck,
   GraduationCap,
@@ -35,7 +36,9 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { getNextAvailableCourseDate } from "@/lib/course-schedule";
 import { signupInterestOptions, siteContact } from "@/lib/site-data";
+import type { SignupInterestOption } from "@/lib/site-types";
 
 type LiveSignupSectionProps = {
   className?: string;
@@ -54,6 +57,16 @@ const interestIcons: Record<string, LucideIcon> = {
   "N95 Fit Test": AirVent,
   "Not sure yet": CircleHelp,
 };
+
+function getInterestAvailabilityLabel(option: SignupInterestOption) {
+  if (option.scheduleId) {
+    const nextDate = getNextAvailableCourseDate(option.scheduleId);
+
+    return nextDate ? `Next open date: ${nextDate}` : "Ask admissions for current availability";
+  }
+
+  return option.availabilityLabel ?? "Ask admissions for current availability";
+}
 
 function SignupIcon({
   Icon,
@@ -83,10 +96,15 @@ export function LiveSignupSection({
 }: LiveSignupSectionProps) {
   const formId = useId();
   const titleId = `${formId}-title`;
+  const interestHelpId = `${formId}-interest-help`;
   const errorId = `${formId}-interest-error`;
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const hasInterest = selectedInterests.length > 0;
+  const interestDescription = [
+    interestHelpId,
+    attemptedSubmit && !hasInterest ? errorId : "",
+  ].filter(Boolean).join(" ");
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
 
   function handleInterestChange(value: string, checked: boolean | "indeterminate") {
@@ -118,12 +136,28 @@ export function LiveSignupSection({
         <span className="rda-signup-heading-icon" data-rda-signup-icon="heading">
           <SignupIcon Icon={ClipboardCheck} />
         </span>
-        <h2 id={titleId}>Quick Sign Up</h2>
+        <h2 id={titleId}>Request Course Info</h2>
         <span aria-hidden="true" />
       </div>
       <p className="rda-signup-intro">
-        Check the classes you are interested in and the academy team will follow up.
+        This is the first step, not a reserved seat. Tell us what you are interested in and
+        the academy team will follow up with availability, requirements, and how to finish
+        registration.
       </p>
+      <ol className="rda-signup-next-steps" aria-label="What happens after you send this request">
+        <li>
+          <span aria-hidden="true">1</span>
+          Choose the class or certification you want to ask about.
+        </li>
+        <li>
+          <span aria-hidden="true">2</span>
+          Admissions confirms the next open date, requirements, and seat availability.
+        </li>
+        <li>
+          <span aria-hidden="true">3</span>
+          The team helps you complete registration if the course is a fit.
+        </li>
+      </ol>
       <form
         action={siteContact.formspreeEndpoint}
         className="rda-signup-form border border-border bg-card text-card-foreground shadow-sm"
@@ -131,7 +165,7 @@ export function LiveSignupSection({
         method="post"
         onSubmit={handleSubmit}
       >
-        <input name="_subject" type="hidden" value="Roseville Dental Academy class interest" />
+        <input name="_subject" type="hidden" value="Roseville Dental Academy course info request" />
         <input name="Source page" type="hidden" value={sourceLabel} />
         <input name="site" type="hidden" value={siteContact.formspreeOps.site} />
         <input name="form_key" type="hidden" value={siteContact.formspreeOps.formKey} />
@@ -148,20 +182,25 @@ export function LiveSignupSection({
           <input key={interest} name="Interested classes[]" type="hidden" value={interest} />
         ))}
         <FieldSet
-          aria-describedby={attemptedSubmit && !hasInterest ? errorId : undefined}
+          aria-describedby={interestDescription}
           aria-invalid={attemptedSubmit && !hasInterest ? "true" : undefined}
           className="rda-interest-fieldset"
         >
           <FieldLegend>
             <span className="rda-interest-legend">
               <SignupIcon Icon={ListChecks} />
-              Classes or certifications
+              Classes or certifications to ask about
             </span>
           </FieldLegend>
+          <p className="rda-interest-help" id={interestHelpId}>
+            Select one or more interests so the team can send details for the right course.
+            Dates below show the next currently listed open class.
+          </p>
           <FieldGroup className="rda-interest-options" data-slot="checkbox-group">
             {signupInterestOptions.map((option) => {
               const isSelected = selectedInterests.includes(option.value);
               const InterestIcon = interestIcons[option.value] ?? BadgeCheck;
+              const availabilityLabel = getInterestAvailabilityLabel(option);
 
               return (
                 <FieldLabel
@@ -180,7 +219,13 @@ export function LiveSignupSection({
                     >
                       <SignupIcon Icon={InterestIcon} />
                     </span>
-                    <span>{option.label}</span>
+                    <span className="rda-interest-option-copy">
+                      <span className="rda-interest-option-title">{option.label}</span>
+                      <span className="rda-interest-option-date">
+                        <CalendarDays aria-hidden="true" />
+                        {availabilityLabel}
+                      </span>
+                    </span>
                   </FieldContent>
                 </FieldLabel>
               );
@@ -237,10 +282,13 @@ export function LiveSignupSection({
         <div className="rda-signup-footer">
           <p className="rda-form-note rda-signup-note">
             <SignupIcon Icon={BadgeInfo} dataIcon="note" />
-            <span>Short form, quick follow-up. No payment is collected here.</span>
+            <span>
+              This request does not reserve a seat or collect payment. Admissions will confirm
+              the next step with you directly.
+            </span>
           </p>
           <Button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">
-            Send interest
+            Request next steps
             <SignupIcon Icon={Send} className="rda-signup-submit-icon" dataIcon="submit" />
           </Button>
         </div>

@@ -4,17 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
+  BadgeCheck,
   BookOpenCheck,
-  BriefcaseBusiness,
+  Building2,
   CheckCircle2,
   ClipboardCheck,
   ExternalLink,
-  FileCheck2,
-  Medal,
-  Sparkles,
+  FileSignature,
+  GraduationCap,
+  MapPinned,
+  Route,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useMemo, useState } from "react";
 
 import {
@@ -40,11 +42,11 @@ import {
 
 const iconMap = {
   book: BookOpenCheck,
-  briefcase: BriefcaseBusiness,
+  briefcase: Building2,
   clipboard: ClipboardCheck,
-  file: FileCheck2,
-  medal: Medal,
-  sparkles: Sparkles,
+  file: FileSignature,
+  medal: GraduationCap,
+  sparkles: BadgeCheck,
 } satisfies Record<JourneyIconKey, LucideIcon>;
 
 function JourneyAction({
@@ -99,19 +101,41 @@ function PathwayButton({
   onSelect: (pathway: JourneyPathway) => void;
   pathway: JourneyPathway;
 }) {
+  const focusStep = journeySteps.find((step) => step.id === pathway.focusStep) ?? journeySteps[0];
+  const Icon = iconMap[focusStep.icon];
+
   return (
     <button
       aria-pressed={isSelected}
       className={cn(
-        "flex min-h-36 flex-col rounded-lg border p-4 text-left transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+        "group relative flex min-h-36 flex-col overflow-hidden rounded-lg border p-4 text-left transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
         isSelected
-          ? "border-primary bg-primary text-primary-foreground shadow-sm"
-          : "border-border bg-card text-foreground hover:border-primary/50 hover:bg-accent/25",
+          ? "border-primary bg-primary text-primary-foreground shadow-md"
+          : "border-border bg-card text-foreground hover:border-primary/50 hover:bg-card hover:shadow-sm",
       )}
       onClick={() => onSelect(pathway)}
       type="button"
     >
-      <span className="block text-sm font-semibold leading-5">{pathway.label}</span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-1 origin-left transition-transform duration-500",
+          isSelected ? "scale-x-100 bg-primary-foreground" : "scale-x-0 bg-primary",
+        )}
+      />
+      <span className="flex items-start justify-between gap-4">
+        <span className="block text-sm font-semibold leading-5">{pathway.label}</span>
+        <span
+          className={cn(
+            "grid size-10 shrink-0 place-items-center rounded-lg border transition-all",
+            isSelected
+              ? "border-primary-foreground/40 bg-primary-foreground text-primary"
+              : "border-border bg-accent/35 text-primary group-hover:border-primary/30 group-hover:bg-accent/55",
+          )}
+        >
+          <Icon aria-hidden="true" className="size-5" />
+        </span>
+      </span>
       <span
         className={cn(
           "mt-2 block text-sm leading-6",
@@ -126,7 +150,7 @@ function PathwayButton({
 
 function StepBulletList({ bullets }: { bullets: string[] }) {
   return (
-    <ul className="space-y-2 text-sm leading-6 text-foreground">
+    <ul className="rda-journey-bullet-list space-y-2 text-sm leading-6 text-foreground">
       {bullets.map((bullet) => (
         <li className="flex gap-2.5" key={bullet}>
           <CheckCircle2
@@ -141,10 +165,12 @@ function StepBulletList({ bullets }: { bullets: string[] }) {
 }
 
 function RoadmapStepButton({
+  isComplete,
   isActive,
   onSelect,
   step,
 }: {
+  isComplete: boolean;
   isActive: boolean;
   onSelect: (stepId: JourneyStepId) => void;
   step: JourneyStep;
@@ -156,18 +182,31 @@ function RoadmapStepButton({
       <button
         aria-current={isActive ? "step" : undefined}
         className={cn(
-          "rda-journey-step-card group flex min-h-[16rem] w-full flex-col overflow-hidden rounded-lg border bg-card p-4 text-left shadow-sm transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-5",
+          "rda-journey-step-card group relative z-10 flex min-h-[16rem] w-full flex-col overflow-hidden rounded-lg border bg-card p-4 text-left shadow-sm transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-5",
           isActive
-            ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/20"
-            : "border-border hover:border-primary/45 hover:bg-accent/20",
+            ? "border-primary bg-card shadow-md ring-2 ring-primary/30"
+            : isComplete
+              ? "border-primary/35 bg-card shadow-sm hover:border-primary/60 hover:shadow-md hover:ring-1 hover:ring-primary/20"
+              : "border-border hover:border-primary/60 hover:bg-card hover:shadow-md hover:ring-1 hover:ring-primary/20",
         )}
+        data-rda-journey-complete={isComplete ? "true" : undefined}
         data-rda-journey-step={step.id}
         onClick={() => onSelect(step.id)}
         type="button"
       >
+        <span aria-hidden="true" className="rda-journey-step-shine" />
         <span className="flex items-start justify-between gap-4">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="grid size-12 place-items-center rounded-full bg-accent text-lg font-semibold text-accent-foreground">
+            <span
+              className={cn(
+                "rda-journey-step-number grid size-12 place-items-center rounded-full text-lg font-semibold transition-all",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : isComplete
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-muted text-foreground",
+              )}
+            >
               {step.number}
             </span>
             <span className="min-w-0">
@@ -179,15 +218,27 @@ function RoadmapStepButton({
               </span>
             </span>
           </span>
-          <Icon
-            aria-hidden="true"
+          <span
             className={cn(
-              "size-5 shrink-0 transition-colors",
-              isActive ? "text-primary" : "text-muted-foreground",
+              "rda-journey-step-icon grid size-9 shrink-0 place-items-center rounded-lg border transition-all",
+              isActive
+                ? "border-primary/30 bg-accent/45 text-primary"
+                : "border-border bg-card text-muted-foreground group-hover:border-primary/30 group-hover:bg-accent/35 group-hover:text-primary",
             )}
-          />
+          >
+            <Icon aria-hidden="true" className="size-5" />
+          </span>
         </span>
-        <p className="mt-4 text-sm leading-6 text-muted-foreground">{step.detail}</p>
+        <p
+          className={cn(
+            "mt-4 text-sm leading-6 transition-colors",
+            isActive
+              ? "text-foreground/85"
+              : "text-muted-foreground group-hover:text-foreground/85",
+          )}
+        >
+          {step.detail}
+        </p>
         <div className="mt-4">
           <StepBulletList bullets={step.bullets} />
         </div>
@@ -203,19 +254,40 @@ function JourneyRoadmap({
   activeStepId: JourneyStepId;
   onSelectStep: (stepId: JourneyStepId) => void;
 }) {
+  const activeStepIndex = Math.max(
+    0,
+    journeySteps.findIndex((step) => step.id === activeStepId),
+  );
+  const activeStep = journeySteps[activeStepIndex] ?? journeySteps[0];
+  const progressValue =
+    journeySteps.length > 1 ? (activeStepIndex / (journeySteps.length - 1)) * 100 : 100;
+  const roadmapStyle = {
+    "--rda-journey-progress": progressValue,
+    "--rda-journey-progress-width": `${progressValue}%`,
+  } as CSSProperties;
+
   return (
-    <div className="relative">
+    <div className="relative" style={roadmapStyle}>
       <svg
         aria-hidden="true"
-        className="rda-journey-road-svg pointer-events-none absolute inset-x-8 top-28 hidden h-80 text-primary/30 lg:block"
+        className="rda-journey-road-svg pointer-events-none absolute inset-x-8 top-28 hidden h-80 text-primary lg:block"
         preserveAspectRatio="none"
         viewBox="0 0 1000 320"
       >
         <path
-          className="rda-journey-road-line"
+          className="rda-journey-road-track"
           d="M 55 62 H 500 H 945 C 985 62 985 258 945 258 H 500 H 55"
           fill="none"
-          pathLength="1"
+          pathLength="100"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="7"
+        />
+        <path
+          className="rda-journey-road-progress"
+          d="M 55 62 H 500 H 945 C 985 62 985 258 945 258 H 500 H 55"
+          fill="none"
+          pathLength="100"
           stroke="currentColor"
           strokeLinecap="round"
           strokeWidth="6"
@@ -223,8 +295,9 @@ function JourneyRoadmap({
       </svg>
 
       <ol className="rda-journey-roadmap-list relative z-10 hidden grid-cols-3 gap-x-8 gap-y-6 lg:grid">
-        {journeySteps.map((step) => (
+        {journeySteps.map((step, index) => (
           <RoadmapStepButton
+            isComplete={index <= activeStepIndex}
             isActive={activeStepId === step.id}
             key={step.id}
             onSelect={onSelectStep}
@@ -233,8 +306,31 @@ function JourneyRoadmap({
         ))}
       </ol>
 
+      <div
+        aria-hidden="true"
+        className="rda-journey-mobile-progress relative z-10 mb-4 rounded-lg border border-primary/25 bg-card p-3 shadow-sm lg:hidden"
+      >
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+            {activeStep.number}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold uppercase text-primary">
+              Step {activeStep.number} of {journeySteps.length}
+            </span>
+            <span className="block truncate font-heading text-lg font-semibold leading-tight text-foreground">
+              {activeStep.title}
+            </span>
+          </span>
+          <Route aria-hidden="true" className="size-5 shrink-0 text-primary" />
+        </div>
+        <span className="mt-3 block h-2 overflow-hidden rounded-full bg-muted">
+          <span className="rda-journey-progress-fill block h-full rounded-full bg-primary" />
+        </span>
+      </div>
+
       <Accordion
-        className="gap-3 lg:hidden"
+        className="rda-journey-mobile-accordion gap-3 lg:hidden"
         onValueChange={(value) => {
           if (value) {
             onSelectStep(value as JourneyStepId);
@@ -249,7 +345,7 @@ function JourneyRoadmap({
           return (
             <AccordionItem
               className={cn(
-                "rounded-lg border border-border bg-card px-3 shadow-sm",
+                "rda-journey-mobile-step rounded-lg border border-border bg-card px-3 shadow-sm",
                 activeStepId === step.id && "border-primary/40 ring-2 ring-primary/15",
               )}
               key={step.id}
@@ -314,6 +410,11 @@ export function JourneyPage() {
           src="/assets/live/drive/class-group-scrubs.jpg"
         />
         <div className="absolute inset-0 -z-10 bg-primary/75" />
+        <div aria-hidden="true" className="rda-journey-hero-route hidden lg:flex">
+          <Route className="size-6" />
+          <span />
+          <MapPinned className="size-6" />
+        </div>
         <div className="mx-auto grid min-h-[31rem] max-w-6xl content-center gap-8 px-4 py-16 sm:min-h-[34rem] sm:px-6 sm:py-20 lg:px-8">
           <div className="max-w-3xl space-y-5">
             <Badge
@@ -348,7 +449,7 @@ export function JourneyPage() {
 
       <section
         aria-labelledby="journey-start"
-        className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 sm:py-14 lg:px-8 xl:grid-cols-[minmax(0,0.64fr)_minmax(20rem,0.36fr)]"
+        className="rda-journey-reveal mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 sm:py-14 lg:px-8 xl:grid-cols-[minmax(0,0.64fr)_minmax(20rem,0.36fr)]"
       >
         <div className="space-y-5">
           <div className="space-y-3">
@@ -384,7 +485,7 @@ export function JourneyPage() {
         </div>
 
         <Card
-          className="border-primary/30 bg-card"
+          className="rda-journey-next-card border-primary/30 bg-card"
           data-rda-journey-next-action="true"
           size="default"
         >
@@ -399,12 +500,19 @@ export function JourneyPage() {
               {activePathway.nextAction}
             </p>
             <div className="rounded-lg border border-border bg-muted/45 p-4">
-              <p className="text-sm font-semibold text-foreground">
-                Focus: {activeStep.title}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {activeStep.support}
-              </p>
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent/45 text-primary">
+                  <ActiveIcon aria-hidden="true" className="size-5" />
+                </span>
+                <span className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    Focus: {activeStep.title}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {activeStep.support}
+                  </p>
+                </span>
+              </div>
             </div>
             <JourneyAction className="w-full sm:w-auto sm:min-w-64" href={activeStep.ctaHref}>
               {activeStep.ctaLabel}
@@ -415,7 +523,8 @@ export function JourneyPage() {
 
       <section
         aria-labelledby="journey-roadmap"
-        className="border-y border-border bg-muted/45"
+        className="rda-journey-reveal border-y border-border bg-muted/45"
+        data-rda-journey-delay="1"
       >
         <div className="mx-auto max-w-6xl space-y-8 px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -442,18 +551,41 @@ export function JourneyPage() {
           <JourneyRoadmap activeStepId={activeStepId} onSelectStep={setActiveStepId} />
 
           <Card
-            className="border-primary/25 bg-card lg:mr-24"
+            className="rda-journey-active-card border-primary/25 bg-card lg:mr-24"
             data-rda-journey-active-step="true"
           >
             <CardHeader>
               <CardTitle className="flex items-start gap-3 text-xl">
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                   {activeStep.number}
                 </span>
                 <span className="min-w-0 break-words">{activeStep.title}</span>
+                <span className="ml-auto hidden size-10 shrink-0 place-items-center rounded-lg border border-primary/25 bg-accent/35 text-primary sm:grid">
+                  <ActiveIcon aria-hidden="true" className="size-5" />
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
+              <div className="rounded-lg border border-border bg-muted/45 p-4">
+                <div className="flex items-center justify-between gap-3 text-xs font-semibold uppercase text-primary">
+                  <span>Step {activeStep.number} of {journeySteps.length}</span>
+                  <span>{activeStep.eyebrow}</span>
+                </div>
+                <span className="mt-3 block h-2 overflow-hidden rounded-full bg-card">
+                  <span
+                    className="rda-journey-progress-fill block h-full rounded-full bg-primary"
+                    style={
+                      {
+                        "--rda-journey-progress-width": `${
+                          journeySteps.length > 1
+                            ? ((activeStep.number - 1) / (journeySteps.length - 1)) * 100
+                            : 100
+                        }%`,
+                      } as CSSProperties
+                    }
+                  />
+                </span>
+              </div>
               <div className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
                   {activeStep.detail}
@@ -474,7 +606,8 @@ export function JourneyPage() {
 
       <section
         aria-labelledby="journey-sources"
-        className="mx-auto max-w-6xl space-y-8 px-4 py-12 sm:px-6 sm:py-14 lg:px-8"
+        className="rda-journey-reveal mx-auto max-w-6xl space-y-8 px-4 py-12 sm:px-6 sm:py-14 lg:px-8"
+        data-rda-journey-delay="2"
       >
         <div className="max-w-3xl space-y-3">
           <p className="text-sm font-semibold text-primary">Official requirements</p>

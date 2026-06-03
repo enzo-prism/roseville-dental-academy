@@ -249,19 +249,44 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   const featureCount = course.variant === "program" ? 2 : 1;
   const featureSections = sections.slice(0, featureCount);
   const detailSections = sections.slice(featureCount);
+  const supportingImages = course.supportingImages?.slice(0, 2) ?? [];
 
   return (
     <section className="bg-background" data-rda-live-course={course.id}>
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.78fr)] lg:items-start lg:px-8 lg:py-16">
         <div className="overflow-hidden rounded-lg bg-card shadow-sm ring-1 ring-foreground/10 lg:order-2">
           <AspectRatio ratio={4 / 3}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- Keep the literal live asset URL for parity checks. */}
-            <img
-              alt={course.image.alt}
-              className="size-full object-cover"
-              loading="eager"
-              src={course.image.src}
-            />
+            {supportingImages.length ? (
+              <div className="grid size-full grid-cols-[minmax(0,1.42fr)_minmax(0,0.82fr)] gap-1 bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element -- Keep literal live asset URLs for parity checks. */}
+                <img
+                  alt={course.image.alt}
+                  className="size-full object-cover"
+                  loading="eager"
+                  src={course.image.src}
+                />
+                <div className="grid min-h-0 gap-1">
+                  {supportingImages.map((image) => (
+                    // eslint-disable-next-line @next/next/no-img-element -- Keep literal live asset URLs for parity checks.
+                    <img
+                      alt={image.alt}
+                      className="size-full min-h-0 object-cover"
+                      key={image.src}
+                      loading="lazy"
+                      src={image.src}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element -- Keep the literal live asset URL for parity checks.
+              <img
+                alt={course.image.alt}
+                className="size-full object-cover"
+                loading="eager"
+                src={course.image.src}
+              />
+            )}
           </AspectRatio>
         </div>
 
