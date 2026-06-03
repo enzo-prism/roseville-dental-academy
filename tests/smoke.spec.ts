@@ -907,7 +907,7 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
     mismatches.push("homepage social section still contains the old appointments placeholder copy");
   }
 
-  const buttons = page.locator("[data-rda-social-button]");
+  const buttons = page.locator(".rda-social-buttons [data-rda-social-button]");
   const result = await buttons.evaluateAll((links) =>
     links.map((link) => ({
       href: link.getAttribute("href") || "",
