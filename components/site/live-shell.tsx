@@ -14,12 +14,17 @@ type LiveShellProps = {
 
 export function LiveShell({ children, route }: LiveShellProps) {
   return (
-    <div className="rda-live-shell" data-rda-shell-ready="true" data-rda-shell={route.shellVariant}>
+    <div
+      className="rda-live-shell"
+      data-rda-current-route={route.route}
+      data-rda-shell-ready="true"
+      data-rda-shell={route.shellVariant}
+    >
       <LiveHeader currentRoute={route.route} />
       {children}
       <HomeHeroCarouselController enabled={route.route === "/"} />
       <LiveFooter />
-      <ElevenLabsAgentWidget />
+      <ElevenLabsAgentWidget compactDefault={route.route === "/journey"} />
     </div>
   );
 }

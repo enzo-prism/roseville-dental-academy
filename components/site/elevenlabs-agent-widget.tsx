@@ -74,13 +74,20 @@ function hasVisibleOpenButton(element: HTMLElement) {
   return Boolean(openButton && isVisibleElement(openButton));
 }
 
-export function ElevenLabsAgentWidget() {
+type ElevenLabsAgentWidgetProps = {
+  compactDefault?: boolean;
+};
+
+export function ElevenLabsAgentWidget({
+  compactDefault = false,
+}: ElevenLabsAgentWidgetProps) {
   const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID?.trim() || DEFAULT_AGENT_ID;
   const widgetRef = useRef<HTMLElement | null>(null);
   const hasSyncedExpandedStateRef = useRef(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isMobileMinimized, setIsMobileMinimized] = useState(false);
+  const shouldDefaultMinimize = compactDefault || isMobileViewport;
 
   useEffect(() => {
     const media = window.matchMedia(MOBILE_WIDGET_MEDIA_QUERY);
@@ -107,7 +114,9 @@ export function ElevenLabsAgentWidget() {
       const element = widgetRef.current;
       const nextExpanded = Boolean(element && hasVisibleExpandedSheet(element));
 
-      setIsMobileMinimized(Boolean(isMobileViewport && element && hasVisibleOpenButton(element)));
+      setIsMobileMinimized(
+        Boolean(shouldDefaultMinimize && element && hasVisibleOpenButton(element)),
+      );
 
       setIsExpanded((currentExpanded) => {
         if (!hasSyncedExpandedStateRef.current) {
@@ -176,10 +185,10 @@ export function ElevenLabsAgentWidget() {
       observedElement?.removeEventListener("keydown", scheduleSync, true);
       document.removeEventListener("elevenlabs-agent:expand", scheduleSync);
     };
-  }, [agentId, isMobileViewport]);
+  }, [agentId, shouldDefaultMinimize]);
 
   useEffect(() => {
-    if (!isMobileViewport) {
+    if (!shouldDefaultMinimize) {
       return;
     }
 
@@ -262,7 +271,7 @@ export function ElevenLabsAgentWidget() {
         window.clearTimeout(retryTimer);
       }
     };
-  }, [isMobileViewport, agentId]);
+  }, [shouldDefaultMinimize, agentId]);
 
   if (!agentId) {
     return null;
@@ -275,8 +284,9 @@ export function ElevenLabsAgentWidget() {
         className={`live-elevenlabs-widget${isExpanded ? " is-expanded" : ""}`}
         data-elevenlabs-widget-expanded={isExpanded ? "true" : "false"}
         data-elevenlabs-mobile-minimized={
-          isMobileViewport && isMobileMinimized && !isExpanded ? "true" : "false"
+          shouldDefaultMinimize && isMobileMinimized && !isExpanded ? "true" : "false"
         }
+        data-elevenlabs-compact-default={compactDefault ? "true" : "false"}
         data-elevenlabs-widget-slot="true"
       >
         {createElement("elevenlabs-convai", {
@@ -292,11 +302,12 @@ export function ElevenLabsAgentWidget() {
           "markdown-link-allowed-hosts": ELEVENLABS_MARKDOWN_ALLOWED_HOSTS,
           "markdown-link-include-www": "true",
           ref: widgetRef,
-          "show-avatar-when-collapsed": isMobileViewport ? "true" : undefined,
+          "show-avatar-when-collapsed":
+            shouldDefaultMinimize ? "true" : undefined,
           "speaking-text": ELEVENLABS_WIDGET_TEXT.speaking,
           "start-call-text": ELEVENLABS_WIDGET_TEXT.startCall,
           "syntax-highlight-theme": "auto",
-          variant: isMobileViewport ? "tiny" : undefined,
+          variant: shouldDefaultMinimize ? "tiny" : undefined,
         })}
       </div>
     </>

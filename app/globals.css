@@ -2860,6 +2860,11 @@ textarea {
   width: min(420px, calc(100vw - 48px));
 }
 
+.live-elevenlabs-widget[data-elevenlabs-compact-default="true"]:not(.is-expanded) {
+  height: 72px;
+  width: 72px;
+}
+
 .live-elevenlabs-widget elevenlabs-convai {
   display: block;
   height: 100% !important;
@@ -3311,6 +3316,16 @@ textarea {
     width: 64px;
   }
 
+  .live-elevenlabs-widget[data-elevenlabs-compact-default="true"]:not(.is-expanded) {
+    height: 64px;
+    width: 64px;
+  }
+
+  .rda-live-shell[data-rda-current-route="/journey"]
+    .live-elevenlabs-widget[data-elevenlabs-compact-default="true"]:not(.is-expanded) {
+    display: none;
+  }
+
   .live-elevenlabs-widget.is-expanded {
     bottom: 0;
     height: min(620px, calc(100vh - 112px));
@@ -3342,29 +3357,62 @@ textarea {
   animation: rda-journey-card-rise 520ms var(--rda-ease-premium) both;
 }
 
-ol > li:nth-child(2) .rda-journey-step-card {
+.rda-journey-roadmap-list > li {
+  position: relative;
+}
+
+.rda-journey-roadmap-list > li:nth-child(2) .rda-journey-step-card {
   animation-delay: 70ms;
 }
 
-ol > li:nth-child(3) .rda-journey-step-card {
+.rda-journey-roadmap-list > li:nth-child(3) .rda-journey-step-card {
   animation-delay: 140ms;
 }
 
-ol > li:nth-child(4) .rda-journey-step-card {
+.rda-journey-roadmap-list > li:nth-child(4) .rda-journey-step-card {
   animation-delay: 210ms;
 }
 
-ol > li:nth-child(5) .rda-journey-step-card {
+.rda-journey-roadmap-list > li:nth-child(5) .rda-journey-step-card {
   animation-delay: 280ms;
 }
 
-ol > li:nth-child(6) .rda-journey-step-card {
+.rda-journey-roadmap-list > li:nth-child(6) .rda-journey-step-card {
   animation-delay: 350ms;
 }
 
 .rda-journey-step-card:hover,
 .rda-journey-step-card:focus-visible {
   transform: translateY(-2px);
+}
+
+@media (min-width: 1024px) {
+  .rda-journey-roadmap-list {
+    --rda-journey-connector: color-mix(in srgb, var(--primary) 54%, transparent);
+  }
+
+  .rda-journey-roadmap-list > li:not(:nth-child(3n))::after {
+    background: var(--rda-journey-connector);
+    content: "";
+    height: 2px;
+    position: absolute;
+    right: -28px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+  }
+
+  .rda-journey-roadmap-list > li:not(:nth-child(3n))::before {
+    border-right: 2px solid var(--rda-journey-connector);
+    border-top: 2px solid var(--rda-journey-connector);
+    content: "";
+    height: 9px;
+    position: absolute;
+    right: -29px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 9px;
+  }
 }
 
 @keyframes rda-journey-road-draw {
@@ -3375,12 +3423,10 @@ ol > li:nth-child(6) .rda-journey-step-card {
 
 @keyframes rda-journey-card-rise {
   from {
-    opacity: 0;
     transform: translateY(10px);
   }
 
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }

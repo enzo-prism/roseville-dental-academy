@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BookOpenCheck,
   BriefcaseBusiness,
+  CheckCircle2,
   ClipboardCheck,
   ExternalLink,
   FileCheck2,
@@ -59,7 +60,7 @@ function JourneyAction({
 }) {
   const content = (
     <>
-      <span>{children}</span>
+      <span className="min-w-0">{children}</span>
       {href.startsWith("http") ? (
         <ExternalLink aria-hidden="true" className="size-4" />
       ) : (
@@ -69,7 +70,15 @@ function JourneyAction({
   );
 
   return (
-    <Button asChild className={className} size="lg" variant={variant}>
+    <Button
+      asChild
+      className={cn(
+        "h-auto min-h-11 max-w-full gap-2 whitespace-normal px-4 py-2 text-center leading-snug",
+        className,
+      )}
+      size="lg"
+      variant={variant}
+    >
       {href.startsWith("http") ? (
         <a href={href} rel="noreferrer" target="_blank">
           {content}
@@ -94,7 +103,7 @@ function PathwayButton({
     <button
       aria-pressed={isSelected}
       className={cn(
-        "rounded-lg border p-4 text-left transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+        "flex min-h-36 flex-col rounded-lg border p-4 text-left transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
         isSelected
           ? "border-primary bg-primary text-primary-foreground shadow-sm"
           : "border-border bg-card text-foreground hover:border-primary/50 hover:bg-accent/25",
@@ -102,7 +111,7 @@ function PathwayButton({
       onClick={() => onSelect(pathway)}
       type="button"
     >
-      <span className="block text-sm font-semibold">{pathway.label}</span>
+      <span className="block text-sm font-semibold leading-5">{pathway.label}</span>
       <span
         className={cn(
           "mt-2 block text-sm leading-6",
@@ -112,6 +121,22 @@ function PathwayButton({
         {pathway.detail}
       </span>
     </button>
+  );
+}
+
+function StepBulletList({ bullets }: { bullets: string[] }) {
+  return (
+    <ul className="space-y-2 text-sm leading-6 text-foreground">
+      {bullets.map((bullet) => (
+        <li className="flex gap-2.5" key={bullet}>
+          <CheckCircle2
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0 text-primary"
+          />
+          <span className="min-w-0 break-words">{bullet}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -131,7 +156,7 @@ function RoadmapStepButton({
       <button
         aria-current={isActive ? "step" : undefined}
         className={cn(
-          "rda-journey-step-card group flex min-h-[15rem] w-full flex-col rounded-lg border bg-card p-5 text-left transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+          "rda-journey-step-card group flex min-h-[16rem] w-full flex-col overflow-hidden rounded-lg border bg-card p-4 text-left shadow-sm transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-5",
           isActive
             ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/20"
             : "border-border hover:border-primary/45 hover:bg-accent/20",
@@ -140,16 +165,16 @@ function RoadmapStepButton({
         onClick={() => onSelect(step.id)}
         type="button"
       >
-        <span className="flex items-start justify-between gap-3">
-          <span className="flex items-center gap-3">
+        <span className="flex items-start justify-between gap-4">
+          <span className="flex min-w-0 items-center gap-3">
             <span className="grid size-12 place-items-center rounded-full bg-accent text-lg font-semibold text-accent-foreground">
               {step.number}
             </span>
-            <span>
+            <span className="min-w-0">
               <span className="block text-xs font-semibold uppercase text-primary">
                 {step.eyebrow}
               </span>
-              <span className="mt-1 block font-heading text-xl font-semibold leading-tight text-foreground">
+              <span className="mt-1 block break-words font-heading text-xl font-semibold leading-tight text-foreground">
                 {step.title}
               </span>
             </span>
@@ -163,14 +188,9 @@ function RoadmapStepButton({
           />
         </span>
         <p className="mt-4 text-sm leading-6 text-muted-foreground">{step.detail}</p>
-        <ul className="mt-4 space-y-2 text-sm leading-6 text-foreground">
-          {step.bullets.map((bullet) => (
-            <li className="flex gap-2" key={bullet}>
-              <span aria-hidden="true" className="mt-2 size-1.5 rounded-full bg-primary" />
-              <span>{bullet}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-4">
+          <StepBulletList bullets={step.bullets} />
+        </div>
       </button>
     </li>
   );
@@ -187,7 +207,7 @@ function JourneyRoadmap({
     <div className="relative">
       <svg
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-8 top-28 hidden h-80 text-primary/35 lg:block"
+        className="rda-journey-road-svg pointer-events-none absolute inset-x-8 top-28 hidden h-80 text-primary/30 lg:block"
         preserveAspectRatio="none"
         viewBox="0 0 1000 320"
       >
@@ -202,7 +222,7 @@ function JourneyRoadmap({
         />
       </svg>
 
-      <ol className="relative z-10 hidden grid-cols-3 gap-5 lg:grid">
+      <ol className="rda-journey-roadmap-list relative z-10 hidden grid-cols-3 gap-x-8 gap-y-6 lg:grid">
         {journeySteps.map((step) => (
           <RoadmapStepButton
             isActive={activeStepId === step.id}
@@ -214,7 +234,7 @@ function JourneyRoadmap({
       </ol>
 
       <Accordion
-        className="rounded-lg border border-border bg-card px-4 lg:hidden"
+        className="gap-3 lg:hidden"
         onValueChange={(value) => {
           if (value) {
             onSelectStep(value as JourneyStepId);
@@ -227,7 +247,14 @@ function JourneyRoadmap({
           const Icon = iconMap[step.icon];
 
           return (
-            <AccordionItem key={step.id} value={step.id}>
+            <AccordionItem
+              className={cn(
+                "rounded-lg border border-border bg-card px-3 shadow-sm",
+                activeStepId === step.id && "border-primary/40 ring-2 ring-primary/15",
+              )}
+              key={step.id}
+              value={step.id}
+            >
               <AccordionTrigger className="gap-3 py-4 hover:no-underline">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
                   {step.number}
@@ -240,21 +267,13 @@ function JourneyRoadmap({
                     {step.title}
                   </span>
                 </span>
-                <Icon aria-hidden="true" className="size-5 shrink-0 text-primary" />
+                <Icon aria-hidden="true" className="hidden size-5 shrink-0 text-primary sm:block" />
               </AccordionTrigger>
-              <AccordionContent className="pb-5 pl-12">
+              <AccordionContent className="pb-5">
                 <p className="text-sm leading-6 text-muted-foreground">{step.detail}</p>
-                <ul className="mt-3 space-y-2 text-sm leading-6 text-foreground">
-                  {step.bullets.map((bullet) => (
-                    <li className="flex gap-2" key={bullet}>
-                      <span
-                        aria-hidden="true"
-                        className="mt-2 size-1.5 rounded-full bg-primary"
-                      />
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-3">
+                  <StepBulletList bullets={step.bullets} />
+                </div>
               </AccordionContent>
             </AccordionItem>
           );
@@ -280,7 +299,11 @@ export function JourneyPage() {
   const ActiveIcon = iconMap[activeStep.icon];
 
   return (
-    <main className="bg-background" data-rda-journey-page="true" data-rda-route="journey">
+    <main
+      className="overflow-x-clip bg-background"
+      data-rda-journey-page="true"
+      data-rda-route="journey"
+    >
       <section className="relative isolate overflow-hidden bg-primary text-primary-foreground">
         <Image
           alt="Roseville Dental Academy students gathered in scrubs after hands-on training."
@@ -291,12 +314,15 @@ export function JourneyPage() {
           src="/assets/live/drive/class-group-scrubs.jpg"
         />
         <div className="absolute inset-0 -z-10 bg-primary/75" />
-        <div className="mx-auto grid min-h-[30rem] max-w-6xl content-center gap-8 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mx-auto grid min-h-[31rem] max-w-6xl content-center gap-8 px-4 py-16 sm:min-h-[34rem] sm:px-6 sm:py-20 lg:px-8">
           <div className="max-w-3xl space-y-5">
-            <Badge className="bg-primary-foreground text-primary" variant="secondary">
+            <Badge
+              className="h-auto max-w-full whitespace-normal bg-primary-foreground px-3 py-1 text-left leading-5 text-primary"
+              variant="secondary"
+            >
               Train / Work / Certify / Apply
             </Badge>
-            <h1 className="font-heading text-4xl font-semibold leading-tight sm:text-5xl">
+            <h1 className="max-w-3xl font-heading text-4xl font-semibold leading-tight sm:text-5xl">
               DA to RDA Career Journey
             </h1>
             <p className="max-w-2xl text-base leading-7 text-primary-foreground/90 sm:text-lg">
@@ -305,10 +331,14 @@ export function JourneyPage() {
               can fit together for California dental assistants.
             </p>
             <div className="flex flex-wrap gap-3">
-              <JourneyAction href="/dental-assisting-program" variant="secondary">
+              <JourneyAction
+                className="max-sm:w-full"
+                href="/dental-assisting-program"
+                variant="secondary"
+              >
                 Start with the 9-week program
               </JourneyAction>
-              <JourneyAction href="#journey-start" variant="outline">
+              <JourneyAction className="max-sm:w-full" href="#journey-start" variant="outline">
                 Find my starting point
               </JourneyAction>
             </div>
@@ -318,7 +348,7 @@ export function JourneyPage() {
 
       <section
         aria-labelledby="journey-start"
-        className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,0.62fr)_minmax(18rem,0.38fr)] lg:px-8"
+        className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 sm:py-14 lg:px-8 xl:grid-cols-[minmax(0,0.64fr)_minmax(20rem,0.36fr)]"
       >
         <div className="space-y-5">
           <div className="space-y-3">
@@ -336,7 +366,7 @@ export function JourneyPage() {
           </div>
           <div
             aria-label="Choose your current career starting point"
-            className="grid gap-3 sm:grid-cols-3"
+            className="grid gap-3 md:grid-cols-3"
             role="group"
           >
             {journeyPathways.map((pathway) => (
@@ -376,7 +406,7 @@ export function JourneyPage() {
                 {activeStep.support}
               </p>
             </div>
-            <JourneyAction className="w-full" href={activeStep.ctaHref}>
+            <JourneyAction className="w-full sm:w-auto sm:min-w-64" href={activeStep.ctaHref}>
               {activeStep.ctaLabel}
             </JourneyAction>
           </CardContent>
@@ -401,47 +431,44 @@ export function JourneyPage() {
                 Click any step to see what it means and where Roseville Dental Academy can help.
               </p>
             </div>
-            <Badge className="h-auto py-1.5 text-sm" variant="outline">
+            <Badge
+              className="h-auto max-w-full whitespace-normal py-1.5 text-sm leading-5"
+              variant="outline"
+            >
               Source checked June 3, 2026
             </Badge>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,0.68fr)_minmax(18rem,0.32fr)]">
-            <JourneyRoadmap activeStepId={activeStepId} onSelectStep={setActiveStepId} />
+          <JourneyRoadmap activeStepId={activeStepId} onSelectStep={setActiveStepId} />
 
-            <Card
-              className="self-start border-primary/25 bg-card"
-              data-rda-journey-active-step="true"
-            >
-              <CardHeader>
-                <CardTitle className="flex items-start gap-3 text-xl">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
-                    {activeStep.number}
-                  </span>
-                  <span>{activeStep.title}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <Card
+            className="border-primary/25 bg-card lg:mr-24"
+            data-rda-journey-active-step="true"
+          >
+            <CardHeader>
+              <CardTitle className="flex items-start gap-3 text-xl">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
+                  {activeStep.number}
+                </span>
+                <span className="min-w-0 break-words">{activeStep.title}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
                   {activeStep.detail}
                 </p>
-                <ul className="space-y-2 text-sm leading-6">
-                  {activeStep.bullets.map((bullet) => (
-                    <li className="flex gap-2" key={bullet}>
-                      <span
-                        aria-hidden="true"
-                        className="mt-2 size-1.5 rounded-full bg-primary"
-                      />
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-                <JourneyAction className="w-full" href={activeStep.ctaHref} variant="secondary">
-                  {activeStep.ctaLabel}
-                </JourneyAction>
-              </CardContent>
-            </Card>
-          </div>
+                <StepBulletList bullets={activeStep.bullets} />
+              </div>
+              <JourneyAction
+                className="w-full sm:w-auto sm:min-w-64"
+                href={activeStep.ctaHref}
+                variant="secondary"
+              >
+                {activeStep.ctaLabel}
+              </JourneyAction>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -464,17 +491,21 @@ export function JourneyPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {journeyOfficialLinks.map((link) => (
             <Card className="border-border bg-card" key={link.href}>
               <CardHeader>
-                <CardTitle className="text-lg">{link.label}</CardTitle>
+                <CardTitle className="break-words text-lg">{link.label}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
                   {link.description}
                 </p>
-                <Button asChild className="w-full" variant="outline">
+                <Button
+                  asChild
+                  className="h-auto min-h-10 w-full whitespace-normal px-3 py-2 text-center leading-snug"
+                  variant="outline"
+                >
                   <a
                     aria-label={`Open official source: ${link.label}`}
                     href={link.href}
