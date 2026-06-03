@@ -176,12 +176,36 @@ export function readBaselineBinary(relativePath: string) {
 export function getContentBaseline(localPath: string) {
   const route = findSnapshotRoute(localPath);
 
-  if (!route) {
-    throw new Error(`No frozen manifest route found for ${localPath}`);
+  const fallbackRoute =
+    route ??
+    (() => {
+      const fixtureRoute = routeMappings.find((candidate) => candidate.localPath === localPath);
+
+      if (!fixtureRoute) {
+        return null;
+      }
+
+      return {
+        aliases: [],
+        assetRoot: "",
+        contentBaselinePath: `tests/baselines/live/content/${sanitizeLabel(fixtureRoute.label)}.json`,
+        htmlPath: "",
+        id: sanitizeLabel(fixtureRoute.label),
+        route: fixtureRoute.localPath,
+        sourcePath: fixtureRoute.livePath,
+        status: fixtureRoute.expectedStatus,
+        title: fixtureRoute.expectedTitle,
+        visualBaselines: {},
+        visualMasks: [],
+      };
+    })();
+
+  if (!fallbackRoute) {
+    throw new Error(`No content baseline route found for ${localPath}`);
   }
 
   return {
-    route,
+    route: fallbackRoute,
     snapshot: readBaselineJson<{
       aboveFoldImages: string[];
       bodyText: string;
@@ -191,7 +215,7 @@ export function getContentBaseline(localPath: string) {
       links: Array<{ href: string; text: string }>;
       status: number;
       title: string;
-    }>(route.contentBaselinePath),
+    }>(fallbackRoute.contentBaselinePath),
   };
 }
 
