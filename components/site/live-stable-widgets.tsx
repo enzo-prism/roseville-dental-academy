@@ -339,6 +339,7 @@ function StableGallery({ full = false }: { full?: boolean }) {
                       fill
                       sizes="(max-width: 760px) 100vw, 33vw"
                       src={item.src}
+                      unoptimized
                     />
                   </AspectRatio>
                 </Card>

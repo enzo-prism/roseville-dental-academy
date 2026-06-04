@@ -358,7 +358,7 @@ function createRuntimeDiagnostics(page: Page) {
 }
 
 export async function settleMirrorPage(page: Page) {
-  await page.waitForLoadState("load").catch(() => undefined);
+  await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => undefined);
 
   await page
     .waitForFunction(
@@ -504,6 +504,28 @@ async function prepareFullPageForVisual(page: Page) {
     for (let y = 0; y <= height; y += step) {
       await page.evaluate((scrollY) => window.scrollTo(0, scrollY), y);
       await page.waitForTimeout(175);
+      await page
+        .waitForFunction(
+          () =>
+            Array.from(document.images)
+              .filter((image) => {
+                const rect = image.getBoundingClientRect();
+                const style = window.getComputedStyle(image);
+
+                return (
+                  style.display !== "none" &&
+                  style.visibility !== "hidden" &&
+                  rect.width > 0 &&
+                  rect.height > 0 &&
+                  rect.bottom > window.innerHeight * -0.1 &&
+                  rect.top < window.innerHeight * 1.1
+                );
+              })
+              .every((image) => image.complete && image.naturalWidth > 0),
+          undefined,
+          { timeout: 1_500 },
+        )
+        .catch(() => undefined);
     }
 
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
@@ -520,6 +542,24 @@ async function prepareFullPageForVisual(page: Page) {
 
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(1_000);
+}
+
+async function hideFloatingThirdPartyWidgets(page: Page) {
+  await page
+    .addStyleTag({
+      content: `
+        .widget-appointments,
+        .widget-reviews,
+        .widget-trustedsite,
+        .live-elevenlabs-widget {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+      `,
+    })
+    .catch(() => undefined);
 }
 
 export async function scanUi(page: Page): Promise<UiScan> {
@@ -812,6 +852,7 @@ export async function captureVisual(
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await settleMirrorPage(page);
   await prepareFullPageForVisual(page);
+  await hideFloatingThirdPartyWidgets(page);
   const ui = await scanUi(page);
   const mask = [];
 

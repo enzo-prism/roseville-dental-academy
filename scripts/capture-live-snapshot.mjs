@@ -61,7 +61,7 @@ async function downloadAsset(url) {
 }
 
 async function settlePage(page) {
-  await page.waitForLoadState("load").catch(() => undefined);
+  await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => undefined);
 
   await page
     .waitForFunction(

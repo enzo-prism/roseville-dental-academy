@@ -18,7 +18,7 @@ const CAPTURE_ORIGIN = process.env.BASELINE_CAPTURE_ORIGIN ?? LIVE_ORIGIN;
 const ELEVENLABS_SCRIPT_SRC = "https://unpkg.com/@elevenlabs/convai-widget-embed";
 
 async function settlePage(page) {
-  await page.waitForLoadState("load").catch(() => undefined);
+  await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => undefined);
 
   await page
     .waitForFunction(
@@ -126,6 +126,28 @@ async function prepareFullPageForVisual(page) {
     for (let y = 0; y <= height; y += step) {
       await page.evaluate((scrollY) => window.scrollTo(0, scrollY), y);
       await page.waitForTimeout(175);
+      await page
+        .waitForFunction(
+          () =>
+            Array.from(document.images)
+              .filter((image) => {
+                const rect = image.getBoundingClientRect();
+                const style = window.getComputedStyle(image);
+
+                return (
+                  style.display !== "none" &&
+                  style.visibility !== "hidden" &&
+                  rect.width > 0 &&
+                  rect.height > 0 &&
+                  rect.bottom > window.innerHeight * -0.1 &&
+                  rect.top < window.innerHeight * 1.1
+                );
+              })
+              .every((image) => image.complete && image.naturalWidth > 0),
+          undefined,
+          { timeout: 1_500 },
+        )
+        .catch(() => undefined);
     }
 
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
@@ -142,6 +164,24 @@ async function prepareFullPageForVisual(page) {
 
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(1_000);
+}
+
+async function hideFloatingThirdPartyWidgets(page) {
+  await page
+    .addStyleTag({
+      content: `
+        .widget-appointments,
+        .widget-reviews,
+        .widget-trustedsite,
+        .live-elevenlabs-widget {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+      `,
+    })
+    .catch(() => undefined);
 }
 
 function normalizeParityBodyText(value) {
@@ -256,6 +296,7 @@ async function captureVisualBaseline(page, url, maskSelectors, viewport) {
   });
   await settlePage(page);
   await prepareFullPageForVisual(page);
+  await hideFloatingThirdPartyWidgets(page);
 
   return page.screenshot({
     animations: "disabled",
