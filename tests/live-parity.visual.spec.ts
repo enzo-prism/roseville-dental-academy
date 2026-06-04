@@ -18,8 +18,6 @@ import {
 const visualParitySummary: Array<Record<string, unknown>> = [];
 const VISUAL_DIFF_TOLERANCE = Number(process.env.VISUAL_DIFF_TOLERANCE ?? (process.env.CI ? "75000" : "50000"));
 
-test.describe.configure({ mode: "serial" });
-
 test.beforeEach(async ({ context }) => {
   await blockElevenLabsWidgetScript(context);
 });
