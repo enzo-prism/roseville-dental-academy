@@ -16,17 +16,27 @@ export type LiveCourseLink = {
   text: string;
 };
 
+export type LiveCourseImageMedia = {
+  alt: string;
+  src: string;
+  type?: "image";
+};
+
+export type LiveCourseVideoMedia = {
+  alt: string;
+  poster: string;
+  src: string;
+  type: "video";
+};
+
+export type LiveCourseMedia = LiveCourseImageMedia | LiveCourseVideoMedia;
+
 export type LiveCourseContent = {
   bodyText: string;
   id: LiveCourseId;
-  image: {
-    alt: string;
-    src: string;
-  };
-  supportingImages?: Array<{
-    alt: string;
-    src: string;
-  }>;
+  image: LiveCourseImageMedia;
+  supportingImages?: LiveCourseImageMedia[];
+  supportingMedia?: LiveCourseMedia[];
   links?: LiveCourseLink[];
   markers: string[];
   variant: "certification" | "program";
@@ -89,18 +99,8 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     variant: "certification",
     image: {
       alt: "Roseville Dental Academy students practicing BLS CPR skills on training manikins.",
-      src: "/assets/live/courses/bls-hands-on.jpg",
+      src: "/assets/live/courses/rda-june-2026/bls-cpr-skills.jpg",
     },
-    supportingImages: [
-      {
-        alt: "BLS student practicing ventilation during hands-on skills evaluation.",
-        src: "/assets/live/courses/bls.jpg",
-      },
-      {
-        alt: "Roseville Dental Academy BLS class practicing with CPR training manikins.",
-        src: "/assets/live/photos/cpr-0001.jpg",
-      },
-    ],
     links: [{ href: "tel:9168889821", text: "916-888-9821" }],
     markers: [
       "BLS CERTIFICATION COURSE - INITIAL OR RENEWAL",
@@ -129,19 +129,9 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "infection-control",
     variant: "certification",
     image: {
-      alt: "Roseville Dental Academy student preparing sterilization materials during infection control training.",
-      src: "/assets/live/courses/infection-control-sterilization.jpg",
+      alt: "Roseville Dental Academy student practicing infection control in a dental operatory.",
+      src: "/assets/live/courses/rda-june-2026/infection-control-operatory.jpg",
     },
-    supportingImages: [
-      {
-        alt: "Students learning operatory infection control setup at Roseville Dental Academy.",
-        src: "/assets/live/courses/infection-control.jpg",
-      },
-      {
-        alt: "Student practicing sterilization workflow in the dental office.",
-        src: "/assets/live/drive/sterilization-hands-on.jpg",
-      },
-    ],
     markers: [
       "8-HOUR INFECTION CONTROL COURSE",
       "Who is it for?",
@@ -209,17 +199,19 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "coronal-polish",
     variant: "certification",
     image: {
-      alt: "Roseville Dental Academy student practicing coronal polish technique with instructor guidance.",
-      src: "/assets/live/courses/coronal-polish.jpg",
+      alt: "Roseville Dental Academy student practicing coronal polish technique on a typodont.",
+      src: "/assets/live/courses/rda-june-2026/coronal-polish-student.jpg",
     },
-    supportingImages: [
+    supportingMedia: [
       {
-        alt: "Students practicing hands-on dental technique during coronal polish lab work.",
-        src: "/assets/live/photos/img-3082.jpg",
+        alt: "Close-up of coronal polish practice on a dental typodont.",
+        src: "/assets/live/courses/rda-june-2026/coronal-polish-closeup.jpg",
       },
       {
-        alt: "Student preparing dental materials during coronal polish training.",
-        src: "/assets/live/photos/img-3064.jpg",
+        alt: "Short video of coronal polish technique being practiced on a typodont.",
+        poster: "/assets/live/courses/rda-june-2026/coronal-polish-video-poster.jpg",
+        src: "/assets/live/courses/rda-june-2026/coronal-polish-demo.mp4",
+        type: "video",
       },
     ],
     markers: [
@@ -249,17 +241,13 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     id: "sealants",
     variant: "certification",
     image: {
-      alt: "Roseville Dental Academy students practicing sealant placement on a dental mannequin.",
-      src: "/assets/live/courses/sealants.jpg",
+      alt: "Roseville Dental Academy sealants course practice on a dental typodont.",
+      src: "/assets/live/courses/rda-june-2026/sealants-marking.jpg",
     },
-    supportingImages: [
+    supportingMedia: [
       {
-        alt: "Students practicing on typodonts during pit and fissure sealants training.",
-        src: "/assets/live/drive/typodont-practice.jpg",
-      },
-      {
-        alt: "Close-up dental typodont practice for sealants and chairside technique.",
-        src: "/assets/live/photos/suctioning.png",
+        alt: "Sealants course tools and typodont practice setup at Roseville Dental Academy.",
+        src: "/assets/live/courses/rda-june-2026/sealants-tools.jpg",
       },
     ],
     markers: [
