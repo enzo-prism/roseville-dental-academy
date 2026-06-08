@@ -95,10 +95,10 @@ const coronalSealantsCourses = [
   course("sealants"),
 ] satisfies CourseScheduleCourse[];
 
-// June 20, 2026: Coronal Polish is full; Pit and Fissure Sealants still has space.
+// June 20, 2026: Coronal Polish and Pit and Fissure Sealants are fully booked.
 const juneTwentyCourses = [
   course("coronal-polish", "full"),
-  course("sealants"),
+  course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
 export const courseScheduleMonths = [
@@ -132,7 +132,7 @@ export const courseScheduleMonths = [
         date: "July 13, 2026",
         day: "July 13",
         isoDate: "2026-07-13",
-        courses: [course("dental-assisting-program")],
+        courses: [course("dental-assisting-program", "full")],
       },
       {
         date: "July 18, 2026",

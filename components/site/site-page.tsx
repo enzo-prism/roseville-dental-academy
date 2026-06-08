@@ -625,9 +625,9 @@ function ContactSection() {
             details={[
               siteContact.phone,
               siteContact.email,
-              "Dental Assisting: July 13, September 4, October 5, or November 20, 2026",
+              "Dental Assisting: September 4, October 5, or November 20, 2026",
               "BLS, X-rays, Infection Control: dates begin June 6, 2026",
-              "Coronal Polish and Sealants: dates begin June 20, 2026",
+              "Coronal Polish and Sealants: next open date is July 25, 2026",
             ]}
             icon="phone"
             title="Reach admissions"

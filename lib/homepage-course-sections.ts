@@ -96,7 +96,7 @@ export const homepageCourseSections = {
         ctaLabel: "Learn more",
         icon: "graduation",
         image: "/assets/generated/roseville/homepage-typodont-training.jpg",
-        nextCourseDate: "July 13, 2026. Additional starts are September 4, October 5, and November 20, 2026.",
+        nextCourseDate: "September 4, 2026. Additional starts are October 5 and November 20, 2026.",
         nextCourseLabel: "Next available start:",
         scheduleId: "dental-assisting-program",
         title: "Dental Assisting Training Course - $2,500.00",

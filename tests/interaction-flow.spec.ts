@@ -808,7 +808,7 @@ test.describe("live-style interaction flows", () => {
       ).toHaveAttribute("href", "/sealants");
       await expect(courseSystem.getByText("Dental Assisting Training Course - $2,500.00")).toBeVisible();
       await expect(
-        courseSystem.getByText("July 13, 2026. Additional starts are September 4, October 5, and November 20, 2026."),
+        courseSystem.getByText("September 4, 2026. Additional starts are October 5 and November 20, 2026."),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",
@@ -1265,10 +1265,9 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="note"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
       await expect(form.getByText("Classes or certifications to ask about")).toBeVisible();
-      await expect(form.getByText("Next open date: July 13, 2026")).toBeVisible();
+      await expect(form.getByText("Next open date: September 4, 2026")).toBeVisible();
       await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(3);
-      await expect(form.getByText("Next open date: July 25, 2026")).toBeVisible();
-      await expect(form.getByText("Next open date: June 20, 2026")).toBeVisible();
+      await expect(form.getByText("Next open date: July 25, 2026")).toHaveCount(2);
       await expect(form.getByText("By appointment")).toBeVisible();
       await expect(form.getByText("Team can recommend a starting point")).toBeVisible();
       await expect(submit).toHaveText(/Request next steps/);
