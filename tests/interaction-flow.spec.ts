@@ -401,6 +401,9 @@ test.describe("live-style interaction flows", () => {
         "href",
         "/journey",
       );
+      await expect(page.locator("footer")).toContainText(
+        "All Roseville Dental Academy courses are nonrefundable.",
+      );
 
       const alreadyWorking = journey.getByRole("button", { name: /Already working/ });
       await alreadyWorking.click();

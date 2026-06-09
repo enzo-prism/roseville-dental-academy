@@ -46,6 +46,7 @@ export function LiveFooter() {
           ))}
         </nav>
         <SocialLinkButtons links={socialLinks} variant="footer" />
+        <p className="rda-footer-policy">All Roseville Dental Academy courses are nonrefundable.</p>
         <p className="rda-footer-copy">Copyright © 2026 rosevilledental - All Rights Reserved.</p>
       </div>
     </footer>

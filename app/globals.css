@@ -2910,6 +2910,20 @@ textarea {
   margin: 24px 0 0;
 }
 
+.rda-footer-policy {
+  border-top: 1px solid color-mix(in srgb, var(--rda-color-surface) 22%, transparent);
+  color: color-mix(in srgb, var(--rda-color-surface) 90%, transparent);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 24px auto 0;
+  max-width: 560px;
+  padding-top: 16px;
+}
+
+.rda-footer-policy + .rda-footer-copy {
+  margin-top: 10px;
+}
+
 #trustedsite-tm-image,
 [title="TrustedSite Certified"] {
   display: none !important;
@@ -3384,6 +3398,10 @@ textarea {
   .rda-contact-map-content,
   .rda-contact-map-content iframe {
     height: 280px;
+  }
+
+  .rda-live-footer {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 
   .live-elevenlabs-widget {
