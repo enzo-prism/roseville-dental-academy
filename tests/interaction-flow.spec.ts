@@ -1292,6 +1292,11 @@ test.describe("live-style interaction flows", () => {
       await expect(selectedPayloads.first()).toHaveValue("Dental Assisting Program");
 
       await gotoSettled(page, "/infection-control");
+      const coursePage = page.locator('[data-rda-live-course="infection-control"]');
+      await expect(coursePage.getByText("$395*.", { exact: true })).toBeVisible();
+      await expect(coursePage.locator(".rda-course-policy-note")).toHaveText(
+        "* All Roseville Dental Academy courses are nonrefundable.",
+      );
       const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
       await expect(courseForm).toBeVisible();
       await expect(courseForm.locator(".rda-interest-option-icon[data-rda-signup-icon]")).toHaveCount(8);

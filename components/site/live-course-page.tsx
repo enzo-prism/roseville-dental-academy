@@ -18,6 +18,17 @@ type LiveCourseSection = {
   heading: string;
 };
 
+const COURSE_NONREFUNDABLE_NOTE =
+  "All Roseville Dental Academy courses are nonrefundable.";
+
+function addPricePolicyMarker(body: string) {
+  if (!body) {
+    return body;
+  }
+
+  return body.endsWith(".") ? `${body.slice(0, -1)}*.` : `${body}*`;
+}
+
 function splitCourseSections(course: LiveCourseContent): LiveCourseSection[] {
   const sections: LiveCourseSection[] = [];
   let cursor = 0;
@@ -207,6 +218,9 @@ function CourseSectionCard({
   prominent?: boolean;
   section: LiveCourseSection;
 }) {
+  const body =
+    section.heading === "Price" ? addPricePolicyMarker(section.body) : section.body;
+
   return (
     <Card
       className={
@@ -225,11 +239,11 @@ function CourseSectionCard({
           </Badge>
         </h2>
       </CardHeader>
-      {section.body ? (
+      {body ? (
         <>
           <Separator />
           <CardContent className="pt-1">
-            <CourseBody body={section.body} links={links} />
+            <CourseBody body={body} links={links} />
           </CardContent>
         </>
       ) : null}
@@ -353,6 +367,9 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               />
             ))}
           </div>
+          <p className="rda-course-policy-note mt-5 border-t border-border pt-4 text-sm leading-6 text-muted-foreground">
+            * {COURSE_NONREFUNDABLE_NOTE}
+          </p>
         </div>
       ) : null}
     </section>
