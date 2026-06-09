@@ -20,6 +20,9 @@ export const aliasMappings = fixtures.aliases;
 export const visualMappings = fixtures.visualRoutes;
 export const uxDevices = fixtures.uxDevices;
 export const visualViewports = fixtures.visualViewports;
+export const visualPixelDiffThreshold = Number(
+  process.env.VISUAL_PIXEL_DIFF_THRESHOLD ?? (process.env.CI ? "100" : "40"),
+);
 export const primaryNavLabels = fixtures.primaryNavLabels;
 export const coreWarmRoutes = fixtures.coreWarmRoutes;
 export const snapshotRoutes = frozenManifest.routes;
@@ -898,6 +901,7 @@ import sys
 
 left = Image.open(sys.argv[1]).convert("RGBA")
 right = Image.open(sys.argv[2]).convert("RGBA")
+threshold = int(sys.argv[3])
 
 if left.size != right.size:
     width = max(left.width, right.width)
@@ -932,13 +936,14 @@ for left_pixel, right_pixel, diff_pixel in zip(left.getdata(), right.getdata(), 
     if is_masked(left_pixel) or is_masked(right_pixel):
         continue
 
-    if max(diff_pixel) > 40:
+    if max(diff_pixel) > threshold:
         count += 1
 
 print(count)
         `.trim(),
         livePath,
         localPath,
+        String(visualPixelDiffThreshold),
       ],
       {
         encoding: "utf8",

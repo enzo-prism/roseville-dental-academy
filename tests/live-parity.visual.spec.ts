@@ -9,6 +9,7 @@ import {
   localOrigin,
   sanitizeLabel,
   visualMappings,
+  visualPixelDiffThreshold,
   visualViewports,
   writeBinaryArtifact,
   writeJsonArtifact,
@@ -87,6 +88,7 @@ test.afterAll(async () => {
     generatedAt: new Date().toISOString(),
     localOrigin,
     visualDiffTolerance: VISUAL_DIFF_TOLERANCE,
+    visualPixelDiffThreshold,
     results: visualParitySummary,
   });
 });
