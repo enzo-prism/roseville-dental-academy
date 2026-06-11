@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { preload } from "react-dom";
 
 import {
   BreadcrumbStructuredData,
@@ -12,6 +13,7 @@ import { LiveShell } from "@/components/site/live-shell";
 import { LiveStableWidgets } from "@/components/site/live-stable-widgets";
 import { getLiveCourseContent } from "@/lib/live-course-content";
 import {
+  HOMEPAGE_HERO_LCP_IMAGE,
   fetchLiveMirrorDocument,
   getLiveRouteForSlug,
   getStaticRouteParams,
@@ -59,6 +61,10 @@ export default async function LiveRoutePage({ params }: PageProps) {
     notFound();
   }
 
+  if (route.route === "/") {
+    preload(HOMEPAGE_HERO_LCP_IMAGE, { as: "image", fetchPriority: "high" });
+  }
+
   const canonicalPath =
     route.route === "/" ? "/" : route.aliases?.[0] ?? route.route;
   const breadcrumbItems =
@@ -76,7 +82,7 @@ export default async function LiveRoutePage({ params }: PageProps) {
       <LiveShell route={route}>
         <CourseStructuredData path={canonicalPath} />
         <BreadcrumbStructuredData items={breadcrumbItems} />
-        <main className="rda-live-main" data-rda-route={route.id}>
+        <main className="rda-live-main" data-rda-route={route.id} id="rda-main-content">
           <LiveCoursePage course={course} />
           <LiveStableWidgets route={route} />
         </main>
@@ -94,7 +100,7 @@ export default async function LiveRoutePage({ params }: PageProps) {
       {document.headStylesHtml ? (
         <div dangerouslySetInnerHTML={{ __html: document.headStylesHtml }} />
       ) : null}
-      <main className="rda-live-main" data-rda-route={route.id}>
+      <main className="rda-live-main" data-rda-route={route.id} id="rda-main-content">
         <div
           className="rda-snapshot-content"
           dangerouslySetInnerHTML={{ __html: document.bodyHtml }}

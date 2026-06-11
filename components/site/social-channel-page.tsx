@@ -67,7 +67,7 @@ export function SocialChannelPage({ page }: { page: SocialChannelPageData }) {
 
   return (
     <LiveShell route={getSocialChannelRoute(page)}>
-      <main className="bg-background" data-rda-route={page.slug}>
+      <main className="bg-background" data-rda-route={page.slug} id="rda-main-content">
         <section className="relative isolate overflow-hidden bg-primary text-primary-foreground">
           <Image
             alt={page.heroAlt}

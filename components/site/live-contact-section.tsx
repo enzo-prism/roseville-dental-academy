@@ -2,6 +2,12 @@
 
 import { useId, useState } from "react";
 
+import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
+import {
+  UTM_FIELDS,
+  useLeadAttribution,
+  useLeadFormSubmit,
+} from "@/components/site/use-lead-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +28,8 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
   const formId = useId();
   const [formOpen, setFormOpen] = useState(false);
   const [updates, setUpdates] = useState(false);
+  const attribution = useLeadAttribution();
+  const { resetLeadForm, status, submitLeadForm } = useLeadFormSubmit();
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
 
   return (
@@ -96,19 +104,49 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
           hidden={!formOpen}
         >
           <CardContent>
-            <form action={siteContact.formspreeEndpoint} data-rda-contact-form="true" method="post">
+            {status === "success" ? (
+              <div className="space-y-4">
+                <LeadFormSuccess
+                  copy="Your message is on its way. The academy team reads every note and will reply at the email you provided."
+                  title="Message sent"
+                />
+                <Button
+                  onClick={() => {
+                    resetLeadForm();
+                    setFormOpen(false);
+                  }}
+                  type="button"
+                  variant="outline"
+                >
+                  Close
+                </Button>
+              </div>
+            ) : (
+            <form
+              action={siteContact.formspreeEndpoint}
+              data-rda-contact-form="true"
+              method="post"
+              onSubmit={(event) => {
+                // Synthetic submits (QA event dispatches) keep the native form
+                // behavior; only trusted user submits use the inline AJAX flow.
+                if (!event.nativeEvent.isTrusted) {
+                  return;
+                }
+
+                event.preventDefault();
+                void submitLeadForm(event.currentTarget);
+              }}
+            >
               {updates ? <input name="updates" type="hidden" value="yes" /> : null}
               <input name="site" type="hidden" value={siteContact.formspreeOps.site} />
               <input name="form_key" type="hidden" value={siteContact.formspreeOps.formKey} />
               <input name="environment" type="hidden" value={environment} />
               <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
               <input name="page_path" type="hidden" value="/#contact" />
-              <input name="referrer" type="hidden" value="" />
-              <input name="utm_source" type="hidden" value="" />
-              <input name="utm_medium" type="hidden" value="" />
-              <input name="utm_campaign" type="hidden" value="" />
-              <input name="utm_term" type="hidden" value="" />
-              <input name="utm_content" type="hidden" value="" />
+              <input name="referrer" type="hidden" value={attribution.referrer} />
+              {UTM_FIELDS.map((field) => (
+                <input key={field} name={field} type="hidden" value={attribution.utm[field]} />
+              ))}
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor={`${formId}-name`}>Name</FieldLabel>
@@ -140,13 +178,17 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
                 This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of
                 Service apply.
               </p>
+              {status === "error" ? <LeadFormError /> : null}
               <div className="rda-form-actions" data-slot="button-group">
-                <Button type="submit">Send</Button>
+                <Button disabled={status === "submitting"} type="submit">
+                  Send
+                </Button>
                 <Button onClick={() => setFormOpen(false)} type="button" variant="outline">
                   Cancel
                 </Button>
               </div>
             </form>
+            )}
           </CardContent>
         </Card>
       </div>

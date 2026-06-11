@@ -64,16 +64,14 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={`${notoSans.variable} ${playfairDisplay.variable}`}>
-      <head>
-        {snapchatPixelId ? (
-          <Script id="rda-snapchat-pixel" strategy="beforeInteractive" type="text/javascript">
-            {getSnapchatPixelCode(snapchatPixelId)}
-          </Script>
-        ) : null}
-      </head>
       <body className={LIVE_BODY_CLASS}>
         <GlobalStructuredData />
         {children}
+        {snapchatPixelId ? (
+          <Script id="rda-snapchat-pixel" strategy="afterInteractive" type="text/javascript">
+            {getSnapchatPixelCode(snapchatPixelId)}
+          </Script>
+        ) : null}
         <GoogleAnalytics />
         <HotjarAnalytics />
         <Analytics mode={analyticsMode} />

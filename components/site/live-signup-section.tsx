@@ -23,6 +23,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
+import {
+  UTM_FIELDS,
+  useLeadAttribution,
+  useLeadFormSubmit,
+} from "@/components/site/use-lead-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -100,6 +106,8 @@ export function LiveSignupSection({
   const errorId = `${formId}-interest-error`;
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const attribution = useLeadAttribution();
+  const { status, submitLeadForm } = useLeadFormSubmit();
   const hasInterest = selectedInterests.length > 0;
   const interestDescription = [
     interestHelpId,
@@ -118,7 +126,17 @@ export function LiveSignupSection({
 
     if (!hasInterest) {
       event.preventDefault();
+      return;
     }
+
+    // Synthetic submits (QA event dispatches) keep the native form behavior;
+    // only trusted user submits are intercepted for the inline AJAX flow.
+    if (!event.nativeEvent.isTrusted) {
+      return;
+    }
+
+    event.preventDefault();
+    void submitLeadForm(event.currentTarget);
   }
 
   return (
@@ -158,6 +176,12 @@ export function LiveSignupSection({
           The team helps you complete registration if the course is a fit.
         </li>
       </ol>
+      {status === "success" ? (
+        <LeadFormSuccess
+          copy="Your course info request is on its way. Admissions will follow up with availability, requirements, and registration next steps — usually within one business day."
+          title="Request sent"
+        />
+      ) : (
       <form
         action={siteContact.formspreeEndpoint}
         className="rda-signup-form border border-border bg-card text-card-foreground shadow-sm"
@@ -172,12 +196,10 @@ export function LiveSignupSection({
         <input name="environment" type="hidden" value={environment} />
         <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
         <input name="page_path" type="hidden" value={pagePath ?? sourceLabel} />
-        <input name="referrer" type="hidden" value="" />
-        <input name="utm_source" type="hidden" value="" />
-        <input name="utm_medium" type="hidden" value="" />
-        <input name="utm_campaign" type="hidden" value="" />
-        <input name="utm_term" type="hidden" value="" />
-        <input name="utm_content" type="hidden" value="" />
+        <input name="referrer" type="hidden" value={attribution.referrer} />
+        {UTM_FIELDS.map((field) => (
+          <input key={field} name={field} type="hidden" value={attribution.utm[field]} />
+        ))}
         {selectedInterests.map((interest) => (
           <input key={interest} name="Interested classes[]" type="hidden" value={interest} />
         ))}
@@ -279,6 +301,7 @@ export function LiveSignupSection({
             rows={compact ? 3 : 4}
           />
         </Field>
+        {status === "error" ? <LeadFormError /> : null}
         <div className="rda-signup-footer">
           <p className="rda-form-note rda-signup-note">
             <SignupIcon Icon={BadgeInfo} dataIcon="note" />
@@ -287,12 +310,17 @@ export function LiveSignupSection({
               the next step with you directly.
             </span>
           </p>
-          <Button data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND" type="submit">
+          <Button
+            data-aid="SIGNUP_INTEREST_SUBMIT_BUTTON_REND"
+            disabled={status === "submitting"}
+            type="submit"
+          >
             Request next steps
             <SignupIcon Icon={Send} className="rda-signup-submit-icon" dataIcon="submit" />
           </Button>
         </div>
       </form>
+      )}
     </section>
   );
 }

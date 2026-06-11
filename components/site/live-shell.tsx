@@ -31,6 +31,9 @@ export function LiveShell({ children, route }: LiveShellProps) {
       data-rda-shell-ready="true"
       data-rda-shell={route.shellVariant}
     >
+      <a className="rda-skip-link" href="#rda-main-content">
+        Skip to main content
+      </a>
       <LiveHeader currentRoute={route.route} />
       {children}
       <HomeHeroCarouselController enabled={route.route === "/"} />

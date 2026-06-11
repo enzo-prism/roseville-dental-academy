@@ -3,6 +3,8 @@
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 
+import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
+import { useLeadFormSubmit } from "@/components/site/use-lead-form";
 import { SiteIcon, type SiteIconName } from "@/components/site/site-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +61,7 @@ export function RegistrationForm() {
   const [acknowledged, setAcknowledged] = React.useState(false);
   const [referrer, setReferrer] = React.useState("");
   const [formError, setFormError] = React.useState<string | null>(null);
+  const { status, submitLeadForm } = useLeadFormSubmit();
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
   const utmFields = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
 
@@ -79,6 +82,39 @@ export function RegistrationForm() {
 
     setSelectedCourses(requestedCourses);
   }, [courseParamKey, searchParams, selectedCourses.length]);
+
+  if (status === "success") {
+    return (
+      <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
+        <Card className="h-fit rounded-[1.6rem] border border-border/70 bg-card/95 shadow-[0_24px_48px_-36px_rgba(32,51,76,0.35)] sm:rounded-[2rem]">
+          <CardContent className="pt-6">
+            <LeadFormSuccess
+              copy="Your registration request is on its way. Admissions reviews every request, confirms schedule and seat availability, and follows up for any payment or paperwork details by secure contact — usually within one business day."
+              title="Registration request sent"
+            />
+          </CardContent>
+        </Card>
+        <div className="space-y-4 sm:space-y-5">
+          <Card className="rounded-[1.6rem] border border-border/70 bg-card/95 shadow-[0_22px_46px_-34px_rgba(32,51,76,0.34)] sm:rounded-[2rem]">
+            <CardHeader className="space-y-3">
+              <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary sm:size-11">
+                <SiteIcon className="size-4 sm:size-5" name="route" />
+              </div>
+              <CardTitle className="text-xl sm:text-2xl">What happens next</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2.5 text-sm leading-6 text-muted-foreground sm:space-y-3 sm:leading-7">
+                <li>An admissions team member reviews your request and confirms the right course route.</li>
+                <li>The academy contacts you to confirm schedule, prerequisites, and seat availability.</li>
+                <li>Any deposit or payment details are handled separately by secure follow-up.</li>
+                <li>You receive next-step guidance for class start dates, paperwork, and preparation.</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
@@ -102,6 +138,15 @@ export function RegistrationForm() {
           }
 
           setFormError(null);
+
+          // Synthetic submits (QA event dispatches) keep the native form
+          // behavior; only trusted user submits use the inline AJAX flow.
+          if (!event.nativeEvent.isTrusted) {
+            return;
+          }
+
+          event.preventDefault();
+          void submitLeadForm(event.currentTarget);
         }}
       >
         <input type="hidden" name="_subject" value="Roseville Dental Academy registration request" />
@@ -452,8 +497,15 @@ export function RegistrationForm() {
               </div>
             ) : null}
 
+            {status === "error" ? <LeadFormError /> : null}
+
             <div data-slot="button-group" className="flex flex-col gap-2.5 sm:flex-row">
-              <Button className="w-full rounded-full px-5 sm:w-auto" size="lg" type="submit">
+              <Button
+                className="w-full rounded-full px-5 sm:w-auto"
+                disabled={status === "submitting"}
+                size="lg"
+                type="submit"
+              >
                 Send registration request
               </Button>
               <Button asChild className="w-full rounded-full sm:w-auto" size="lg" variant="outline">

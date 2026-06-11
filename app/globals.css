@@ -39,6 +39,7 @@
   --rda-shell-z-header: 200;
   --rda-shell-z-mobile-menu: 450;
   --rda-shell-z-dropdown: 500;
+  --rda-shell-z-skip-link: 600;
   --rda-shell-z-widget: 2147483000;
   --background: #fbfaf8;
   --foreground: #282522;
@@ -130,6 +131,27 @@ textarea {
 .rda-not-found-page {
   background: var(--rda-color-surface);
   min-height: 100vh;
+}
+
+.rda-skip-link {
+  background: var(--primary);
+  border-radius: var(--radius);
+  color: var(--primary-foreground);
+  font-family: var(--rda-font-body);
+  font-size: 14px;
+  font-weight: 600;
+  left: 16px;
+  padding: 10px 16px;
+  position: fixed;
+  top: 12px;
+  transform: translateY(-250%);
+  z-index: var(--rda-shell-z-skip-link);
+}
+
+.rda-skip-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  transform: translateY(0);
 }
 
 .rda-live-header {

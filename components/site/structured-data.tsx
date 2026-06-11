@@ -1,3 +1,4 @@
+import { getCourseSchedule, type CourseScheduleId } from "@/lib/course-schedule";
 import { faqItems, siteContact, socialLinks } from "@/lib/site-data";
 import { getSiteUrl } from "@/lib/site-config";
 
@@ -13,18 +14,32 @@ const GOOGLE_MAPS_CID_URL =
 
 const COURSE_SCHEMA_BY_PATH: Record<
   string,
-  { name: string; description: string; courseCode?: string; timeRequired?: string }
+  {
+    name: string;
+    description: string;
+    courseCode?: string;
+    courseMode: "Blended" | "Onsite";
+    price: number;
+    scheduleId: CourseScheduleId;
+    timeRequired?: string;
+  }
 > = {
   "/dental-assisting-program": {
     name: "Dental Assisting Program",
     description:
       "Nine-week, 210-hour dental assisting training with online lectures, hands-on chairside instruction, resume and job assistance, and a 64-hour internship.",
+    courseMode: "Blended",
+    price: 2500,
+    scheduleId: "dental-assisting-program",
     timeRequired: "PT210H",
   },
   "/bls-cpr-1": {
     name: "BLS/CPR Certification for Healthcare Providers",
     description:
       "Initial and renewal Basic Life Support / CPR training for dental healthcare providers. Three-hour course with 2026 dates beginning June 6.",
+    courseMode: "Onsite",
+    price: 85,
+    scheduleId: "bls-cpr-1",
     timeRequired: "PT3H",
   },
   "/infection-control": {
@@ -32,6 +47,9 @@ const COURSE_SCHEMA_BY_PATH: Record<
     description:
       "California Dental Board approved 8-hour infection control course (provider IC189) for unlicensed dental assistants. Required by the Dental Board of California.",
     courseCode: "IC189",
+    courseMode: "Onsite",
+    price: 395,
+    scheduleId: "infection-control",
     timeRequired: "PT8H",
   },
   "/radiation-safety": {
@@ -39,6 +57,9 @@ const COURSE_SCHEMA_BY_PATH: Record<
     description:
       "California Dental Board approved 32-hour radiation safety and dental X-ray course (provider X1036) for dental personnel and dentists.",
     courseCode: "X1036",
+    courseMode: "Onsite",
+    price: 695,
+    scheduleId: "radiation-safety",
     timeRequired: "PT32H",
   },
   "/coronal-polish": {
@@ -46,6 +67,9 @@ const COURSE_SCHEMA_BY_PATH: Record<
     description:
       "California Dental Board approved 12-hour coronal polish course (provider CP148) for eligible dental assistants. Includes didactic, lab, manikin, written exam, and clinical requirements.",
     courseCode: "CP148",
+    courseMode: "Onsite",
+    price: 500,
+    scheduleId: "coronal-polish",
     timeRequired: "PT12H",
   },
   "/sealants": {
@@ -53,6 +77,9 @@ const COURSE_SCHEMA_BY_PATH: Record<
     description:
       "California Dental Board approved 16-hour pit and fissure sealants course (provider PF186) for eligible dental assistants and RDAs.",
     courseCode: "PF186",
+    courseMode: "Onsite",
+    price: 550,
+    scheduleId: "sealants",
     timeRequired: "PT16H",
   },
 };
@@ -163,6 +190,35 @@ export function GlobalStructuredData() {
   );
 }
 
+function buildCourseLocation(): JsonLdValue {
+  return {
+    "@type": "Place",
+    name: siteContact.school,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: STREET_ADDRESS,
+      addressLocality: ADDRESS_LOCALITY,
+      addressRegion: ADDRESS_REGION,
+      postalCode: POSTAL_CODE,
+      addressCountry: COUNTRY,
+    },
+  };
+}
+
+function buildCourseInstances(
+  scheduleId: CourseScheduleId,
+  courseMode: "Blended" | "Onsite",
+  courseWorkload?: string,
+): JsonLdValue[] {
+  return getCourseSchedule(scheduleId).map((entry) => ({
+    "@type": "CourseInstance",
+    courseMode,
+    startDate: entry.isoDate,
+    location: buildCourseLocation(),
+    ...(courseWorkload ? { courseWorkload } : {}),
+  }));
+}
+
 export function CourseStructuredData({ path }: { path: string }) {
   const courseInfo = COURSE_SCHEMA_BY_PATH[path];
   if (!courseInfo) {
@@ -179,6 +235,17 @@ export function CourseStructuredData({ path }: { path: string }) {
     provider: { "@id": `${siteUrl}#organization` },
     educationalLevel: "vocational",
     inLanguage: "en-US",
+    offers: {
+      "@type": "Offer",
+      category: "Paid",
+      price: courseInfo.price,
+      priceCurrency: "USD",
+    },
+    hasCourseInstance: buildCourseInstances(
+      courseInfo.scheduleId,
+      courseInfo.courseMode,
+      courseInfo.timeRequired,
+    ),
     ...(courseInfo.courseCode ? { courseCode: courseInfo.courseCode } : {}),
     ...(courseInfo.timeRequired ? { timeRequired: courseInfo.timeRequired } : {}),
   } satisfies JsonLdValue;

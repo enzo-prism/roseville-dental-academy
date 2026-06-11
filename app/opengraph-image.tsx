@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
 export const alt =
   "Roseville Dental Academy — Dental Assisting and Certification Training in Roseville, California";
 export const size = { width: 1200, height: 630 };

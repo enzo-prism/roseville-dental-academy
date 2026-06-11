@@ -33,7 +33,6 @@ function priorityFor(path: string): string {
 }
 
 export function GET() {
-  const updatedAt = new Date().toISOString().slice(0, 10);
   const seen = new Set<string>();
   const entries: { path: string; priority: string }[] = [];
 
@@ -60,7 +59,7 @@ export function GET() {
   const urls = entries
     .map(({ path, priority }) => {
       const loc = `${SITE_URL}${path === "/" ? "" : path}`;
-      return `<url><loc>${escapeXml(loc)}</loc><lastmod>${updatedAt}</lastmod><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
+      return `<url><loc>${escapeXml(loc)}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`;
     })
     .join("");
 

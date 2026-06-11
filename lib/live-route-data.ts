@@ -234,6 +234,8 @@ const HOMEPAGE_HERO_SLIDES = [
   },
 ] as const;
 
+export const HOMEPAGE_HERO_LCP_IMAGE = HOMEPAGE_HERO_SLIDES[0].src;
+
 function routeDescription(route: ManifestRoute) {
   const override = ROUTE_DESCRIPTION_OVERRIDES[route.route];
   if (override) {
@@ -788,7 +790,7 @@ function renderHomepageHeroHtml() {
   const slides = HOMEPAGE_HERO_SLIDES.map(
     (slide, index) => `
       <figure class="rda-home-hero-slide" data-rda-home-hero-slide="${index + 1}" aria-hidden="${index === 0 ? "false" : "true"}">
-        <img src="${escapeHtml(slide.src)}" alt="${escapeHtml(slide.alt)}" loading="${index === 0 ? "eager" : "lazy"}" decoding="async" />
+        <img src="${escapeHtml(slide.src)}" alt="${escapeHtml(slide.alt)}" loading="${index === 0 ? "eager" : "lazy"}"${index === 0 ? ' fetchpriority="high"' : ""} decoding="async" />
         <figcaption>${escapeHtml(slide.caption)}</figcaption>
       </figure>`,
   ).join("");

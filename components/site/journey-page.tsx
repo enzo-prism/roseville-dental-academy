@@ -399,6 +399,7 @@ export function JourneyPage() {
       className="overflow-x-clip bg-background"
       data-rda-journey-page="true"
       data-rda-route="journey"
+      id="rda-main-content"
     >
       <section className="relative isolate overflow-hidden bg-primary text-primary-foreground">
         <Image
