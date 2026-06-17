@@ -8,6 +8,7 @@ import { GoogleAnalytics } from "@/components/site/google-analytics";
 import { GlobalStructuredData } from "@/components/site/structured-data";
 import { HotjarAnalytics } from "@/components/site/hotjar-analytics";
 import { InteractionAnalytics } from "@/components/site/interaction-analytics";
+import { MetaPixel } from "@/components/site/meta-pixel";
 import { SnapchatPixelPageViews } from "@/components/site/snapchat-pixel";
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
 import { buildPageMetadata } from "../lib/site-metadata";
@@ -74,6 +75,7 @@ export default function RootLayout({
         ) : null}
         <GoogleAnalytics />
         <HotjarAnalytics />
+        <MetaPixel />
         <Analytics mode={analyticsMode} />
         <SpeedInsights />
         <InteractionAnalytics />

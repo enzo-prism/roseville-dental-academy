@@ -300,6 +300,68 @@ test("Snapchat pixel tag is configured", async ({ page }, testInfo) => {
   expect(mismatches).toEqual([]);
 });
 
+test("Meta pixel tag is configured", async ({ page }, testInfo) => {
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForLoadState("load").catch(() => undefined);
+  await page.waitForTimeout(1_000);
+
+  const result = await page.evaluate(() => {
+    const metaWindow = window as Window & {
+      fbq?: unknown;
+    };
+    const bootstrapScript = document.querySelector<HTMLScriptElement>("#rda-meta-pixel");
+
+    return {
+      fbqReady: typeof metaWindow.fbq === "function",
+      hasBootstrapScript: Boolean(bootstrapScript),
+      hasMetaScript: Boolean(
+        document.querySelector('script[src="https://connect.facebook.net/en_US/fbevents.js"]'),
+      ),
+      hasPixelId: Boolean(bootstrapScript?.textContent?.includes("356932321507746")),
+      hasPixelNoscript: Boolean(
+        document.querySelector("noscript")?.innerHTML.includes("facebook.com/tr?id=356932321507746"),
+      ),
+    };
+  });
+  const mismatches: string[] = [];
+
+  if (!result.hasBootstrapScript) {
+    mismatches.push("homepage is missing the Meta Pixel bootstrap");
+  }
+
+  if (!result.hasPixelId) {
+    mismatches.push("homepage Meta Pixel bootstrap has the wrong pixel ID");
+  }
+
+  if (!result.hasMetaScript) {
+    mismatches.push("homepage is missing the Meta Pixel tracking script");
+  }
+
+  if (!result.fbqReady) {
+    mismatches.push("homepage did not initialize the Meta fbq function");
+  }
+
+  if (!result.hasPixelNoscript) {
+    mismatches.push("homepage is missing the Meta Pixel noscript fallback");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "meta-pixel",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "meta-pixel-summary.json", {
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 for (const route of routeMappings) {
   test(`smoke ${route.label} serves the expected draft output`, async ({ page }, testInfo) => {
     const snapshot = await captureSnapshot(page, `${localOrigin}${route.localPath}`, {

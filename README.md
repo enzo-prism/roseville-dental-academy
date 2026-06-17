@@ -89,12 +89,23 @@ Use this intentionally when the live site changes. Normal QA compares against co
 - `pnpm test:release`: full local production gate using `pnpm build && pnpm start`.
 - `pnpm test:preview`: run the same gate against a Vercel preview by setting `PREVIEW_URL`.
 
+## Analytics And Pixels
+
+The analytics and paid-media event contract lives in [docs/analytics.md](docs/analytics.md).
+Current sitewide tracking includes GA4, Vercel Analytics, Hotjar, Meta Pixel, and Snapchat Pixel.
+Pixel components live under `components/site/*-analytics.tsx` and `components/site/*-pixel.tsx`,
+with global mounting handled in `app/layout.tsx`.
+
 Important env vars:
 
 - `SITE_URL`: canonical production URL used for metadata, sitemap, and robots.
 - `LOCAL_ORIGIN`: override localhost target for QA.
 - `PREVIEW_URL`: target a deployed preview instead of local webserver startup.
 - `BASELINE_DIR`: alternate baseline location; defaults to `tests/baselines/live`.
+- `NEXT_PUBLIC_META_PIXEL_ID`: optional override for the Meta Pixel ID.
+- `NEXT_PUBLIC_SNAPCHAT_PIXEL_ID`: optional override for the Snapchat Pixel ID.
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional override for the GA4 measurement ID.
+- `NEXT_PUBLIC_HOTJAR_SITE_ID`: optional override for the Hotjar site ID.
 
 ## CI And Preview Verification
 
