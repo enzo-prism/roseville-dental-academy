@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
+import { adLandingPages } from "@/lib/ad-landing-pages";
 import { socialChannelPages } from "@/lib/social-channel-data";
 import {
   aliasMappings,
@@ -361,6 +362,113 @@ test("Meta pixel tag is configured", async ({ page }, testInfo) => {
 
   expect(mismatches).toEqual([]);
 });
+
+for (const landingPage of adLandingPages) {
+  test(`ad landing page ${landingPage.slug} is configured`, async ({
+    page,
+    request,
+  }, testInfo) => {
+    const response = await request.get(`${localOrigin}${landingPage.path}`, {
+      headers: {
+        accept: "text/html,application/xhtml+xml",
+      },
+      timeout: 120_000,
+    });
+
+    await page.goto(`${localOrigin}${landingPage.path}`, {
+      timeout: 120_000,
+      waitUntil: "domcontentloaded",
+    });
+    await page.waitForLoadState("load").catch(() => undefined);
+    await page.waitForTimeout(1_000);
+
+    const result = await page.evaluate(() => {
+      const metaWindow = window as Window & {
+        fbq?: unknown;
+      };
+      const form = document.querySelector<HTMLFormElement>(
+        'form[data-rda-landing-form="true"]',
+      );
+
+      return {
+        fbqReady: typeof metaWindow.fbq === "function",
+        formAction: form?.getAttribute("action"),
+        hasLandingForm: Boolean(form),
+        hasMetaBootstrap: Boolean(document.querySelector("#rda-meta-pixel")),
+        hiddenFields: {
+          campaignIntent: form?.querySelector<HTMLInputElement>('input[name="campaign_intent"]')?.value,
+          landingPage: form?.querySelector<HTMLInputElement>('input[name="landing_page"]')?.value,
+          pagePath: form?.querySelector<HTMLInputElement>('input[name="page_path"]')?.value,
+          utmSource: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_source"]')),
+        },
+        robots: document.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content ?? "",
+        submitText: form?.querySelector<HTMLButtonElement>('button[type="submit"]')?.textContent ?? "",
+        title: document.title,
+      };
+    });
+    const sitemapResponse = await request.get(`${localOrigin}/sitemap.website.xml`, {
+      timeout: 120_000,
+    });
+    const sitemapXml = await sitemapResponse.text();
+    const mismatches: string[] = [];
+
+    if (response.status() !== 200) {
+      mismatches.push(`${landingPage.path} status ${response.status()} !== 200`);
+    }
+
+    if (!result.title.includes("Roseville Dental Academy")) {
+      mismatches.push(`${landingPage.path} title is missing the academy name`);
+    }
+
+    if (!result.robots.toLowerCase().includes("noindex")) {
+      mismatches.push(`${landingPage.path} is missing noindex robots metadata`);
+    }
+
+    if (!result.hasLandingForm || result.formAction !== "https://formspree.io/f/xzdkgaeg") {
+      mismatches.push(`${landingPage.path} landing form is not configured`);
+    }
+
+    if (result.hiddenFields.landingPage !== landingPage.slug) {
+      mismatches.push(`${landingPage.path} hidden landing_page is wrong`);
+    }
+
+    if (result.hiddenFields.campaignIntent !== landingPage.campaignIntent) {
+      mismatches.push(`${landingPage.path} hidden campaign_intent is wrong`);
+    }
+
+    if (result.hiddenFields.pagePath !== landingPage.path || !result.hiddenFields.utmSource) {
+      mismatches.push(`${landingPage.path} attribution hidden fields are missing`);
+    }
+
+    if (!result.submitText.includes(landingPage.primaryCtaLabel)) {
+      mismatches.push(`${landingPage.path} primary CTA is missing from the form`);
+    }
+
+    if (!result.hasMetaBootstrap || !result.fbqReady) {
+      mismatches.push(`${landingPage.path} Meta Pixel is not available`);
+    }
+
+    if (sitemapXml.includes(landingPage.path)) {
+      mismatches.push(`${landingPage.path} should not be present in sitemap.website.xml`);
+    }
+
+    smokeSummary.push({
+      mismatches,
+      route: landingPage.path,
+      status: mismatches.length === 0 ? "passed" : "failed",
+      type: "ad-landing-page",
+    });
+
+    if (mismatches.length > 0) {
+      writeJsonArtifact(testInfo, `${landingPage.slug}-landing-summary.json`, {
+        mismatches,
+        result,
+      });
+    }
+
+    expect(mismatches).toEqual([]);
+  });
+}
 
 for (const route of routeMappings) {
   test(`smoke ${route.label} serves the expected draft output`, async ({ page }, testInfo) => {

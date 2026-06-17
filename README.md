@@ -96,6 +96,15 @@ Current sitewide tracking includes GA4, Vercel Analytics, Hotjar, Meta Pixel, an
 Pixel components live under `components/site/*-analytics.tsx` and `components/site/*-pixel.tsx`,
 with global mounting handled in `app/layout.tsx`.
 
+Paid social landing pages live under `/lp/*` and are intentionally noindex:
+
+- `/lp/dental-assisting-student-story`
+- `/lp/rda-renewal-ready`
+- `/lp/pit-fissure-sealants-rda`
+
+Use UTMs for ad attribution, for example:
+`/lp/dental-assisting-student-story?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`.
+
 Important env vars:
 
 - `SITE_URL`: canonical production URL used for metadata, sitemap, and robots.

@@ -4,6 +4,7 @@ import { track as trackVercelEvent } from "@vercel/analytics";
 import { useEffect } from "react";
 
 import { trackGaEvent } from "@/components/site/google-analytics";
+import { trackMetaPixelEvent } from "@/components/site/meta-pixel";
 
 type AnalyticsValue = boolean | number | string | null | undefined;
 type AnalyticsProperties = Record<string, AnalyticsValue>;
@@ -273,6 +274,11 @@ function trackClickEvent(target: Element) {
         link_text: linkText,
         link_url: destination,
       });
+      trackMetaPixelEvent("Contact", {
+        content_category: "contact",
+        content_name: "phone",
+        link_location: location,
+      });
       return;
     }
 
@@ -291,6 +297,11 @@ function trackClickEvent(target: Element) {
         link_location: location,
         link_text: linkText,
         link_url: destination,
+      });
+      trackMetaPixelEvent("Contact", {
+        content_category: "contact",
+        content_name: "email",
+        link_location: location,
       });
       return;
     }
@@ -411,6 +422,10 @@ function getFormSource(formData: FormData) {
 }
 
 function getLeadFormName(formId: string) {
+  if (formId === "ad_landing_lead") {
+    return "Ad Landing Lead";
+  }
+
   if (formId === "quick_sign_up") {
     return "Quick Sign Up";
   }
@@ -449,6 +464,13 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     selected_items: summarizeSelectedItems(selectedItems),
     source_page: sourcePage,
   });
+  trackMetaPixelEvent("Lead", {
+    content_category: formId,
+    content_name: getLeadFormName(formId),
+    selected_count: selectedItems.length || undefined,
+    selected_items: summarizeSelectedItems(selectedItems),
+    source_page: sourcePage,
+  });
 }
 
 function trackLeadInvalid(formId: string, reason: string, selectedCount = 0) {
@@ -473,14 +495,15 @@ function trackSubmitEvent(event: SubmitEvent) {
   const formData = new FormData(form);
 
   if (form.matches("[data-rda-signup-form='true']")) {
+    const formId = form.getAttribute("data-rda-form-id") || "quick_sign_up";
     const interests = getFormValues(formData, "Interested classes[]");
 
     if (!interests.length) {
-      trackLeadInvalid("quick_sign_up", "missing_interest");
+      trackLeadInvalid(formId, "missing_interest");
       return;
     }
 
-    trackLeadSubmit("quick_sign_up", formData, interests);
+    trackLeadSubmit(formId, formData, interests);
     return;
   }
 

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { adLandingPages } from "@/lib/ad-landing-pages";
 import {
   blockElevenLabsWidgetScript,
   elevenLabsScriptSrc,
@@ -1225,6 +1226,130 @@ test.describe("live-style interaction flows", () => {
           "lead_form_submit",
         ]),
       );
+    });
+
+    test("ad landing page attribution and safe Meta conversion events fire", async ({
+      page,
+    }) => {
+      const landingPage = adLandingPages[0];
+
+      await page.addInitScript(() => {
+        const analyticsWindow = window as Window & {
+          __rdaTestMetaEvents?: unknown[][];
+          fbq?: (...args: unknown[]) => void;
+        };
+
+        analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.fbq = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestMetaEvents?.push(args);
+        };
+      });
+
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`,
+      );
+
+      const form = page.locator('form[data-rda-landing-form="true"]');
+      await expect(form).toBeVisible();
+      await expect(form.locator('input[name="landing_page"]')).toHaveValue(landingPage.slug);
+      await expect(form.locator('input[name="campaign_intent"]')).toHaveValue(
+        landingPage.campaignIntent,
+      );
+      await expect(form.locator('input[name="course_interest"]')).toHaveValue(
+        landingPage.courseInterests.join(", "),
+      );
+      await expect(form.locator('input[name="utm_source"]')).toHaveValue("facebook");
+      await expect(form.locator('input[name="utm_medium"]')).toHaveValue("paid_social");
+      await expect(form.locator('input[name="utm_campaign"]')).toHaveValue(
+        "dental_assisting_testimonial",
+      );
+      await expect(form.locator('input[name="utm_content"]')).toHaveValue("student_video_01");
+
+      await form.locator('input[name="Name"]').fill("Private Test Student");
+      await form.locator('input[name="_replyto"]').fill("private-test@example.com");
+      await form.locator('input[name="Phone"]').fill("916-555-1234");
+      await form.locator('textarea[name="Notes"]').fill("Private note should not be tracked");
+
+      const events = await page.evaluate(async () => {
+        const analyticsWindow = window as Window & {
+          __rdaTestGtagEvents?: unknown[][];
+          __rdaTestMetaEvents?: unknown[][];
+          __rdaTestVercelEvents?: unknown[][];
+          gtag?: (...args: unknown[]) => void;
+          va?: (...args: unknown[]) => void;
+        };
+
+        analyticsWindow.__rdaTestGtagEvents = [];
+        analyticsWindow.__rdaTestVercelEvents = [];
+        analyticsWindow.gtag = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestGtagEvents?.push(args);
+        };
+        analyticsWindow.va = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestVercelEvents?.push(args);
+        };
+
+        const dispatchClick = (selector: string) => {
+          document
+            .querySelector<HTMLElement>(selector)
+            ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        };
+
+        dispatchClick(".rda-ad-hero-actions a[href^='tel:']");
+        dispatchClick(".rda-ad-form-panel a[href^='mailto:'], .rda-ad-form-panel a[href^='tel:']");
+
+        document
+          .querySelector<HTMLFormElement>('form[data-rda-landing-form="true"]')
+          ?.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+
+        return {
+          ga: analyticsWindow.__rdaTestGtagEvents ?? [],
+          meta: analyticsWindow.__rdaTestMetaEvents ?? [],
+          vercel: analyticsWindow.__rdaTestVercelEvents ?? [],
+        };
+      });
+
+      const gaEvents = events.ga.filter(
+        (event): event is ["event", string, Record<string, unknown>?] => event[0] === "event",
+      );
+      const metaTrackEvents = events.meta.filter(
+        (event): event is ["track", string, Record<string, unknown>?] => event[0] === "track",
+      );
+      const vercelEventNames = events.vercel
+        .filter((event): event is ["event", { name: string; data?: Record<string, unknown> }] => {
+          return event[0] === "event" && typeof event[1] === "object" && event[1] !== null && "name" in event[1];
+        })
+        .map((event) => event[1].name);
+      const viewContentEvent = metaTrackEvents.find((event) => event[1] === "ViewContent")?.[2] ?? {};
+      const leadEvent = metaTrackEvents.find((event) => event[1] === "Lead")?.[2] ?? {};
+      const contactEvent = metaTrackEvents.find((event) => event[1] === "Contact")?.[2] ?? {};
+      const gaLeadEvent = gaEvents.find((event) => event[1] === "generate_lead")?.[2] ?? {};
+      const trackedPayload = JSON.stringify({ contactEvent, leadEvent, viewContentEvent }).toLowerCase();
+
+      expect(viewContentEvent).toMatchObject({
+        content_category: landingPage.contentCategory,
+        content_name: landingPage.campaignIntent,
+      });
+      expect(leadEvent).toMatchObject({
+        content_category: "ad_landing_lead",
+        content_name: "Ad Landing Lead",
+        selected_count: 1,
+      });
+      expect(contactEvent).toMatchObject({
+        content_category: "contact",
+      });
+      expect(gaLeadEvent).toMatchObject({
+        form_id: "ad_landing_lead",
+        lead_source: "website_ad_landing_lead",
+        lead_type: "ad_landing_lead",
+        selected_count: 1,
+      });
+      expect(vercelEventNames).toEqual(expect.arrayContaining(["contact_action", "lead_form_submit"]));
+      expect(trackedPayload).not.toContain("private-test@example.com");
+      expect(trackedPayload).not.toContain("916-555-1234");
+      expect(trackedPayload).not.toContain("private note");
+      expect(trackedPayload).not.toContain("private test student");
     });
 
     test("quick sign up form is reusable and wired for class interest", async ({

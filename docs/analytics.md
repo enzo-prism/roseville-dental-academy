@@ -5,10 +5,25 @@ Roseville Dental Academy uses Vercel Web Analytics for page views and custom eve
 ## Runtime Sources
 
 - `app/layout.tsx` mounts `@vercel/analytics/next`, GA4, Hotjar, Meta Pixel, Snapchat Pixel, and the shared interaction listener.
+- `app/lp/[slug]/page.tsx` serves noindex ad landing pages for paid social campaigns.
 - `components/site/interaction-analytics.tsx` is the custom event source of truth.
 - `components/site/google-analytics.tsx` owns only the GA4 script and page-view updates.
-- `components/site/meta-pixel.tsx` owns Meta Pixel page-view tracking after the bootstrap sends the first `PageView`.
+- `components/site/meta-pixel.tsx` owns Meta Pixel page-view tracking and safe standard event helpers.
 - `components/site/snapchat-pixel.tsx` owns Snapchat client-navigation page-view updates after the head bootstrap sends the first `PAGE_VIEW`.
+
+## Paid Social Landing Pages
+
+Current Facebook/Meta ad landing pages are noindex conversion routes, not SEO pages:
+
+- `/lp/dental-assisting-student-story`
+- `/lp/rda-renewal-ready`
+- `/lp/pit-fissure-sealants-rda`
+
+Use readable landing-page paths and UTMs for campaign detail:
+
+`/lp/dental-assisting-student-story?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`
+
+Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, `referrer`, and the standard UTM fields. Do not add these pages to the header, footer, or sitemap.
 
 ## Vercel Custom Events
 
@@ -50,7 +65,17 @@ For GA4 reporting beyond event counts, register useful event-scoped custom dimen
 
 ## Meta Pixel
 
-The Meta Pixel base code is installed sitewide with pixel ID `356932321507746`. It sends the initial `PageView` during page load, then `components/site/meta-pixel.tsx` sends additional `PageView` events on client-side route changes. Do not send student-entered form values, notes, phone numbers, or email addresses to Meta events.
+The Meta Pixel base code is installed sitewide with pixel ID `356932321507746`. It sends the initial `PageView` during page load, then `components/site/meta-pixel.tsx` sends additional `PageView` events on client-side route changes.
+
+Safe Meta standard events:
+
+| Event | When it fires | Safe parameters |
+| --- | --- | --- |
+| `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `page_path` |
+| `Lead` | Valid lead form submit intent | `content_name`, `content_category`, `source_page`, `selected_count`, `selected_items`, `page_path` |
+| `Contact` | Phone or email click | `content_name`, `content_category`, `link_location`, `page_path` |
+
+Do not send student-entered names, email addresses, phone numbers, notes, or message text to Meta events.
 
 ## Snapchat Pixel
 

@@ -16,6 +16,9 @@ type FbqCommand =
   | ["track", string, Record<string, unknown>?]
   | ["trackCustom", string, Record<string, unknown>?];
 
+type MetaPixelEventName = "Contact" | "Lead" | "PageView" | "ViewContent";
+type MetaPixelProperties = Record<string, boolean | number | string | null | undefined>;
+
 declare global {
   interface Window {
     _fbq?: unknown;
@@ -39,6 +42,42 @@ function getMetaPixelCode(pixelId: string) {
   `.trim();
 }
 
+function compactMetaValue(value: string) {
+  return value.replace(/\s+/g, " ").trim().slice(0, 255);
+}
+
+function safeMetaProperties(properties: MetaPixelProperties = {}) {
+  const safeProperties = Object.fromEntries(
+    Object.entries(properties)
+      .filter((entry): entry is [string, Exclude<MetaPixelProperties[string], undefined>] => entry[1] !== undefined)
+      .map(([key, value]) => [
+        key,
+        typeof value === "string" ? compactMetaValue(value) : value,
+      ]),
+  );
+
+  if (typeof window === "undefined") {
+    return safeProperties;
+  }
+
+  return {
+    page_path: `${window.location.pathname}${window.location.search}`,
+    ...safeProperties,
+  };
+}
+
+export function trackMetaPixelEvent(
+  eventName: MetaPixelEventName,
+  properties: MetaPixelProperties = {},
+) {
+  if (typeof window === "undefined" || typeof window.fbq !== "function") {
+    return false;
+  }
+
+  window.fbq("track", eventName, safeMetaProperties(properties));
+  return true;
+}
+
 function MetaPageViewTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -59,7 +98,7 @@ function MetaPageViewTracker() {
       return;
     }
 
-    window.fbq("track", "PageView");
+    trackMetaPixelEvent("PageView");
   }, [pathname, searchParams]);
 
   return null;
