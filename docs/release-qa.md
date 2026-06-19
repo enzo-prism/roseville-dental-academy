@@ -21,6 +21,13 @@ Preview reproduction:
 PREVIEW_URL=https://example-preview.vercel.app PLAYWRIGHT_NO_WEBSERVER=1 pnpm test:preview
 ```
 
+Production-domain smoke and content checks after a live deployment:
+
+```bash
+PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://rosevilledentalacademy.com pnpm test:smoke
+PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://rosevilledentalacademy.com pnpm test:parity-content
+```
+
 Visual parity only:
 
 ```bash
@@ -131,6 +138,8 @@ After pushing, watch both GitHub workflows:
 gh run list --repo enzo-prism/roseville-dental-academy --limit 8
 gh run watch <run-id> --repo enzo-prism/roseville-dental-academy --exit-status --interval 30
 ```
+
+For the full production push checklist, use [production-runbook.md](production-runbook.md).
 
 ## Known 2026-05-26 Resolution
 

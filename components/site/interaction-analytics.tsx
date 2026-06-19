@@ -407,6 +407,20 @@ function getFormValues(formData: FormData, name: string) {
     .map((value) => slugValue(value));
 }
 
+function getFormValue(formData: FormData, name: string) {
+  const value = formData.get(name);
+
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function optionalCompactValue(value: string | undefined) {
+  return value ? compactText(value) : undefined;
+}
+
+function optionalSlugValue(value: string | undefined) {
+  return value ? slugValue(value) : undefined;
+}
+
 function summarizeSelectedItems(values: string[]) {
   if (!values.length) {
     return undefined;
@@ -440,14 +454,27 @@ function getLeadFormName(formId: string) {
 function trackLeadSubmit(formId: string, formData: FormData, selectedItems: string[] = []) {
   const leadSource = slugValue(`website_${formId}`);
   const sourcePage = slugValue(getFormSource(formData), "website");
+  const campaignContext = {
+    campaign_intent: optionalSlugValue(getFormValue(formData, "campaign_intent")),
+    course_interest: optionalCompactValue(getFormValue(formData, "course_interest")),
+    landing_page: optionalCompactValue(getFormValue(formData, "landing_page")),
+    page_path: optionalCompactValue(getFormValue(formData, "page_path")),
+    utm_campaign: optionalSlugValue(getFormValue(formData, "utm_campaign")),
+    utm_content: optionalSlugValue(getFormValue(formData, "utm_content")),
+    utm_medium: optionalSlugValue(getFormValue(formData, "utm_medium")),
+    utm_source: optionalSlugValue(getFormValue(formData, "utm_source")),
+    utm_term: optionalSlugValue(getFormValue(formData, "utm_term")),
+  };
 
   trackSiteEvent("lead_form_submit", {
+    ...campaignContext,
     form_id: formId,
     selected_count: selectedItems.length || undefined,
     selected_items: summarizeSelectedItems(selectedItems),
     source: getFormSource(formData),
   });
   trackSafeGaEvent("generate_lead", {
+    ...campaignContext,
     form_id: formId,
     form_name: getLeadFormName(formId),
     lead_source: leadSource,
@@ -457,6 +484,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     source_page: sourcePage,
   });
   trackSafeGaEvent("lead_form_submit", {
+    ...campaignContext,
     form_id: formId,
     lead_source: leadSource,
     lead_type: formId,
@@ -465,6 +493,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     source_page: sourcePage,
   });
   trackMetaPixelEvent("Lead", {
+    ...campaignContext,
     content_category: formId,
     content_name: getLeadFormName(formId),
     selected_count: selectedItems.length || undefined,

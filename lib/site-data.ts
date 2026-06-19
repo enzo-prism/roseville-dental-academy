@@ -601,6 +601,21 @@ export const faqItems = [
       "No. The academy does not offer traditional financial aid, but it does state that payment plans are available.",
   },
   {
+    question: "Does submitting the online form reserve a seat?",
+    answer:
+      "No. The online form is a request for next steps. Admissions will follow up to confirm current availability, requirements, and registration details before a seat is reserved or payment is collected.",
+  },
+  {
+    question: "Why do new dental assistants ask about Infection Control?",
+    answer:
+      "California Dental Board guidance says unlicensed dental assistants must complete a board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials.",
+  },
+  {
+    question: "What do students need before Coronal Polish?",
+    answer:
+      "Students should be ready to show completion of a board-approved 8-hour Infection Control course and current valid BLS certification. The academy also lists Dental Practice Act certification as part of its current prerequisite path.",
+  },
+  {
     question: "How much does a Dental Assistant make?",
     answer:
       "The site states that starting pay is between $18 and $22 depending on your state and employer.",
@@ -640,20 +655,6 @@ export const instructorBios = [
       "RDA since 2017",
       "Orthodontic Assistant permit",
       "CPR/BLS instructor since 2019",
-    ],
-  },
-  {
-    name: "Sandra",
-    credential: "RDA Assistant Instructor",
-    image: siteImages.instructorSandra,
-    imageAlt: "Sandra, RDA Assistant Instructor at Roseville Dental Academy",
-    summary:
-      "Sandra completed the academy in May 2022 and brings a student-centered perspective to the classroom. She enjoys sharing what she has learned, helping students grow through hands-on practice, and is continuing her own path toward dental hygiene.",
-    highlights: [
-      "Roseville Dental Academy alumna",
-      "Registered Dental Assistant",
-      "Focused on student confidence",
-      "Future dental hygienist",
     ],
   },
   {
@@ -714,7 +715,22 @@ export const studentFaqHighlights = [
   {
     question: "Are the courses Dental Board approved?",
     answer:
-      "The academy points students to the Dental Board of California approved-provider lists so they can verify current course status before enrolling. Current public lists include Roseville Dental Academy for Radiation Safety, Infection Control, Coronal Polishing, and Pit and Fissure Sealants.",
+      "The academy points students to the Dental Board of California approved-provider lists so they can verify current course status before enrolling. Current public lists include Roseville Dental Academy for Radiation Safety X1036, Infection Control IC189, Coronal Polishing CP148, and Pit and Fissure Sealants PF186.",
+  },
+  {
+    question: "Does this request reserve a seat?",
+    answer:
+      "No. The website form is the first step, not an enrollment confirmation. Admissions will confirm the next open date, requirements, and payment or registration steps directly.",
+  },
+  {
+    question: "Why are offices asking about the 8-hour Infection Control course?",
+    answer:
+      "California Dental Board guidance says unlicensed dental assistants must complete a board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials.",
+  },
+  {
+    question: "What should I confirm before Coronal Polish?",
+    answer:
+      "Students should confirm they have current BLS, 8-hour Infection Control, and Dental Practice Act certification before registering. Admissions can also explain the manikin, written exam, and patient clinical requirements.",
   },
   {
     question: "Do students need to provide patients?",
@@ -729,7 +745,7 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026, October 5, 2026, and November 20, 2026. BLS, X-rays/Radiation Safety, and Infection Control are listed for June 6, 2026 (full), July 18, August 1, September 5, October 3, November 7, and December 5, 2026. Coronal Polish and Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25, August 8, September 12, October 10, November 14, and December 12, 2026. Dates are penciled in and admissions will confirm current availability.",
+      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026, October 5, 2026, and November 20, 2026. BLS, X-rays/Radiation Safety, and Infection Control are listed for June 6, 2026 (full), July 18, August 1, September 5, October 3, November 7, and December 5, 2026. Coronal Polish and Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25, August 8, September 12, October 10, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
   },
   {
     question: "What is the best next step to enroll?",

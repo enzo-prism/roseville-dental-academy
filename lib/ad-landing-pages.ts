@@ -7,6 +7,8 @@ import { siteImages } from "@/lib/site-data";
 
 export type AdLandingPageSlug =
   | "dental-assisting-student-story"
+  | "coronal-polish-office-awareness"
+  | "infection-control-office-awareness"
   | "pit-fissure-sealants-rda"
   | "rda-renewal-ready";
 
@@ -55,6 +57,8 @@ function firstAvailableDate(courseId: CourseScheduleId) {
 }
 
 const dentalAssistingDates = availableDates("dental-assisting-program");
+const infectionControlDates = availableDates("infection-control");
+const coronalPolishDates = availableDates("coronal-polish");
 const coronalSealantsDates = availableDates("coronal-polish");
 const sealantsDates = availableDates("sealants");
 
@@ -110,6 +114,110 @@ export const adLandingPages: AdLandingPage[] = [
       },
     ],
     slug: "dental-assisting-student-story",
+  },
+  {
+    audience:
+      "Dentists, office managers, and new dental assistants comparing training options in the greater Sacramento area.",
+    campaignIntent: "infection_control_office_awareness",
+    contentCategory: "infection_control",
+    courseInterests: ["Infection Control"],
+    dates: infectionControlDates,
+    eyebrow: "Infection Control course",
+    facts: [
+      { label: "Provider", value: "IC189" },
+      { label: "Course length", value: "8 hours" },
+      { label: "Price", value: "$395" },
+      { label: "Next date", value: firstAvailableDate("infection-control") },
+    ],
+    hero: {
+      badge: `Next date: ${firstAvailableDate("infection-control")}`,
+      imageAlt: "Students learning infection control and sterilization workflow.",
+      imageSrc: siteImages.infection,
+      intro:
+        "Need to help a new hire understand the Infection Control course path? Ask admissions about the 8-hour IC189 course, prerequisites, and upcoming local dates.",
+      title: "Infection Control training for new dental assistants",
+    },
+    metaDescription:
+      "Ask Roseville Dental Academy about its 8-hour IC189 Infection Control course for new dental assistants and office teams.",
+    metaTitle: "Infection Control Course From Facebook | Roseville Dental Academy",
+    path: "/lp/infection-control-office-awareness",
+    primaryCtaLabel: "Ask about Infection Control",
+    proofPoints: [
+      "Provider number IC189 is listed for the 8-hour Infection Control course.",
+      "Course details are built around California Dental Board certification requirements for qualifying students.",
+      "Admissions can confirm prerequisites, current dates, and registration next steps before anyone reserves a seat.",
+    ],
+    sections: [
+      {
+        title: "Best for",
+        items: [
+          "Office managers helping a new dental assistant understand the training checklist.",
+          "Dentists comparing local course options for team members before clinical onboarding.",
+          "New hires who need admissions to confirm prerequisites and the right upcoming date.",
+        ],
+      },
+      {
+        title: "Important before registering",
+        items: [
+          "Students need current CPR BLS certification from AHA or ARC.",
+          "Students also need 2-hour Dental Practice Act certification before registration.",
+          "Admissions will confirm availability, required documents, and what to bring for class.",
+        ],
+      },
+    ],
+    slug: "infection-control-office-awareness",
+  },
+  {
+    audience:
+      "Dental offices, office managers, and eligible assistants comparing Coronal Polish training options in the greater Sacramento area.",
+    campaignIntent: "coronal_polish_office_awareness",
+    contentCategory: "coronal_polish",
+    courseInterests: ["Coronal Polish"],
+    dates: coronalPolishDates,
+    eyebrow: "Coronal Polish course",
+    facts: [
+      { label: "Provider", value: "CP148" },
+      { label: "Course length", value: "12 hours" },
+      { label: "Price", value: "$500" },
+      { label: "Next date", value: firstAvailableDate("coronal-polish") },
+    ],
+    hero: {
+      badge: `Next date: ${firstAvailableDate("coronal-polish")}`,
+      imageAlt: "Dental professionals practicing coronal polish technique.",
+      imageSrc: siteImages.coronal,
+      intro:
+        "Planning Coronal Polish training for an assistant or your office? Ask admissions about the CP148 course, prerequisites, patient planning, and upcoming dates.",
+      title: "Coronal Polish training for eligible assistants",
+    },
+    metaDescription:
+      "Ask Roseville Dental Academy about its 12-hour CP148 Coronal Polish course for eligible dental assistants and office teams.",
+    metaTitle: "Coronal Polish Course From Facebook | Roseville Dental Academy",
+    path: "/lp/coronal-polish-office-awareness",
+    primaryCtaLabel: "Ask about Coronal Polish",
+    proofPoints: [
+      "Provider number CP148 is listed for the 12-hour Coronal Polish course.",
+      "Training includes didactic, lab, manikin, written exam, and human patient requirements.",
+      "Admissions can confirm prerequisites, patient planning, dates, and registration steps.",
+    ],
+    sections: [
+      {
+        title: "Best for",
+        items: [
+          "Dental offices planning next certification steps for an eligible assistant.",
+          "Assistants who already have current BLS, Infection Control, and Dental Practice Act certification.",
+          "Local teams comparing course timing while admissions confirms current availability.",
+        ],
+      },
+      {
+        title: "Important before registering",
+        items: [
+          "Current BLS, current 8-hour Infection Control, and current Dental Practice Act certification are required before registration.",
+          "Students complete three coronal polishes on a manikin, pass a written exam above 75%, and complete coronal polish on three human patients.",
+          "The academy does not provide patients, so admissions should confirm patient planning before a seat is reserved.",
+        ],
+      },
+    ],
+    slug: "coronal-polish-office-awareness",
   },
   {
     audience: "Working dental assistants and RDAs trying to stay renewal-ready.",

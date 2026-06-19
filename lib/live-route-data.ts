@@ -83,7 +83,7 @@ const ROUTE_DESCRIPTION_OVERRIDES: Record<string, string> = {
   "/dental-assisting-program":
     "Roseville Dental Academy's 9-week, 210-hour Dental Assisting Program combines online lectures, chairside training, a 64-hour internship, and resume and job assistance for students 16 and older.",
   "/meet-the-instructors":
-    "Meet the licensed instructors at Roseville Dental Academy — Jessica, Sandra, Sajal, and Katelyn — who lead hands-on dental assisting and certification training in Roseville, California.",
+    "Meet the licensed instructors at Roseville Dental Academy - Jessica, Sajal, and Katelyn - who lead hands-on dental assisting and certification training in Roseville, California.",
   "/photos":
     "Student moments, hands-on training, and graduation photos from Roseville Dental Academy's dental assisting and certification courses in Roseville, California.",
   "/bls%2Fcpr-1":
@@ -878,6 +878,8 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
               replaceHomepageHero(applyHomepageCourseCopyReplacements(sanitizedBodyHtml)),
             ),
           )
+        : route.route === "/faqs-1"
+          ? ""
         : route.route === "/meet-the-instructors"
           ? removeMeetInstructorsIntro(sanitizedBodyHtml)
         : sanitizedBodyHtml,

@@ -259,11 +259,11 @@ function StableStudentFaqs() {
   return (
     <section className="rda-stable-section rda-student-faq-section" data-rda-stable-widget="faqs">
       <div className="rda-section-heading">
-        <h2>Common Student Questions</h2>
+        <h2>Dental Assisting Program FAQs</h2>
         <span aria-hidden="true" />
       </div>
       <p className="rda-section-intro">
-        These answers are based on recent questions and course notes shared by the academy team,
+        Common student questions based on current course notes and recent admissions conversations,
         with private student details removed.
       </p>
       <div className="rda-student-faq-grid">

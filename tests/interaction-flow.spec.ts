@@ -1235,11 +1235,17 @@ test.describe("live-style interaction flows", () => {
 
       await page.addInitScript(() => {
         const analyticsWindow = window as Window & {
+          __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
           fbq?: (...args: unknown[]) => void;
+          gtag?: (...args: unknown[]) => void;
         };
 
+        analyticsWindow.__rdaTestGtagEvents = [];
         analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.gtag = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestGtagEvents?.push(args);
+        };
         analyticsWindow.fbq = (...args: unknown[]) => {
           analyticsWindow.__rdaTestMetaEvents?.push(args);
         };
@@ -1266,6 +1272,28 @@ test.describe("live-style interaction flows", () => {
         "dental_assisting_testimonial",
       );
       await expect(form.locator('input[name="utm_content"]')).toHaveValue("student_video_01");
+
+      const initialGaEvents = await page.evaluate(() => {
+        return ((window as Window & { __rdaTestGtagEvents?: unknown[][] }).__rdaTestGtagEvents ?? []);
+      });
+      const gaViewEvent =
+        initialGaEvents
+          .filter(
+            (event): event is ["event", string, Record<string, unknown>?] =>
+              event[0] === "event",
+          )
+          .find((event) => event[1] === "ad_landing_view")?.[2] ?? {};
+
+      expect(gaViewEvent).toMatchObject({
+        campaign_intent: landingPage.campaignIntent,
+        course_interest: landingPage.courseInterests.join(", "),
+        landing_page: landingPage.slug,
+        page_path: landingPage.path,
+        utm_campaign: "dental_assisting_testimonial",
+        utm_content: "student_video_01",
+        utm_medium: "paid_social",
+        utm_source: "facebook",
+      });
 
       await form.locator('input[name="Name"]').fill("Private Test Student");
       await form.locator('input[name="_replyto"]').fill("private-test@example.com");
@@ -1316,22 +1344,44 @@ test.describe("live-style interaction flows", () => {
       const metaTrackEvents = events.meta.filter(
         (event): event is ["track", string, Record<string, unknown>?] => event[0] === "track",
       );
-      const vercelEventNames = events.vercel
+      const vercelEvents = events.vercel
         .filter((event): event is ["event", { name: string; data?: Record<string, unknown> }] => {
           return event[0] === "event" && typeof event[1] === "object" && event[1] !== null && "name" in event[1];
-        })
-        .map((event) => event[1].name);
+        });
+      const vercelEventNames = vercelEvents.map((event) => event[1].name);
       const viewContentEvent = metaTrackEvents.find((event) => event[1] === "ViewContent")?.[2] ?? {};
       const leadEvent = metaTrackEvents.find((event) => event[1] === "Lead")?.[2] ?? {};
       const contactEvent = metaTrackEvents.find((event) => event[1] === "Contact")?.[2] ?? {};
       const gaLeadEvent = gaEvents.find((event) => event[1] === "generate_lead")?.[2] ?? {};
-      const trackedPayload = JSON.stringify({ contactEvent, leadEvent, viewContentEvent }).toLowerCase();
+      const gaSubmitEvent = gaEvents.find((event) => event[1] === "lead_form_submit")?.[2] ?? {};
+      const vercelLeadEvent =
+        vercelEvents.find((event) => event[1].name === "lead_form_submit")?.[1].data ?? {};
+      const expectedAttribution = {
+        campaign_intent: landingPage.campaignIntent,
+        course_interest: landingPage.courseInterests.join(", "),
+        landing_page: landingPage.slug,
+        page_path: landingPage.path,
+        utm_campaign: "dental_assisting_testimonial",
+        utm_content: "student_video_01",
+        utm_medium: "paid_social",
+        utm_source: "facebook",
+      };
+      const trackedPayload = JSON.stringify({
+        contactEvent,
+        gaLeadEvent,
+        gaSubmitEvent,
+        leadEvent,
+        vercelLeadEvent,
+        viewContentEvent,
+      }).toLowerCase();
 
       expect(viewContentEvent).toMatchObject({
+        ...expectedAttribution,
         content_category: landingPage.contentCategory,
         content_name: landingPage.campaignIntent,
       });
       expect(leadEvent).toMatchObject({
+        ...expectedAttribution,
         content_category: "ad_landing_lead",
         content_name: "Ad Landing Lead",
         selected_count: 1,
@@ -1344,6 +1394,19 @@ test.describe("live-style interaction flows", () => {
         lead_source: "website_ad_landing_lead",
         lead_type: "ad_landing_lead",
         selected_count: 1,
+        ...expectedAttribution,
+      });
+      expect(gaSubmitEvent).toMatchObject({
+        form_id: "ad_landing_lead",
+        lead_source: "website_ad_landing_lead",
+        lead_type: "ad_landing_lead",
+        selected_count: 1,
+        ...expectedAttribution,
+      });
+      expect(vercelLeadEvent).toMatchObject({
+        form_id: "ad_landing_lead",
+        selected_count: 1,
+        ...expectedAttribution,
       });
       expect(vercelEventNames).toEqual(expect.arrayContaining(["contact_action", "lead_form_submit"]));
       expect(trackedPayload).not.toContain("private-test@example.com");

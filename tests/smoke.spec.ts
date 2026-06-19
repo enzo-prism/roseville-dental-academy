@@ -12,7 +12,6 @@ import {
   coreWarmRoutes,
   elevenLabsAgentId,
   elevenLabsScriptSrc,
-  getContentBaseline,
   localOrigin,
   routeMappings,
   sanitizeLabel,
@@ -244,7 +243,7 @@ test("Hotjar analytics tag is configured", async ({ page }, testInfo) => {
   expect(mismatches).toEqual([]);
 });
 
-test("Snapchat pixel tag is configured", async ({ page }, testInfo) => {
+test("Snapchat pixel is not mounted after channel discontinuation", async ({ page }, testInfo) => {
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.waitForLoadState("load").catch(() => undefined);
   await page.waitForTimeout(1_000);
@@ -257,9 +256,6 @@ test("Snapchat pixel tag is configured", async ({ page }, testInfo) => {
 
     return {
       hasBootstrapScript: Boolean(bootstrapScript),
-      hasPixelId: Boolean(
-        bootstrapScript?.textContent?.includes("9fb9fda4-0f1c-49a7-a359-3755082e1788"),
-      ),
       hasSnapScript: Boolean(
         document.querySelector('script[src="https://sc-static.net/scevent.min.js"]'),
       ),
@@ -268,20 +264,16 @@ test("Snapchat pixel tag is configured", async ({ page }, testInfo) => {
   });
   const mismatches: string[] = [];
 
-  if (!result.hasBootstrapScript) {
-    mismatches.push("homepage is missing the Snapchat Pixel bootstrap");
+  if (result.hasBootstrapScript) {
+    mismatches.push("homepage still mounts the Snapchat Pixel bootstrap");
   }
 
-  if (!result.hasPixelId) {
-    mismatches.push("homepage Snapchat Pixel bootstrap has the wrong pixel ID");
+  if (result.hasSnapScript) {
+    mismatches.push("homepage still loads the Snapchat Pixel tracking script");
   }
 
-  if (!result.hasSnapScript) {
-    mismatches.push("homepage is missing the Snapchat Pixel tracking script");
-  }
-
-  if (!result.snaptrReady) {
-    mismatches.push("homepage did not initialize the Snapchat snaptr function");
+  if (result.snaptrReady) {
+    mismatches.push("homepage still initializes the Snapchat snaptr function");
   }
 
   smokeSummary.push({
@@ -397,9 +389,14 @@ for (const landingPage of adLandingPages) {
         hasMetaBootstrap: Boolean(document.querySelector("#rda-meta-pixel")),
         hiddenFields: {
           campaignIntent: form?.querySelector<HTMLInputElement>('input[name="campaign_intent"]')?.value,
+          courseInterest: form?.querySelector<HTMLInputElement>('input[name="course_interest"]')?.value,
           landingPage: form?.querySelector<HTMLInputElement>('input[name="landing_page"]')?.value,
           pagePath: form?.querySelector<HTMLInputElement>('input[name="page_path"]')?.value,
+          utmCampaign: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_campaign"]')),
+          utmContent: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_content"]')),
+          utmMedium: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_medium"]')),
           utmSource: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_source"]')),
+          utmTerm: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_term"]')),
         },
         robots: document.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content ?? "",
         submitText: form?.querySelector<HTMLButtonElement>('button[type="submit"]')?.textContent ?? "",
@@ -436,7 +433,18 @@ for (const landingPage of adLandingPages) {
       mismatches.push(`${landingPage.path} hidden campaign_intent is wrong`);
     }
 
-    if (result.hiddenFields.pagePath !== landingPage.path || !result.hiddenFields.utmSource) {
+    if (result.hiddenFields.courseInterest !== landingPage.courseInterests.join(", ")) {
+      mismatches.push(`${landingPage.path} hidden course_interest is wrong`);
+    }
+
+    if (
+      result.hiddenFields.pagePath !== landingPage.path ||
+      !result.hiddenFields.utmSource ||
+      !result.hiddenFields.utmMedium ||
+      !result.hiddenFields.utmCampaign ||
+      !result.hiddenFields.utmTerm ||
+      !result.hiddenFields.utmContent
+    ) {
       mismatches.push(`${landingPage.path} attribution hidden fields are missing`);
     }
 
@@ -1721,33 +1729,47 @@ test("cookie banner is absent from rendered pages", async ({ page }, testInfo) =
   expect(mismatches).toEqual([]);
 });
 
-test("faq page preserves the live board-approval answers", async ({ page }, testInfo) => {
+test("faq page uses current board-approval answers without stale mirror copy", async ({ page }, testInfo) => {
   const snapshot = await captureSnapshot(page, `${localOrigin}/faqs-1`, {
     viewport: { width: 1280, height: 900 },
   });
-  const faqBaseline = getContentBaseline("/faqs-1").snapshot;
   const requiredPhrases = [
+    "Dental Assisting Program FAQs",
+    "Radiation Safety X1036",
+    "Infection Control IC189",
+    "Coronal Polishing CP148",
+    "Pit and Fissure Sealants PF186",
+    "Does this request reserve a seat?",
+  ];
+  const retiredPhrases = [
     "Yes, our provider number is X899.",
     "Yes, our provider number is IC157.",
-  ].filter((phrase) => faqBaseline.bodyText.includes(phrase));
+    "financial aid options",
+    "IC157",
+    "X899",
+  ];
 
   const missingPhrases = requiredPhrases.filter((phrase) => !snapshot.bodyText.includes(phrase));
+  const stalePhrases = retiredPhrases.filter((phrase) => snapshot.bodyText.includes(phrase));
 
-  if (missingPhrases.length > 0) {
+  if (missingPhrases.length > 0 || stalePhrases.length > 0) {
     writeJsonArtifact(testInfo, "faq-answer-summary.json", {
       missingPhrases,
+      stalePhrases,
       snapshot,
     });
   }
 
   smokeSummary.push({
     missingPhrases,
+    stalePhrases,
     route: "/faqs-1",
-    status: missingPhrases.length === 0 ? "passed" : "failed",
+    status: missingPhrases.length === 0 && stalePhrases.length === 0 ? "passed" : "failed",
     type: "faq-copy",
   });
 
   expect(missingPhrases).toEqual([]);
+  expect(stalePhrases).toEqual([]);
 });
 
 test("Drive-derived FAQ and instructor material render on public pages", async ({ page }, testInfo) => {
@@ -1760,7 +1782,9 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
   const mismatches: string[] = [];
 
   for (const phrase of [
-    "Common Student Questions",
+    "Dental Assisting Program FAQs",
+    "Common student questions",
+    "Does this request reserve a seat?",
     "Do students need to provide patients?",
     "Roseville Dental Academy does not provide patients",
     "June 19, 2026 (full)",
@@ -1775,7 +1799,6 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
   for (const phrase of [
     "Instructor Bios",
     "Jessica",
-    "Sandra",
     "Sajal",
     "Katelyn",
     "RDA-OA Lead Instructor",
@@ -1789,6 +1812,8 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
     "There's much to see here",
     "Find out more",
     "Hello WELCOME",
+    "Sandra completed the academy",
+    "RDA Assistant Instructor Sandra",
   ]) {
     if (instructorSnapshot.bodyText.includes(retiredPhrase)) {
       mismatches.push(`instructors page still includes retired intro copy: ${retiredPhrase}`);

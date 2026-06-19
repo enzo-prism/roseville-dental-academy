@@ -1,21 +1,22 @@
 # Analytics Event Contract
 
-Roseville Dental Academy uses Vercel Web Analytics for page views and custom events, plus GA4, Hotjar, Meta Pixel, and Snapchat Pixel for the current reporting and paid-media paths.
+Roseville Dental Academy uses Vercel Web Analytics for page views and custom events, plus GA4, Hotjar, and Meta Pixel for the current reporting and paid-media paths.
 
 ## Runtime Sources
 
-- `app/layout.tsx` mounts `@vercel/analytics/next`, GA4, Hotjar, Meta Pixel, Snapchat Pixel, and the shared interaction listener.
+- `app/layout.tsx` mounts `@vercel/analytics/next`, GA4, Hotjar, Meta Pixel, and the shared interaction listener.
 - `app/lp/[slug]/page.tsx` serves noindex ad landing pages for paid social campaigns.
 - `components/site/interaction-analytics.tsx` is the custom event source of truth.
 - `components/site/google-analytics.tsx` owns only the GA4 script and page-view updates.
 - `components/site/meta-pixel.tsx` owns Meta Pixel page-view tracking and safe standard event helpers.
-- `components/site/snapchat-pixel.tsx` owns Snapchat client-navigation page-view updates after the head bootstrap sends the first `PAGE_VIEW`.
 
 ## Paid Social Landing Pages
 
 Current Facebook/Meta ad landing pages are noindex conversion routes, not SEO pages:
 
 - `/lp/dental-assisting-student-story`
+- `/lp/infection-control-office-awareness`
+- `/lp/coronal-polish-office-awareness`
 - `/lp/rda-renewal-ready`
 - `/lp/pit-fissure-sealants-rda`
 
@@ -38,7 +39,7 @@ The event layer avoids student-entered names, email addresses, phone numbers, no
 | `portal_click` | Resume portal entry points | `portal`, `location`, `destination` |
 | `file_download` | Public PDF downloads | `file_name`, `file_type`, `location` |
 | `outbound_click` | Other external links | `domain`, `location`, `destination` |
-| `lead_form_submit` | Valid sign-up, contact, or registration submit intent | `form_id`, `source`, `selected_count`, `selected_items` |
+| `lead_form_submit` | Valid sign-up, contact, or registration submit intent | `form_id`, `source`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `lead_form_invalid` | Sign-up or registration submit blocked by missing required selections | `form_id`, `reason`, `selected_count` |
 | `cookie_accept` | Cookie banner acceptance | `location` |
 
@@ -48,7 +49,8 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 
 | Event | Type | When it fires | Key parameters |
 | --- | --- | --- | --- |
-| `generate_lead` | GA4 recommended | Valid sign-up, contact, or registration submit intent | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `selected_count`, `selected_items` |
+| `ad_landing_view` | Custom | `/lp/*` landing page view | `landing_page`, `campaign_intent`, `course_interest`, `content_category`, `page_path`, UTM fields |
+| `generate_lead` | GA4 recommended | Valid sign-up, contact, or registration submit intent | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `select_content` | GA4 recommended | CTA, nav, portal, social, and file selections | `content_type`, `content_id`, `link_location`, `link_url` |
 | `file_download` | GA4 enhanced/recommended-style | Public PDF downloads | `file_name`, `file_extension`, `link_location`, `link_url` |
 | `cta_click` | Custom | Primary CTAs | `cta_id`, `cta_location`, `link_url` |
@@ -57,11 +59,11 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | `social_click` | Custom | Facebook, Instagram, or TikTok links | `method`, `social_platform`, `link_location`, `link_url` |
 | `portal_click` | Custom | Resume portal entry points | `portal`, `link_location`, `link_url` |
 | `outbound_click` | Custom | External links not otherwise categorized | `link_domain`, `link_location`, `link_url`, `outbound` |
-| `lead_form_submit` | Custom | Lead form submit intent paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_count`, `selected_items` |
+| `lead_form_submit` | Custom | Lead form submit intent paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `lead_form_invalid` | Custom | Submit blocked by required selections | `form_id`, `reason`, `selected_count` |
 | `cookie_accept` | Custom | Cookie banner acceptance | `consent_action`, `link_location` |
 
-For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.
+For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.
 
 ## Meta Pixel
 
@@ -71,15 +73,15 @@ Safe Meta standard events:
 
 | Event | When it fires | Safe parameters |
 | --- | --- | --- |
-| `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `page_path` |
-| `Lead` | Valid lead form submit intent | `content_name`, `content_category`, `source_page`, `selected_count`, `selected_items`, `page_path` |
+| `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
+| `Lead` | Valid lead form submit intent | `content_name`, `content_category`, `source_page`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Contact` | Phone or email click | `content_name`, `content_category`, `link_location`, `page_path` |
 
 Do not send student-entered names, email addresses, phone numbers, notes, or message text to Meta events.
 
-## Snapchat Pixel
+## Retired Snapchat Pixel
 
-The Snapchat Pixel base code is installed in the document head with pixel ID `9fb9fda4-0f1c-49a7-a359-3755082e1788`. It sends the initial `PAGE_VIEW` during page load, then `components/site/snapchat-pixel.tsx` sends additional `PAGE_VIEW` events on client-side route changes. Do not send student-entered form values, notes, phone numbers, or email addresses to Snapchat events.
+Snapchat Pixel is no longer mounted. The June 17, 2026 RDA meeting discontinued Snapchat ads because location control was poor, so active paid-media tracking now prioritizes Meta and Google.
 
 ## Validation
 

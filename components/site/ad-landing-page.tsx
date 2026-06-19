@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
+import { trackGaEvent } from "@/components/site/google-analytics";
 import { trackMetaPixelEvent } from "@/components/site/meta-pixel";
 import {
   UTM_FIELDS,
@@ -30,17 +31,35 @@ type AdLandingPageProps = {
   page: AdLandingPageData;
 };
 
+function getLandingViewContext(page: AdLandingPageData) {
+  const searchParams = new URLSearchParams(window.location.search);
+  const utmContext = Object.fromEntries(
+    UTM_FIELDS.map((field) => [field, searchParams.get(field) || undefined]),
+  );
+
+  return {
+    campaign_intent: page.campaignIntent,
+    content_category: page.contentCategory,
+    course_interest: page.courseInterests.join(", "),
+    landing_page: page.slug,
+    page_path: page.path,
+    ...utmContext,
+  };
+}
+
 function trackLandingView(page: AdLandingPageData) {
   let attempts = 0;
   let retryTimer: number | undefined;
   let disposed = false;
+  const viewContext = getLandingViewContext(page);
+
+  trackGaEvent("ad_landing_view", viewContext);
 
   const send = () => {
     attempts += 1;
     const didTrack = trackMetaPixelEvent("ViewContent", {
-      content_category: page.contentCategory,
       content_name: page.campaignIntent,
-      page_path: page.path,
+      ...viewContext,
     });
 
     if (!didTrack && !disposed && attempts < 6) {

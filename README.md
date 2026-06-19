@@ -77,6 +77,11 @@ This updates:
 
 Use this intentionally when the live site changes. Normal QA compares against committed baselines and does not hit live production in real time.
 
+## Course Approval Sources
+
+Course approval details, Dental Board of California source links, and provider-number copy rules live in [docs/course-approvals.md](docs/course-approvals.md).
+Check that document before editing regulatory, prerequisite, or course-provider claims.
+
 ## QA Commands
 
 - `pnpm lint`: ESLint across app, components, lib, tests, and config.
@@ -92,13 +97,15 @@ Use this intentionally when the live site changes. Normal QA compares against co
 ## Analytics And Pixels
 
 The analytics and paid-media event contract lives in [docs/analytics.md](docs/analytics.md).
-Current sitewide tracking includes GA4, Vercel Analytics, Hotjar, Meta Pixel, and Snapchat Pixel.
+Current sitewide tracking includes GA4, Vercel Analytics, Hotjar, and Meta Pixel.
 Pixel components live under `components/site/*-analytics.tsx` and `components/site/*-pixel.tsx`,
 with global mounting handled in `app/layout.tsx`.
 
 Paid social landing pages live under `/lp/*` and are intentionally noindex:
 
 - `/lp/dental-assisting-student-story`
+- `/lp/infection-control-office-awareness`
+- `/lp/coronal-polish-office-awareness`
 - `/lp/rda-renewal-ready`
 - `/lp/pit-fissure-sealants-rda`
 
@@ -112,7 +119,6 @@ Important env vars:
 - `PREVIEW_URL`: target a deployed preview instead of local webserver startup.
 - `BASELINE_DIR`: alternate baseline location; defaults to `tests/baselines/live`.
 - `NEXT_PUBLIC_META_PIXEL_ID`: optional override for the Meta Pixel ID.
-- `NEXT_PUBLIC_SNAPCHAT_PIXEL_ID`: optional override for the Snapchat Pixel ID.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional override for the GA4 measurement ID.
 - `NEXT_PUBLIC_HOTJAR_SITE_ID`: optional override for the Hotjar site ID.
 
@@ -130,3 +136,4 @@ Visual parity failures should be triaged from the uploaded artifacts before chan
 - Default canonical host comes from `SITE_URL` and falls back to `https://rosevilledentalacademy.com`.
 - `vercel.json` keeps encoded-path redirects for source-compatible entry points.
 - GoDaddy commerce/member backends are not rebuilt here; member/auth pages stay static/noindex utility screens unless a real backend is chosen later.
+- Production deployment and post-deploy verification steps live in [docs/production-runbook.md](docs/production-runbook.md).
