@@ -306,6 +306,30 @@ function trackClickEvent(target: Element) {
       return;
     }
 
+    if (link.matches("[data-rda-whatsapp]") || href.includes("wa.me")) {
+      trackSiteEvent("contact_action", {
+        action: "whatsapp",
+        destination: "whatsapp",
+        location,
+      });
+      trackGaContactAction("whatsapp", location, {
+        link_text: linkText,
+        link_url: destination,
+      });
+      trackSafeGaEvent("whatsapp_click", {
+        contact_method: "whatsapp",
+        link_location: location,
+        link_text: linkText,
+        link_url: destination,
+      });
+      trackMetaPixelEvent("Contact", {
+        content_category: "contact",
+        content_name: "whatsapp",
+        link_location: location,
+      });
+      return;
+    }
+
     if (isGoogleMapsLink(link)) {
       trackSiteEvent("contact_action", {
         action: "directions",

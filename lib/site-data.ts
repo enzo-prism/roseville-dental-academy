@@ -54,7 +54,21 @@ export const siteContact = {
     formKey: "registration",
     qaField: "_codex_test",
   },
+  // WhatsApp click-to-chat. Number is E.164 digits only (no "+", spaces, or
+  // dashes) per the wa.me spec; +1 (916) 507-5157 -> 19165075157.
+  whatsAppNumber: "19165075157",
+  whatsAppDisplay: "+1 (916) 507-5157",
+  whatsAppMessage:
+    "Hi! I have a question about your dental assisting program.",
+  whatsAppLabel: "Message Us on WhatsApp",
 } as const;
+
+// Pre-built click-to-chat link. wa.me opens the WhatsApp app on mobile and
+// WhatsApp Web/desktop otherwise; the prefilled text lands in the compose box
+// (the user still taps send).
+export const whatsAppUrl = `https://wa.me/${siteContact.whatsAppNumber}?text=${encodeURIComponent(
+  siteContact.whatsAppMessage,
+)}`;
 
 export const signupInterestOptions: SignupInterestOption[] = [
   {

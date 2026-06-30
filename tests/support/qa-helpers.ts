@@ -84,7 +84,13 @@ function normalizeTextValue(value: string) {
 }
 
 function normalizeParityBodyText(value: string) {
-  return normalizeTextValue(value).replace(/\bMORE INFORMATION\b\s*/gi, "").trim();
+  return normalizeTextValue(value)
+    .replace(/\bMORE INFORMATION\b\s*/gi, "")
+    // The WhatsApp click-to-chat CTAs are additive UI excluded from parity (the
+    // floating button is icon-only; the inline pills share one label). Strip the
+    // label so the new contact CTAs do not drift the locked content baselines.
+    .replace(/\bMessage Us on WhatsApp\b\s*/gi, "")
+    .trim();
 }
 
 export function normalizeVisibleText(text: string) {
@@ -554,7 +560,8 @@ async function hideFloatingThirdPartyWidgets(page: Page) {
         .widget-appointments,
         .widget-reviews,
         .widget-trustedsite,
-        .live-elevenlabs-widget {
+        .live-elevenlabs-widget,
+        [data-rda-whatsapp] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -757,7 +764,10 @@ export async function captureSnapshot(
         href: normalizeHref(href, url),
         text,
       }))
-      .filter(({ href, text }) => !(href === "#" && /^more information$/i.test(text))),
+      .filter(({ href, text }) => !(href === "#" && /^more information$/i.test(text)))
+      // WhatsApp click-to-chat links (floating button + inline CTAs) are additive
+      // contact UI excluded from the locked link baselines.
+      .filter(({ href }) => !/wa\.me/i.test(href)),
   };
 }
 

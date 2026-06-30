@@ -4,7 +4,7 @@ This repo is a production-ready, live-faithful Next.js rebuild of [rosevilledent
 
 The current runtime is a shell-first hybrid:
 
-- React owns the shared shell: header, navigation, mobile menu, footer, contact blocks, cookie banner, and ElevenLabs placement.
+- React owns the shared shell: header, navigation, mobile menu, footer, contact blocks, cookie banner, the WhatsApp click-to-chat button, and ElevenLabs placement.
 - Sanitized frozen snapshots provide page-specific content and imagery.
 - Stable React replacements handle widgets that were unstable in the original GoDaddy runtime.
 - Snapshot files remain the visual/content reference and QA baseline, not the long-term source for shared shell behavior.
@@ -15,6 +15,7 @@ The current runtime is a shell-first hybrid:
 - `lib/live-route-data.ts` decorates `snapshot/live/manifest.json` into the typed route registry.
 - `components/site/live-*.tsx` contains the reusable live-faithful shell and stable widget replacements.
 - `app/globals.css` contains shell CSS variables and scoped snapshot compatibility styles.
+- `components/site/whatsapp-fab.tsx` renders the global WhatsApp click-to-chat floating button (mounted once in `app/layout.tsx`); `components/site/whatsapp-icon.tsx` holds the official WhatsApp logo glyph (sourced via svgl). The number, prefilled message, label, and pre-built `wa.me` link live in `siteContact` / `whatsAppUrl` in `lib/site-data.ts`. Inline "Message Us on WhatsApp" CTAs appear in the footer, contact section, and ad landing hero.
 - `snapshot/live/html/*.html` contains frozen source pages used for sanitized page bodies.
 - `public/__live/` and `public/assets/live/` contain mirrored live assets.
 - `tests/baselines/live/` contains committed content and visual baselines.
@@ -100,6 +101,13 @@ The analytics and paid-media event contract lives in [docs/analytics.md](docs/an
 Current sitewide tracking includes GA4, Vercel Analytics, Hotjar, and Meta Pixel.
 Pixel components live under `components/site/*-analytics.tsx` and `components/site/*-pixel.tsx`,
 with global mounting handled in `app/layout.tsx`.
+
+WhatsApp click-to-chat clicks are tracked through the document-level delegation in
+`components/site/interaction-analytics.tsx` (keyed on `data-rda-whatsapp`): they fire a
+Vercel `contact_action`, a GA `whatsapp_click`, and a Meta Pixel `Contact` event, mirroring
+the existing `tel:`/`mailto:` contact actions. The WhatsApp UI is icon-only/label-stripped and
+excluded from the content and visual QA baselines the same way the ElevenLabs widget is
+(see `tests/support/qa-helpers.ts`), so adding it does not require a baseline refresh.
 
 Paid social landing pages live under `/lp/*` and are intentionally noindex:
 

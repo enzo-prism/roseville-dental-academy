@@ -16,6 +16,7 @@ import {
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import { trackGaEvent } from "@/components/site/google-analytics";
 import { trackMetaPixelEvent } from "@/components/site/meta-pixel";
+import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import {
   UTM_FIELDS,
   useLeadAttribution,
@@ -25,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { AdLandingPage as AdLandingPageData } from "@/lib/ad-landing-pages";
-import { siteContact } from "@/lib/site-data";
+import { siteContact, whatsAppUrl } from "@/lib/site-data";
 
 type AdLandingPageProps = {
   page: AdLandingPageData;
@@ -126,6 +127,17 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
             <Button asChild variant="outline">
               <a href={`tel:${siteContact.phone.replace(/\D/g, "")}`}>
                 Call {siteContact.phone}
+              </a>
+            </Button>
+            <Button asChild data-rda-whatsapp="true" variant="whatsapp">
+              <a
+                aria-label={siteContact.whatsAppLabel}
+                href={whatsAppUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <WhatsAppIcon />
+                <span>{siteContact.whatsAppLabel}</span>
               </a>
             </Button>
           </div>

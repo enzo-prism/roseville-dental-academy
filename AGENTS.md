@@ -18,6 +18,7 @@ Keep these contracts separate:
 - Use the shadcn/ui Sera direction from `/DESIGN.md`: taupe neutral foundation, Roseville logo-blue primary token, Noto Sans body/nav/forms, Playfair Display headings, Lucide icons, Radix behavior, low-radius surfaces, and restrained borders/elevation.
 - Keep `snapshot/live/` as the migration/text/reference source, not the shared shell runtime or the long-term visual target.
 - Keep React shell behavior in stable components instead of injected repair scripts or third-party GoDaddy runtime code.
+- Two persistent floating widgets share the viewport corners: the ElevenLabs agent owns bottom-right, and the WhatsApp click-to-chat button (`components/site/whatsapp-fab.tsx`, mounted in `app/layout.tsx`) owns bottom-left at a lower z-index. Keep them in opposite corners and below dialogs/banners; both are hidden from QA visual/content baselines in `tests/support/qa-helpers.ts`.
 - Prefer shadcn primitives and existing shell components before creating new patterns.
 - Do not introduce raw hex colors, typography families, radii, or spacing scales casually. If a new visual token is truly needed, update `/DESIGN.md` in the same change.
 - Use `.agents/skills/ui-design-system/SKILL.md` for recurring frontend/design tasks.

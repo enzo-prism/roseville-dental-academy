@@ -41,6 +41,7 @@
   --rda-shell-z-dropdown: 500;
   --rda-shell-z-skip-link: 600;
   --rda-shell-z-widget: 2147483000;
+  --rda-shell-z-fab: 2147482000;
   --background: #fbfaf8;
   --foreground: #282522;
   --card: #fffefd;
@@ -55,6 +56,9 @@
   --muted-foreground: oklch(0.547 0.021 43.1);
   --accent: #8ec5e8;
   --accent-foreground: #16344f;
+  /* WhatsApp brand color (official #25D366) for the click-to-chat button. */
+  --whatsapp: #25d366;
+  --whatsapp-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
   --border: #d8d0c4;
   --input: #d8d0c4;
@@ -3332,6 +3336,66 @@ textarea {
   z-index: auto !important;
 }
 
+/*
+ * WhatsApp click-to-chat floating action button. Pinned bottom-LEFT so it never
+ * collides with the ElevenLabs agent (bottom-right); its z-index sits just below
+ * the agent so the mobile full-screen chat covers it cleanly while it still
+ * floats above all page chrome. Hidden from QA visual/content parity capture
+ * (see tests/support/qa-helpers.ts) the same way the ElevenLabs widget is.
+ */
+.rda-whatsapp-fab {
+  align-items: center;
+  background-color: var(--whatsapp);
+  border-radius: 9999px;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.35);
+  color: var(--whatsapp-foreground);
+  display: inline-flex;
+  left: max(24px, env(safe-area-inset-left));
+  min-height: 56px;
+  min-width: 56px;
+  overflow: hidden;
+  padding: 14px;
+  position: fixed;
+  text-decoration: none;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+  z-index: var(--rda-shell-z-fab);
+}
+
+.rda-whatsapp-fab:hover {
+  background-color: color-mix(in srgb, var(--whatsapp) 90%, #000);
+  box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.45);
+  transform: translateY(-1px);
+}
+
+.rda-whatsapp-fab:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.rda-whatsapp-fab-icon {
+  flex: none;
+  height: 28px;
+  width: 28px;
+}
+
+@media (max-width: 760px) {
+  .rda-whatsapp-fab {
+    bottom: max(14px, env(safe-area-inset-bottom));
+    left: max(14px, env(safe-area-inset-left));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rda-whatsapp-fab,
+  .rda-whatsapp-fab-label {
+    transition: none;
+  }
+}
+
 .rda-not-found-content {
   min-height: 60vh;
 }
@@ -4286,6 +4350,8 @@ textarea {
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
+  --color-whatsapp-foreground: var(--whatsapp-foreground);
+  --color-whatsapp: var(--whatsapp);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);

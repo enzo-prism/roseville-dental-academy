@@ -13,6 +13,8 @@ colors:
   muted-foreground: "#766D63"
   accent: "#8EC5E8"
   accent-foreground: "#16344F"
+  whatsapp: "#25D366"
+  whatsapp-foreground: "#FFFFFF"
   secondary: "#EEE9E2"
   secondary-foreground: "#282522"
   border: "#D8D0C4"
@@ -159,6 +161,8 @@ The written site content is locked. Visible route copy, headings, form labels, p
 Use shadcn semantic tokens first: `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`, `ring-ring`, `bg-primary`, `text-primary-foreground`, `bg-popover`, and `bg-accent`. `bg-accent` is the brand light blue and must pair with `text-accent-foreground`; use primary or primary-deep for hover/current text when light blue would not meet readable contrast.
 
 Do not introduce raw visual values inside components. If a new durable color, type, radius, or spacing decision is needed, add it here and map it through `app/globals.css`.
+
+`whatsapp` (`#25D366`, the official WhatsApp brand green) with `whatsapp-foreground` (white) is a reserved brand token. It maps to the `bg-whatsapp` / `text-whatsapp-foreground` utilities and the Button `whatsapp` variant, and is used only for the WhatsApp click-to-chat controls: the global floating button (`.rda-whatsapp-fab`, pinned bottom-left so it never collides with the bottom-right ElevenLabs agent) and the inline "Message Us on WhatsApp" CTAs in the footer, contact section, and ad landing hero. Do not reuse the WhatsApp green for non-WhatsApp UI, and keep the official logo glyph unaltered (sourced via svgl in `components/site/whatsapp-icon.tsx`).
 
 ## Typography
 

@@ -8,6 +8,7 @@ import {
   useLeadAttribution,
   useLeadFormSubmit,
 } from "@/components/site/use-lead-form";
+import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { siteContact } from "@/lib/site-data";
+import { siteContact, whatsAppUrl } from "@/lib/site-data";
 
 const directionsUrl =
   "https://www.google.com/maps/dir/?api=1&destination=1271%20Pleasant%20Grove%20Boulevard%2C%20Roseville%2C%20CA%2095747";
@@ -76,6 +77,17 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
               <Button asChild variant="outline">
                 <a href={directionsUrl} rel="noreferrer" target="_blank">
                   Get directions
+                </a>
+              </Button>
+              <Button asChild data-rda-whatsapp="true" variant="whatsapp">
+                <a
+                  aria-label={siteContact.whatsAppLabel}
+                  href={whatsAppUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <WhatsAppIcon />
+                  <span>{siteContact.whatsAppLabel}</span>
                 </a>
               </Button>
             </div>

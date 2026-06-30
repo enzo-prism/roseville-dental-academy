@@ -12,6 +12,8 @@
         "muted-foreground": "#766d63",
         "accent": "#8ec5e8",
         "accent-foreground": "#16344f",
+        "whatsapp": "#25d366",
+        "whatsapp-foreground": "#ffffff",
         "secondary": "#eee9e2",
         "secondary-foreground": "#282522",
         "border": "#d8d0c4",

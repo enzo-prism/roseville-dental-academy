@@ -34,7 +34,7 @@ The event layer avoids student-entered names, email addresses, phone numbers, no
 | --- | --- | --- |
 | `cta_click` | Hero, contact, and quick sign-up CTAs | `cta`, `location`, `destination` |
 | `nav_click` | Header and footer navigation links | `label`, `location`, `destination` |
-| `contact_action` | Phone, email, directions, or contact-form-open actions | `action`, `location`, `destination` |
+| `contact_action` | Phone, email, WhatsApp, directions, or contact-form-open actions | `action`, `location`, `destination` |
 | `social_click` | Facebook, Instagram, or TikTok links | `platform`, `location`, `destination` |
 | `portal_click` | Resume portal entry points | `portal`, `location`, `destination` |
 | `file_download` | Public PDF downloads | `file_name`, `file_type`, `location` |
@@ -55,7 +55,8 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | `file_download` | GA4 enhanced/recommended-style | Public PDF downloads | `file_name`, `file_extension`, `link_location`, `link_url` |
 | `cta_click` | Custom | Primary CTAs | `cta_id`, `cta_location`, `link_url` |
 | `nav_click` | Custom | Header and footer navigation | `nav_label`, `link_location`, `link_url` |
-| `contact_action` | Custom | Phone, email, directions, or contact-form-open actions | `contact_method`, `link_location`, `link_url` |
+| `contact_action` | Custom | Phone, email, WhatsApp, directions, or contact-form-open actions | `contact_method`, `link_location`, `link_url` |
+| `click_to_call` / `email_click` / `whatsapp_click` | Custom | Phone, email, and WhatsApp click-to-chat clicks | `contact_method`, `link_location`, `link_text`, `link_url` |
 | `social_click` | Custom | Facebook, Instagram, or TikTok links | `method`, `social_platform`, `link_location`, `link_url` |
 | `portal_click` | Custom | Resume portal entry points | `portal`, `link_location`, `link_url` |
 | `outbound_click` | Custom | External links not otherwise categorized | `link_domain`, `link_location`, `link_url`, `outbound` |
@@ -75,7 +76,7 @@ Safe Meta standard events:
 | --- | --- | --- |
 | `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Lead` | Valid lead form submit intent | `content_name`, `content_category`, `source_page`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
-| `Contact` | Phone or email click | `content_name`, `content_category`, `link_location`, `page_path` |
+| `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name`, `content_category`, `link_location`, `page_path` |
 
 Do not send student-entered names, email addresses, phone numbers, notes, or message text to Meta events.
 

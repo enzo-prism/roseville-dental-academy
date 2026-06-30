@@ -1,7 +1,9 @@
 import Link from "next/link";
 
-import { siteContact, socialLinks } from "@/lib/site-data";
+import { siteContact, socialLinks, whatsAppUrl } from "@/lib/site-data";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
+import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const footerLinks = [
@@ -25,6 +27,23 @@ export function LiveFooter() {
           <p>
             <a href={`mailto:${siteContact.email}`}>{siteContact.email}</a>
           </p>
+          <Button
+            asChild
+            className="rda-footer-whatsapp mt-1"
+            data-rda-whatsapp="true"
+            size="sm"
+            variant="whatsapp"
+          >
+            <a
+              aria-label={siteContact.whatsAppLabel}
+              href={whatsAppUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <WhatsAppIcon />
+              <span>{siteContact.whatsAppLabel}</span>
+            </a>
+          </Button>
           <div className="rda-footer-hours">
             <p>Hours</p>
             <dl>

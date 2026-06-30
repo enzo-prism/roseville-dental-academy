@@ -173,7 +173,8 @@ async function hideFloatingThirdPartyWidgets(page) {
         .widget-appointments,
         .widget-reviews,
         .widget-trustedsite,
-        .live-elevenlabs-widget {
+        .live-elevenlabs-widget,
+        [data-rda-whatsapp] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -185,7 +186,11 @@ async function hideFloatingThirdPartyWidgets(page) {
 }
 
 function normalizeParityBodyText(value) {
-  return normalizeTextValue(value).replace(/\bMORE INFORMATION\b\s*/gi, "").trim();
+  return normalizeTextValue(value)
+    .replace(/\bMORE INFORMATION\b\s*/gi, "")
+    // WhatsApp click-to-chat CTAs are additive UI excluded from parity.
+    .replace(/\bMessage Us on WhatsApp\b\s*/gi, "")
+    .trim();
 }
 
 async function captureContentSnapshot(page, url, assetMap) {
@@ -282,7 +287,9 @@ async function captureContentSnapshot(page, url, assetMap) {
         href: normalizeHrefForBaseline(href, url, assetMap),
         text: normalizeTextValue(text),
       }))
-      .filter(({ href, text }) => !(href === "#" && /^more information$/i.test(text))),
+      .filter(({ href, text }) => !(href === "#" && /^more information$/i.test(text)))
+      // WhatsApp click-to-chat links are additive contact UI excluded from parity.
+      .filter(({ href }) => !/wa\.me/i.test(href)),
     status: response?.status() ?? 0,
     title: normalizeTextValue(raw.title),
   };

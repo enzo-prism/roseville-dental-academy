@@ -8,6 +8,7 @@ import { GlobalStructuredData } from "@/components/site/structured-data";
 import { HotjarAnalytics } from "@/components/site/hotjar-analytics";
 import { InteractionAnalytics } from "@/components/site/interaction-analytics";
 import { MetaPixel } from "@/components/site/meta-pixel";
+import { WhatsAppFab } from "@/components/site/whatsapp-fab";
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
 import { buildPageMetadata } from "../lib/site-metadata";
 
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body className={LIVE_BODY_CLASS}>
         <GlobalStructuredData />
         {children}
+        <WhatsAppFab />
         <GoogleAnalytics />
         <HotjarAnalytics />
         <MetaPixel />
