@@ -2884,10 +2884,39 @@ textarea {
 }
 
 .rda-ad-form input,
+.rda-ad-form select,
 .rda-ad-form textarea {
   border: 1px solid var(--rda-color-border);
   border-radius: 6px;
   min-height: 46px;
+}
+
+.rda-ad-form select {
+  background-color: transparent;
+  color: var(--rda-color-heading);
+  font: inherit;
+  padding: 0 12px;
+}
+
+.rda-ad-form label.rda-ad-form-consent {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+}
+
+.rda-ad-form label.rda-ad-form-consent input {
+  height: 18px;
+  margin-top: 2px;
+  min-height: 0;
+  width: 18px;
+}
+
+.rda-ad-form label.rda-ad-form-consent span {
+  color: var(--rda-color-muted);
+  display: inline;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
 .rda-ad-form button[type="submit"] {

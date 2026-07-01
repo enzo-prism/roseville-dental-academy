@@ -421,7 +421,10 @@ for (const landingPage of adLandingPages) {
       mismatches.push(`${landingPage.path} is missing noindex robots metadata`);
     }
 
-    if (!result.hasLandingForm || result.formAction !== "https://formspree.io/f/xzdkgaeg") {
+    const expectedFormAction =
+      landingPage.formspreeEndpoint ?? "https://formspree.io/f/xzdkgaeg";
+
+    if (!result.hasLandingForm || result.formAction !== expectedFormAction) {
       mismatches.push(`${landingPage.path} landing form is not configured`);
     }
 

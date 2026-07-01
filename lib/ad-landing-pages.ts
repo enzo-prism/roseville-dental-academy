@@ -10,7 +10,10 @@ export type AdLandingPageSlug =
   | "coronal-polish-office-awareness"
   | "infection-control-office-awareness"
   | "pit-fissure-sealants-rda"
-  | "rda-renewal-ready";
+  | "rda-renewal-ready"
+  // Dedicated pages for the currently-running Facebook/Instagram ads (2026-07).
+  | "dental-assisting-enroll"
+  | "coronal-sealants-renewal";
 
 export type AdLandingPageStat = {
   label: string;
@@ -22,14 +25,40 @@ export type AdLandingPageSection = {
   title: string;
 };
 
+// A tailored dropdown rendered on the lead form (e.g. "Preferred start date" or
+// "Are you a current RDA?"). Each option submits to Formspree under `name`, which
+// is how per-ad qualification data is captured.
+export type AdLandingLeadSelect = {
+  icon?: "calendar" | "check" | "user";
+  label: string;
+  name: string;
+  options: string[];
+  // When true a disabled "Select one" placeholder is shown and a choice is
+  // required; otherwise the first option is pre-selected.
+  required?: boolean;
+};
+
+// Opt-in checkbox shown above the submit button. `name` is the Formspree field.
+export type AdLandingConsent = {
+  label: string;
+  name: string;
+};
+
 export type AdLandingPage = {
   audience: string;
   campaignIntent: string;
+  // Optional opt-in checkbox rendered before the submit button.
+  consent?: AdLandingConsent;
   contentCategory: string;
   courseInterests: string[];
   dates: string[];
   eyebrow: string;
   facts: AdLandingPageStat[];
+  // Per-ad Formspree endpoint. When omitted, the form posts to the shared
+  // `siteContact.formspreeEndpoint` so leads are still captured. Set this to a
+  // dedicated form (https://formspree.io/f/XXXXXXXX) to segment this ad's leads
+  // into their own Formspree inbox/dashboard.
+  formspreeEndpoint?: string;
   hero: {
     badge: string;
     imageAlt: string;
@@ -37,6 +66,8 @@ export type AdLandingPage = {
     intro: string;
     title: string;
   };
+  // Optional tailored dropdowns rendered between Phone and Notes.
+  leadSelects?: AdLandingLeadSelect[];
   metaDescription: string;
   metaTitle: string;
   path: string;
@@ -320,6 +351,159 @@ export const adLandingPages: AdLandingPage[] = [
       },
     ],
     slug: "pit-fissure-sealants-rda",
+  },
+  // ---------------------------------------------------------------------------
+  // Dedicated pages for the two Facebook/Instagram ads running as of July 2026
+  // (the existing-RDA sealants ad is paused, so its page was removed). Each maps
+  // 1:1 to an ad and posts to its own `formspreeEndpoint` so per-ad traffic,
+  // conversions, and leads stay fully separated.
+  // ---------------------------------------------------------------------------
+  {
+    // Ad 1: "Dental Assisting Training course" — career-entry enrollment.
+    audience:
+      "Prospective students ready to enroll in hands-on dental assisting training near Roseville.",
+    campaignIntent: "dental_assisting_enroll",
+    consent: {
+      label:
+        "Yes, Roseville Dental Academy can contact me about this program by phone, text, or email.",
+      name: "Consent to contact",
+    },
+    contentCategory: "dental_assisting_program",
+    courseInterests: ["Dental Assisting Program"],
+    dates: dentalAssistingDates,
+    eyebrow: "Dental Assisting Training",
+    facts: [
+      { label: "Program length", value: "9 weeks" },
+      { label: "Training total", value: "210 hours" },
+      { label: "Internship", value: "64 hours" },
+      { label: "Tuition", value: "$2,500" },
+    ],
+    formspreeEndpoint: "https://formspree.io/f/mpqgyjjg",
+    hero: {
+      badge: `Next start: ${firstAvailableDate("dental-assisting-program")}`,
+      imageAlt:
+        "Roseville Dental Academy students practicing hands-on dental assisting skills.",
+      imageSrc: siteImages.programHero,
+      intro:
+        "Start a hands-on dental assisting career in just 9 weeks. Tell us where to send class dates, tuition details, and enrollment next steps for the Roseville Dental Academy Dental Assisting Training Program.",
+      title: "Enroll in hands-on dental assistant training in Roseville",
+    },
+    leadSelects: [
+      {
+        icon: "calendar",
+        label: "Preferred start date",
+        name: "Preferred start date",
+        options: ["I'm flexible", ...dentalAssistingDates],
+      },
+    ],
+    metaDescription:
+      "Enroll in Roseville Dental Academy's 9-week Dental Assisting Training Program with chairside training, a 64-hour internship, and resume and job support.",
+    metaTitle: "Dental Assisting Training Enrollment | Roseville Dental Academy",
+    path: "/lp/dental-assisting-enroll",
+    primaryCtaLabel: "Get enrollment info",
+    proofPoints: [
+      "Accelerated 9-week, 210-hour program taught inside a working dental office.",
+      "Chairside experience, online lectures, homework, and a 64-hour internship.",
+      "Resume and job assistance to help you land your first dental assistant role.",
+    ],
+    sections: [
+      {
+        title: "Who this is for",
+        items: [
+          "New students age 16 or older who want an entry-level path into dental assisting.",
+          "People who want practical chairside training instead of a long college route.",
+          "Students who want support with resumes, internships, and local dental office readiness.",
+        ],
+      },
+      {
+        title: "What admissions will confirm",
+        items: [
+          "Current start dates for September 4, October 5, and November 20, 2026.",
+          "Tuition, available payment plans, and registration next steps.",
+          "How the 64-hour internship fits into the 9-week, 210-hour schedule.",
+        ],
+      },
+    ],
+    slug: "dental-assisting-enroll",
+  },
+  {
+    // Ad 2: "Coronal Polishing & Pit + Fissure Sealants" — license-renewal angle.
+    audience:
+      "Licensed dental professionals and RDAs staying ahead of license renewal requirements.",
+    campaignIntent: "coronal_sealants_renewal",
+    consent: {
+      label:
+        "Yes, Roseville Dental Academy can contact me about these courses by phone, text, or email.",
+      name: "Consent to contact",
+    },
+    contentCategory: "rda_certification_courses",
+    courseInterests: ["Coronal Polish", "Pit and Fissure Sealants"],
+    dates: coronalSealantsDates,
+    eyebrow: "Stay renewal-ready",
+    facts: [
+      { label: "Coronal Polish", value: "CP148" },
+      { label: "Sealants", value: "PF186" },
+      { label: "Combined price", value: "$1,050" },
+      { label: "Next date", value: firstAvailableDate("coronal-polish") },
+    ],
+    formspreeEndpoint: "https://formspree.io/f/mwvdrnrk",
+    hero: {
+      badge: "Coronal Polish + Sealants",
+      imageAlt: "Dental professionals practicing coronal polish technique.",
+      imageSrc: siteImages.coronal,
+      intro:
+        "Do not let your license renewal sneak up on you. Get renewal-ready with hands-on Coronal Polishing and Pit and Fissure Sealants training at Roseville Dental Academy — ask about board-approved courses, small classes, and simple enrollment.",
+      title: "Stay ahead of your license renewal requirements",
+    },
+    leadSelects: [
+      {
+        icon: "check",
+        label: "Which course(s) do you need?",
+        name: "Renewal focus",
+        options: [
+          "Coronal Polish",
+          "Pit and Fissure Sealants",
+          "Both Coronal Polish and Sealants",
+          "Not sure — help me plan",
+        ],
+        required: true,
+      },
+      {
+        icon: "calendar",
+        label: "Preferred class date",
+        name: "Preferred class date",
+        options: ["I'm flexible", ...coronalSealantsDates],
+      },
+    ],
+    metaDescription:
+      "Stay renewal-ready with Roseville Dental Academy's board-approved Coronal Polish (CP148) and Pit and Fissure Sealants (PF186) courses. Ask about dates and enrollment.",
+    metaTitle: "Coronal Polish & Sealants Renewal Courses | Roseville Dental Academy",
+    path: "/lp/coronal-sealants-renewal",
+    primaryCtaLabel: "Ask about renewal courses",
+    proofPoints: [
+      "Board-approved provider numbers: Coronal Polish CP148 and Sealants PF186.",
+      "Hands-on training with small class sizes and experienced instructors.",
+      "Fast, simple enrollment — admissions confirms prerequisites and current seats.",
+    ],
+    sections: [
+      {
+        title: "Best for",
+        items: [
+          "Working dental assistants and RDAs staying ahead of renewal requirements.",
+          "Professionals who want both course paths discussed in one call or email.",
+          "Anyone who wants timing sorted out before a renewal deadline gets close.",
+        ],
+      },
+      {
+        title: "Important before registering",
+        items: [
+          "Coronal Polish requires current BLS, Infection Control, and Dental Practice Act certification.",
+          "Sealants requires current BLS, Infection Control, Dental Practice Act, Radiation Safety, and Coronal Polish, unless you already hold a current RDA license with BLS proof.",
+          "The academy does not provide clinical patients, so admissions confirms patient planning before a seat is reserved.",
+        ],
+      },
+    ],
+    slug: "coronal-sealants-renewal",
   },
 ];
 

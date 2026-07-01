@@ -32,6 +32,12 @@ type AdLandingPageProps = {
   page: AdLandingPageData;
 };
 
+const SELECT_ICONS = {
+  calendar: CalendarDays,
+  check: CheckCircle2,
+  user: UserRound,
+} as const;
+
 function getLandingViewContext(page: AdLandingPageData) {
   const searchParams = new URLSearchParams(window.location.search);
   const utmContext = Object.fromEntries(
@@ -220,7 +226,7 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
             />
           ) : (
             <form
-              action={siteContact.formspreeEndpoint}
+              action={page.formspreeEndpoint ?? siteContact.formspreeEndpoint}
               className="rda-ad-form"
               data-rda-form-id="ad_landing_lead"
               data-rda-landing-form="true"
@@ -274,6 +280,34 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
                 </span>
                 <Input autoComplete="tel" name="Phone" placeholder="Phone" required type="tel" />
               </label>
+              {page.leadSelects?.map((field) => {
+                const Icon = field.icon ? SELECT_ICONS[field.icon] : null;
+
+                return (
+                  <label key={field.name}>
+                    <span>
+                      {Icon ? <Icon aria-hidden="true" /> : null}
+                      {field.label}
+                    </span>
+                    <select
+                      defaultValue={field.required ? "" : field.options[0]}
+                      name={field.name}
+                      required={field.required}
+                    >
+                      {field.required ? (
+                        <option disabled value="">
+                          Select one
+                        </option>
+                      ) : null}
+                      {field.options.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                );
+              })}
               <label>
                 <span>Questions or timing notes</span>
                 <Textarea
@@ -282,6 +316,12 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
                   rows={4}
                 />
               </label>
+              {page.consent ? (
+                <label className="rda-ad-form-consent">
+                  <input name={page.consent.name} required type="checkbox" value="Yes" />
+                  <span>{page.consent.label}</span>
+                </label>
+              ) : null}
               {status === "error" ? <LeadFormError /> : null}
               <Button disabled={status === "submitting"} type="submit">
                 {status === "submitting" ? "Sending..." : page.primaryCtaLabel}
