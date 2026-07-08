@@ -2753,6 +2753,136 @@ textarea {
   margin: 0;
 }
 
+.rda-ad-section-heading-wide {
+  max-width: 860px;
+}
+
+.rda-ad-course-proof-layout {
+  align-items: stretch;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+}
+
+.rda-ad-gallery {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rda-ad-gallery-card {
+  background: var(--rda-color-surface);
+  border: 1px solid var(--rda-color-border-soft);
+  border-radius: 8px;
+  display: grid;
+  grid-template-rows: auto auto;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rda-ad-gallery-card-featured {
+  grid-row: span 2;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.rda-ad-gallery-card img {
+  aspect-ratio: 4 / 3;
+  display: block;
+  height: auto;
+  object-fit: cover;
+  width: 100%;
+}
+
+.rda-ad-gallery-card-featured img {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 0;
+}
+
+.rda-ad-gallery-card figcaption {
+  color: var(--rda-color-heading);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  padding: 12px 14px;
+}
+
+.rda-ad-review-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.rda-ad-review-card {
+  background: var(--rda-color-surface);
+  border: 1px solid var(--rda-color-border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+}
+
+.rda-ad-review-card-top {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.rda-ad-rating {
+  align-items: center;
+  color: var(--rda-color-primary);
+  display: inline-flex;
+  gap: 3px;
+}
+
+.rda-ad-rating svg {
+  height: 15px;
+  width: 15px;
+}
+
+.rda-ad-review-feature {
+  background: var(--rda-color-accent-surface);
+  border: 1px solid var(--rda-color-border-soft);
+  border-radius: 999px;
+  color: var(--rda-color-heading);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 6px 9px;
+}
+
+.rda-ad-review-mark {
+  color: var(--rda-color-primary);
+  height: 22px;
+  width: 22px;
+}
+
+.rda-ad-review-card blockquote {
+  color: var(--rda-color-body);
+  font-size: 16px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.rda-ad-review-footer {
+  border-top: 1px solid var(--rda-color-border-soft);
+  display: grid;
+  gap: 3px;
+  padding-top: 12px;
+}
+
+.rda-ad-review-footer strong {
+  color: var(--rda-color-heading);
+}
+
+.rda-ad-review-footer span {
+  color: var(--rda-color-muted);
+  font-size: 13px;
+}
+
 .rda-ad-details {
   align-items: start;
   display: grid;
@@ -3431,6 +3561,7 @@ textarea {
 
 @media (max-width: 1024px) {
   .rda-ad-hero,
+  .rda-ad-course-proof-layout,
   .rda-ad-details {
     grid-template-columns: 1fr;
   }
@@ -3441,6 +3572,10 @@ textarea {
 
   .rda-ad-facts,
   .rda-ad-proof-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rda-ad-review-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -3547,7 +3682,22 @@ textarea {
   }
 
   .rda-ad-facts,
+  .rda-ad-gallery,
   .rda-ad-proof-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rda-ad-gallery-card-featured {
+    grid-row: auto;
+    grid-template-rows: auto auto;
+  }
+
+  .rda-ad-gallery-card-featured img {
+    aspect-ratio: 4 / 3;
+    height: auto;
+  }
+
+  .rda-ad-review-grid {
     grid-template-columns: 1fr;
   }
 

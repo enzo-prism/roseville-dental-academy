@@ -9,7 +9,9 @@ import {
   ClipboardCheck,
   Mail,
   Phone,
+  Quote,
   Send,
+  Star,
   UserRound,
 } from "lucide-react";
 
@@ -101,12 +103,25 @@ function IconLabel({
   );
 }
 
+function StarRating({ rating }: { rating: number }) {
+  const roundedRating = Math.max(0, Math.min(5, Math.round(rating)));
+
+  return (
+    <div className="rda-ad-rating" aria-label={`${roundedRating} out of 5 stars`}>
+      {Array.from({ length: roundedRating }).map((_, index) => (
+        <Star aria-hidden="true" fill="currentColor" key={index} />
+      ))}
+    </div>
+  );
+}
+
 export function AdLandingPage({ page }: AdLandingPageProps) {
   const formId = useId();
   const attribution = useLeadAttribution();
   const { status, submitLeadForm } = useLeadFormSubmit();
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
   const interestsLabel = page.courseInterests.join(", ");
+  const hasCourseProof = Boolean(page.gallery?.length || page.reviews?.length);
 
   useEffect(() => trackLandingView(page), [page]);
 
@@ -167,9 +182,69 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
         ))}
       </section>
 
+      {hasCourseProof ? (
+        <section
+          className="rda-ad-section rda-ad-course-proof"
+          aria-labelledby={`${formId}-course-proof-title`}
+        >
+          <div className="rda-ad-section-heading rda-ad-section-heading-wide">
+            <p className="rda-ad-eyebrow">Student proof</p>
+            <h2 id={`${formId}-course-proof-title`}>
+              Real reviews and photos from this training path
+            </h2>
+          </div>
+          <div className="rda-ad-course-proof-layout">
+            {page.gallery?.length ? (
+              <div className="rda-ad-gallery" aria-label="Student success photos">
+                {page.gallery.map((image, index) => (
+                  <figure
+                    className={
+                      index === 0
+                        ? "rda-ad-gallery-card rda-ad-gallery-card-featured"
+                        : "rda-ad-gallery-card"
+                    }
+                    key={`${image.src}-${image.caption}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- Existing live assets are literal paths. */}
+                    <img
+                      alt={image.alt}
+                      data-rda-course-gallery-image="true"
+                      src={image.src}
+                    />
+                    <figcaption>{image.caption}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            ) : null}
+            {page.reviews?.length ? (
+              <div className="rda-ad-review-grid" aria-label="Student reviews">
+                {page.reviews.map((review) => (
+                  <article
+                    className="rda-ad-review-card"
+                    data-rda-course-review="true"
+                    key={`${review.name}-${review.feature}`}
+                  >
+                    <div className="rda-ad-review-card-top">
+                      <StarRating rating={review.rating} />
+                      <span className="rda-ad-review-feature">{review.feature}</span>
+                    </div>
+                    <Quote aria-hidden="true" className="rda-ad-review-mark" />
+                    <blockquote>{review.quote}</blockquote>
+                    <footer className="rda-ad-review-footer">
+                      <strong>{review.name}</strong>
+                      <span>{review.meta}</span>
+                    </footer>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       <section className="rda-ad-section rda-ad-proof" aria-labelledby={`${formId}-proof-title`}>
         <div className="rda-ad-section-heading">
-          <p className="rda-ad-eyebrow">Why this page matches the ad</p>
+          <p className="rda-ad-eyebrow">What is included</p>
           <h2 id={`${formId}-proof-title`}>Clear next steps for this specific course interest</h2>
         </div>
         <div className="rda-ad-proof-grid">

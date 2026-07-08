@@ -1231,7 +1231,10 @@ test.describe("live-style interaction flows", () => {
     test("ad landing page attribution and safe Meta conversion events fire", async ({
       page,
     }) => {
-      const landingPage = adLandingPages[0];
+      const landingPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+      const utmCampaign = "dental_assisting_enroll";
 
       await page.addInitScript(() => {
         const analyticsWindow = window as Window & {
@@ -1254,7 +1257,7 @@ test.describe("live-style interaction flows", () => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(
         page,
-        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`,
+        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=${utmCampaign}&utm_content=student_video_01`,
       );
 
       const form = page.locator('form[data-rda-landing-form="true"]');
@@ -1269,7 +1272,7 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('input[name="utm_source"]')).toHaveValue("facebook");
       await expect(form.locator('input[name="utm_medium"]')).toHaveValue("paid_social");
       await expect(form.locator('input[name="utm_campaign"]')).toHaveValue(
-        "dental_assisting_testimonial",
+        utmCampaign,
       );
       await expect(form.locator('input[name="utm_content"]')).toHaveValue("student_video_01");
 
@@ -1289,7 +1292,7 @@ test.describe("live-style interaction flows", () => {
         course_interest: landingPage.courseInterests.join(", "),
         landing_page: landingPage.slug,
         page_path: landingPage.path,
-        utm_campaign: "dental_assisting_testimonial",
+        utm_campaign: utmCampaign,
         utm_content: "student_video_01",
         utm_medium: "paid_social",
         utm_source: "facebook",
@@ -1361,7 +1364,7 @@ test.describe("live-style interaction flows", () => {
         course_interest: landingPage.courseInterests.join(", "),
         landing_page: landingPage.slug,
         page_path: landingPage.path,
-        utm_campaign: "dental_assisting_testimonial",
+        utm_campaign: utmCampaign,
         utm_content: "student_video_01",
         utm_medium: "paid_social",
         utm_source: "facebook",

@@ -398,6 +398,12 @@ for (const landingPage of adLandingPages) {
           utmSource: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_source"]')),
           utmTerm: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_term"]')),
         },
+        proofGalleryImageCount: document.querySelectorAll(
+          'img[data-rda-course-gallery-image="true"]',
+        ).length,
+        proofReviewCount: document.querySelectorAll(
+          '[data-rda-course-review="true"]',
+        ).length,
         robots: document.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content ?? "",
         submitText: form?.querySelector<HTMLButtonElement>('button[type="submit"]')?.textContent ?? "",
         title: document.title,
@@ -438,6 +444,20 @@ for (const landingPage of adLandingPages) {
 
     if (result.hiddenFields.courseInterest !== landingPage.courseInterests.join(", ")) {
       mismatches.push(`${landingPage.path} hidden course_interest is wrong`);
+    }
+
+    if (
+      landingPage.reviews?.length &&
+      result.proofReviewCount < Math.min(2, landingPage.reviews.length)
+    ) {
+      mismatches.push(`${landingPage.path} course reviews are missing`);
+    }
+
+    if (
+      landingPage.gallery?.length &&
+      result.proofGalleryImageCount < Math.min(2, landingPage.gallery.length)
+    ) {
+      mismatches.push(`${landingPage.path} course gallery images are missing`);
     }
 
     if (

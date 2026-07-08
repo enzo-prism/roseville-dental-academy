@@ -25,6 +25,20 @@ export type AdLandingPageSection = {
   title: string;
 };
 
+export type AdLandingPageGalleryImage = {
+  alt: string;
+  caption: string;
+  src: string;
+};
+
+export type AdLandingPageReview = {
+  feature: string;
+  meta: string;
+  name: string;
+  quote: string;
+  rating: number;
+};
+
 // A tailored dropdown rendered on the lead form (e.g. "Preferred start date" or
 // "Are you a current RDA?"). Each option submits to Formspree under `name`, which
 // is how per-ad qualification data is captured.
@@ -54,6 +68,7 @@ export type AdLandingPage = {
   dates: string[];
   eyebrow: string;
   facts: AdLandingPageStat[];
+  gallery?: AdLandingPageGalleryImage[];
   // Per-ad Formspree endpoint. When omitted, the form posts to the shared
   // `siteContact.formspreeEndpoint` so leads are still captured. Set this to a
   // dedicated form (https://formspree.io/f/XXXXXXXX) to segment this ad's leads
@@ -73,6 +88,7 @@ export type AdLandingPage = {
   path: string;
   primaryCtaLabel: string;
   proofPoints: string[];
+  reviews?: AdLandingPageReview[];
   sections: AdLandingPageSection[];
   slug: AdLandingPageSlug;
 };
@@ -379,6 +395,23 @@ export const adLandingPages: AdLandingPage[] = [
       { label: "Tuition", value: "$2,500" },
     ],
     formspreeEndpoint: "https://formspree.io/f/mpqgyjjg",
+    gallery: [
+      {
+        alt: "Recent Roseville Dental Academy students holding completion certificates",
+        caption: "Recent graduates finishing the program with certificates in hand.",
+        src: "/assets/live/drive/recent-certificates-banner.jpg",
+      },
+      {
+        alt: "Roseville Dental Academy class group in scrubs outside the academy",
+        caption: "Students building confidence together during the program.",
+        src: "/assets/live/drive/class-group-scrubs.jpg",
+      },
+      {
+        alt: "Student practicing chairside skills with instructor support",
+        caption: "Small class coaching inside a working dental office.",
+        src: "/assets/live/drive/chairside-coaching-closeup.jpg",
+      },
+    ],
     hero: {
       badge: `Next start: ${firstAvailableDate("dental-assisting-program")}`,
       imageAlt:
@@ -405,6 +438,32 @@ export const adLandingPages: AdLandingPage[] = [
       "Accelerated 9-week, 210-hour program taught inside a working dental office.",
       "Chairside experience, online lectures, homework, and a 64-hour internship.",
       "Resume and job assistance to help you land your first dental assistant role.",
+    ],
+    reviews: [
+      {
+        feature: "9-week program",
+        meta: "Google review",
+        name: "Adriana Nebuloni",
+        quote:
+          "The 9-week program was well-structured, hands-on, and incredibly informative. The instructors were supportive, knowledgeable, and genuinely invested in our success.",
+        rating: 5,
+      },
+      {
+        feature: "Hands-on training",
+        meta: "Google review",
+        name: "Selene",
+        quote:
+          "Excellent dental assisting program with hands-on training and great support. Jessica is patient, knowledgeable, and truly invested in her students.",
+        rating: 5,
+      },
+      {
+        feature: "Career support",
+        meta: "Google review",
+        name: "grace",
+        quote:
+          "The instructors truly want to see their students succeed and go above and beyond to support us. They even help by sharing our resumes with local dental offices.",
+        rating: 5,
+      },
     ],
     sections: [
       {
@@ -447,6 +506,28 @@ export const adLandingPages: AdLandingPage[] = [
       { label: "Next date", value: firstAvailableDate("coronal-polish") },
     ],
     formspreeEndpoint: "https://formspree.io/f/mwvdrnrk",
+    gallery: [
+      {
+        alt: "Student practicing coronal polish technique in a Roseville Dental Academy operatory",
+        caption: "Coronal polish technique practice with direct instructor oversight.",
+        src: "/assets/live/courses/rda-june-2026/coronal-polish-student.jpg",
+      },
+      {
+        alt: "Close-up of coronal polish hands-on training",
+        caption: "Hands-on polishing practice before clinical requirements.",
+        src: "/assets/live/courses/rda-june-2026/coronal-polish-closeup.jpg",
+      },
+      {
+        alt: "Pit and fissure sealants tools arranged for class",
+        caption: "Sealants tools and prep for the PF186 course path.",
+        src: "/assets/live/courses/rda-june-2026/sealants-tools.jpg",
+      },
+      {
+        alt: "Sealants marking practice during Roseville Dental Academy course",
+        caption: "Pit and fissure sealants practice for current dental professionals.",
+        src: "/assets/live/courses/rda-june-2026/sealants-marking.jpg",
+      },
+    ],
     hero: {
       badge: "Coronal Polish + Sealants",
       imageAlt: "Dental professionals practicing coronal polish technique.",
@@ -484,6 +565,30 @@ export const adLandingPages: AdLandingPage[] = [
       "Board-approved provider numbers: Coronal Polish CP148 and Sealants PF186.",
       "Hands-on training with small class sizes and experienced instructors.",
       "Fast, simple enrollment — admissions confirms prerequisites and current seats.",
+    ],
+    reviews: [
+      {
+        feature: "Certification courses",
+        meta: "Google review",
+        name: "Jordyn Sturgeon",
+        quote:
+          "As a DA I took a bunch of their classes working toward my RDA. Everyone was incredibly sweet, with great communication and teaching from the office.",
+        rating: 5,
+      },
+      {
+        feature: "Sealants course",
+        meta: "Google review",
+        name: "Karen Chavez",
+        quote: "I took the X-ray and sealant course here and loved it.",
+        rating: 5,
+      },
+      {
+        feature: "Course path",
+        meta: "Google review",
+        name: "Karisa",
+        quote: "Roseville Dental Academy is the place to do all your courses and classes.",
+        rating: 5,
+      },
     ],
     sections: [
       {
