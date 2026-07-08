@@ -973,7 +973,7 @@ export const homeHero: HeroContent = {
       "Dental Assisting Training Course: June 19 and July 13, 2026 are full; next available start is September 4, 2026",
       "BLS / CPR, X-rays, and Infection Control: June 6 is full; next available is July 18, then August 1, September 5, October 3, November 7, and December 5, 2026",
       "Coronal Polish: June 20, July 25, and August 8 are full; next available is September 12, then October 10, November 14, and December 12, 2026",
-      "Pit and Fissure Sealants: June 20 is full; next available is July 25, then August 8, September 12, October 10, November 14, and December 12, 2026",
+      "Pit and Fissure Sealants: June 20 and July 25 are full; next available is August 8, then September 12, October 10, November 14, and December 12, 2026",
     ],
   },
 };

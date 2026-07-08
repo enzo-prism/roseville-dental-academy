@@ -101,10 +101,10 @@ const juneTwentyCourses = [
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
-// July 25, 2026: Coronal Polish is fully booked; Pit and Fissure Sealants remains open.
+// July 25, 2026: Coronal Polish and Pit and Fissure Sealants are fully booked.
 const julyTwentyFiveCourses = [
   course("coronal-polish", "full"),
-  course("sealants"),
+  course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
 // August 8, 2026: Coronal Polish is fully booked; Pit and Fissure Sealants remains open.
