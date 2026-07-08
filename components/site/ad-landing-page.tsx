@@ -122,6 +122,7 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
   const interestsLabel = page.courseInterests.join(", ");
   const hasCourseProof = Boolean(page.gallery?.length || page.reviews?.length);
+  const socialProof = page.socialProof;
 
   useEffect(() => trackLandingView(page), [page]);
 
@@ -188,14 +189,17 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
           aria-labelledby={`${formId}-course-proof-title`}
         >
           <div className="rda-ad-section-heading rda-ad-section-heading-wide">
-            <p className="rda-ad-eyebrow">Student proof</p>
+            <p className="rda-ad-eyebrow">{socialProof?.eyebrow ?? "Student proof"}</p>
             <h2 id={`${formId}-course-proof-title`}>
-              Real reviews and photos from this training path
+              {socialProof?.title ?? "Real reviews and photos from this training path"}
             </h2>
           </div>
           <div className="rda-ad-course-proof-layout">
             {page.gallery?.length ? (
-              <div className="rda-ad-gallery" aria-label="Student success photos">
+              <div
+                className="rda-ad-gallery"
+                aria-label={socialProof?.galleryLabel ?? "Student success photos"}
+              >
                 {page.gallery.map((image, index) => (
                   <figure
                     className={
@@ -217,7 +221,10 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
               </div>
             ) : null}
             {page.reviews?.length ? (
-              <div className="rda-ad-review-grid" aria-label="Student reviews">
+              <div
+                className="rda-ad-review-grid"
+                aria-label={socialProof?.reviewLabel ?? "Student reviews"}
+              >
                 {page.reviews.map((review) => (
                   <article
                     className="rda-ad-review-card"
@@ -313,7 +320,11 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
               <input name="_subject" type="hidden" value={`RDA landing page lead: ${page.slug}`} />
               <input name="Source page" type="hidden" value={page.metaTitle} />
               <input name="site" type="hidden" value={siteContact.formspreeOps.site} />
-              <input name="form_key" type="hidden" value={siteContact.formspreeOps.formKey} />
+              <input
+                name="form_key"
+                type="hidden"
+                value={page.formKey ?? siteContact.formspreeOps.formKey}
+              />
               <input name="environment" type="hidden" value={environment} />
               <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
               <input name="page_path" type="hidden" value={page.path} />

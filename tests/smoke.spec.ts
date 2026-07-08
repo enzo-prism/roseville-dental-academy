@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
 import { adLandingPages } from "@/lib/ad-landing-pages";
+import { siteContact } from "@/lib/site-data";
 import { socialChannelPages } from "@/lib/social-channel-data";
 import {
   aliasMappings,
@@ -390,6 +391,7 @@ for (const landingPage of adLandingPages) {
         hiddenFields: {
           campaignIntent: form?.querySelector<HTMLInputElement>('input[name="campaign_intent"]')?.value,
           courseInterest: form?.querySelector<HTMLInputElement>('input[name="course_interest"]')?.value,
+          formKey: form?.querySelector<HTMLInputElement>('input[name="form_key"]')?.value,
           landingPage: form?.querySelector<HTMLInputElement>('input[name="landing_page"]')?.value,
           pagePath: form?.querySelector<HTMLInputElement>('input[name="page_path"]')?.value,
           utmCampaign: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_campaign"]')),
@@ -444,6 +446,10 @@ for (const landingPage of adLandingPages) {
 
     if (result.hiddenFields.courseInterest !== landingPage.courseInterests.join(", ")) {
       mismatches.push(`${landingPage.path} hidden course_interest is wrong`);
+    }
+
+    if (result.hiddenFields.formKey !== (landingPage.formKey ?? siteContact.formspreeOps.formKey)) {
+      mismatches.push(`${landingPage.path} hidden form_key is wrong`);
     }
 
     if (

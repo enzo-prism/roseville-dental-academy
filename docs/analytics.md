@@ -12,11 +12,15 @@ Roseville Dental Academy uses Vercel Web Analytics for page views and custom eve
 
 ## Paid Social Landing Pages
 
-Current Facebook/Meta ad landing pages are noindex conversion routes, not SEO pages:
+Current paid social ad landing pages are noindex conversion routes, not SEO pages:
 
 - `/lp/dental-assisting-student-story`
+- `/lp/dental-assisting-enroll`
+- `/lp/dental-assisting-tiktok`
 - `/lp/infection-control-office-awareness`
+- `/lp/infection-control-office-compliance`
 - `/lp/coronal-polish-office-awareness`
+- `/lp/coronal-sealants-renewal`
 - `/lp/rda-renewal-ready`
 - `/lp/pit-fissure-sealants-rda`
 
@@ -24,7 +28,14 @@ Use readable landing-page paths and UTMs for campaign detail:
 
 `/lp/dental-assisting-student-story?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`
 
+TikTok Dental Assisting ads should point to:
+`/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01`
+
 Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, `referrer`, and the standard UTM fields. Do not add these pages to the header, footer, or sitemap.
+
+The Infection Control office-compliance ad page uses `form_key=infection_control_office_compliance` and can use `NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT` once a dedicated Formspree form ID is available. Until then, it falls back to the shared Formspree endpoint while keeping the campaign payload separated.
+
+The TikTok Dental Assisting page uses `form_key=dental_assisting_tiktok` and can use `NEXT_PUBLIC_FORMSPREE_DENTAL_ASSISTING_TIKTOK_ENDPOINT` once a dedicated Formspree form ID is available. Until then, it falls back to the shared Formspree endpoint while keeping TikTok leads separated by campaign payload.
 
 ## Vercel Custom Events
 

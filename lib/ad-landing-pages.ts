@@ -9,10 +9,12 @@ export type AdLandingPageSlug =
   | "dental-assisting-student-story"
   | "coronal-polish-office-awareness"
   | "infection-control-office-awareness"
+  | "infection-control-office-compliance"
   | "pit-fissure-sealants-rda"
   | "rda-renewal-ready"
-  // Dedicated pages for the currently-running Facebook/Instagram ads (2026-07).
+  // Dedicated pages for currently-running paid social ads (2026-07).
   | "dental-assisting-enroll"
+  | "dental-assisting-tiktok"
   | "coronal-sealants-renewal";
 
 export type AdLandingPageStat = {
@@ -37,6 +39,13 @@ export type AdLandingPageReview = {
   name: string;
   quote: string;
   rating: number;
+};
+
+export type AdLandingPageSocialProof = {
+  eyebrow?: string;
+  galleryLabel?: string;
+  reviewLabel?: string;
+  title?: string;
 };
 
 // A tailored dropdown rendered on the lead form (e.g. "Preferred start date" or
@@ -74,6 +83,7 @@ export type AdLandingPage = {
   // dedicated form (https://formspree.io/f/XXXXXXXX) to segment this ad's leads
   // into their own Formspree inbox/dashboard.
   formspreeEndpoint?: string;
+  formKey?: string;
   hero: {
     badge: string;
     imageAlt: string;
@@ -91,6 +101,7 @@ export type AdLandingPage = {
   reviews?: AdLandingPageReview[];
   sections: AdLandingPageSection[];
   slug: AdLandingPageSlug;
+  socialProof?: AdLandingPageSocialProof;
 };
 
 function availableDates(courseId: CourseScheduleId) {
@@ -108,6 +119,11 @@ const infectionControlDates = availableDates("infection-control");
 const coronalPolishDates = availableDates("coronal-polish");
 const coronalSealantsDates = availableDates("coronal-polish");
 const sealantsDates = availableDates("sealants");
+
+const infectionControlAdFormspreeEndpoint =
+  process.env.NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT?.trim() || undefined;
+const dentalAssistingTikTokFormspreeEndpoint =
+  process.env.NEXT_PUBLIC_FORMSPREE_DENTAL_ASSISTING_TIKTOK_ENDPOINT?.trim() || undefined;
 
 export const adLandingPages: AdLandingPage[] = [
   {
@@ -369,11 +385,163 @@ export const adLandingPages: AdLandingPage[] = [
     slug: "pit-fissure-sealants-rda",
   },
   // ---------------------------------------------------------------------------
-  // Dedicated pages for the two Facebook/Instagram ads running as of July 2026
-  // (the existing-RDA sealants ad is paused, so its page was removed). Each maps
-  // 1:1 to an ad and posts to its own `formspreeEndpoint` so per-ad traffic,
-  // conversions, and leads stay fully separated.
+  // Dedicated pages for active and upcoming Facebook/Instagram ads as of July
+  // 2026. Each maps 1:1 to an ad and either posts to its own
+  // `formspreeEndpoint` or sends a unique `formKey`/campaign payload while the
+  // dedicated Formspree endpoint is being provisioned.
   // ---------------------------------------------------------------------------
+  {
+    // Upcoming ad: Infection Control office compliance checklist.
+    audience:
+      "Dentists, practice owners, and office managers checking Infection Control records for dental assistants.",
+    campaignIntent: "infection_control_office_compliance",
+    consent: {
+      label:
+        "Yes, Roseville Dental Academy can contact me about Infection Control training by phone, text, or email.",
+      name: "Consent to contact",
+    },
+    contentCategory: "infection_control",
+    courseInterests: ["Infection Control"],
+    dates: infectionControlDates,
+    eyebrow: "Infection Control compliance",
+    facts: [
+      { label: "Requirement date", value: "Jan. 1, 2025" },
+      { label: "Provider", value: "IC189" },
+      { label: "Course length", value: "8 hours" },
+      { label: "Main line", value: "916-888-9821" },
+    ],
+    formKey: "infection_control_office_compliance",
+    formspreeEndpoint: infectionControlAdFormspreeEndpoint,
+    gallery: [
+      {
+        alt: "Roseville Dental Academy student practicing infection control in a dental operatory",
+        caption: "Hands-on infection-control workflow inside a dental operatory.",
+        src: "/assets/live/courses/rda-june-2026/infection-control-operatory.jpg",
+      },
+      {
+        alt: "Student practicing sterilization workflow with instructor support",
+        caption: "Sterilization and operatory safety practice for real dental settings.",
+        src: "/assets/live/drive/sterilization-hands-on.jpg",
+      },
+      {
+        alt: "Students learning infection control and sterilization workflow",
+        caption: "Course instruction built around the 8-hour Infection Control requirement.",
+        src: "/assets/live/courses/infection-control-sterilization.jpg",
+      },
+    ],
+    hero: {
+      badge: `Next date: ${firstAvailableDate("infection-control")}`,
+      imageAlt:
+        "Roseville Dental Academy student practicing infection control in a dental operatory.",
+      imageSrc: "/assets/live/courses/rda-june-2026/infection-control-operatory.jpg",
+      intro:
+        "If your office is reviewing personnel records, confirm whether each assistant has the required 8-hour Infection Control course. Roseville Dental Academy can help dentists and office managers check the January 1, 2025 requirement, prerequisites, and upcoming IC189 dates.",
+      title: "Check your office's Infection Control training records",
+    },
+    leadSelects: [
+      {
+        icon: "user",
+        label: "Who is asking?",
+        name: "Office role",
+        options: [
+          "Dentist / practice owner",
+          "Office manager",
+          "Registering a team member",
+          "Registering myself",
+          "Not sure",
+        ],
+        required: true,
+      },
+      {
+        icon: "check",
+        label: "What prompted this check?",
+        name: "Compliance check reason",
+        options: [
+          "Personnel record review",
+          "New hire onboarding",
+          "Upcoming certification deadline",
+          "Need date and prerequisite help",
+          "Not sure - help me confirm",
+        ],
+        required: true,
+      },
+      {
+        icon: "calendar",
+        label: "Preferred class date",
+        name: "Preferred class date",
+        options: ["I'm flexible", ...infectionControlDates],
+      },
+    ],
+    metaDescription:
+      "Dentists and office managers can ask Roseville Dental Academy about the required 8-hour IC189 Infection Control course, January 1, 2025 compliance, personnel records, and upcoming dates.",
+    metaTitle: "Infection Control Office Compliance | Roseville Dental Academy",
+    path: "/lp/infection-control-office-compliance",
+    primaryCtaLabel: "Check office requirements",
+    proofPoints: [
+      "The page is built for dentists and office managers reviewing assistant personnel records.",
+      "It highlights the January 1, 2025 Infection Control requirement and IC189 course path.",
+      "The form captures office role, compliance-check reason, class interest, UTM fields, and this campaign's unique form key.",
+    ],
+    reviews: [
+      {
+        feature: "Certification courses",
+        meta: "Google review",
+        name: "Jordyn Sturgeon",
+        quote:
+          "As a DA I took a bunch of their classes working toward my RDA. Everyone was incredibly sweet, with great communication and teaching from the office.",
+        rating: 5,
+      },
+      {
+        feature: "Course support",
+        meta: "Google review",
+        name: "Chi Nguyen",
+        quote:
+          "Teachers and instructors are friendly and helpful whenever I have questions. They always make sure that students understand and are catching up with all the courses.",
+        rating: 5,
+      },
+      {
+        feature: "Hands-on class",
+        meta: "Google review",
+        name: "Thembi Nyamanzi",
+        quote:
+          "The class is fun and very informative, with BLS, x-rays, instruments, and hands-on assisting.",
+        rating: 5,
+      },
+    ],
+    sections: [
+      {
+        title: "Best for",
+        items: [
+          "Dentists and practice owners reviewing whether assistants have current Infection Control records.",
+          "Office managers checking new-hire onboarding files before exposure to potentially infectious materials.",
+          "Teams that want one clear call or email to confirm prerequisites, dates, and the right next step.",
+        ],
+      },
+      {
+        title: "What records to check",
+        items: [
+          "Current CPR BLS certification through AHA or ARC.",
+          "2-hour Dental Practice Act certification.",
+          "Completion of a board-approved 8-hour Infection Control course, such as Roseville Dental Academy provider IC189.",
+        ],
+      },
+      {
+        title: "What admissions will confirm",
+        items: [
+          "The next available Infection Control date and current seat availability.",
+          "Whether the assistant should complete BLS or Dental Practice Act before registering.",
+          "How to register through the main Roseville Dental Academy line: 916-888-9821.",
+        ],
+      },
+    ],
+    slug: "infection-control-office-compliance",
+    socialProof: {
+      eyebrow: "Training proof",
+      galleryLabel: "Infection Control training photos",
+      reviewLabel: "Course reviews",
+      title: "Real RDA course photos and reviews for office confidence",
+    },
+  },
   {
     // Ad 1: "Dental Assisting Training course" — career-entry enrollment.
     audience:
@@ -484,6 +652,137 @@ export const adLandingPages: AdLandingPage[] = [
       },
     ],
     slug: "dental-assisting-enroll",
+  },
+  {
+    // TikTok ad: Dental Assisting Program short-form career-entry angle.
+    audience:
+      "TikTok viewers considering a fast, hands-on path into dental assisting near Roseville.",
+    campaignIntent: "dental_assisting_tiktok",
+    consent: {
+      label:
+        "Yes, Roseville Dental Academy can contact me about the Dental Assisting Training Program by phone, text, or email.",
+      name: "Consent to contact",
+    },
+    contentCategory: "dental_assisting_program",
+    courseInterests: ["Dental Assisting Program"],
+    dates: dentalAssistingDates,
+    eyebrow: "Dental Assisting Program",
+    facts: [
+      { label: "Program length", value: "9 weeks" },
+      { label: "Training total", value: "210 hours" },
+      { label: "Internship", value: "64 hours" },
+      { label: "Next start", value: firstAvailableDate("dental-assisting-program") },
+    ],
+    formKey: "dental_assisting_tiktok",
+    formspreeEndpoint: dentalAssistingTikTokFormspreeEndpoint,
+    gallery: [
+      {
+        alt: "Roseville Dental Academy students practicing hands-on dental assisting skills",
+        caption: "Hands-on chairside practice inside a working dental office.",
+        src: siteImages.programHero,
+      },
+      {
+        alt: "Recent Roseville Dental Academy students holding completion certificates",
+        caption: "Recent graduates finishing the program with certificates in hand.",
+        src: "/assets/live/drive/recent-certificates-banner.jpg",
+      },
+      {
+        alt: "Student practicing chairside skills with instructor support",
+        caption: "Small class coaching for students starting a dental assisting career.",
+        src: "/assets/live/drive/chairside-coaching-closeup.jpg",
+      },
+    ],
+    hero: {
+      badge: `Next start: ${firstAvailableDate("dental-assisting-program")}`,
+      imageAlt:
+        "Roseville Dental Academy students practicing hands-on dental assisting skills.",
+      imageSrc: siteImages.programHero,
+      intro:
+        "Saw Roseville Dental Academy on TikTok? Get the next start dates, tuition details, and enrollment steps for the 9-week Dental Assisting Training Program in Roseville.",
+      title: "Turn your TikTok interest into dental assistant training",
+    },
+    leadSelects: [
+      {
+        icon: "calendar",
+        label: "Preferred start date",
+        name: "Preferred start date",
+        options: ["I'm flexible", ...dentalAssistingDates],
+      },
+      {
+        icon: "check",
+        label: "Where are you in the process?",
+        name: "Enrollment readiness",
+        options: [
+          "I want class dates",
+          "I want tuition and payment details",
+          "I want to tour or talk to admissions",
+          "I am ready to enroll",
+          "Not sure yet",
+        ],
+        required: true,
+      },
+    ],
+    metaDescription:
+      "TikTok viewers can ask Roseville Dental Academy about its 9-week Dental Assisting Training Program, hands-on chairside training, tuition, dates, and enrollment steps.",
+    metaTitle: "Dental Assisting Program From TikTok | Roseville Dental Academy",
+    path: "/lp/dental-assisting-tiktok",
+    primaryCtaLabel: "Get TikTok program info",
+    proofPoints: [
+      "Built for TikTok traffic with dedicated campaign intent, form key, UTM capture, and lead attribution.",
+      "Highlights the 9-week, 210-hour program with hands-on chairside training and a 64-hour internship.",
+      "Admissions can follow up with start dates, tuition, payment options, tours, and enrollment steps.",
+    ],
+    reviews: [
+      {
+        feature: "9-week program",
+        meta: "Google review",
+        name: "Adriana Nebuloni",
+        quote:
+          "The 9-week program was well-structured, hands-on, and incredibly informative. The instructors were supportive, knowledgeable, and genuinely invested in our success.",
+        rating: 5,
+      },
+      {
+        feature: "Hands-on training",
+        meta: "Google review",
+        name: "Selene",
+        quote:
+          "Excellent dental assisting program with hands-on training and great support. Jessica is patient, knowledgeable, and truly invested in her students.",
+        rating: 5,
+      },
+      {
+        feature: "Career support",
+        meta: "Google review",
+        name: "grace",
+        quote:
+          "The instructors truly want to see their students succeed and go above and beyond to support us. They even help by sharing our resumes with local dental offices.",
+        rating: 5,
+      },
+    ],
+    sections: [
+      {
+        title: "Why students ask about this program",
+        items: [
+          "A focused 9-week path for people who want to start dental assisting without a long college timeline.",
+          "Hands-on chairside practice, online lectures, homework, and local dental office readiness.",
+          "Resume and job assistance for students preparing to apply for their first dental assistant role.",
+        ],
+      },
+      {
+        title: "What admissions will confirm",
+        items: [
+          "Current start dates for September 4, October 5, and November 20, 2026.",
+          "Tuition, available payment plans, registration paperwork, and whether a tour makes sense.",
+          "How the 64-hour internship fits into the 9-week, 210-hour schedule.",
+        ],
+      },
+    ],
+    slug: "dental-assisting-tiktok",
+    socialProof: {
+      eyebrow: "Student proof",
+      galleryLabel: "Dental assisting training photos",
+      reviewLabel: "Dental assisting program reviews",
+      title: "Real program photos and student reviews",
+    },
   },
   {
     // Ad 2: "Coronal Polishing & Pit + Fissure Sealants" — license-renewal angle.

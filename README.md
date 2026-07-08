@@ -112,13 +112,19 @@ excluded from the content and visual QA baselines the same way the ElevenLabs wi
 Paid social landing pages live under `/lp/*` and are intentionally noindex:
 
 - `/lp/dental-assisting-student-story`
+- `/lp/dental-assisting-enroll`
+- `/lp/dental-assisting-tiktok`
 - `/lp/infection-control-office-awareness`
+- `/lp/infection-control-office-compliance`
 - `/lp/coronal-polish-office-awareness`
+- `/lp/coronal-sealants-renewal`
 - `/lp/rda-renewal-ready`
 - `/lp/pit-fissure-sealants-rda`
 
 Use UTMs for ad attribution, for example:
 `/lp/dental-assisting-student-story?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`.
+
+Use `/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01` for TikTok Dental Assisting Program ads.
 
 Important env vars:
 

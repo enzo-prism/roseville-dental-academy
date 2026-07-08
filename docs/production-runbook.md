@@ -43,8 +43,12 @@ After Vercel marks the deployment ready, verify live production routes:
 
 ```bash
 curl -I https://rosevilledentalacademy.com/
+curl -I https://rosevilledentalacademy.com/lp/dental-assisting-enroll
+curl -I https://rosevilledentalacademy.com/lp/dental-assisting-tiktok
 curl -I https://rosevilledentalacademy.com/lp/infection-control-office-awareness
+curl -I https://rosevilledentalacademy.com/lp/infection-control-office-compliance
 curl -I https://rosevilledentalacademy.com/lp/coronal-polish-office-awareness
+curl -I https://rosevilledentalacademy.com/lp/coronal-sealants-renewal
 curl -I https://rosevilledentalacademy.com/faqs-1
 curl -I https://rosevilledentalacademy.com/meet-the-instructors
 curl -I https://rosevilledentalacademy.com/robots.txt
@@ -63,8 +67,12 @@ PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://rosevilledentalacademy.com pnpm t
 Active noindex conversion pages:
 
 - `/lp/dental-assisting-student-story`
+- `/lp/dental-assisting-enroll`
+- `/lp/dental-assisting-tiktok`
 - `/lp/infection-control-office-awareness`
+- `/lp/infection-control-office-compliance`
 - `/lp/coronal-polish-office-awareness`
+- `/lp/coronal-sealants-renewal`
 - `/lp/rda-renewal-ready`
 - `/lp/pit-fissure-sealants-rda`
 
