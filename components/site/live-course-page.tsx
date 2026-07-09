@@ -12,6 +12,11 @@ import type {
   LiveCourseLink,
   LiveCourseMedia,
 } from "@/lib/live-course-content";
+import {
+  courseReviewHighlights,
+  googleReviewsUrl,
+  type CourseReviewGroup,
+} from "@/lib/site-data";
 
 type LiveCourseSection = {
   body: string;
@@ -296,12 +301,89 @@ function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
   );
 }
 
+function CourseReviewStars({ rating }: { rating: number }) {
+  return (
+    <>
+      <span aria-hidden="true" className="rda-review-stars">
+        {Array.from({ length: 5 }, (_, index) => (
+          <svg
+            className={`rda-review-star${index < rating ? " is-filled" : ""}`}
+            focusable="false"
+            key={index}
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 1.7l2.5 5 5.5.8-4 3.9.9 5.5L10 14.3 5.1 16.9l.9-5.5-4-3.9 5.5-.8L10 1.7z" />
+          </svg>
+        ))}
+      </span>
+      <span className="rda-review-rating-text">{rating} out of 5 stars</span>
+    </>
+  );
+}
+
+function CourseReviews({
+  course,
+  group,
+}: {
+  course: LiveCourseContent;
+  group: CourseReviewGroup;
+}) {
+  return (
+    <section
+      aria-labelledby={`rda-course-reviews-title-${course.id}`}
+      className="rda-course-review-section"
+      data-rda-course-reviews={course.id}
+    >
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+        <div className="rda-section-heading">
+          <h2 id={`rda-course-reviews-title-${course.id}`}>{group.title}</h2>
+          <span aria-hidden="true" />
+        </div>
+        <p className="rda-review-photo-intro">{group.intro}</p>
+        <div className="rda-course-review-grid">
+          {group.reviews.map((review) => (
+            <Card
+              className="rda-google-review-card rda-course-review-card border-border bg-card"
+              key={`${course.id}-${review.name}-${review.feature}`}
+            >
+              <CardContent>
+                <p className="rda-review-photo-feature">{review.feature}</p>
+                <div className="rda-google-review-card-header">
+                  <div>
+                    <p className="rda-review-name">{review.name}</p>
+                    <p className="rda-review-meta">{review.meta}</p>
+                  </div>
+                  <p
+                    aria-label={`${review.rating} out of 5 stars`}
+                    className="rda-review-rating"
+                  >
+                    <CourseReviewStars rating={review.rating} />
+                  </p>
+                </div>
+                <blockquote>&ldquo;{review.quote}&rdquo;</blockquote>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="rda-course-review-actions">
+          <Button asChild variant="outline">
+            <a href={googleReviewsUrl} rel="noopener noreferrer" target="_blank">
+              Open Google reviews
+            </a>
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   const [hero, ...sections] = splitCourseSections(course);
   const featureCount = course.variant === "program" ? 2 : 1;
   const featureSections = sections.slice(0, featureCount);
   const detailSections = sections.slice(featureCount);
   const supportingMedia = (course.supportingMedia ?? course.supportingImages ?? []).slice(0, 2);
+  const reviewGroup = courseReviewHighlights[course.id];
 
   return (
     <section className="bg-background" data-rda-live-course={course.id}>
@@ -372,6 +454,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
           </p>
         </div>
       ) : null}
+      {reviewGroup ? <CourseReviews course={course} group={reviewGroup} /> : null}
     </section>
   );
 }

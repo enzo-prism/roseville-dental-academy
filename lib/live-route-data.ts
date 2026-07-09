@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import manifestData from "@/snapshot/live/manifest.json";
 import { LIVE_SOURCE_ORIGIN } from "@/lib/site-config";
-import { googleReviews, homepageReviewHighlights } from "@/lib/site-data";
+import { googleReviews, googleReviewsUrl, homepageReviewHighlights } from "@/lib/site-data";
 
 export const LIVE_SITE_ORIGIN = LIVE_SOURCE_ORIGIN;
 export const LIVE_BODY_CLASS = "x x-fonts-adamina x-fonts-fjalla-one";
@@ -684,7 +684,6 @@ function renderRatingStarsHtml(rating: number) {
 }
 
 function renderHomepageReviewHighlightsHtml() {
-  const googleReviewsUrl = "https://maps.google.com/maps?cid=11613766695697697595";
   const renderReviewCard = (review: (typeof homepageReviewHighlights)[number]) => `
     <article class="rda-review-photo-card">
       <figure class="rda-review-photo-media">

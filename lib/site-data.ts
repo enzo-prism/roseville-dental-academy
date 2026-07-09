@@ -535,6 +535,117 @@ export const googleReviews: TestimonialData[] = googleReviewRows.map(
   }),
 );
 
+export const googleReviewsUrl = "https://maps.google.com/maps?cid=11613766695697697595";
+
+type CourseReviewId =
+  | "bls-cpr-1"
+  | "coronal-polish"
+  | "dental-assisting-program"
+  | "infection-control"
+  | "radiation-safety"
+  | "sealants";
+
+export type CourseReviewHighlight = TestimonialData & {
+  feature: string;
+};
+
+export type CourseReviewGroup = {
+  intro: string;
+  reviews: readonly CourseReviewHighlight[];
+  title: string;
+};
+
+const googleReviewLookup = new Map(googleReviews.map((review) => [review.name, review]));
+const homepageReviewLookup = new Map(
+  homepageReviewHighlights.map((review) => [review.name, review]),
+);
+
+function courseReview(
+  source: Map<string, TestimonialData>,
+  name: string,
+  feature: string,
+): CourseReviewHighlight {
+  const review = source.get(name);
+
+  if (!review) {
+    throw new Error(`Missing course review for ${name}`);
+  }
+
+  return {
+    ...review,
+    feature,
+  };
+}
+
+const googleCourseReview = (name: string, feature: string) =>
+  courseReview(googleReviewLookup, name, feature);
+
+const highlightedCourseReview = (name: string, feature: string) =>
+  courseReview(homepageReviewLookup, name, feature);
+
+export const courseReviewHighlights: Record<CourseReviewId, CourseReviewGroup> = {
+  "dental-assisting-program": {
+    title: "Student reviews for Dental Assisting",
+    intro:
+      "Google review excerpts from students and alumni who mention the 9-week Dental Assisting program, hands-on training, or DA career preparation.",
+    reviews: [
+      highlightedCourseReview("Adriana Nebuloni", "9-week program"),
+      highlightedCourseReview("Selene", "Hands-on training"),
+      googleCourseReview("Jorge Ruiz", "DA program practice"),
+    ],
+  },
+  "bls-cpr-1": {
+    title: "Student reviews for BLS / CPR",
+    intro:
+      "Google review excerpts matched to BLS, CPR, and the certification courses students take on the RDA path.",
+    reviews: [
+      googleCourseReview("Ambar Ruiz", "BLS certification"),
+      googleCourseReview("Thembi Nyamanzi", "BLS class experience"),
+      highlightedCourseReview("grace", "BLS course foundation"),
+    ],
+  },
+  "infection-control": {
+    title: "Student reviews for Infection Control",
+    intro:
+      "Google review excerpts matched to Infection Control and the RDA certification-course path it supports.",
+    reviews: [
+      highlightedCourseReview("grace", "Infection Control"),
+      highlightedCourseReview("Jordyn Sturgeon", "RDA course pathway"),
+      googleCourseReview("Karisa", "Courses and classes"),
+    ],
+  },
+  "radiation-safety": {
+    title: "Student reviews for Radiation Safety",
+    intro:
+      "Google review excerpts from students who mention X-ray, radiography, and related certification training.",
+    reviews: [
+      googleCourseReview("Ambar Ruiz", "X-ray certification"),
+      googleCourseReview("saina Rahimi", "X-ray confidence"),
+      googleCourseReview("Karen Chavez", "X-ray course"),
+    ],
+  },
+  "coronal-polish": {
+    title: "Student reviews for Coronal Polish",
+    intro:
+      "Google review excerpts from students describing Roseville's RDA certification-course track, the same path that includes Coronal Polish.",
+    reviews: [
+      highlightedCourseReview("Jordyn Sturgeon", "RDA course pathway"),
+      googleCourseReview("Leanna Bledsoe", "Repeat course student"),
+      googleCourseReview("Karisa", "Courses and classes"),
+    ],
+  },
+  sealants: {
+    title: "Student reviews for Sealants",
+    intro:
+      "Google review excerpts matched to sealants, X-ray, and the RDA certification-course path students complete together.",
+    reviews: [
+      googleCourseReview("Karen Chavez", "Sealant course"),
+      highlightedCourseReview("Jordyn Sturgeon", "RDA course pathway"),
+      googleCourseReview("Karisa", "Courses and classes"),
+    ],
+  },
+};
+
 export const careerStats: StatCardData[] = [
   {
     title: "Employment outlook",

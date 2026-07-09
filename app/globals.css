@@ -2008,6 +2008,37 @@ textarea {
   margin-bottom: 0;
 }
 
+.rda-course-review-section {
+  border-top: 1px solid var(--rda-color-border-soft);
+}
+
+.rda-course-review-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 26px;
+}
+
+.rda-course-review-card {
+  align-content: start;
+}
+
+.rda-course-review-card [data-slot="card-content"] {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+}
+
+.rda-course-review-card .rda-review-photo-feature {
+  margin-bottom: 0;
+}
+
+.rda-course-review-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
 .rda-gallery-groups {
   display: grid;
   gap: 42px;
@@ -3605,6 +3636,7 @@ textarea {
   }
 
   .rda-board-grid,
+  .rda-course-review-grid,
   .rda-google-review-grid,
   .rda-student-faq-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3989,6 +4021,7 @@ textarea {
   }
 
   .rda-review-grid,
+  .rda-course-review-grid,
   .rda-google-review-grid,
   .rda-review-photo-grid,
   .rda-board-grid,

@@ -1502,6 +1502,68 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator('form[data-rda-signup-form="true"]').first()).toBeVisible();
     });
 
+    test("course pages show matched Google review excerpts", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+
+      const courseReviewCases = [
+        {
+          id: "dental-assisting-program",
+          path: "/dental-assisting-program",
+          phrases: ["9-week program was well-structured", "DA program gives you"],
+          title: "Student reviews for Dental Assisting",
+        },
+        {
+          id: "bls-cpr-1",
+          path: "/bls%2Fcpr-1",
+          phrases: ["BLS certifications", "BLS, x-rays"],
+          title: "Student reviews for BLS / CPR",
+        },
+        {
+          id: "infection-control",
+          path: "/infection-control",
+          phrases: ["infection control", "working toward my RDA"],
+          title: "Student reviews for Infection Control",
+        },
+        {
+          id: "radiation-safety",
+          path: "/radiation-safety",
+          phrases: ["X Ray and BLS certifications", "taking x-rays"],
+          title: "Student reviews for Radiation Safety",
+        },
+        {
+          id: "coronal-polish",
+          path: "/coronal-polish",
+          phrases: ["working toward my RDA", "Second time taking a class here"],
+          title: "Student reviews for Coronal Polish",
+        },
+        {
+          id: "sealants",
+          path: "/sealants",
+          phrases: ["X-ray and sealant course", "working toward my RDA"],
+          title: "Student reviews for Sealants",
+        },
+      ];
+
+      for (const course of courseReviewCases) {
+        await gotoSettled(page, course.path);
+
+        const reviews = page.locator(`[data-rda-course-reviews="${course.id}"]`);
+
+        await expect(reviews).toBeVisible();
+        await expect(reviews.getByRole("heading", { name: course.title })).toBeVisible();
+        await expect(reviews.locator(".rda-course-review-card")).toHaveCount(3);
+
+        for (const phrase of course.phrases) {
+          await expect(reviews).toContainText(phrase);
+        }
+
+        await expect(reviews.getByRole("link", { name: "Open Google reviews" })).toHaveAttribute(
+          "href",
+          /maps\.google\.com/,
+        );
+      }
+    });
+
     test("contact page actions are wired", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/contact");
