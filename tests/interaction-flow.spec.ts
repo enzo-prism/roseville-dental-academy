@@ -1553,6 +1553,34 @@ test.describe("live-style interaction flows", () => {
         await expect(reviews.getByRole("heading", { name: course.title })).toBeVisible();
         await expect(reviews.locator(".rda-course-review-card")).toHaveCount(3);
 
+        const introCenterOffset = await reviews
+          .locator(".rda-review-photo-intro")
+          .evaluate((intro) => {
+            const section = intro.closest("[data-rda-course-reviews]");
+            if (!section) {
+              return Number.POSITIVE_INFINITY;
+            }
+
+            const introBox = intro.getBoundingClientRect();
+            const sectionBox = section.getBoundingClientRect();
+
+            return Math.abs(
+              introBox.left + introBox.width / 2 - (sectionBox.left + sectionBox.width / 2),
+            );
+        });
+
+        expect(introCenterOffset).toBeLessThan(2);
+
+        const cardBottomDelta = await reviews.locator(".rda-course-review-card").evaluateAll(
+          (cards) => {
+            const bottoms = cards.map((card) => card.getBoundingClientRect().bottom);
+
+            return Math.max(...bottoms) - Math.min(...bottoms);
+          },
+        );
+
+        expect(cardBottomDelta).toBeLessThan(2);
+
         for (const phrase of course.phrases) {
           await expect(reviews).toContainText(phrase);
         }

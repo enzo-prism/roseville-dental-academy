@@ -301,23 +301,11 @@ function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
   );
 }
 
-function CourseReviewStars({ rating }: { rating: number }) {
+function CourseReviewRating({ rating }: { rating: number }) {
   return (
-    <>
-      <span aria-hidden="true" className="rda-review-stars">
-        {Array.from({ length: 5 }, (_, index) => (
-          <svg
-            className={`rda-review-star${index < rating ? " is-filled" : ""}`}
-            focusable="false"
-            key={index}
-            viewBox="0 0 20 20"
-          >
-            <path d="M10 1.7l2.5 5 5.5.8-4 3.9.9 5.5L10 14.3 5.1 16.9l.9-5.5-4-3.9 5.5-.8L10 1.7z" />
-          </svg>
-        ))}
-      </span>
+    <span className="rda-course-review-rating-badge">
       <span className="rda-review-rating-text">{rating} out of 5 stars</span>
-    </>
+    </span>
   );
 }
 
@@ -334,7 +322,7 @@ function CourseReviews({
       className="rda-course-review-section"
       data-rda-course-reviews={course.id}
     >
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+      <div className="rda-course-review-inner mx-auto px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <div className="rda-section-heading">
           <h2 id={`rda-course-reviews-title-${course.id}`}>{group.title}</h2>
           <span aria-hidden="true" />
@@ -348,7 +336,8 @@ function CourseReviews({
             >
               <CardContent>
                 <p className="rda-review-photo-feature">{review.feature}</p>
-                <div className="rda-google-review-card-header">
+                <blockquote>&ldquo;{review.quote}&rdquo;</blockquote>
+                <div className="rda-course-review-card-footer">
                   <div>
                     <p className="rda-review-name">{review.name}</p>
                     <p className="rda-review-meta">{review.meta}</p>
@@ -357,10 +346,9 @@ function CourseReviews({
                     aria-label={`${review.rating} out of 5 stars`}
                     className="rda-review-rating"
                   >
-                    <CourseReviewStars rating={review.rating} />
+                    <CourseReviewRating rating={review.rating} />
                   </p>
                 </div>
-                <blockquote>&ldquo;{review.quote}&rdquo;</blockquote>
               </CardContent>
             </Card>
           ))}

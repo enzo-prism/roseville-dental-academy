@@ -1231,6 +1231,7 @@ textarea {
 }
 
 .rda-home-standalone-grid {
+  align-items: start;
   display: grid;
   gap: 18px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2012,31 +2013,114 @@ textarea {
   border-top: 1px solid var(--rda-color-border-soft);
 }
 
+.rda-course-review-inner {
+  max-width: 980px;
+}
+
+.rda-course-review-section .rda-section-heading {
+  gap: 11px;
+  margin-bottom: 22px;
+}
+
+.rda-course-review-section .rda-section-heading h2 {
+  font-size: clamp(26px, 2.8vw, 34px);
+  max-width: 900px;
+  text-wrap: balance;
+}
+
+.rda-course-review-section .rda-section-heading span {
+  width: 52px;
+}
+
+.rda-course-review-section .rda-review-photo-intro {
+  font-size: 15px;
+  line-height: 1.65;
+  margin: -6px auto 22px;
+  max-width: 740px;
+}
+
 .rda-course-review-grid {
+  align-items: stretch;
   display: grid;
-  gap: 16px;
+  gap: 14px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 26px;
+  margin-top: 0;
 }
 
 .rda-course-review-card {
   align-content: start;
+  padding: 18px;
 }
 
 .rda-course-review-card [data-slot="card-content"] {
   display: grid;
-  gap: 12px;
+  gap: 14px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
   padding: 0;
+}
+
+.rda-course-review-card blockquote {
+  font-size: 15px;
+  line-height: 1.65;
 }
 
 .rda-course-review-card .rda-review-photo-feature {
   margin-bottom: 0;
 }
 
+.rda-course-review-card-footer {
+  align-items: flex-end;
+  border-top: 1px solid var(--rda-color-border-soft);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  min-width: 0;
+  padding-top: 14px;
+}
+
+.rda-course-review-card-footer > div {
+  min-width: 0;
+}
+
+.rda-course-review-card-footer .rda-review-name,
+.rda-course-review-card-footer .rda-review-meta {
+  overflow-wrap: anywhere;
+}
+
+.rda-course-review-card .rda-review-name {
+  margin-bottom: 3px;
+}
+
+.rda-course-review-card .rda-review-rating {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.rda-course-review-rating-badge {
+  align-items: center;
+  background: var(--rda-color-accent-surface);
+  border: 1px solid var(--rda-color-border-soft);
+  border-radius: 999px;
+  color: var(--rda-color-accent-deep);
+  display: inline-flex;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 9px;
+}
+
+.rda-course-review-card .rda-review-rating-text {
+  color: var(--rda-color-accent-deep);
+  font-family: var(--rda-font-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .rda-course-review-actions {
   display: flex;
   justify-content: center;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .rda-gallery-groups {
@@ -4033,6 +4117,16 @@ textarea {
   .rda-signup-fields,
   .rda-newsletter-section form {
     grid-template-columns: 1fr;
+  }
+
+  .rda-course-review-card-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rda-course-review-card .rda-review-rating {
+    align-self: flex-start;
   }
 
   .rda-google-review-library summary {

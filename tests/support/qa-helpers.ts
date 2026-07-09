@@ -773,6 +773,8 @@ export async function captureSnapshot(
 
 async function captureSnapshotRenderData(page: Page, currentUrl: string): Promise<SnapshotRenderData> {
   return page.evaluate((urlValue) => {
+    const additiveParitySelectors = ["[data-rda-course-reviews]"];
+
     function normalizeValue(value: string) {
       return value.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
     }
@@ -790,12 +792,47 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
       );
     }
 
+    function isAdditiveParityElement(element: HTMLElement) {
+      return additiveParitySelectors.some((selector) => element.closest(selector));
+    }
+
+    function getParityBodyText() {
+      const removedElements: Array<{
+        element: Element;
+        marker: Comment;
+        parent: ParentNode;
+      }> = [];
+
+      for (const selector of additiveParitySelectors) {
+        for (const element of Array.from(document.body.querySelectorAll(selector))) {
+          if (!element.parentNode) {
+            continue;
+          }
+
+          const marker = document.createComment("rda-parity-excluded");
+          const parent = element.parentNode;
+
+          parent.replaceChild(marker, element);
+          removedElements.push({ element, marker, parent });
+        }
+      }
+
+      const bodyText = normalizeValue(document.body.innerText);
+
+      for (const { element, marker, parent } of removedElements.reverse()) {
+        parent.replaceChild(element, marker);
+      }
+
+      return bodyText;
+    }
+
     const visibleInputs = Array.from(
       document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
         'input:not([type="hidden"]), textarea',
       ),
     )
       .filter((field) => isVisible(field))
+      .filter((field) => !isAdditiveParityElement(field))
       .map((field) => field.getAttribute("placeholder") || field.getAttribute("aria-label") || "")
       .filter(Boolean);
 
@@ -803,6 +840,7 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
       document.querySelectorAll<HTMLElement>('button, input[type="submit"], input[type="button"]'),
     )
       .filter((button) => isVisible(button))
+      .filter((button) => !isAdditiveParityElement(button))
       .map((button) => {
         if (
           button instanceof HTMLInputElement &&
@@ -818,6 +856,7 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
 
     const visibleLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))
       .filter((anchor) => isVisible(anchor))
+      .filter((anchor) => !isAdditiveParityElement(anchor))
       .map((anchor) => ({
         href: anchor.getAttribute("href") || "",
         text: normalizeValue(anchor.textContent || ""),
@@ -825,11 +864,13 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
       .filter(({ href, text }) => href || text);
 
     const visibleImages = Array.from(document.images)
+      .filter((image) => !isAdditiveParityElement(image))
       .map((image) => image.currentSrc || image.src)
       .filter(Boolean);
 
     const visibleAboveFoldImages = Array.from(document.images)
       .filter((image) => isVisible(image))
+      .filter((image) => !isAdditiveParityElement(image))
       .map((image) => {
         const rect = image.getBoundingClientRect();
         return {
@@ -842,7 +883,7 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
       .filter(Boolean);
 
     return {
-      bodyText: normalizeValue(document.body.innerText),
+      bodyText: getParityBodyText(),
       title: document.title,
       url: urlValue,
       visibleAboveFoldImages,
