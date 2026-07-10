@@ -793,6 +793,9 @@ test.describe("live-style interaction flows", () => {
       await expect(
         courseSystem.getByLabel("Dental Assisting Training is full on June 19"),
       ).toBeVisible();
+      await expect(courseSystem.getByText("October 12", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByText("October 17", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByText("October 24", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("Stand Alone Courses", { exact: true })).toHaveCount(1);
       await expect(courseSystem.getByText("Click on photo to learn more", { exact: true })).toHaveCount(1);
       await expect(
@@ -812,7 +815,7 @@ test.describe("live-style interaction flows", () => {
       ).toHaveAttribute("href", "/sealants");
       await expect(courseSystem.getByText("Dental Assisting Training Course - $2,500.00")).toBeVisible();
       await expect(
-        courseSystem.getByText("September 4, 2026. Additional starts are October 5 and November 20, 2026."),
+        courseSystem.getByText("September 4, 2026. Additional starts are October 12 and November 20, 2026."),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",

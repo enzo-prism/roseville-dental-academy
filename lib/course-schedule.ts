@@ -198,21 +198,21 @@ export const courseScheduleMonths = [
     month: "October",
     entries: [
       {
-        date: "October 3, 2026",
-        day: "October 3",
-        isoDate: "2026-10-03",
-        courses: blsXrayInfectionCourses,
-      },
-      {
-        date: "October 5, 2026",
-        day: "October 5",
-        isoDate: "2026-10-05",
+        date: "October 12, 2026",
+        day: "October 12",
+        isoDate: "2026-10-12",
         courses: [course("dental-assisting-program")],
       },
       {
-        date: "October 10, 2026",
-        day: "October 10",
-        isoDate: "2026-10-10",
+        date: "October 17, 2026",
+        day: "October 17",
+        isoDate: "2026-10-17",
+        courses: blsXrayInfectionCourses,
+      },
+      {
+        date: "October 24, 2026",
+        day: "October 24",
+        isoDate: "2026-10-24",
         courses: coronalSealantsCourses,
       },
     ],

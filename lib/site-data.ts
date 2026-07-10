@@ -870,7 +870,7 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026, October 5, 2026, and November 20, 2026. BLS, X-rays/Radiation Safety, and Infection Control are listed for June 6, 2026 (full), July 18, August 1, September 5, October 3, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8, September 12, October 10, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25, August 8, September 12, October 10, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
+      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026, October 12, 2026, and November 20, 2026. BLS, X-rays/Radiation Safety, and Infection Control are listed for June 6, 2026 (full), July 18, August 1, September 5, October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8, September 12, October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25, August 8, September 12, October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -1082,9 +1082,9 @@ export const homeHero: HeroContent = {
       "Dates are penciled in and may change; admissions will confirm current availability before students plan around them.",
     items: [
       "Dental Assisting Training Course: June 19 and July 13, 2026 are full; next available start is September 4, 2026",
-      "BLS / CPR, X-rays, and Infection Control: June 6 is full; next available is July 18, then August 1, September 5, October 3, November 7, and December 5, 2026",
-      "Coronal Polish: June 20 and July 25 are full; next available is August 8, then September 12, October 10, November 14, and December 12, 2026",
-      "Pit and Fissure Sealants: June 20 and July 25 are full; next available is August 8, then September 12, October 10, November 14, and December 12, 2026",
+      "BLS / CPR, X-rays, and Infection Control: June 6 is full; next available is July 18, then August 1, September 5, October 17, November 7, and December 5, 2026",
+      "Coronal Polish: June 20 and July 25 are full; next available is August 8, then September 12, October 24, November 14, and December 12, 2026",
+      "Pit and Fissure Sealants: June 20 and July 25 are full; next available is August 8, then September 12, October 24, November 14, and December 12, 2026",
     ],
   },
 };
@@ -1101,7 +1101,7 @@ export const homePrimarySplit: SplitSectionContent = {
   imageAlt: "Students practicing chairside dental assisting skills inside Waikiki Dental",
   supporting: {
     title: "Dental assisting start dates",
-    copy: ["June 19 and July 13, 2026 are full. Next available starts: September 4, October 5, and November 20, 2026."],
+    copy: ["June 19 and July 13, 2026 are full. Next available starts: September 4, October 12, and November 20, 2026."],
     actions: [
       {
         label: "Learn more",
@@ -1428,7 +1428,7 @@ export const dentalProgramPage = {
   ribbon: {
     title: "Admissions and registration",
     copy:
-      "The June 19 and July 13, 2026 starts are full. The next available starts are September 4, October 5, and November 20, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
+      "The June 19 and July 13, 2026 starts are full. The next available starts are September 4, October 12, and November 20, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
     actions: [
       {
         label: "Download registration form",
