@@ -793,6 +793,13 @@ test.describe("live-style interaction flows", () => {
       await expect(
         courseSystem.getByLabel("Dental Assisting Training is full on June 19"),
       ).toBeVisible();
+      await expect(
+        courseSystem.getByLabel("X-rays / Radiation Safety is full on July 18"),
+      ).toBeVisible();
+      await expect(
+        courseSystem.getByLabel("Infection Control is full on July 18"),
+      ).toBeVisible();
+      await expect(courseSystem.getByLabel("BLS / CPR is full on July 18")).toHaveCount(0);
       await expect(courseSystem.getByText("October 12", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("October 17", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("October 24", { exact: true })).toBeVisible();
@@ -1463,7 +1470,8 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
       await expect(form.getByText("Classes or certifications to ask about")).toBeVisible();
       await expect(form.getByText("Next open date: September 4, 2026")).toBeVisible();
-      await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(3);
+      await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(1);
+      await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(2);
       await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(2);
       await expect(form.getByText("Next open date: September 12, 2026")).toHaveCount(0);
       await expect(form.getByText("By appointment")).toBeVisible();

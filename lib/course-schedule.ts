@@ -107,6 +107,13 @@ const julyTwentyFiveCourses = [
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
+// July 18, 2026: X-rays and Infection Control are fully booked; BLS remains available.
+const julyEighteenCourses = [
+  course("bls-cpr-1"),
+  course("radiation-safety", "full"),
+  course("infection-control", "full"),
+] satisfies CourseScheduleCourse[];
+
 export const courseScheduleMonths = [
   {
     month: "June",
@@ -144,7 +151,7 @@ export const courseScheduleMonths = [
         date: "July 18, 2026",
         day: "July 18",
         isoDate: "2026-07-18",
-        courses: blsXrayInfectionCourses,
+        courses: julyEighteenCourses,
       },
       {
         date: "July 25, 2026",

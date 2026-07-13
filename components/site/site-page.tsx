@@ -626,7 +626,8 @@ function ContactSection() {
               siteContact.phone,
               siteContact.email,
               "Dental Assisting: September 4, October 12, or November 20, 2026",
-              "BLS, X-rays, Infection Control: dates begin June 6, 2026",
+              "BLS: next open date is July 18, 2026",
+              "X-rays and Infection Control: next open date is August 1, 2026",
               "Coronal Polish: next open date is August 8, 2026",
               "Pit and Fissure Sealants: next open date is August 8, 2026",
             ]}
