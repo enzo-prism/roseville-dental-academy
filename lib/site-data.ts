@@ -537,7 +537,33 @@ export const googleReviews: TestimonialData[] = googleReviewRows.map(
 
 export const googleReviewsUrl = "https://maps.google.com/maps?cid=11613766695697697595";
 
-type CourseReviewId =
+// Truthful aggregate derived from the genuine Google reviews above, so structured
+// data (aggregateRating) and any on-page rating summary stay in sync with the
+// source rows. ratingValue is rounded to one decimal to mirror how Google shows it.
+export type ReviewAggregate = {
+  ratingValue: number;
+  reviewCount: number;
+  bestRating: number;
+  worstRating: number;
+};
+
+function computeReviewAggregate(reviews: readonly TestimonialData[]): ReviewAggregate {
+  const rated = reviews.filter((review) => Number.isFinite(review.rating));
+  const reviewCount = rated.length;
+  const sum = rated.reduce((total, review) => total + review.rating, 0);
+  const average = reviewCount > 0 ? sum / reviewCount : 0;
+
+  return {
+    ratingValue: Math.round(average * 10) / 10,
+    reviewCount,
+    bestRating: 5,
+    worstRating: 1,
+  };
+}
+
+export const googleReviewsAggregate = computeReviewAggregate(googleReviews);
+
+export type CourseReviewId =
   | "bls-cpr-1"
   | "coronal-polish"
   | "dental-assisting-program"

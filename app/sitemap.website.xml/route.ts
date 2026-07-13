@@ -3,6 +3,7 @@ import {
   type LiveRoute,
 } from "@/lib/live-route-data";
 import { journeyRoute } from "@/lib/journey-roadmap-data";
+import { getResourceSitemapRoutes } from "@/lib/resource-articles";
 import { SITE_URL } from "@/lib/site-config";
 import { socialChannelPages } from "@/lib/social-channel-data";
 
@@ -28,7 +29,9 @@ function priorityFor(path: string): string {
   if (path === "/") return "1.0";
   if (path === "/contact" || path === "/dental-assisting-program") return "0.8";
   if (path === "/journey") return "0.8";
+  if (path === "/resources") return "0.7";
   if (path === "/registration") return "0.7";
+  if (path.startsWith("/resources/")) return "0.6";
   return "0.6";
 }
 
@@ -43,7 +46,7 @@ export function GET() {
     entries.push({ path, priority: priorityFor(path) });
   }
 
-  for (const route of [journeyRoute]) {
+  for (const route of [journeyRoute, ...getResourceSitemapRoutes()]) {
     const path = canonicalPathFor(route);
     if (seen.has(path)) continue;
     seen.add(path);

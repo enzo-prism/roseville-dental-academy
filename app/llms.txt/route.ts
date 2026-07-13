@@ -1,6 +1,14 @@
+import { resourceArticlePath, resourceArticles } from "@/lib/resource-articles";
 import { SITE_URL } from "@/lib/site-config";
 
 export const dynamic = "force-static";
+
+const guidesSection = resourceArticles
+  .map(
+    (article) =>
+      `- [${article.h1}](${SITE_URL}${resourceArticlePath(article.slug)}): ${article.description}`,
+  )
+  .join("\n");
 
 const LLMS_BODY = `# Roseville Dental Academy
 
@@ -22,6 +30,11 @@ const LLMS_BODY = `# Roseville Dental Academy
 - [Radiation Safety / Dental X-Ray (X1036)](${SITE_URL}/radiation-safety): California Dental Board approved 32-hour course for dental personnel and dentists.
 - [Coronal Polish (CP148)](${SITE_URL}/coronal-polish): California Dental Board approved 12-hour course for eligible dental assistants.
 - [Pit & Fissure Sealants (PF186)](${SITE_URL}/sealants): California Dental Board approved 16-hour course for eligible dental assistants and RDAs.
+
+## Guides & Resources
+
+- [Dental Assisting Career Guides](${SITE_URL}/resources): Free guides on becoming a dental assistant in California — how to start, cost, timeline, the RDA path, and dental assistant pay in the Sacramento area.
+${guidesSection}
 
 ## Site
 

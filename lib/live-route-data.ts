@@ -606,10 +606,38 @@ function promoteLazyImageTag(tag: string) {
   return promotedTag;
 }
 
+// GoDaddy's export ships every snapshot image without native loading hints, so
+// once we promote the real src (below) the browser fetches all of them eagerly.
+// Restore Core Web Vitals headroom by decoding async everywhere and lazy-loading
+// everything except the first image (the most likely LCP element). The homepage
+// hero is injected separately with its own eager/fetchpriority hints, so it is
+// unaffected. The visual-parity suite scrolls the full page before capturing, so
+// lazy images still render for the baseline comparison.
+function applyImageLoadingHints(tag: string, index: number) {
+  let output = tag;
+
+  if (!/\sdecoding=/i.test(output)) {
+    output = setHtmlAttribute(output, "decoding", "async");
+  }
+
+  if (index > 0 && !/\sloading=/i.test(output)) {
+    output = setHtmlAttribute(output, "loading", "lazy");
+  }
+
+  return output;
+}
+
 function promoteLazyImages(html: string) {
+  let imageIndex = 0;
+
   return html
     .replace(/<source\b[^>]*>/gi, promoteLazyImageTag)
-    .replace(/<img\b[^>]*>/gi, promoteLazyImageTag)
+    .replace(/<img\b[^>]*>/gi, (tag) => {
+      const promoted = promoteLazyImageTag(tag);
+      const hinted = applyImageLoadingHints(promoted, imageIndex);
+      imageIndex += 1;
+      return hinted;
+    })
     .replace(/\sdata-lazyimg="true"/gi, "");
 }
 
