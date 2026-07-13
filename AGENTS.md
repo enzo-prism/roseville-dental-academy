@@ -22,6 +22,7 @@ Keep these contracts separate:
 - Prefer shadcn primitives and existing shell components before creating new patterns.
 - Do not introduce raw hex colors, typography families, radii, or spacing scales casually. If a new visual token is truly needed, update `/DESIGN.md` in the same change.
 - Use `.agents/skills/ui-design-system/SKILL.md` for recurring frontend/design tasks.
+- For structured data, metadata/canonicals, the sitemap/robots/llms.txt trio, or new indexable content (e.g. the `/resources` hub), read `docs/seo.md` first. Keep review `aggregateRating` derived from real reviews in `lib/site-data.ts`, never hand-set.
 
 ## Validation
 

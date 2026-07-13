@@ -48,6 +48,8 @@ Use the stricter local default before pushing baseline changes. It catches near-
 - `snapshot/live/manifest.json` registers each route's content baseline path, visual baseline paths, and visual masks.
 - `tests/support/qa-routes.json` defines the QA route set and visual viewports.
 
+Additive, non-mirrored routes are intentionally outside `qa-routes.json` so they cannot drift the committed baselines: the paid landing pages (`/lp/*`) and the `/resources/*` content hub (see [seo.md](seo.md)). New pages under those prefixes ship without a baseline refresh. Adding a link to any of them from the shared header/footer, however, does touch gated pages and requires the baseline-refresh flow in [Updating Visual Baselines](#updating-visual-baselines).
+
 `snapshot/live/` is a migration and parity reference. It is not the current shared shell runtime and should not be treated as the long-term visual source of truth.
 
 ## Triage A Failed Visual Gate

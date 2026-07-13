@@ -19,6 +19,8 @@ The current runtime is a shell-first hybrid:
 - `snapshot/live/html/*.html` contains frozen source pages used for sanitized page bodies.
 - `public/__live/` and `public/assets/live/` contain mirrored live assets.
 - `tests/baselines/live/` contains committed content and visual baselines.
+- `components/site/structured-data.tsx` emits all JSON-LD (Organization/LocalBusiness, WebSite, Course, FAQ, Breadcrumb, Article), including review `aggregateRating` derived from the real Google reviews in `lib/site-data.ts`.
+- `lib/resource-articles.ts` + `app/resources/**` are the indexable `/resources` content hub (SEO guides). See [docs/seo.md](docs/seo.md).
 
 ## Design System
 
@@ -82,6 +84,16 @@ Use this intentionally when the live site changes. Normal QA compares against co
 
 Course approval details, Dental Board of California source links, and provider-number copy rules live in [docs/course-approvals.md](docs/course-approvals.md).
 Check that document before editing regulatory, prerequisite, or course-provider claims.
+
+## SEO And Structured Data
+
+Organic-search surfaces — JSON-LD structured data, metadata/canonicals, the sitemap/robots/llms.txt trio, the `/resources` content hub, and image performance — are documented in [docs/seo.md](docs/seo.md).
+
+Highlights:
+
+- Review rich results: the Organization and each Course carry an `aggregateRating` + `review` derived from the genuine Google reviews in `lib/site-data.ts` (never hand-set). Course ratings mirror the review cards actually rendered on the page.
+- `/resources` content hub: add a `ResourceArticle` to `lib/resource-articles.ts` and the guide prerenders, joins the sitemap and `llms.txt`, and gets Article + FAQ + Breadcrumb schema automatically. Like `/lp/*`, these routes are outside the QA gate, so they never require a baseline refresh.
+- Image loading: `promoteLazyImages` in `lib/live-route-data.ts` adds `decoding="async"` to snapshot images and `loading="lazy"` to all but the LCP image.
 
 ## QA Commands
 
