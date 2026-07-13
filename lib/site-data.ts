@@ -896,7 +896,7 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026, October 12, 2026, and November 20, 2026. BLS is listed for June 6, 2026 (full), July 18, August 1, September 5, October 17, November 7, and December 5, 2026. X-rays/Radiation Safety and Infection Control are listed for June 6, 2026 (full), July 18 (full), August 1, September 5, October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8, September 12, October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25, August 8, September 12, October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
+      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026 (full), October 12, 2026, and November 20, 2026. BLS is listed for June 6, 2026 (full), July 18, August 1, September 5, October 17, November 7, and December 5, 2026. X-rays/Radiation Safety and Infection Control are listed for June 6, 2026 (full), July 18 (full), August 1, September 5, October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8, September 12, October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25, August 8, September 12, October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -1040,7 +1040,7 @@ export const registrationCourseOptions: RegistrationCourseOption[] = [
     key: "dental-assisting",
     label: "Dental Assisting Training Program",
     price: "$2500.00",
-    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. The June 19 and July 13, 2026 starts are full; the next available start is September 4, 2026.",
+    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. The June 19, July 13, and September 4, 2026 starts are full; the next available start is October 12, 2026.",
     icon: "graduation",
   },
   {
@@ -1107,7 +1107,7 @@ export const homeHero: HeroContent = {
     copy:
       "Dates are penciled in and may change; admissions will confirm current availability before students plan around them.",
     items: [
-      "Dental Assisting Training Course: June 19 and July 13, 2026 are full; next available start is September 4, 2026",
+      "Dental Assisting Training Course: June 19, July 13, and September 4, 2026 are full; next available start is October 12, 2026",
       "BLS / CPR: June 6 is full; next available is July 18, then August 1, September 5, October 17, November 7, and December 5, 2026",
       "X-rays and Infection Control: June 6 and July 18 are full; next available is August 1, then September 5, October 17, November 7, and December 5, 2026",
       "Coronal Polish: June 20 and July 25 are full; next available is August 8, then September 12, October 24, November 14, and December 12, 2026",
@@ -1128,7 +1128,7 @@ export const homePrimarySplit: SplitSectionContent = {
   imageAlt: "Students practicing chairside dental assisting skills inside Waikiki Dental",
   supporting: {
     title: "Dental assisting start dates",
-    copy: ["June 19 and July 13, 2026 are full. Next available starts: September 4, October 12, and November 20, 2026."],
+    copy: ["June 19, July 13, and September 4, 2026 are full. Next available starts: October 12 and November 20, 2026."],
     actions: [
       {
         label: "Learn more",
@@ -1455,7 +1455,7 @@ export const dentalProgramPage = {
   ribbon: {
     title: "Admissions and registration",
     copy:
-      "The June 19 and July 13, 2026 starts are full. The next available starts are September 4, October 12, and November 20, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
+      "The June 19, July 13, and September 4, 2026 starts are full. The next available starts are October 12 and November 20, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
     actions: [
       {
         label: "Download registration form",

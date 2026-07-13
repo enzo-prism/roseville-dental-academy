@@ -160,7 +160,7 @@ const COURSE_DATE_REPLACEMENTS: Array<{
 }> = [
   {
     pattern: /\bFriday,\s*June 19th,?\s*2026\b/g,
-    replacement: "June 19, 2026 (Full), July 13, 2026 (Full), September 4, October 12, and November 20, 2026",
+    replacement: "June 19, 2026 (Full), July 13, 2026 (Full), September 4, 2026 (Full), October 12, and November 20, 2026",
   },
   {
     pattern: /\bMay 2nd,? 2026\b/g,

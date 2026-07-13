@@ -185,7 +185,7 @@ export const courseScheduleMonths = [
         date: "September 4, 2026",
         day: "September 4",
         isoDate: "2026-09-04",
-        courses: [course("dental-assisting-program")],
+        courses: [course("dental-assisting-program", "full")],
       },
       {
         date: "September 5, 2026",
