@@ -3570,6 +3570,15 @@ textarea {
   pointer-events: none !important;
 }
 
+/*
+ * ElevenLabs host slot.
+ *
+ * The embed paints a wide horizontal control bar (orb + call + message +
+ * dismiss) when open, and only collapses to a ~48px orb FAB after dismiss.
+ * Never size this slot down to the orb unless `data-elevenlabs-mobile-minimized`
+ * is true — compact routes used to force 64×64 on any non-sheet state, which
+ * crushed the open bar and made it look partially blocked on mobile.
+ */
 .live-elevenlabs-widget {
   bottom: max(24px, env(safe-area-inset-bottom));
   height: 160px;
@@ -3582,8 +3591,14 @@ textarea {
     width 180ms ease,
     right 180ms ease,
     bottom 180ms ease;
-  width: min(320px, calc(100vw - 48px));
+  width: min(360px, calc(100vw - 48px));
   z-index: var(--rda-shell-z-widget);
+}
+
+/* Open call/message pill — room for the horizontal chrome + Powered-by row. */
+.live-elevenlabs-widget[data-elevenlabs-open="true"]:not(.is-expanded) {
+  height: 120px;
+  width: min(360px, calc(100vw - 48px));
 }
 
 .live-elevenlabs-widget.is-expanded {
@@ -3592,7 +3607,8 @@ textarea {
   width: min(420px, calc(100vw - 48px));
 }
 
-.live-elevenlabs-widget[data-elevenlabs-compact-default="true"]:not(.is-expanded) {
+/* Orb-only FAB. Requires real minimize success — not compactDefault alone. */
+.live-elevenlabs-widget[data-elevenlabs-mobile-minimized="true"]:not(.is-expanded) {
   height: 72px;
   width: 72px;
 }
@@ -3604,6 +3620,12 @@ textarea {
   max-height: none !important;
   max-width: none !important;
   overflow: visible !important;
+  /*
+   * Host fills only the sized slot (wrapper is pe:none), so pe:auto here makes
+   * the orb/bar clickable without a full-viewport event shield. Do not set the
+   * host to pe:none while using the bounded-slot model — clicks fall through
+   * to page content behind the chrome.
+   */
   pointer-events: auto;
   position: static !important;
   width: 100% !important;
@@ -4206,7 +4228,12 @@ textarea {
     bottom: max(14px, env(safe-area-inset-bottom));
     height: 160px;
     right: max(14px, env(safe-area-inset-right));
-    width: min(320px, calc(100vw - 28px));
+    width: min(360px, calc(100vw - 28px));
+  }
+
+  .live-elevenlabs-widget[data-elevenlabs-open="true"]:not(.is-expanded) {
+    height: 120px;
+    width: min(360px, calc(100vw - 28px));
   }
 
   .live-elevenlabs-widget[data-elevenlabs-mobile-minimized="true"]:not(.is-expanded) {
@@ -4214,13 +4241,10 @@ textarea {
     width: 64px;
   }
 
-  .live-elevenlabs-widget[data-elevenlabs-compact-default="true"]:not(.is-expanded) {
-    height: 64px;
-    width: 64px;
-  }
-
   .rda-live-shell[data-rda-current-route="/journey"]
-    .live-elevenlabs-widget[data-elevenlabs-compact-default="true"]:not(.is-expanded) {
+    .live-elevenlabs-widget[data-elevenlabs-compact-default="true"]:not(.is-expanded):not(
+      [data-elevenlabs-open="true"]
+    ) {
     display: none;
   }
 
@@ -4241,6 +4265,10 @@ textarea {
 
   .live-elevenlabs-widget[data-elevenlabs-mobile-minimized="true"]:not(.is-expanded)
     elevenlabs-convai {
+    --el-overlay-padding: 8px;
+  }
+
+  .live-elevenlabs-widget[data-elevenlabs-open="true"]:not(.is-expanded) elevenlabs-convai {
     --el-overlay-padding: 8px;
   }
 }

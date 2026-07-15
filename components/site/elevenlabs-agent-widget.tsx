@@ -16,9 +16,23 @@ const ELEVENLABS_WIDGET_TEXT = {
   startCall: "Start a call",
 } as const;
 const ELEVENLABS_WIDGET_LABELS = {
+  collapse: "Collapse",
   dismiss: "Dismiss",
+  endCall: "End call",
+  expandWidget: "Expand widget",
+  message: "Message",
   open: "Open chat",
+  send: "Send",
+  startCall: "Start a call",
 } as const;
+const ELEVENLABS_CONTROL_CHROME_LABELS = [
+  ELEVENLABS_WIDGET_LABELS.startCall,
+  ELEVENLABS_WIDGET_LABELS.message,
+  ELEVENLABS_WIDGET_LABELS.endCall,
+  ELEVENLABS_WIDGET_LABELS.collapse,
+  ELEVENLABS_WIDGET_LABELS.expandWidget,
+  ELEVENLABS_WIDGET_LABELS.send,
+] as const;
 const ELEVENLABS_WIDGET_ORB_COLORS = {
   primary: "#2472A9",
   secondary: "#8EC5E8",
@@ -60,11 +74,49 @@ function hasVisibleExpandedSheet(element: HTMLElement) {
     const style = window.getComputedStyle(sheet);
 
     return (
-      rect.width > 1 &&
-      rect.height > 1 &&
+      rect.width > 40 &&
+      rect.height > 80 &&
       style.display !== "none" &&
       style.visibility !== "hidden"
     );
+  });
+}
+
+/**
+ * Tiny-variant conversation chrome often skips `.sheet` and instead shows a
+ * message composer / expand affordance. Treat that as expanded so the host
+ * slot grows instead of staying orb-sized.
+ */
+function hasVisibleExpandedConversation(element: HTMLElement) {
+  if (hasVisibleExpandedSheet(element)) {
+    return true;
+  }
+
+  const shadowRoot = element.shadowRoot;
+
+  if (!shadowRoot) {
+    return false;
+  }
+
+  const textarea = shadowRoot.querySelector<HTMLElement>("textarea");
+  if (textarea && isVisibleElement(textarea) && textarea.getBoundingClientRect().height > 40) {
+    return true;
+  }
+
+  const expandWidget = queryShadowButton(element, ELEVENLABS_WIDGET_LABELS.expandWidget);
+  if (expandWidget && isVisibleElement(expandWidget)) {
+    return true;
+  }
+
+  const sendButton = queryShadowButton(element, ELEVENLABS_WIDGET_LABELS.send);
+  return Boolean(sendButton && isVisibleElement(sendButton));
+}
+
+/** Horizontal call/message pill (not the minimized orb-only FAB). */
+function hasVisibleControlChrome(element: HTMLElement) {
+  return ELEVENLABS_CONTROL_CHROME_LABELS.some((label) => {
+    const button = queryShadowButton(element, label);
+    return Boolean(button && isVisibleElement(button));
   });
 }
 
@@ -72,6 +124,15 @@ function hasVisibleOpenButton(element: HTMLElement) {
   const openButton = queryShadowButton(element, ELEVENLABS_WIDGET_LABELS.open);
 
   return Boolean(openButton && isVisibleElement(openButton));
+}
+
+/** Orb-only minimized state — open FAB visible and no open/expanded chrome. */
+function isOrbMinimized(element: HTMLElement) {
+  return (
+    hasVisibleOpenButton(element) &&
+    !hasVisibleControlChrome(element) &&
+    !hasVisibleExpandedConversation(element)
+  );
 }
 
 type ElevenLabsAgentWidgetProps = {
@@ -85,6 +146,7 @@ export function ElevenLabsAgentWidget({
   const widgetRef = useRef<HTMLElement | null>(null);
   const hasSyncedExpandedStateRef = useRef(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isControlOpen, setIsControlOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isMobileMinimized, setIsMobileMinimized] = useState(false);
   const shouldDefaultMinimize = compactDefault || isMobileViewport;
@@ -112,11 +174,16 @@ export function ElevenLabsAgentWidget({
       }
 
       const element = widgetRef.current;
-      const nextExpanded = Boolean(element && hasVisibleExpandedSheet(element));
-
-      setIsMobileMinimized(
-        Boolean(shouldDefaultMinimize && element && hasVisibleOpenButton(element)),
+      const nextExpanded = Boolean(element && hasVisibleExpandedConversation(element));
+      const nextControlOpen = Boolean(
+        element && (hasVisibleControlChrome(element) || nextExpanded),
       );
+      const nextMinimized = Boolean(
+        shouldDefaultMinimize && element && isOrbMinimized(element),
+      );
+
+      setIsControlOpen(nextControlOpen);
+      setIsMobileMinimized(nextMinimized);
 
       setIsExpanded((currentExpanded) => {
         if (!hasSyncedExpandedStateRef.current) {
@@ -199,7 +266,10 @@ export function ElevenLabsAgentWidget({
 
     const syncMobileMinimizedState = () => {
       const element = widgetRef.current;
-      setIsMobileMinimized(Boolean(element && hasVisibleOpenButton(element)));
+      setIsMobileMinimized(Boolean(element && isOrbMinimized(element)));
+      setIsControlOpen(
+        Boolean(element && (hasVisibleControlChrome(element) || hasVisibleExpandedConversation(element))),
+      );
     };
 
     const scheduleRetry = () => {
@@ -229,13 +299,17 @@ export function ElevenLabsAgentWidget({
         return;
       }
 
-      if (hasVisibleOpenButton(element)) {
+      // Already a true orb FAB — nothing to collapse.
+      if (isOrbMinimized(element)) {
         setIsMobileMinimized(true);
+        setIsControlOpen(false);
         return;
       }
 
-      if (hasVisibleExpandedSheet(element)) {
+      // User is mid-conversation / expanded — leave them alone.
+      if (hasVisibleExpandedConversation(element)) {
         setIsMobileMinimized(false);
+        setIsControlOpen(true);
         return;
       }
 
@@ -246,7 +320,7 @@ export function ElevenLabsAgentWidget({
         animationFrame = window.requestAnimationFrame(() => {
           syncMobileMinimizedState();
 
-          if (!hasVisibleOpenButton(element)) {
+          if (!isOrbMinimized(element)) {
             scheduleRetry();
           }
         });
@@ -283,8 +357,11 @@ export function ElevenLabsAgentWidget({
       <div
         className={`live-elevenlabs-widget${isExpanded ? " is-expanded" : ""}`}
         data-elevenlabs-widget-expanded={isExpanded ? "true" : "false"}
+        data-elevenlabs-open={isControlOpen && !isExpanded ? "true" : "false"}
         data-elevenlabs-mobile-minimized={
-          shouldDefaultMinimize && isMobileMinimized && !isExpanded ? "true" : "false"
+          shouldDefaultMinimize && isMobileMinimized && !isExpanded && !isControlOpen
+            ? "true"
+            : "false"
         }
         data-elevenlabs-compact-default={compactDefault ? "true" : "false"}
         data-elevenlabs-widget-slot="true"

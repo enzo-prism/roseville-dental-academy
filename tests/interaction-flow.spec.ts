@@ -190,7 +190,7 @@ test.describe("live-style interaction flows", () => {
       };
     });
 
-    expect(widgetBounds.width).toBeLessThanOrEqual(340);
+    expect(widgetBounds.width).toBeLessThanOrEqual(370);
     expect(widgetBounds.height).toBeLessThanOrEqual(180);
 
     const mockWidgetFit = await page.locator("elevenlabs-convai").evaluate((element) => {
@@ -321,6 +321,55 @@ test.describe("live-style interaction flows", () => {
     await expect(
       page.locator('[data-elevenlabs-widget-slot][data-elevenlabs-mobile-minimized="false"]'),
     ).toBeVisible();
+    await expect(
+      page.locator('[data-elevenlabs-widget-slot][data-elevenlabs-open="true"]'),
+    ).toBeVisible();
+    // Allow the slot width transition (180ms) to finish before measuring.
+    await page.waitForTimeout(250);
+    await expect
+      .poll(async () => {
+        return page.locator("[data-elevenlabs-widget-slot]").evaluate((el) => {
+          return Math.round(el.getBoundingClientRect().width);
+        });
+      })
+      .toBeGreaterThanOrEqual(280);
+
+    // Open control bar must get a wide slot — never stay orb-sized (the mobile
+    // regression that crushed the horizontal pill on compact routes).
+    const mobileOpenBarFit = await page.evaluate(() => {
+      const slot = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
+      const widget = document.querySelector<HTMLElement>("elevenlabs-convai");
+      const startButton =
+        widget?.shadowRoot?.querySelector<HTMLElement>('[aria-label="Start a call"]');
+      const dismissButton =
+        widget?.shadowRoot?.querySelector<HTMLElement>('[aria-label="Dismiss"]');
+      const slotRect = slot?.getBoundingClientRect();
+      const startRect = startButton?.getBoundingClientRect();
+      const dismissRect = dismissButton?.getBoundingClientRect();
+
+      return {
+        dismissInViewport:
+          Boolean(dismissRect) &&
+          dismissRect!.bottom <= window.innerHeight &&
+          dismissRect!.right <= window.innerWidth &&
+          dismissRect!.left >= 0,
+        slotHeight: Math.round(slotRect?.height ?? 0),
+        slotWidth: Math.round(slotRect?.width ?? 0),
+        startInViewport:
+          Boolean(startRect) &&
+          startRect!.bottom <= window.innerHeight &&
+          startRect!.right <= window.innerWidth &&
+          startRect!.left >= 0,
+        startVisible: Boolean(startButton && (startRect?.width ?? 0) > 1),
+      };
+    });
+
+    expect(mobileOpenBarFit.slotWidth).toBeGreaterThanOrEqual(280);
+    expect(mobileOpenBarFit.slotHeight).toBeGreaterThanOrEqual(100);
+    expect(mobileOpenBarFit.startVisible).toBe(true);
+    expect(mobileOpenBarFit.startInViewport).toBeTruthy();
+    expect(mobileOpenBarFit.dismissInViewport).toBeTruthy();
+
     await page.locator('elevenlabs-convai button[aria-label="Start a call"]').click();
     await expect(page.locator('[data-elevenlabs-widget-expanded="true"]')).toBeVisible();
     await page.waitForTimeout(250);

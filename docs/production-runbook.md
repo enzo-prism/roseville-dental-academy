@@ -95,7 +95,10 @@ Retired tracking:
 Before any production push, check these docs when their contracts are touched:
 
 - `README.md`: repo overview, QA scripts, active tracking, landing-page list.
+- `AGENTS.md` / `DESIGN.md`: shell/UI contracts, including ElevenLabs host sizing states.
 - `docs/analytics.md`: event names, safe payload fields, active/retired pixels.
 - `docs/course-approvals.md`: Dental Board source links, provider numbers, copy rules.
 - `docs/release-qa.md`: CI gates, visual-baseline triage, release-health debugging.
 - `docs/production-runbook.md`: production deploy and live verification steps.
+
+Pushing `main` is the production deploy (Vercel production project tracks `main`). After push, verify `https://rosevilledentalacademy.com`, not only the Vercel deployment URL.

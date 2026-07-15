@@ -94,6 +94,8 @@ Usually fix code instead of accepting the screenshot when:
 - the drift is caused by missing assets, lazy image placeholders, widget collision, broken nav, or layout overflow,
 - only a third-party script, telemetry request, or transient masked widget moved.
 
+ElevenLabs is masked in content/visual baselines (`tests/support/qa-helpers.ts`). Behavior is covered by `pnpm test:interactions` (mock embed). When changing widget CSS/TS, assert: orb-minimized slot ≤72px, open control bar slot ≥280px wide with call/dismiss in viewport, expanded sheet fills safely on mobile — never shrink the host to orb size for `compactDefault` alone.
+
 Do not raise `VISUAL_DIFF_TOLERANCE` as the fix for an intentional page redesign. Refresh the affected baseline PNGs instead.
 
 ## Updating Visual Baselines

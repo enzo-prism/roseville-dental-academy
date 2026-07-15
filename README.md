@@ -8,6 +8,7 @@ The current runtime is a shell-first hybrid:
 - Sanitized frozen snapshots provide page-specific content and imagery.
 - Stable React replacements handle widgets that were unstable in the original GoDaddy runtime.
 - Snapshot files remain the visual/content reference and QA baseline, not the long-term source for shared shell behavior.
+- ElevenLabs lives in `components/site/elevenlabs-agent-widget.tsx` with host sizing in `app/globals.css` (`.live-elevenlabs-widget`). The host grows for the open horizontal control bar and only shrinks to the orb FAB when the widget is truly minimized — see `AGENTS.md` / `DESIGN.md`.
 
 ## How It Works
 

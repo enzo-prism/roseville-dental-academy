@@ -176,6 +176,14 @@ Public pages should feel calm, editorial, and academy-specific rather than like 
 
 Keep the header, footer, ElevenLabs wrapper, forms, and stable widgets responsive across desktop, tablet, and mobile. The design must avoid horizontal overflow, header overlap, broken above-fold imagery, and widget collisions.
 
+ElevenLabs (bottom-right) has three visual states that must not share one fixed host size:
+
+1. **Minimized orb** — circular FAB only.
+2. **Open control bar** — horizontal pill (avatar orb + call + message + dismiss/expand) plus “Powered by ElevenAgents”; needs a wide short slot so chrome is not crushed or clipped on mobile.
+3. **Expanded conversation** — sheet / composer; use the large expanded slot (full-width on small viewports).
+
+Size the `.live-elevenlabs-widget` host from real widget state attributes (`data-elevenlabs-mobile-minimized`, `data-elevenlabs-open`, `is-expanded`), never from route compact flags alone.
+
 ## Components
 
 - **Navigation:** Use shadcn/Radix navigation, dropdown, sheet, and button primitives. Preserve existing visible nav labels and route aliases.
