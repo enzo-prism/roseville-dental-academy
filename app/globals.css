@@ -12,8 +12,8 @@
   --rda-color-text: #282522;
   --rda-color-heading: #191716;
   --rda-color-nav: #191716;
-  --rda-color-muted: #666;
-  --rda-color-subnav: #505050;
+  --rda-color-muted: #766d63;
+  --rda-color-subnav: #766d63;
   --rda-color-accent: var(--rda-color-primary);
   --rda-color-accent-active: var(--rda-color-primary-deep);
   --rda-color-accent-deep: var(--rda-color-primary-deep);
@@ -37,11 +37,13 @@
   --rda-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --rda-shadow-nav-cta: 0 12px 24px -12px rgba(36, 114, 169, 0.55);
   --rda-shell-z-header: 200;
-  --rda-shell-z-mobile-menu: 450;
   --rda-shell-z-dropdown: 500;
   --rda-shell-z-skip-link: 600;
-  --rda-shell-z-widget: 2147483000;
-  --rda-shell-z-fab: 2147482000;
+  /* Floating agents sit above page chrome but below menus/dialogs. */
+  --rda-shell-z-fab: 900;
+  --rda-shell-z-widget: 950;
+  --rda-shell-z-mobile-menu: 1100;
+  --rda-shell-z-dialog: 1200;
   --background: #fbfaf8;
   --foreground: #282522;
   --card: #fffefd;
@@ -209,8 +211,9 @@ textarea {
   color: var(--rda-color-nav);
   cursor: pointer;
   display: inline-flex;
-  font-family: var(--rda-font-heading);
+  font-family: var(--rda-font-body);
   font-size: 14px;
+  font-weight: 600;
   gap: 6px;
   justify-content: center;
   line-height: 1.2;
@@ -256,7 +259,11 @@ textarea {
 .rda-nav-link:focus-visible {
   background: var(--rda-color-accent-surface);
   color: var(--rda-color-accent);
-  outline: none;
+}
+
+.rda-nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .rda-nav-link:hover::after,
@@ -288,8 +295,12 @@ textarea {
   border-color: var(--rda-color-primary);
   box-shadow: var(--rda-shadow-nav-cta);
   color: var(--primary-foreground);
-  outline: none;
   transform: translateY(-1px);
+}
+
+.rda-contact-us-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .rda-nav-link:hover .rda-nav-icon,
@@ -321,11 +332,12 @@ textarea {
 
 .rda-more-link {
   align-items: center;
-  border-radius: 12px;
+  border-radius: var(--radius);
   color: var(--rda-color-nav);
   display: flex;
-  font-family: var(--rda-font-heading);
+  font-family: var(--rda-font-body);
   font-size: 14px;
+  font-weight: 600;
   gap: 10px;
   justify-content: flex-start;
   line-height: 1.35;
@@ -343,8 +355,12 @@ textarea {
 .rda-more-link:focus-visible {
   background: var(--rda-color-accent-surface-strong);
   color: var(--rda-color-accent-deep);
-  outline: none;
   transform: translateX(3px);
+}
+
+.rda-more-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .rda-more-icon {
@@ -418,7 +434,17 @@ textarea {
   border-bottom: 0;
   box-shadow: var(--rda-shadow-mobile-menu);
   padding: 0;
-  z-index: var(--rda-shell-z-mobile-menu);
+  z-index: var(--rda-shell-z-mobile-menu) !important;
+}
+
+/* Keep floating agents under open mobile nav / dialogs (AGENTS contract). */
+body.rda-mobile-menu-open .live-elevenlabs-widget,
+body.rda-mobile-menu-open .rda-whatsapp-fab,
+body.is-mobile-nav-open .live-elevenlabs-widget,
+body.is-mobile-nav-open .rda-whatsapp-fab {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .rda-mobile-menu nav {
@@ -436,13 +462,21 @@ textarea {
   border-bottom: 1px solid var(--rda-color-border-mobile);
   color: var(--rda-color-nav);
   display: flex;
-  font-family: var(--rda-font-heading);
+  font-family: var(--rda-font-body);
   font-size: 16px;
+  font-weight: 600;
   justify-content: space-between;
   min-height: 48px;
   padding: 0;
   text-decoration: none;
   width: 100%;
+}
+
+.rda-mobile-link:focus-visible,
+.rda-mobile-sublink:focus-visible {
+  background: var(--rda-color-accent-surface);
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
 }
 
 .rda-mobile-label {
@@ -748,8 +782,9 @@ textarea {
   border: 1px solid var(--rda-color-surface);
   color: var(--rda-color-primary);
   display: inline-flex;
-  font-family: var(--rda-font-heading);
+  font-family: var(--rda-font-body);
   font-size: 15px;
+  font-weight: 600;
   justify-content: center;
   line-height: 1.2;
   margin-top: 30px;
@@ -759,11 +794,16 @@ textarea {
   white-space: nowrap;
 }
 
-.rda-home-hero-button:hover,
+.rda-home-hero-button:hover {
+  background: transparent;
+  color: var(--rda-color-surface);
+}
+
 .rda-home-hero-button:focus-visible {
   background: transparent;
   color: var(--rda-color-surface);
-  outline: none;
+  outline: 2px solid var(--primary-soft, #8ec5e8);
+  outline-offset: 3px;
 }
 
 @keyframes rda-home-hero-fade {
@@ -3591,14 +3631,14 @@ textarea {
     width 180ms ease,
     right 180ms ease,
     bottom 180ms ease;
-  width: min(360px, calc(100vw - 48px));
+  width: min(360px, calc(100vw - 48px - 72px));
   z-index: var(--rda-shell-z-widget);
 }
 
 /* Open call/message pill — room for the horizontal chrome + Powered-by row. */
 .live-elevenlabs-widget[data-elevenlabs-open="true"]:not(.is-expanded) {
   height: 120px;
-  width: min(360px, calc(100vw - 48px));
+  width: min(320px, calc(100vw - 48px - 72px));
 }
 
 .live-elevenlabs-widget.is-expanded {
@@ -4228,12 +4268,13 @@ textarea {
     bottom: max(14px, env(safe-area-inset-bottom));
     height: 160px;
     right: max(14px, env(safe-area-inset-right));
-    width: min(360px, calc(100vw - 28px));
+    /* Leave room for the bottom-left WhatsApp FAB (~56px + gutters). */
+    width: min(300px, calc(100vw - 28px - 72px));
   }
 
   .live-elevenlabs-widget[data-elevenlabs-open="true"]:not(.is-expanded) {
     height: 120px;
-    width: min(360px, calc(100vw - 28px));
+    width: min(300px, calc(100vw - 28px - 72px));
   }
 
   .live-elevenlabs-widget[data-elevenlabs-mobile-minimized="true"]:not(.is-expanded) {

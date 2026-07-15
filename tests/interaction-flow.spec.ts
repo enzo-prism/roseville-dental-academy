@@ -332,7 +332,7 @@ test.describe("live-style interaction flows", () => {
           return Math.round(el.getBoundingClientRect().width);
         });
       })
-      .toBeGreaterThanOrEqual(280);
+      .toBeGreaterThanOrEqual(250);
 
     // Open control bar must get a wide slot — never stay orb-sized (the mobile
     // regression that crushed the horizontal pill on compact routes).
@@ -364,7 +364,9 @@ test.describe("live-style interaction flows", () => {
       };
     });
 
-    expect(mobileOpenBarFit.slotWidth).toBeGreaterThanOrEqual(280);
+    // Wide enough for the control pill, but leaves left gutter for WhatsApp FAB.
+    expect(mobileOpenBarFit.slotWidth).toBeGreaterThanOrEqual(250);
+    expect(mobileOpenBarFit.slotWidth).toBeLessThanOrEqual(310);
     expect(mobileOpenBarFit.slotHeight).toBeGreaterThanOrEqual(100);
     expect(mobileOpenBarFit.startVisible).toBe(true);
     expect(mobileOpenBarFit.startInViewport).toBeTruthy();

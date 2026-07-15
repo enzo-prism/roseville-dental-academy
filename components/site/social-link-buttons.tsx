@@ -14,12 +14,14 @@ export function SocialLinkButtons({ idScope, links, variant }: SocialLinkButtons
     <div className={`rda-social-buttons rda-social-buttons-${variant}`} aria-label="Social links">
       {links.map((link, index) => (
         <a
+          aria-label={link.label}
           className={`rda-social-button rda-social-button-${link.icon}`}
           data-rda-social-button={link.icon}
           href={link.href}
           key={link.href}
           rel="noreferrer"
           target="_blank"
+          title={link.label}
         >
           <span className="rda-social-button-icon" aria-hidden="true">
             <SocialBrandLogo
