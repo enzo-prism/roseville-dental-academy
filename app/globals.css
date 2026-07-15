@@ -42,7 +42,9 @@
   /* Floating agents sit above page chrome but below menus/dialogs. */
   --rda-shell-z-fab: 900;
   --rda-shell-z-widget: 950;
-  --rda-shell-z-mobile-menu: 1100;
+  /* Overlay must stay UNDER sheet/menu content or the panel is blurred + untappable. */
+  --rda-shell-z-dialog-overlay: 1100;
+  --rda-shell-z-mobile-menu: 1200;
   --rda-shell-z-dialog: 1200;
   --background: #fbfaf8;
   --foreground: #282522;

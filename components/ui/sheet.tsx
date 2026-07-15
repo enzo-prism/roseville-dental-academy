@@ -37,7 +37,9 @@ function SheetOverlay({
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-[var(--rda-shell-z-dialog)] bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        // Overlay stays under sheet content (never equal/above) so the panel
+        // is not covered by backdrop-blur and remains clickable.
+        "fixed inset-0 z-[var(--rda-shell-z-dialog-overlay)] bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
