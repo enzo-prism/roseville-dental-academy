@@ -88,6 +88,81 @@ test("verify frozen snapshot inputs and required local resources", async ({ requ
   });
 });
 
+test("SEO contracts use the serving host and safe structured data", async ({ page, request }) => {
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+
+  const seo = await page.evaluate(() => {
+    const parseJsonLd = (id: string) => {
+      const source = document.getElementById(id)?.textContent;
+      return source ? JSON.parse(source) : null;
+    };
+
+    return {
+      canonical: document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href ?? "",
+      courseList: parseJsonLd("rda-ld-course-list"),
+      organization: parseJsonLd("rda-ld-organization"),
+    };
+  });
+
+  expect(seo.canonical).toBe("https://www.rosevilledentalacademy.com/");
+  expect(seo.organization).not.toHaveProperty("aggregateRating");
+  expect(seo.organization).not.toHaveProperty("review");
+  expect(seo.courseList?.["@type"]).toBe("ItemList");
+  expect(seo.courseList?.itemListElement).toHaveLength(6);
+  const courseItems = seo.courseList?.itemListElement ?? [];
+  expect(courseItems.map((item: { position: number }) => item.position)).toEqual([
+    1, 2, 3, 4, 5, 6,
+  ]);
+  const courseUrls = courseItems.map((item: { url: string }) => item.url);
+  expect(new Set(courseUrls).size).toBe(6);
+  expect(courseItems.every((item: Record<string, unknown>) => !("item" in item))).toBeTruthy();
+  expect(courseUrls).toEqual(
+    expect.arrayContaining([
+      "https://www.rosevilledentalacademy.com/dental-assisting-program",
+      "https://www.rosevilledentalacademy.com/bls-cpr-1",
+      "https://www.rosevilledentalacademy.com/infection-control",
+      "https://www.rosevilledentalacademy.com/radiation-safety",
+      "https://www.rosevilledentalacademy.com/coronal-polish",
+      "https://www.rosevilledentalacademy.com/sealants",
+    ]),
+  );
+
+  const robotsResponse = await request.get(`${localOrigin}/robots.txt`);
+  const robotsText = await robotsResponse.text();
+  const protectedPaths = [
+    "/m/",
+    "/resume-portal-dr/",
+    "/resume-portal-dr-oms-only",
+    "/g/api/",
+    "/markup/",
+  ];
+
+  expect(robotsResponse.status()).toBe(200);
+  expect(robotsText).toContain(
+    "Sitemap: https://www.rosevilledentalacademy.com/sitemap.xml",
+  );
+
+  for (const agent of ["GPTBot", "ClaudeBot", "Google-Extended", "PerplexityBot"]) {
+    const block = robotsText
+      .split(/\n\n+/)
+      .find((candidate) => candidate.includes(`User-agent: ${agent}`));
+    expect(block, `${agent} should have an explicit robots group`).toBeTruthy();
+    for (const path of protectedPaths) {
+      expect(block).toContain(`Disallow: ${path}`);
+    }
+  }
+
+  await page.goto(`${localOrigin}/dental-assisting-program`, {
+    waitUntil: "domcontentloaded",
+    timeout: 120_000,
+  });
+  const courseSchema = await page.locator("#rda-ld-course-dental-assisting-program").textContent();
+  const courseData = courseSchema ? JSON.parse(courseSchema) : null;
+  expect(courseData?.["@type"]).toBe("Course");
+  expect(courseData).not.toHaveProperty("aggregateRating");
+  expect(courseData).not.toHaveProperty("review");
+});
+
 test("GA4 analytics tag and event tracking are configured", async ({ page }, testInfo) => {
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.waitForLoadState("load").catch(() => undefined);
@@ -1341,9 +1416,6 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
   );
   const cardCount = visibleCardDetails.length;
   const googleReviewCardCount = await googleReviewCards.count();
-  const googleReviewGridCount = await reviewSection
-    .locator(".rda-google-review-grid")
-    .getAttribute("data-rda-google-review-count");
   const imageSources = visibleCardDetails.map((card) => card.imageSource);
   const uniqueImageSources = new Set(imageSources.filter(Boolean));
   const reviewText = (await reviewSection.textContent()) ?? "";
@@ -1374,10 +1446,8 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     mismatches.push(`expected 6 review cards, found ${cardCount}`);
   }
 
-  if (googleReviewCardCount !== 77 || googleReviewGridCount !== "77") {
-    mismatches.push(
-      `expected all 77 Google review entries, found ${googleReviewCardCount} cards with grid count ${googleReviewGridCount}`,
-    );
+  if (googleReviewCardCount !== 0) {
+    mismatches.push(`expected review payload to omit hidden Google cards, found ${googleReviewCardCount}`);
   }
 
   if (uniqueImageSources.size !== imageSources.length) {
@@ -1389,8 +1459,6 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     "Selene",
     "Salvador Garcia",
     "Breana Donahue",
-    "Ñåwìd Žãźāį",
-    "Daisy Sifuentes",
   ]) {
     if (!reviewText.includes(phrase)) {
       mismatches.push(`review section missing ${phrase}`);
@@ -1401,8 +1469,8 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     "Reviews for Google",
     "5 out of 5 stars",
     "77 Google reviews",
-    "All 77 Google reviews",
-    "Updated May 19, 2026",
+    "Read all 77 Google reviews",
+    "Open the verified Google listing",
   ]) {
     if (!reviewText.includes(phrase)) {
       mismatches.push(`review section missing Google review marker: ${phrase}`);
@@ -1431,7 +1499,6 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     writeJsonArtifact(testInfo, "homepage-review-photos-summary.json", {
       cardCount,
       googleReviewCardCount,
-      googleReviewGridCount,
       imageSources,
       mismatches,
     });

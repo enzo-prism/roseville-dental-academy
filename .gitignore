@@ -10,3 +10,4 @@ playwright-report
 test-results
 dogfood-output
 pnpm-debug.log*
+*.tsbuildinfo

@@ -1126,10 +1126,9 @@ test.describe("live-style interaction flows", () => {
       await expect(reviewMore.locator(".rda-review-photo-card")).toHaveCount(3);
 
       const googleReviewLibrary = page.locator(".rda-google-review-library");
-      await expect(googleReviewLibrary.getByText("All 77 Google reviews")).toBeVisible();
-      await expect(googleReviewLibrary.locator(".rda-google-review-card")).toHaveCount(77);
+      await expect(googleReviewLibrary.getByText("Read all 77 Google reviews")).toBeVisible();
+      await expect(googleReviewLibrary.locator(".rda-google-review-card")).toHaveCount(0);
       await googleReviewLibrary.locator("summary").click();
-      await expect(googleReviewLibrary.locator(".rda-google-review-card").first()).toBeVisible();
       await expect(googleReviewLibrary.getByRole("link", { name: "Open Google reviews" })).toHaveAttribute(
         "href",
         /maps\.google\.com/,
@@ -1186,6 +1185,7 @@ test.describe("live-style interaction flows", () => {
           firstInterest.click();
           await waitForReactUpdate();
           signupForm.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+          await waitForReactUpdate();
         }
 
         return {

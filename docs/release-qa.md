@@ -24,8 +24,8 @@ PREVIEW_URL=https://example-preview.vercel.app PLAYWRIGHT_NO_WEBSERVER=1 pnpm te
 Production-domain smoke and content checks after a live deployment:
 
 ```bash
-PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://rosevilledentalacademy.com pnpm test:smoke
-PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://rosevilledentalacademy.com pnpm test:parity-content
+PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pnpm test:smoke
+PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pnpm test:parity-content
 ```
 
 Visual parity only:
@@ -161,4 +161,4 @@ Verification after that fix:
 - GitHub `Vercel Preview Verify`: passed
 - production homepage: 200, schedule present, GA4 and Vercel Analytics initialized, no horizontal overflow
 
-The GitHub Node.js 20 Actions deprecation warning is maintenance noise, not the visual parity blocker. Keep any Node 24 runner migration separate from visual-diff triage.
+CI uses Node.js `24.x` and pnpm `10.34.5`, matching `package.json` and the Vercel project runtime. Keep those pins aligned when either workflow is updated.

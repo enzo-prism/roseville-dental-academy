@@ -10,8 +10,8 @@ or adding indexable content.
 | Surface | Source | Notes |
 | --- | --- | --- |
 | Page metadata (title, description, canonical, OG/Twitter, robots) | `lib/site-metadata.ts` (`buildPageMetadata`) | Per-route; canonical prefers a clean alias over encoded-slash routes. |
-| Global JSON-LD (Organization/LocalBusiness + WebSite) | `components/site/structured-data.tsx` (`GlobalStructuredData`, mounted in `app/layout.tsx`) | Includes NAP, geo, hours, `sameAs`, and `aggregateRating` + `review`. |
-| Per-route JSON-LD (Course, FAQ, Breadcrumb, Article) | `components/site/structured-data.tsx` | Emitted by the route that needs it. |
+| Global JSON-LD (Organization/LocalBusiness + WebSite) | `components/site/structured-data.tsx` (`GlobalStructuredData`, mounted in `app/layout.tsx`) | Includes NAP, geo, hours, and `sameAs`. |
+| Per-route JSON-LD (Course list, Course, FAQ, Breadcrumb, Article) | `components/site/structured-data.tsx` | Emitted by the route that needs it. |
 | Sitemap | `app/sitemap.xml/route.ts` (index) → `app/sitemap.website.xml/route.ts` (urls) | `force-static`. Public, indexable routes only. |
 | Robots | `app/robots.txt/route.ts` | Disallows utility paths; explicitly allows named AI crawlers. |
 | LLM discovery | `app/llms.txt/route.ts` | Human-readable index of programs, guides, and contact info for AI search. |
@@ -20,34 +20,29 @@ or adding indexable content.
 ## Structured data (JSON-LD)
 
 All JSON-LD is centralized in `components/site/structured-data.tsx` and rendered via the
-shared `StructuredDataScript` helper (escapes `<` to `<`).
+shared `StructuredDataScript` helper (escapes `<` as `\\u003c`).
 
 - **Organization / LocalBusiness** (`buildOrganizationData`) — `EducationalOrganization` +
-  `LocalBusiness` with `@id` `${siteUrl}#organization`, address, geo, opening hours, `sameAs`,
-  and an `aggregateRating` + `review` set.
+  `LocalBusiness` with `@id` `${siteUrl}#organization`, address, geo, opening hours, and `sameAs`.
 - **WebSite** (`buildWebsiteData`).
+- **Course list** (`CourseListStructuredData`) — homepage `ItemList` linking the six course
+  detail pages with unique canonical URLs.
 - **Course** (`CourseStructuredData`) — one per course path in `COURSE_SCHEMA_BY_PATH`, with
-  `hasCourseInstance` schedule dates, `offers`, provider codes, and a per-course `aggregateRating`
-  + `review`.
+  `hasCourseInstance` schedule dates, `offers`, and provider codes.
 - **FAQPage** (`FaqStructuredData` for `/faqs-1`; `ResourceArticleStructuredData` for guide FAQs).
 - **BreadcrumbList** (`BreadcrumbStructuredData`).
 - **Article** (`ResourceArticleStructuredData`) — one per `/resources/*` guide.
 
 ### Ratings and reviews (guideline rationale)
 
-Ratings are **derived from the genuine Google reviews** in `lib/site-data.ts`, never hand-set:
+Organization- and Course-level rating markup is intentionally omitted because the testimonials
+originate on Google, and Google does not support self-serving or cross-site aggregated review
+snippets. The visible homepage summary links to the complete Google listing without embedding
+every hidden review in the page payload. Course testimonials remain visible page content but are
+not represented as review schema.
 
-- `googleReviewsAggregate` (in `lib/site-data.ts`) is computed from the full `googleReviews`
-  list. It currently reflects the real Google rating and powers the **Organization**
-  `aggregateRating`. The homepage renders every one of those reviews, so the aggregate is
-  backed by on-page content.
-- Each **Course** `aggregateRating` is computed by `aggregateForReviews` from *exactly the review
-  cards rendered on that course page* (`courseReviewHighlights[reviewsId]`). This keeps the markup
-  in parity with the visible "N out of 5 stars" cards, which is required by Google. Do not attach
-  the school-wide 77-review aggregate to an individual course.
-
-When reviews change, update the review rows in `lib/site-data.ts` only — the aggregates recompute
-automatically. Validate with Google's Rich Results Test after any schema change.
+When reviews change, update the review rows in `lib/site-data.ts`. Validate with Google's Rich
+Results Test after any schema change.
 
 ## Metadata and canonicals
 
@@ -62,8 +57,8 @@ Encoded-slash routes (e.g. `/bls%2Fcpr-1`) emit their clean alias (`/bls-cpr-1`)
   `getPublicSitemapRoutes()`, the synthetic `journeyRoute`, `getResourceSitemapRoutes()`, and the
   social channel pages. Noindex (`/lp/*`, `/m/*`, utility) routes are excluded. Priorities are set
   in `priorityFor`.
-- **Robots** — `app/robots.txt/route.ts` disallows `/m/`, resume-portal, `/g/api/`, and `/markup/`,
-  and adds explicit allow blocks for AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.).
+- **Robots** — `app/robots.txt/route.ts` disallows `/m/`, resume-portal, `/g/api/`, and `/markup/`
+  for both the wildcard group and explicitly named AI crawlers.
 - **llms.txt** — `app/llms.txt/route.ts` is a curated, human-readable index. The Guides section is
   generated from `resourceArticles`, so new guides appear automatically.
 

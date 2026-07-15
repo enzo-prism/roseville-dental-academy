@@ -537,9 +537,9 @@ export const googleReviews: TestimonialData[] = googleReviewRows.map(
 
 export const googleReviewsUrl = "https://maps.google.com/maps?cid=11613766695697697595";
 
-// Truthful aggregate derived from the genuine Google reviews above, so structured
-// data (aggregateRating) and any on-page rating summary stay in sync with the
-// source rows. ratingValue is rounded to one decimal to mirror how Google shows it.
+// Truthful aggregate derived from the genuine Google reviews above for the
+// visible homepage rating summary. Review schema intentionally omits this
+// cross-site aggregate. ratingValue is rounded to one decimal to mirror Google.
 export type ReviewAggregate = {
   ratingValue: number;
   reviewCount: number;

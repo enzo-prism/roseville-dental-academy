@@ -3,7 +3,11 @@ import { join } from "node:path";
 
 import manifestData from "@/snapshot/live/manifest.json";
 import { LIVE_SOURCE_ORIGIN } from "@/lib/site-config";
-import { googleReviews, googleReviewsUrl, homepageReviewHighlights } from "@/lib/site-data";
+import {
+  googleReviewsAggregate,
+  googleReviewsUrl,
+  homepageReviewHighlights,
+} from "@/lib/site-data";
 
 export const LIVE_SITE_ORIGIN = LIVE_SOURCE_ORIGIN;
 export const LIVE_BODY_CLASS = "x x-fonts-adamina x-fonts-fjalla-one";
@@ -727,17 +731,6 @@ function renderHomepageReviewHighlightsHtml() {
         </div>
       </div>
     </article>`;
-  const renderGoogleReviewCard = (review: (typeof googleReviews)[number]) => `
-    <article class="rda-google-review-card">
-      <div class="rda-google-review-card-header">
-        <div>
-          <p class="rda-review-name">${escapeHtml(review.name)}</p>
-          <p class="rda-review-meta">${escapeHtml(review.meta)}</p>
-        </div>
-        <p class="rda-review-rating" aria-label="${escapeHtml(review.rating)} out of 5 stars">${renderRatingStarsHtml(review.rating)}</p>
-      </div>
-      <blockquote>&ldquo;${escapeHtml(review.quote)}&rdquo;</blockquote>
-    </article>`;
   const primaryReviewCards = homepageReviewHighlights
     .slice(0, 3)
     .map(renderReviewCard)
@@ -751,7 +744,7 @@ function renderHomepageReviewHighlightsHtml() {
       renderReviewCard,
     )
     .join("");
-  const googleReviewCards = googleReviews.map(renderGoogleReviewCard).join("");
+  const googleReviewCount = googleReviewsAggregate.reviewCount;
 
   return `
     <section class="rda-stable-section rda-home-review-highlights" data-rda-home-review-highlights="true" aria-labelledby="rda-home-review-highlights-title">
@@ -759,10 +752,10 @@ function renderHomepageReviewHighlightsHtml() {
         <h2 id="rda-home-review-highlights-title">What Students Are Saying</h2>
         <span aria-hidden="true"></span>
       </div>
-      <div class="rda-google-review-summary" aria-label="5 out of 5 stars from 77 Google reviews">
+      <div class="rda-google-review-summary" aria-label="5 out of 5 stars from ${googleReviewCount} Google reviews">
         <p class="rda-google-review-brand">${renderGoogleReviewsLogoHtml()}<span>Reviews for Google</span></p>
         <p class="rda-review-score">${renderRatingStarsHtml(5)}</p>
-        <p class="rda-review-photo-intro">77 Google reviews from students and alumni, paired with real moments from the academy gallery.</p>
+        <p class="rda-review-photo-intro">${googleReviewCount} Google reviews from students and alumni, paired with real moments from the academy gallery.</p>
       </div>
       <div class="rda-review-photo-grid rda-review-photo-grid-desktop">
         ${desktopReviewCards}
@@ -777,15 +770,12 @@ function renderHomepageReviewHighlightsHtml() {
       <details class="rda-google-review-library">
         <summary>
           <span>
-            <span class="rda-google-review-library-title">All 77 Google reviews</span>
-            <span class="rda-google-review-library-copy">Every reviewer entry with a short excerpt, rating, and date. Updated May 19, 2026.</span>
+            <span class="rda-google-review-library-title">Read all ${googleReviewCount} Google reviews</span>
+            <span class="rda-google-review-library-copy">Open the verified Google listing for every reviewer entry, rating, and date.</span>
           </span>
         </summary>
         <div class="rda-google-review-library-toolbar">
           <a href="${googleReviewsUrl}" target="_blank" rel="noopener noreferrer">Open Google reviews</a>
-        </div>
-        <div class="rda-google-review-grid" data-rda-google-review-count="${googleReviews.length}">
-          ${googleReviewCards}
         </div>
       </details>
     </section>`;

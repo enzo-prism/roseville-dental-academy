@@ -4,6 +4,7 @@ import { preload } from "react-dom";
 
 import {
   BreadcrumbStructuredData,
+  CourseListStructuredData,
   CourseStructuredData,
   FaqStructuredData,
 } from "@/components/site/structured-data";
@@ -95,6 +96,7 @@ export default async function LiveRoutePage({ params }: PageProps) {
   return (
     <LiveShell route={route}>
       <CourseStructuredData path={canonicalPath} />
+      {route.route === "/" ? <CourseListStructuredData /> : null}
       {route.route === "/faqs-1" ? <FaqStructuredData /> : null}
       <BreadcrumbStructuredData items={breadcrumbItems} />
       {document.headStylesHtml ? (

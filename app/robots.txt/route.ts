@@ -33,14 +33,16 @@ export function GET() {
     ...DISALLOWED_PATHS.map((path) => `Disallow: ${path}`),
   ].join("\n");
 
-  const aiBlocks = ALLOWED_AI_AGENTS.map(
-    (agent) => `User-agent: ${agent}\nAllow: /`,
-  ).join("\n\n");
+  const aiBlock = [
+    ...ALLOWED_AI_AGENTS.map((agent) => `User-agent: ${agent}`),
+    "Allow: /",
+    ...DISALLOWED_PATHS.map((path) => `Disallow: ${path}`),
+  ].join("\n");
 
   const body = [
     generalBlock,
     "",
-    aiBlocks,
+    aiBlock,
     "",
     `Sitemap: ${SITE_URL}/sitemap.xml`,
     "",

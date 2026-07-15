@@ -6,9 +6,9 @@ This repo deploys the public Roseville Dental Academy website. Keep it separate 
 
 - Git remote: `https://github.com/enzo-prism/roseville-dental-academy.git`
 - Production branch: `main`
-- Production host: `https://rosevilledentalacademy.com`
+- Production host: `https://www.rosevilledentalacademy.com` (the apex redirects here)
 - Framework: Next.js on Vercel
-- Canonical URL source: `SITE_URL`, falling back to `https://rosevilledentalacademy.com`
+- Canonical URL source: `SITE_URL`, falling back to `https://www.rosevilledentalacademy.com`
 
 Normal release flow:
 
@@ -41,25 +41,28 @@ PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:parity-
 
 After Vercel marks the deployment ready, verify live production routes:
 
+The apex homepage should return `307` with `Location: https://www.rosevilledentalacademy.com/`; the `www` routes should return `200`.
+
 ```bash
 curl -I https://rosevilledentalacademy.com/
-curl -I https://rosevilledentalacademy.com/lp/dental-assisting-enroll
-curl -I https://rosevilledentalacademy.com/lp/dental-assisting-tiktok
-curl -I https://rosevilledentalacademy.com/lp/infection-control-office-awareness
-curl -I https://rosevilledentalacademy.com/lp/infection-control-office-compliance
-curl -I https://rosevilledentalacademy.com/lp/coronal-polish-office-awareness
-curl -I https://rosevilledentalacademy.com/lp/coronal-sealants-renewal
-curl -I https://rosevilledentalacademy.com/faqs-1
-curl -I https://rosevilledentalacademy.com/meet-the-instructors
-curl -I https://rosevilledentalacademy.com/robots.txt
-curl -I https://rosevilledentalacademy.com/sitemap.xml
+curl -I https://www.rosevilledentalacademy.com/
+curl -I https://www.rosevilledentalacademy.com/lp/dental-assisting-enroll
+curl -I https://www.rosevilledentalacademy.com/lp/dental-assisting-tiktok
+curl -I https://www.rosevilledentalacademy.com/lp/infection-control-office-awareness
+curl -I https://www.rosevilledentalacademy.com/lp/infection-control-office-compliance
+curl -I https://www.rosevilledentalacademy.com/lp/coronal-polish-office-awareness
+curl -I https://www.rosevilledentalacademy.com/lp/coronal-sealants-renewal
+curl -I https://www.rosevilledentalacademy.com/faqs-1
+curl -I https://www.rosevilledentalacademy.com/meet-the-instructors
+curl -I https://www.rosevilledentalacademy.com/robots.txt
+curl -I https://www.rosevilledentalacademy.com/sitemap.xml
 ```
 
 Then run the preview/live-capable Playwright checks against the production host when the deployment changes public page output:
 
 ```bash
-PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://rosevilledentalacademy.com pnpm test:smoke
-PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://rosevilledentalacademy.com pnpm test:parity-content
+PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pnpm test:smoke
+PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pnpm test:parity-content
 ```
 
 ## Current Paid-Media Contract

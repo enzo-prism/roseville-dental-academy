@@ -1,17 +1,11 @@
 import { getCourseSchedule, type CourseScheduleId } from "@/lib/course-schedule";
 import {
-  courseReviewHighlights,
   faqItems,
-  googleReviewsAggregate,
-  homepageReviewHighlights,
   siteContact,
   socialLinks,
-  type CourseReviewId,
-  type ReviewAggregate,
 } from "@/lib/site-data";
 import { getSiteUrl } from "@/lib/site-config";
 import type { ResourceArticle } from "@/lib/resource-articles";
-import type { TestimonialData } from "@/lib/site-types";
 
 const STREET_ADDRESS = "1271 Pleasant Grove Boulevard, Ste. 100";
 const ADDRESS_LOCALITY = "Roseville";
@@ -33,7 +27,6 @@ const COURSE_SCHEMA_BY_PATH: Record<
     price: number;
     scheduleId: CourseScheduleId;
     timeRequired?: string;
-    reviewsId: CourseReviewId;
   }
 > = {
   "/dental-assisting-program": {
@@ -44,7 +37,6 @@ const COURSE_SCHEMA_BY_PATH: Record<
     price: 2500,
     scheduleId: "dental-assisting-program",
     timeRequired: "PT210H",
-    reviewsId: "dental-assisting-program",
   },
   "/bls-cpr-1": {
     name: "BLS/CPR Certification for Healthcare Providers",
@@ -54,7 +46,6 @@ const COURSE_SCHEMA_BY_PATH: Record<
     price: 85,
     scheduleId: "bls-cpr-1",
     timeRequired: "PT3H",
-    reviewsId: "bls-cpr-1",
   },
   "/infection-control": {
     name: "Dental Infection Control Course",
@@ -65,7 +56,6 @@ const COURSE_SCHEMA_BY_PATH: Record<
     price: 395,
     scheduleId: "infection-control",
     timeRequired: "PT8H",
-    reviewsId: "infection-control",
   },
   "/radiation-safety": {
     name: "Dental Radiation Safety & X-Ray Course",
@@ -76,7 +66,6 @@ const COURSE_SCHEMA_BY_PATH: Record<
     price: 695,
     scheduleId: "radiation-safety",
     timeRequired: "PT32H",
-    reviewsId: "radiation-safety",
   },
   "/coronal-polish": {
     name: "Coronal Polish Certification",
@@ -87,7 +76,6 @@ const COURSE_SCHEMA_BY_PATH: Record<
     price: 500,
     scheduleId: "coronal-polish",
     timeRequired: "PT12H",
-    reviewsId: "coronal-polish",
   },
   "/sealants": {
     name: "Pit & Fissure Sealants Certification",
@@ -98,7 +86,6 @@ const COURSE_SCHEMA_BY_PATH: Record<
     price: 550,
     scheduleId: "sealants",
     timeRequired: "PT16H",
-    reviewsId: "sealants",
   },
 };
 
@@ -109,45 +96,6 @@ type JsonLdValue =
   | null
   | JsonLdValue[]
   | { [key: string]: JsonLdValue };
-
-function buildAggregateRating(aggregate: ReviewAggregate): JsonLdValue {
-  return {
-    "@type": "AggregateRating",
-    ratingValue: aggregate.ratingValue,
-    reviewCount: aggregate.reviewCount,
-    bestRating: aggregate.bestRating,
-    worstRating: aggregate.worstRating,
-  };
-}
-
-function buildReviewNodes(reviews: readonly TestimonialData[]): JsonLdValue[] {
-  return reviews.map((review) => ({
-    "@type": "Review",
-    author: { "@type": "Person", name: review.name },
-    reviewRating: {
-      "@type": "Rating",
-      ratingValue: review.rating,
-      bestRating: 5,
-      worstRating: 1,
-    },
-    reviewBody: review.quote,
-  }));
-}
-
-// Aggregate over the exact reviews rendered on a course page, so the markup
-// matches the visible "N out of 5 stars" cards (Google requires parity).
-function aggregateForReviews(reviews: readonly TestimonialData[]): ReviewAggregate {
-  const reviewCount = reviews.length;
-  const sum = reviews.reduce((total, review) => total + review.rating, 0);
-  const average = reviewCount > 0 ? sum / reviewCount : 0;
-
-  return {
-    ratingValue: Math.round(average * 10) / 10,
-    reviewCount,
-    bestRating: 5,
-    worstRating: 1,
-  };
-}
 
 function StructuredDataScript({ id, data }: { id: string; data: JsonLdValue }) {
   return (
@@ -222,8 +170,6 @@ function buildOrganizationData() {
     hasMap: GOOGLE_MAPS_CID_URL,
     sameAs: socialLinks.map((link) => link.href),
     areaServed: { "@type": "AdministrativeArea", name: "Greater Sacramento" },
-    aggregateRating: buildAggregateRating(googleReviewsAggregate),
-    review: buildReviewNodes(homepageReviewHighlights),
   } satisfies JsonLdValue;
 }
 
@@ -247,6 +193,23 @@ export function GlobalStructuredData() {
       <StructuredDataScript id="rda-ld-website" data={buildWebsiteData()} />
     </>
   );
+}
+
+export function CourseListStructuredData() {
+  const siteUrl = getSiteUrl();
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: Object.keys(COURSE_SCHEMA_BY_PATH).map(
+      (path, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `${siteUrl}${path}`,
+      }),
+    ),
+  } satisfies JsonLdValue;
+
+  return <StructuredDataScript id="rda-ld-course-list" data={data} />;
 }
 
 function buildCourseLocation(): JsonLdValue {
@@ -285,8 +248,6 @@ export function CourseStructuredData({ path }: { path: string }) {
   }
 
   const siteUrl = getSiteUrl();
-  const reviewGroup = courseReviewHighlights[courseInfo.reviewsId];
-  const courseReviews = reviewGroup?.reviews ?? [];
   const data = {
     "@context": "https://schema.org",
     "@type": "Course",
@@ -309,13 +270,6 @@ export function CourseStructuredData({ path }: { path: string }) {
     ),
     ...(courseInfo.courseCode ? { courseCode: courseInfo.courseCode } : {}),
     ...(courseInfo.timeRequired ? { timeRequired: courseInfo.timeRequired } : {}),
-    // Rating + reviews mirror the review cards rendered on the course page.
-    ...(courseReviews.length > 0
-      ? {
-          aggregateRating: buildAggregateRating(aggregateForReviews(courseReviews)),
-          review: buildReviewNodes(courseReviews),
-        }
-      : {}),
   } satisfies JsonLdValue;
 
   return <StructuredDataScript id={`rda-ld-course-${path.slice(1)}`} data={data} />;

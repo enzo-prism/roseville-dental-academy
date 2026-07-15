@@ -1,6 +1,6 @@
 # Roseville Dental Academy
 
-This repo is a production-ready, live-faithful Next.js rebuild of [rosevilledentalacademy.com](https://rosevilledentalacademy.com).
+This repo is a production-ready, live-faithful Next.js rebuild of [rosevilledentalacademy.com](https://www.rosevilledentalacademy.com).
 
 The current runtime is a shell-first hybrid:
 
@@ -19,7 +19,7 @@ The current runtime is a shell-first hybrid:
 - `snapshot/live/html/*.html` contains frozen source pages used for sanitized page bodies.
 - `public/__live/` and `public/assets/live/` contain mirrored live assets.
 - `tests/baselines/live/` contains committed content and visual baselines.
-- `components/site/structured-data.tsx` emits all JSON-LD (Organization/LocalBusiness, WebSite, Course, FAQ, Breadcrumb, Article), including review `aggregateRating` derived from the real Google reviews in `lib/site-data.ts`.
+- `components/site/structured-data.tsx` emits all JSON-LD (Organization/LocalBusiness, WebSite, Course list, Course, FAQ, Breadcrumb, Article). Google-sourced testimonials remain visible content but are intentionally omitted from review schema.
 - `lib/resource-articles.ts` + `app/resources/**` are the indexable `/resources` content hub (SEO guides). See [docs/seo.md](docs/seo.md).
 
 ## Design System
@@ -47,6 +47,8 @@ pnpm design:check
 - `generated/tokens.json`
 
 ## Local Development
+
+Use Node.js `24.x` and pnpm `10.34.5`; both versions are pinned in `package.json` and CI.
 
 Install and run the draft locally:
 
@@ -91,7 +93,7 @@ Organic-search surfaces — JSON-LD structured data, metadata/canonicals, the si
 
 Highlights:
 
-- Review rich results: the Organization and each Course carry an `aggregateRating` + `review` derived from the genuine Google reviews in `lib/site-data.ts` (never hand-set). Course ratings mirror the review cards actually rendered on the page.
+- Review markup: Organization and Course schemas intentionally omit Google-sourced ratings/reviews to avoid self-serving or cross-site review markup. Visible testimonials remain unchanged.
 - `/resources` content hub: add a `ResourceArticle` to `lib/resource-articles.ts` and the guide prerenders, joins the sitemap and `llms.txt`, and gets Article + FAQ + Breadcrumb schema automatically. Like `/lp/*`, these routes are outside the QA gate, so they never require a baseline refresh.
 - Image loading: `promoteLazyImages` in `lib/live-route-data.ts` adds `decoding="async"` to snapshot images and `loading="lazy"` to all but the LCP image.
 
@@ -159,7 +161,7 @@ Visual parity failures should be triaged from the uploaded artifacts before chan
 
 ## Deployment Notes
 
-- Default canonical host comes from `SITE_URL` and falls back to `https://rosevilledentalacademy.com`.
+- Default canonical host comes from `SITE_URL` and falls back to `https://www.rosevilledentalacademy.com`.
 - `vercel.json` keeps encoded-path redirects for source-compatible entry points.
 - GoDaddy commerce/member backends are not rebuilt here; member/auth pages stay static/noindex utility screens unless a real backend is chosen later.
 - Production deployment and post-deploy verification steps live in [docs/production-runbook.md](docs/production-runbook.md).

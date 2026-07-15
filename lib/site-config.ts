@@ -1,4 +1,4 @@
-const DEFAULT_SITE_URL = "https://rosevilledentalacademy.com";
+const DEFAULT_SITE_URL = "https://www.rosevilledentalacademy.com";
 
 function normalizeSiteUrl(value?: string) {
   const candidate = value?.trim() || DEFAULT_SITE_URL;
