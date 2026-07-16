@@ -1235,7 +1235,12 @@ test.describe("live-style interaction flows", () => {
         if (signupForm && firstInterest) {
           firstInterest.click();
           await waitForReactUpdate();
-          signupForm.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+          signupForm.dispatchEvent(
+            new CustomEvent("rda:lead-form-success", {
+              bubbles: true,
+              detail: { submissionId: "accepted-analytics-test" },
+            }),
+          );
           await waitForReactUpdate();
         }
 
@@ -1299,29 +1304,51 @@ test.describe("live-style interaction flows", () => {
         adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
         adLandingPages[0];
       const utmCampaign = "dental_assisting_enroll";
+      let formspreeRequestBody = "";
+
+      await page.route("https://formspree.io/f/**", async (route) => {
+        formspreeRequestBody = route.request().postData() ?? "";
+        await route.fulfill({
+          body: JSON.stringify({ ok: true }),
+          contentType: "application/json",
+          status: 200,
+        });
+      });
 
       await page.addInitScript(() => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
+          __rdaTestVercelEvents?: unknown[][];
           fbq?: (...args: unknown[]) => void;
           gtag?: (...args: unknown[]) => void;
+          va?: (...args: unknown[]) => void;
         };
 
         analyticsWindow.__rdaTestGtagEvents = [];
         analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.__rdaTestVercelEvents = [];
         analyticsWindow.gtag = (...args: unknown[]) => {
           analyticsWindow.__rdaTestGtagEvents?.push(args);
         };
         analyticsWindow.fbq = (...args: unknown[]) => {
           analyticsWindow.__rdaTestMetaEvents?.push(args);
         };
+        const captureVercelEvent = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestVercelEvents?.push(args);
+        };
+
+        Object.defineProperty(window, "va", {
+          configurable: true,
+          get: () => captureVercelEvent,
+          set: () => undefined,
+        });
       });
 
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(
         page,
-        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=${utmCampaign}&utm_content=student_video_01`,
+        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=${utmCampaign}&utm_content=student_video_01&fbclid=meta_click_123&ttclid=tiktok_click_456`,
       );
 
       const form = page.locator('form[data-rda-landing-form="true"]');
@@ -1339,19 +1366,66 @@ test.describe("live-style interaction flows", () => {
         utmCampaign,
       );
       await expect(form.locator('input[name="utm_content"]')).toHaveValue("student_video_01");
+      await expect(form.locator('input[name="fbclid"]')).toHaveValue("meta_click_123");
+      await expect(form.locator('input[name="ttclid"]')).toHaveValue("tiktok_click_456");
 
-      const initialGaEvents = await page.evaluate(() => {
-        return ((window as Window & { __rdaTestGtagEvents?: unknown[][] }).__rdaTestGtagEvents ?? []);
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() =>
+              (
+                (window as Window & { __rdaTestVercelEvents?: unknown[][] })
+                  .__rdaTestVercelEvents ?? []
+              ).some(
+                (event) =>
+                  typeof event[1] === "object" &&
+                  event[1] &&
+                  "name" in event[1] &&
+                  event[1].name === "ad_landing_view",
+              ),
+            ),
+          { timeout: 5_000 },
+        )
+        .toBe(true);
+
+      const initialEvents = await page.evaluate(() => {
+        const analyticsWindow = window as Window & {
+          __rdaTestGtagEvents?: unknown[][];
+          __rdaTestVercelEvents?: unknown[][];
+        };
+
+        return {
+          ga: analyticsWindow.__rdaTestGtagEvents ?? [],
+          vercel: analyticsWindow.__rdaTestVercelEvents ?? [],
+        };
       });
       const gaViewEvent =
-        initialGaEvents
+        initialEvents.ga
           .filter(
             (event): event is ["event", string, Record<string, unknown>?] =>
               event[0] === "event",
           )
           .find((event) => event[1] === "ad_landing_view")?.[2] ?? {};
+      const vercelViewPayload = initialEvents.vercel.find(
+        (event) =>
+          typeof event[1] === "object" &&
+          event[1] &&
+          "name" in event[1] &&
+          event[1].name === "ad_landing_view",
+      )?.[1] as { data?: Record<string, unknown> } | undefined;
+      const vercelViewEvent = vercelViewPayload?.data ?? {};
 
       expect(gaViewEvent).toMatchObject({
+        campaign_intent: landingPage.campaignIntent,
+        course_interest: landingPage.courseInterests.join(", "),
+        landing_page: landingPage.slug,
+        page_path: landingPage.path,
+        utm_campaign: utmCampaign,
+        utm_content: "student_video_01",
+        utm_medium: "paid_social",
+        utm_source: "facebook",
+      });
+      expect(vercelViewEvent).toMatchObject({
         campaign_intent: landingPage.campaignIntent,
         course_interest: landingPage.courseInterests.join(", "),
         landing_page: landingPage.slug,
@@ -1366,8 +1440,9 @@ test.describe("live-style interaction flows", () => {
       await form.locator('input[name="_replyto"]').fill("private-test@example.com");
       await form.locator('input[name="Phone"]').fill("916-555-1234");
       await form.locator('textarea[name="Notes"]').fill("Private note should not be tracked");
+      await form.locator('input[name="Consent to contact"]').check();
 
-      const events = await page.evaluate(async () => {
+      await page.evaluate(async () => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
@@ -1391,12 +1466,20 @@ test.describe("live-style interaction flows", () => {
             ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
         };
 
+        dispatchClick("[data-rda-ad-landing-cta='true']");
         dispatchClick(".rda-ad-hero-actions a[href^='tel:']");
         dispatchClick(".rda-ad-form-panel a[href^='mailto:'], .rda-ad-form-panel a[href^='tel:']");
+      });
 
-        document
-          .querySelector<HTMLFormElement>('form[data-rda-landing-form="true"]')
-          ?.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+      await form.getByRole("button", { name: landingPage.primaryCtaLabel }).click();
+      await expect(page.getByText("Request sent")).toBeVisible();
+
+      const events = await page.evaluate(() => {
+        const analyticsWindow = window as Window & {
+          __rdaTestGtagEvents?: unknown[][];
+          __rdaTestMetaEvents?: unknown[][];
+          __rdaTestVercelEvents?: unknown[][];
+        };
 
         return {
           ga: analyticsWindow.__rdaTestGtagEvents ?? [],
@@ -1419,6 +1502,7 @@ test.describe("live-style interaction flows", () => {
       const viewContentEvent = metaTrackEvents.find((event) => event[1] === "ViewContent")?.[2] ?? {};
       const leadEvent = metaTrackEvents.find((event) => event[1] === "Lead")?.[2] ?? {};
       const contactEvent = metaTrackEvents.find((event) => event[1] === "Contact")?.[2] ?? {};
+      const ctaEvent = gaEvents.find((event) => event[1] === "cta_click")?.[2] ?? {};
       const gaLeadEvent = gaEvents.find((event) => event[1] === "generate_lead")?.[2] ?? {};
       const gaSubmitEvent = gaEvents.find((event) => event[1] === "lead_form_submit")?.[2] ?? {};
       const vercelLeadEvent =
@@ -1456,6 +1540,12 @@ test.describe("live-style interaction flows", () => {
       expect(contactEvent).toMatchObject({
         content_category: "contact",
       });
+      expect(ctaEvent).toMatchObject({
+        campaign_intent: landingPage.campaignIntent,
+        cta_id: "ad_landing_form",
+        cta_location: "ad_hero",
+        landing_page: landingPage.slug,
+      });
       expect(gaLeadEvent).toMatchObject({
         form_id: "ad_landing_lead",
         lead_source: "website_ad_landing_lead",
@@ -1475,11 +1565,172 @@ test.describe("live-style interaction flows", () => {
         selected_count: 1,
         ...expectedAttribution,
       });
-      expect(vercelEventNames).toEqual(expect.arrayContaining(["contact_action", "lead_form_submit"]));
+      expect(vercelEventNames).toEqual(
+        expect.arrayContaining(["contact_action", "cta_click", "lead_form_submit"]),
+      );
+      const submissionIds = [
+        leadEvent.submission_id,
+        gaLeadEvent.submission_id,
+        gaSubmitEvent.submission_id,
+        vercelLeadEvent.submission_id,
+      ];
+
+      expect(submissionIds[0]).toEqual(expect.any(String));
+      expect(submissionIds.every((submissionId) => submissionId === submissionIds[0])).toBe(true);
+      expect(formspreeRequestBody).toContain("meta_click_123");
+      expect(formspreeRequestBody).toContain("tiktok_click_456");
+      expect(formspreeRequestBody).toContain(String(submissionIds[0]));
       expect(trackedPayload).not.toContain("private-test@example.com");
       expect(trackedPayload).not.toContain("916-555-1234");
       expect(trackedPayload).not.toContain("private note");
       expect(trackedPayload).not.toContain("private test student");
+    });
+
+    test("failed Formspree requests are not counted as leads", async ({ page }) => {
+      const landingPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+
+      await page.route("https://formspree.io/f/**", async (route) => {
+        await route.fulfill({
+          body: JSON.stringify({ error: "temporary_failure" }),
+          contentType: "application/json",
+          status: 500,
+        });
+      });
+      await page.addInitScript(() => {
+        const analyticsWindow = window as Window & {
+          __rdaTestGtagEvents?: unknown[][];
+          __rdaTestMetaEvents?: unknown[][];
+          __rdaTestVercelEvents?: unknown[][];
+          fbq?: (...args: unknown[]) => void;
+          gtag?: (...args: unknown[]) => void;
+          va?: (...args: unknown[]) => void;
+        };
+
+        analyticsWindow.__rdaTestGtagEvents = [];
+        analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.__rdaTestVercelEvents = [];
+        analyticsWindow.gtag = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestGtagEvents?.push(args);
+        };
+        analyticsWindow.fbq = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestMetaEvents?.push(args);
+        };
+        analyticsWindow.va = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestVercelEvents?.push(args);
+        };
+      });
+
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=failure_check`,
+      );
+
+      const form = page.locator('form[data-rda-landing-form="true"]');
+
+      await form.locator('input[name="Name"]').fill("Failure Test");
+      await form.locator('input[name="_replyto"]').fill("failure-test@example.com");
+      await form.locator('input[name="Phone"]').fill("916-555-0199");
+      await form.locator('input[name="Consent to contact"]').check();
+      await page.evaluate(() => {
+        const analyticsWindow = window as Window & {
+          __rdaTestGtagEvents?: unknown[][];
+          __rdaTestMetaEvents?: unknown[][];
+          __rdaTestVercelEvents?: unknown[][];
+        };
+
+        analyticsWindow.__rdaTestGtagEvents = [];
+        analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.__rdaTestVercelEvents = [];
+      });
+
+      await form.getByRole("button", { name: landingPage.primaryCtaLabel }).click();
+      await expect(page.locator('[data-rda-lead-form-error="true"]')).toBeVisible();
+
+      const eventNames = await page.evaluate(() => {
+        const analyticsWindow = window as Window & {
+          __rdaTestGtagEvents?: unknown[][];
+          __rdaTestMetaEvents?: unknown[][];
+          __rdaTestVercelEvents?: unknown[][];
+        };
+
+        return {
+          ga: (analyticsWindow.__rdaTestGtagEvents ?? []).map((event) => event[1]),
+          meta: (analyticsWindow.__rdaTestMetaEvents ?? []).map((event) => event[1]),
+          vercel: (analyticsWindow.__rdaTestVercelEvents ?? []).map((event) =>
+            typeof event[1] === "object" && event[1] && "name" in event[1]
+              ? (event[1] as { name: string }).name
+              : undefined,
+          ),
+        };
+      });
+
+      expect(eventNames.ga).not.toContain("generate_lead");
+      expect(eventNames.ga).not.toContain("lead_form_submit");
+      expect(eventNames.meta).not.toContain("Lead");
+      expect(eventNames.vercel).not.toContain("lead_form_submit");
+    });
+
+    test("ad attribution persists when a visitor continues to another site form", async ({
+      page,
+    }) => {
+      const landingPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=instagram&utm_medium=paid_social&utm_campaign=persisted_campaign&utm_content=persisted_creative&fbclid=persisted_meta_click`,
+      );
+      await expect(
+        page.locator('form[data-rda-landing-form="true"] input[name="utm_campaign"]'),
+      ).toHaveValue("persisted_campaign");
+
+      await gotoSettled(page, "/");
+
+      const signupForm = page.locator('form[data-rda-signup-form="true"]');
+
+      await expect(signupForm.locator('input[name="utm_source"]')).toHaveValue("instagram");
+      await expect(signupForm.locator('input[name="utm_medium"]')).toHaveValue("paid_social");
+      await expect(signupForm.locator('input[name="utm_campaign"]')).toHaveValue(
+        "persisted_campaign",
+      );
+      await expect(signupForm.locator('input[name="utm_content"]')).toHaveValue(
+        "persisted_creative",
+      );
+      await expect(signupForm.locator('input[name="fbclid"]')).toHaveValue(
+        "persisted_meta_click",
+      );
+    });
+
+    test("current ad attribution still works when session storage is unavailable", async ({
+      page,
+    }) => {
+      const landingPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+
+      await page.addInitScript(() => {
+        Storage.prototype.getItem = () => {
+          throw new DOMException("Storage unavailable", "SecurityError");
+        };
+        Storage.prototype.setItem = () => {
+          throw new DOMException("Storage unavailable", "SecurityError");
+        };
+      });
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=restricted_storage&fbclid=restricted_click`,
+      );
+
+      const form = page.locator('form[data-rda-landing-form="true"]');
+
+      await expect(form.locator('input[name="utm_source"]')).toHaveValue("facebook");
+      await expect(form.locator('input[name="utm_campaign"]')).toHaveValue(
+        "restricted_storage",
+      );
+      await expect(form.locator('input[name="fbclid"]')).toHaveValue("restricted_click");
     });
 
     test("quick sign up form is reusable and wired for class interest", async ({

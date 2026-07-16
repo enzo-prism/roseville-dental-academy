@@ -164,11 +164,13 @@ test("SEO contracts use the serving host and safe structured data", async ({ pag
 });
 
 test("GA4 analytics tag and event tracking are configured", async ({ page }, testInfo) => {
+  const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || "G-LKJFEYVM1Q";
+
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.waitForLoadState("load").catch(() => undefined);
   await page.waitForTimeout(1_000);
 
-  const result = await page.evaluate(() => {
+  const result = await page.evaluate((expectedMeasurementId) => {
     const analyticsWindow = window as Window & {
       dataLayer?: unknown[];
       gtag?: unknown;
@@ -180,11 +182,11 @@ test("GA4 analytics tag and event tracking are configured", async ({ page }, tes
       hasBootstrapScript: Boolean(document.querySelector("#rda-google-analytics")),
       hasGtagScript: Boolean(
         document.querySelector(
-          'script[src="https://www.googletagmanager.com/gtag/js?id=G-LKJFEYVM1Q"]',
+          `script[src="https://www.googletagmanager.com/gtag/js?id=${expectedMeasurementId}"]`,
         ),
       ),
     };
-  });
+  }, measurementId);
   const mismatches: string[] = [];
 
   if (!result.hasGtagScript) {
@@ -467,8 +469,15 @@ for (const landingPage of adLandingPages) {
           campaignIntent: form?.querySelector<HTMLInputElement>('input[name="campaign_intent"]')?.value,
           courseInterest: form?.querySelector<HTMLInputElement>('input[name="course_interest"]')?.value,
           formKey: form?.querySelector<HTMLInputElement>('input[name="form_key"]')?.value,
+          dclid: Boolean(form?.querySelector<HTMLInputElement>('input[name="dclid"]')),
+          fbclid: Boolean(form?.querySelector<HTMLInputElement>('input[name="fbclid"]')),
+          gbraid: Boolean(form?.querySelector<HTMLInputElement>('input[name="gbraid"]')),
+          gclid: Boolean(form?.querySelector<HTMLInputElement>('input[name="gclid"]')),
           landingPage: form?.querySelector<HTMLInputElement>('input[name="landing_page"]')?.value,
+          msclkid: Boolean(form?.querySelector<HTMLInputElement>('input[name="msclkid"]')),
           pagePath: form?.querySelector<HTMLInputElement>('input[name="page_path"]')?.value,
+          ttclid: Boolean(form?.querySelector<HTMLInputElement>('input[name="ttclid"]')),
+          wbraid: Boolean(form?.querySelector<HTMLInputElement>('input[name="wbraid"]')),
           utmCampaign: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_campaign"]')),
           utmContent: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_content"]')),
           utmMedium: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_medium"]')),
@@ -525,6 +534,18 @@ for (const landingPage of adLandingPages) {
 
     if (result.hiddenFields.formKey !== (landingPage.formKey ?? siteContact.formspreeOps.formKey)) {
       mismatches.push(`${landingPage.path} hidden form_key is wrong`);
+    }
+
+    if (
+      !result.hiddenFields.dclid ||
+      !result.hiddenFields.fbclid ||
+      !result.hiddenFields.gbraid ||
+      !result.hiddenFields.gclid ||
+      !result.hiddenFields.msclkid ||
+      !result.hiddenFields.ttclid ||
+      !result.hiddenFields.wbraid
+    ) {
+      mismatches.push(`${landingPage.path} ad click ID fields are missing`);
     }
 
     if (

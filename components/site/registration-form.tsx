@@ -4,7 +4,12 @@ import * as React from "react";
 import { useSearchParams } from "next/navigation";
 
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
-import { useLeadFormSubmit } from "@/components/site/use-lead-form";
+import {
+  AD_CLICK_ID_FIELDS,
+  UTM_FIELDS,
+  useLeadAttribution,
+  useLeadFormSubmit,
+} from "@/components/site/use-lead-form";
 import { SiteIcon, type SiteIconName } from "@/components/site/site-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,15 +64,10 @@ export function RegistrationForm() {
   const [paymentPreference, setPaymentPreference] = React.useState("");
   const [paymentDay, setPaymentDay] = React.useState("");
   const [acknowledged, setAcknowledged] = React.useState(false);
-  const [referrer, setReferrer] = React.useState("");
   const [formError, setFormError] = React.useState<string | null>(null);
+  const attribution = useLeadAttribution();
   const { status, submitLeadForm } = useLeadFormSubmit();
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
-  const utmFields = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
-
-  React.useEffect(() => {
-    setReferrer(document.referrer);
-  }, []);
 
   React.useEffect(() => {
     const requestedCourses = searchParams
@@ -160,15 +160,18 @@ export function RegistrationForm() {
         />
         <input type="hidden" name="Form type" value="Digital registration request" />
         <input type="hidden" name="Page source" value="/registration" />
-        <input type="hidden" name="Referrer" value={referrer} />
+        <input type="hidden" name="Referrer" value={attribution.referrer} />
         <input type="hidden" name="site" value={siteContact.formspreeOps.site} />
         <input type="hidden" name="form_key" value={siteContact.formspreeOps.formKey} />
         <input type="hidden" name="environment" value={environment} />
         <input type="hidden" name={siteContact.formspreeOps.qaField} value="false" />
         <input type="hidden" name="page_path" value="/registration" />
-        <input type="hidden" name="referrer" value={referrer} />
-        {utmFields.map((field) => (
-          <input key={field} type="hidden" name={field} value={searchParams.get(field) ?? ""} />
+        <input type="hidden" name="referrer" value={attribution.referrer} />
+        {UTM_FIELDS.map((field) => (
+          <input key={field} type="hidden" name={field} value={attribution.utm[field]} />
+        ))}
+        {AD_CLICK_ID_FIELDS.map((field) => (
+          <input key={field} type="hidden" name={field} value={attribution.clickIds[field]} />
         ))}
         <input
           type="hidden"

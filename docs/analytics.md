@@ -31,11 +31,25 @@ Use readable landing-page paths and UTMs for campaign detail:
 TikTok Dental Assisting ads should point to:
 `/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01`
 
-Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, `referrer`, and the standard UTM fields. Do not add these pages to the header, footer, or sitemap.
+Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, a query-stripped external `referrer`, and the standard UTM fields. They also capture `dclid`, `fbclid`, `gbraid`, `gclid`, `msclkid`, `ttclid`, and `wbraid` for Formspree/offline attribution. The latest complete paid-touch values persist for the current browser session so a visitor can continue to another RDA form without losing the ad context; a later paid visit replaces the earlier campaign as one complete set rather than mixing fields. Ad click IDs are intentionally not copied into GA4, Meta, or Vercel custom-event properties.
+
+Every accepted AJAX form request receives a non-PII `submission_id`. The same ID is sent to Formspree, GA4, Meta, and Vercel so accepted leads can be joined across systems. Final lead/conversion events fire only after Formspree returns an HTTP-success response; rejected or failed requests show the inline error state and are not counted as leads. A short in-flight lock also prevents rapid double-clicks from creating duplicate requests.
+
+Vercel receives `ad_landing_view`, `cta_click`, and accepted `lead_form_submit` custom events with the same non-PII campaign context. This supports a landing view → CTA → accepted lead funnel without sending names, email addresses, phone numbers, notes, or full ad click IDs to Vercel.
 
 The Infection Control office-compliance ad page uses `form_key=infection_control_office_compliance` and can use `NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT` once a dedicated Formspree form ID is available. Until then, it falls back to the shared Formspree endpoint while keeping the campaign payload separated.
 
 The TikTok Dental Assisting page uses `form_key=dental_assisting_tiktok` and can use `NEXT_PUBLIC_FORMSPREE_DENTAL_ASSISTING_TIKTOK_ENDPOINT` once a dedicated Formspree form ID is available. Until then, it falls back to the shared Formspree endpoint while keeping TikTok leads separated by campaign payload.
+
+### Formspree inboxes and reporting
+
+RDA currently uses three verified Formspree inboxes:
+
+- `xzdkgaeg`: shared registration/contact inbox and fallback for seven landing pages.
+- `mpqgyjjg`: dedicated Dental Assisting FB/IG ad inbox.
+- `mwvdrnrk`: dedicated Coronal Polish + Sealants FB/IG ad inbox.
+
+Operational reports must ingest all three IDs, merge them into one lead schema, and deduplicate by Formspree submission ID (or the website `submission_id` for new accepted leads). Reading only `xzdkgaeg` undercounts dedicated paid-ad leads. Each dedicated inbox should use its own scoped read-only Formspree API credential; do not reuse a credential that is authorized for only one form.
 
 ## Vercel Custom Events
 
@@ -50,18 +64,19 @@ The event layer avoids student-entered names, email addresses, phone numbers, no
 | `portal_click` | Resume portal entry points | `portal`, `location`, `destination` |
 | `file_download` | Public PDF downloads | `file_name`, `file_type`, `location` |
 | `outbound_click` | Other external links | `domain`, `location`, `destination` |
-| `lead_form_submit` | Valid sign-up, contact, or registration submit intent | `form_id`, `source`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `lead_form_submit` | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `source`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `lead_form_invalid` | Sign-up or registration submit blocked by missing required selections | `form_id`, `reason`, `selected_count` |
-| `cookie_accept` | Cookie banner acceptance | `location` |
 
 ## Google Analytics Events
 
 GA4 receives a mix of recommended events and named custom events. Recommended events use Google's prescribed parameters where they fit, then custom parameters add report context.
 
+`generate_lead` is configured as the GA4 key event. Do not also mark `lead_form_submit` as a key event, because the two events describe the same accepted request and would double-count conversions.
+
 | Event | Type | When it fires | Key parameters |
 | --- | --- | --- | --- |
 | `ad_landing_view` | Custom | `/lp/*` landing page view | `landing_page`, `campaign_intent`, `course_interest`, `content_category`, `page_path`, UTM fields |
-| `generate_lead` | GA4 recommended | Valid sign-up, contact, or registration submit intent | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `generate_lead` | GA4 recommended | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `select_content` | GA4 recommended | CTA, nav, portal, social, and file selections | `content_type`, `content_id`, `link_location`, `link_url` |
 | `file_download` | GA4 enhanced/recommended-style | Public PDF downloads | `file_name`, `file_extension`, `link_location`, `link_url` |
 | `cta_click` | Custom | Primary CTAs | `cta_id`, `cta_location`, `link_url` |
@@ -71,9 +86,8 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | `social_click` | Custom | Facebook, Instagram, or TikTok links | `method`, `social_platform`, `link_location`, `link_url` |
 | `portal_click` | Custom | Resume portal entry points | `portal`, `link_location`, `link_url` |
 | `outbound_click` | Custom | External links not otherwise categorized | `link_domain`, `link_location`, `link_url`, `outbound` |
-| `lead_form_submit` | Custom | Lead form submit intent paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `lead_form_submit` | Custom | Accepted lead paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `lead_form_invalid` | Custom | Submit blocked by required selections | `form_id`, `reason`, `selected_count` |
-| `cookie_accept` | Custom | Cookie banner acceptance | `consent_action`, `link_location` |
 
 For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.
 
@@ -86,7 +100,7 @@ Safe Meta standard events:
 | Event | When it fires | Safe parameters |
 | --- | --- | --- |
 | `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
-| `Lead` | Valid lead form submit intent | `content_name`, `content_category`, `source_page`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
+| `Lead` | Formspree accepts a valid lead request | `content_name`, `content_category`, `source_page`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name`, `content_category`, `link_location`, `page_path` |
 
 Do not send student-entered names, email addresses, phone numbers, notes, or message text to Meta events.

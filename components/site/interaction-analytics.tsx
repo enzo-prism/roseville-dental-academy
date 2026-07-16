@@ -5,6 +5,10 @@ import { useEffect } from "react";
 
 import { trackGaEvent } from "@/components/site/google-analytics";
 import { trackMetaPixelEvent } from "@/components/site/meta-pixel";
+import {
+  LEAD_FORM_SUCCESS_EVENT,
+  type LeadFormSuccessDetail,
+} from "@/components/site/use-lead-form";
 
 type AnalyticsValue = boolean | number | string | null | undefined;
 type AnalyticsProperties = Record<string, AnalyticsValue>;
@@ -138,7 +142,7 @@ function trackSafeGaEvent(eventName: string, properties?: AnalyticsProperties) {
   trackGaEvent(slugValue(eventName), safeProperties(properties));
 }
 
-function trackSiteEvent(eventName: string, properties?: AnalyticsProperties) {
+export function trackSiteEvent(eventName: string, properties?: AnalyticsProperties) {
   trackVercelEvent(slugValue(eventName), safeProperties(properties));
 }
 
@@ -154,13 +158,20 @@ function trackGaSelectContent(
   });
 }
 
-function trackGaCtaClick(ctaId: string, location: string, destination: string) {
+function trackGaCtaClick(
+  ctaId: string,
+  location: string,
+  destination: string,
+  properties: AnalyticsProperties = {},
+) {
   trackSafeGaEvent("cta_click", {
+    ...properties,
     cta_id: ctaId,
     cta_location: location,
     link_url: destination,
   });
   trackGaSelectContent("cta", ctaId, {
+    ...properties,
     link_location: location,
     link_url: destination,
   });
@@ -224,6 +235,24 @@ function trackClickEvent(target: Element) {
       trackGaSelectContent("portal_link", "resume_portal", {
         link_location: location,
         link_url: destination,
+      });
+      return;
+    }
+
+    if (link.matches("[data-rda-ad-landing-cta='true']")) {
+      const campaignIntent = link.getAttribute("data-rda-campaign-intent") || undefined;
+      const landingPage = link.getAttribute("data-rda-landing-page") || undefined;
+
+      trackSiteEvent("cta_click", {
+        campaign_intent: campaignIntent,
+        cta: "ad_landing_form",
+        destination,
+        landing_page: landingPage,
+        location: "ad_hero",
+      });
+      trackGaCtaClick("ad_landing_form", "ad_hero", destination, {
+        campaign_intent: campaignIntent,
+        landing_page: landingPage,
       });
       return;
     }
@@ -483,6 +512,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     course_interest: optionalCompactValue(getFormValue(formData, "course_interest")),
     landing_page: optionalCompactValue(getFormValue(formData, "landing_page")),
     page_path: optionalCompactValue(getFormValue(formData, "page_path")),
+    submission_id: optionalCompactValue(getFormValue(formData, "submission_id")),
     utm_campaign: optionalSlugValue(getFormValue(formData, "utm_campaign")),
     utm_content: optionalSlugValue(getFormValue(formData, "utm_content")),
     utm_medium: optionalSlugValue(getFormValue(formData, "utm_medium")),
@@ -556,12 +586,6 @@ function trackSubmitEvent(event: SubmitEvent) {
       return;
     }
 
-    trackLeadSubmit(formId, formData, interests);
-    return;
-  }
-
-  if (form.matches("[data-rda-contact-form='true']")) {
-    trackLeadSubmit("contact_form", formData);
     return;
   }
 
@@ -579,7 +603,47 @@ function trackSubmitEvent(event: SubmitEvent) {
       return;
     }
 
-    trackLeadSubmit("registration_request", formData, courses);
+  }
+}
+
+function trackLeadSuccessEvent(event: Event) {
+  if (!(event instanceof CustomEvent) || !(event.target instanceof HTMLFormElement)) {
+    return;
+  }
+
+  const form = event.target;
+  const detail = event.detail as LeadFormSuccessDetail | undefined;
+  const formData = new FormData(form);
+
+  if (detail?.submissionId) {
+    formData.set("submission_id", detail.submissionId);
+  }
+
+  if (form.matches("[data-rda-signup-form='true']")) {
+    const formId = form.getAttribute("data-rda-form-id") || "quick_sign_up";
+    const interests = getFormValues(formData, "Interested classes[]");
+
+    if (interests.length) {
+      trackLeadSubmit(formId, formData, interests);
+    }
+
+    return;
+  }
+
+  if (form.matches("[data-rda-contact-form='true']")) {
+    trackLeadSubmit("contact_form", formData);
+    return;
+  }
+
+  if (
+    form.matches("[data-rda-registration-form='true']") ||
+    formData.get("Form type") === "Digital registration request"
+  ) {
+    const courses = getFormValues(formData, "Interested courses[]");
+
+    if (courses.length) {
+      trackLeadSubmit("registration_request", formData, courses);
+    }
   }
 }
 
@@ -595,11 +659,17 @@ export function InteractionAnalytics() {
       trackSubmitEvent(event);
     }
 
+    function onLeadSuccess(event: Event) {
+      trackLeadSuccessEvent(event);
+    }
+
     document.addEventListener("click", onClick, true);
+    document.addEventListener(LEAD_FORM_SUCCESS_EVENT, onLeadSuccess);
     document.addEventListener("submit", onSubmit, true);
 
     return () => {
       document.removeEventListener("click", onClick, true);
+      document.removeEventListener(LEAD_FORM_SUCCESS_EVENT, onLeadSuccess);
       document.removeEventListener("submit", onSubmit, true);
     };
   }, []);

@@ -25,7 +25,7 @@ declare global {
 
 export function trackGaEvent(eventName: string, params: Record<string, unknown> = {}) {
   if (typeof window === "undefined" || typeof window.gtag !== "function") {
-    return;
+    return false;
   }
 
   window.gtag("event", eventName, {
@@ -33,6 +33,8 @@ export function trackGaEvent(eventName: string, params: Record<string, unknown> 
     page_path: window.location.pathname + window.location.search,
     ...params,
   });
+
+  return true;
 }
 
 function PageViewTracking({ measurementId }: { measurementId: string }) {

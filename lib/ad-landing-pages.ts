@@ -120,10 +120,42 @@ const coronalPolishDates = availableDates("coronal-polish");
 const coronalSealantsDates = availableDates("coronal-polish");
 const sealantsDates = availableDates("sealants");
 
-const infectionControlAdFormspreeEndpoint =
-  process.env.NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT?.trim() || undefined;
-const dentalAssistingTikTokFormspreeEndpoint =
-  process.env.NEXT_PUBLIC_FORMSPREE_DENTAL_ASSISTING_TIKTOK_ENDPOINT?.trim() || undefined;
+function optionalFormspreeEndpoint(name: string, value: string | undefined) {
+  const endpoint = value?.trim();
+
+  if (!endpoint) {
+    return undefined;
+  }
+
+  let url: URL;
+
+  try {
+    url = new URL(endpoint);
+  } catch {
+    throw new Error(`${name} must be a valid Formspree URL`);
+  }
+
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "formspree.io" ||
+    !/^\/f\/[a-z0-9]+$/i.test(url.pathname) ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error(`${name} must match https://formspree.io/f/<form-id>`);
+  }
+
+  return url.toString().replace(/\/$/, "");
+}
+
+const infectionControlAdFormspreeEndpoint = optionalFormspreeEndpoint(
+  "NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT",
+  process.env.NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT,
+);
+const dentalAssistingTikTokFormspreeEndpoint = optionalFormspreeEndpoint(
+  "NEXT_PUBLIC_FORMSPREE_DENTAL_ASSISTING_TIKTOK_ENDPOINT",
+  process.env.NEXT_PUBLIC_FORMSPREE_DENTAL_ASSISTING_TIKTOK_ENDPOINT,
+);
 
 export const adLandingPages: AdLandingPage[] = [
   {

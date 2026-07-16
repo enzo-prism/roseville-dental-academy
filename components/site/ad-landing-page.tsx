@@ -17,9 +17,11 @@ import {
 
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import { trackGaEvent } from "@/components/site/google-analytics";
+import { trackSiteEvent } from "@/components/site/interaction-analytics";
 import { trackMetaPixelEvent } from "@/components/site/meta-pixel";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import {
+  AD_CLICK_ID_FIELDS,
   UTM_FIELDS,
   useLeadAttribution,
   useLeadFormSubmit,
@@ -60,18 +62,33 @@ function trackLandingView(page: AdLandingPageData) {
   let attempts = 0;
   let retryTimer: number | undefined;
   let disposed = false;
+  let didTrackGa = false;
+  let didTrackMeta = false;
+  let didTrackVercel = false;
   const viewContext = getLandingViewContext(page);
-
-  trackGaEvent("ad_landing_view", viewContext);
 
   const send = () => {
     attempts += 1;
-    const didTrack = trackMetaPixelEvent("ViewContent", {
-      content_name: page.campaignIntent,
-      ...viewContext,
-    });
 
-    if (!didTrack && !disposed && attempts < 6) {
+    // The Analytics component initializes after child effects. Wait for the
+    // first retry so the event is not lost during that handoff.
+    if (!didTrackVercel && attempts > 1) {
+      trackSiteEvent("ad_landing_view", viewContext);
+      didTrackVercel = true;
+    }
+
+    if (!didTrackGa) {
+      didTrackGa = trackGaEvent("ad_landing_view", viewContext);
+    }
+
+    if (!didTrackMeta) {
+      didTrackMeta = trackMetaPixelEvent("ViewContent", {
+        content_name: page.campaignIntent,
+        ...viewContext,
+      });
+    }
+
+    if ((!didTrackGa || !didTrackMeta || !didTrackVercel) && !disposed && attempts < 10) {
       retryTimer = window.setTimeout(send, 500);
     }
   };
@@ -144,7 +161,14 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
           <p className="rda-ad-hero-intro">{page.hero.intro}</p>
           <div className="rda-ad-hero-actions">
             <Button asChild>
-              <a href="#ad-lead-form">{page.primaryCtaLabel}</a>
+              <a
+                data-rda-ad-landing-cta="true"
+                data-rda-campaign-intent={page.campaignIntent}
+                data-rda-landing-page={page.slug}
+                href="#ad-lead-form"
+              >
+                {page.primaryCtaLabel}
+              </a>
             </Button>
             <Button asChild variant="outline">
               <a href={`tel:${siteContact.phone.replace(/\D/g, "")}`}>
@@ -334,6 +358,14 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
               <input name="course_interest" type="hidden" value={interestsLabel} />
               {UTM_FIELDS.map((field) => (
                 <input key={field} name={field} type="hidden" value={attribution.utm[field]} />
+              ))}
+              {AD_CLICK_ID_FIELDS.map((field) => (
+                <input
+                  key={field}
+                  name={field}
+                  type="hidden"
+                  value={attribution.clickIds[field]}
+                />
               ))}
               {page.courseInterests.map((interest) => (
                 <input key={interest} name="Interested classes[]" type="hidden" value={interest} />

@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import {
+  AD_CLICK_ID_FIELDS,
   UTM_FIELDS,
   useLeadAttribution,
   useLeadFormSubmit,
@@ -158,6 +159,14 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
               <input name="referrer" type="hidden" value={attribution.referrer} />
               {UTM_FIELDS.map((field) => (
                 <input key={field} name={field} type="hidden" value={attribution.utm[field]} />
+              ))}
+              {AD_CLICK_ID_FIELDS.map((field) => (
+                <input
+                  key={field}
+                  name={field}
+                  type="hidden"
+                  value={attribution.clickIds[field]}
+                />
               ))}
               <FieldGroup>
                 <Field>
