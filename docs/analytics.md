@@ -45,11 +45,23 @@ The TikTok Dental Assisting page uses `form_key=dental_assisting_tiktok` and can
 
 RDA currently uses three verified Formspree inboxes:
 
-- `xzdkgaeg`: shared registration/contact inbox and fallback for seven landing pages.
-- `mpqgyjjg`: dedicated Dental Assisting FB/IG ad inbox.
-- `mwvdrnrk`: dedicated Coronal Polish + Sealants FB/IG ad inbox.
+| Landing route | Formspree ID | HTTP API state |
+| --- | --- | --- |
+| `/lp/dental-assisting-enroll` | `mpqgyjjg` | Enabled; dedicated read-only reporting credential verified |
+| `/lp/coronal-sealants-renewal` | `mwvdrnrk` | Enabled; dedicated read-only reporting credential verified |
+| All other `/lp/*` routes | `xzdkgaeg` | Shared registration/contact inbox and fallback |
 
-Operational reports must ingest all three IDs, merge them into one lead schema, and deduplicate by Formspree submission ID (or the website `submission_id` for new accepted leads). Reading only `xzdkgaeg` undercounts dedicated paid-ad leads. Each dedicated inbox should use its own scoped read-only Formspree API credential; do not reuse a credential that is authorized for only one form.
+Operational reports must ingest all three IDs, merge them into one lead schema, and deduplicate by Formspree submission ID (or the website `submission_id` for new accepted leads). Reading only `xzdkgaeg` undercounts dedicated paid-ad leads.
+
+The two dedicated HTTP APIs are enabled. Only scoped, read-only credentials are retained. They live outside this repository in the ignored local integration at `~/.openclaw-mac-telegram/workspace/integrations/formspree/`; no Formspree API credential belongs in this repository, a Vercel environment variable, client-side code, screenshots, or logs. A credential authorized for one form must not be reused for another form.
+
+Use the safe local reader to verify access without printing keys:
+
+```bash
+python3 ~/.openclaw-mac-telegram/workspace/integrations/formspree/formspree_reader.py list
+python3 ~/.openclaw-mac-telegram/workspace/integrations/formspree/formspree_reader.py fetch --hashid mpqgyjjg --all-pages --transport api
+python3 ~/.openclaw-mac-telegram/workspace/integrations/formspree/formspree_reader.py fetch --hashid mwvdrnrk --all-pages --transport api
+```
 
 ## Vercel Custom Events
 
@@ -112,3 +124,5 @@ Snapchat Pixel is no longer mounted. The June 17, 2026 RDA meeting discontinued 
 ## Validation
 
 Run `pnpm lint`, `pnpm build`, and `pnpm test:interactions` after changing event logic. `pnpm test:smoke` verifies the analytics and pixel script mounts.
+
+For production verification, do not create a fake lead. Open a landing page with test UTMs and a synthetic `fbclid`, confirm the hidden form fields and session persistence, and verify that GA4, Meta Pixel, and Vercel Analytics collectors are ready. Use the next real accepted lead to confirm Formspree arrival, GA4 Realtime plus the `generate_lead` key event, and the matching Vercel `ad_landing_view` → `cta_click` → `lead_form_submit` funnel.

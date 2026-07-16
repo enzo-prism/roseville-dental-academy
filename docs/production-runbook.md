@@ -65,6 +65,20 @@ PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pn
 PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pnpm test:parity-content
 ```
 
+For paid-media changes, also verify attribution and analytics readiness without submitting a fake production lead:
+
+1. Open each dedicated route with test `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, and a synthetic `fbclid`.
+2. Confirm the Dental Assisting form action is `https://formspree.io/f/mpqgyjjg` and the Coronal + Sealants action is `https://formspree.io/f/mwvdrnrk`.
+3. Confirm the attribution fields are present on the form and persist when the visitor continues to another RDA form in the same session.
+4. Confirm GA4 (`window.gtag`), Meta Pixel (`window.fbq`), and Vercel Web Analytics are loaded without browser errors.
+5. Check the new Vercel deployment logs for runtime errors.
+
+The interaction suite automates the non-submitting form-routing, attribution-persistence, and safe analytics-event checks:
+
+```bash
+PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pnpm test:interactions
+```
+
 ## Current Paid-Media Contract
 
 Active noindex conversion pages:
@@ -85,6 +99,19 @@ Active sitewide tracking:
 - GA4
 - Hotjar
 - Meta Pixel
+
+Accepted-lead funnel:
+
+- Vercel: `ad_landing_view` → `cta_click` → `lead_form_submit`
+- GA4: `generate_lead` is the key event; do not also mark `lead_form_submit` as a key event.
+- Meta: `ViewContent` on the landing page and `Lead` only after Formspree accepts the request.
+
+Formspree operations:
+
+- `mpqgyjjg`: `/lp/dental-assisting-enroll`; HTTP API enabled with a scoped read-only credential.
+- `mwvdrnrk`: `/lp/coronal-sealants-renewal`; HTTP API enabled with a scoped read-only credential.
+- `xzdkgaeg`: shared registration/contact and remaining landing-page fallback.
+- Reports must ingest all three inboxes. Keep API credentials outside the website repository, Vercel, browser code, screenshots, and logs.
 
 Retired tracking:
 

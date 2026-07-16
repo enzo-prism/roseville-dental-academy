@@ -139,6 +139,13 @@ Paid social landing pages live under `/lp/*` and are intentionally noindex:
 Use UTMs for ad attribution, for example:
 `/lp/dental-assisting-student-story?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`.
 
+Current dedicated Meta landing-page examples:
+
+- `/lp/dental-assisting-enroll?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_enrollment&utm_content=creative_01`
+- `/lp/coronal-sealants-renewal?utm_source=facebook&utm_medium=paid_social&utm_campaign=coronal_sealants_renewal&utm_content=creative_01`
+
+These routes submit to dedicated Formspree inboxes and capture UTMs plus supported ad click IDs such as `fbclid`. See [docs/analytics.md](docs/analytics.md) for the route-to-inbox map and the local-only, read-only reporting workflow.
+
 Use `/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01` for TikTok Dental Assisting Program ads.
 
 Important env vars:
@@ -150,6 +157,10 @@ Important env vars:
 - `NEXT_PUBLIC_META_PIXEL_ID`: optional override for the Meta Pixel ID.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional override for the GA4 measurement ID.
 - `NEXT_PUBLIC_HOTJAR_SITE_ID`: optional override for the Hotjar site ID.
+- `NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT`: optional dedicated endpoint for the Infection Control office-compliance landing page; otherwise it uses the shared inbox.
+- `NEXT_PUBLIC_FORMSPREE_DENTAL_ASSISTING_TIKTOK_ENDPOINT`: optional dedicated endpoint for the Dental Assisting TikTok landing page; otherwise it uses the shared inbox.
+
+Formspree read-only reporting credentials are operational secrets, not website environment variables. Keep them outside this repository and Vercel.
 
 ## CI And Preview Verification
 
