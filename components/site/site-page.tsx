@@ -671,6 +671,8 @@ function ContactSection() {
                 <input type="hidden" name="utm_source" value="" />
                 <input type="hidden" name="utm_medium" value="" />
                 <input type="hidden" name="utm_campaign" value="" />
+                <input type="hidden" name="utm_id" value="" />
+                <input type="hidden" name="utm_source_platform" value="" />
                 <input type="hidden" name="utm_term" value="" />
                 <input type="hidden" name="utm_content" value="" />
                 <div className="grid gap-4 sm:grid-cols-2">

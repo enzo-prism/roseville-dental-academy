@@ -515,9 +515,12 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     submission_id: optionalCompactValue(getFormValue(formData, "submission_id")),
     utm_campaign: optionalSlugValue(getFormValue(formData, "utm_campaign")),
     utm_content: optionalSlugValue(getFormValue(formData, "utm_content")),
+    utm_id: optionalSlugValue(getFormValue(formData, "utm_id")),
     utm_medium: optionalSlugValue(getFormValue(formData, "utm_medium")),
     utm_source: optionalSlugValue(getFormValue(formData, "utm_source")),
+    utm_source_platform: optionalSlugValue(getFormValue(formData, "utm_source_platform")),
     utm_term: optionalSlugValue(getFormValue(formData, "utm_term")),
+    renewal_focus: optionalSlugValue(getFormValue(formData, "Renewal focus")),
   };
 
   trackSiteEvent("lead_form_submit", {

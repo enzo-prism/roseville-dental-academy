@@ -6,6 +6,8 @@ export const UTM_FIELDS = [
   "utm_source",
   "utm_medium",
   "utm_campaign",
+  "utm_id",
+  "utm_source_platform",
   "utm_term",
   "utm_content",
 ] as const;

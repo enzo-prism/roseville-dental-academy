@@ -50,7 +50,11 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {slots.has("photos") ? <StableGallery full={route.route === "/photos"} /> : null}
       {route.route === "/contact" && slots.has("contact") ? <LiveContactSection /> : null}
       {slots.has("signup") && route.route !== "/" ? (
-        <LiveSignupSection compact={route.route !== "/"} sourceLabel={route.title} />
+        <LiveSignupSection
+          compact={route.route !== "/"}
+          pagePath={route.route}
+          sourceLabel={route.title}
+        />
       ) : null}
       {route.route !== "/contact" && slots.has("contact") ? (
         <LiveContactSection compact={route.route !== "/contact"} />

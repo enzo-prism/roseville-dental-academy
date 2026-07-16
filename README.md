@@ -137,12 +137,12 @@ Paid social landing pages live under `/lp/*` and are intentionally noindex:
 - `/lp/pit-fissure-sealants-rda`
 
 Use UTMs for ad attribution, for example:
-`/lp/dental-assisting-student-story?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`.
+`/lp/dental-assisting-student-story?utm_source={{site_source_name}}&utm_medium=paid&utm_campaign=dental_assisting_testimonial&utm_id={{campaign.id}}&utm_source_platform=meta_ads&utm_content=student_video_{{ad.id}}`.
 
 Current dedicated Meta landing-page examples:
 
-- `/lp/dental-assisting-enroll?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_enrollment&utm_content=creative_01`
-- `/lp/coronal-sealants-renewal?utm_source=facebook&utm_medium=paid_social&utm_campaign=coronal_sealants_renewal&utm_content=creative_01`
+- `/lp/dental-assisting-enroll?utm_source={{site_source_name}}&utm_medium=paid&utm_campaign=dental_assisting_enrollment&utm_id={{campaign.id}}&utm_source_platform=meta_ads&utm_content=student_story_{{ad.id}}`
+- `/lp/coronal-sealants-renewal?utm_source={{site_source_name}}&utm_medium=paid&utm_campaign=coronal_sealants_renewal&utm_id={{campaign.id}}&utm_source_platform=meta_ads&utm_content=renewal_ready_original_copy_{{ad.id}}`
 
 These routes submit to dedicated Formspree inboxes and capture UTMs plus supported ad click IDs such as `fbclid`. See [docs/analytics.md](docs/analytics.md) for the route-to-inbox map and the local-only, read-only reporting workflow.
 

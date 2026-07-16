@@ -1301,9 +1301,10 @@ test.describe("live-style interaction flows", () => {
       page,
     }) => {
       const landingPage =
-        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages.find((candidate) => candidate.slug === "coronal-sealants-renewal") ??
         adLandingPages[0];
-      const utmCampaign = "dental_assisting_enroll";
+      const utmCampaign = "coronal_sealants_renewal";
+      const utmId = "meta_campaign_123";
       let formspreeRequestBody = "";
 
       await page.route("https://formspree.io/f/**", async (route) => {
@@ -1348,7 +1349,7 @@ test.describe("live-style interaction flows", () => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(
         page,
-        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=${utmCampaign}&utm_content=student_video_01&fbclid=meta_click_123&ttclid=tiktok_click_456`,
+        `${landingPage.path}?utm_source=fb&utm_medium=paid&utm_campaign=${utmCampaign}&utm_id=${utmId}&utm_source_platform=meta_ads&utm_content=renewal_ready_test&fbclid=meta_click_123&ttclid=tiktok_click_456`,
       );
 
       const form = page.locator('form[data-rda-landing-form="true"]');
@@ -1360,12 +1361,14 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('input[name="course_interest"]')).toHaveValue(
         landingPage.courseInterests.join(", "),
       );
-      await expect(form.locator('input[name="utm_source"]')).toHaveValue("facebook");
-      await expect(form.locator('input[name="utm_medium"]')).toHaveValue("paid_social");
+      await expect(form.locator('input[name="utm_source"]')).toHaveValue("fb");
+      await expect(form.locator('input[name="utm_medium"]')).toHaveValue("paid");
       await expect(form.locator('input[name="utm_campaign"]')).toHaveValue(
         utmCampaign,
       );
-      await expect(form.locator('input[name="utm_content"]')).toHaveValue("student_video_01");
+      await expect(form.locator('input[name="utm_id"]')).toHaveValue(utmId);
+      await expect(form.locator('input[name="utm_source_platform"]')).toHaveValue("meta_ads");
+      await expect(form.locator('input[name="utm_content"]')).toHaveValue("renewal_ready_test");
       await expect(form.locator('input[name="fbclid"]')).toHaveValue("meta_click_123");
       await expect(form.locator('input[name="ttclid"]')).toHaveValue("tiktok_click_456");
 
@@ -1421,9 +1424,11 @@ test.describe("live-style interaction flows", () => {
         landing_page: landingPage.slug,
         page_path: landingPage.path,
         utm_campaign: utmCampaign,
-        utm_content: "student_video_01",
-        utm_medium: "paid_social",
-        utm_source: "facebook",
+        utm_content: "renewal_ready_test",
+        utm_id: utmId,
+        utm_medium: "paid",
+        utm_source: "fb",
+        utm_source_platform: "meta_ads",
       });
       expect(vercelViewEvent).toMatchObject({
         campaign_intent: landingPage.campaignIntent,
@@ -1431,15 +1436,20 @@ test.describe("live-style interaction flows", () => {
         landing_page: landingPage.slug,
         page_path: landingPage.path,
         utm_campaign: utmCampaign,
-        utm_content: "student_video_01",
-        utm_medium: "paid_social",
-        utm_source: "facebook",
+        utm_content: "renewal_ready_test",
+        utm_id: utmId,
+        utm_medium: "paid",
+        utm_source: "fb",
+        utm_source_platform: "meta_ads",
       });
 
       await form.locator('input[name="Name"]').fill("Private Test Student");
       await form.locator('input[name="_replyto"]').fill("private-test@example.com");
       await form.locator('input[name="Phone"]').fill("916-555-1234");
       await form.locator('textarea[name="Notes"]').fill("Private note should not be tracked");
+      await form
+        .locator('select[name="Renewal focus"]')
+        .selectOption("Pit and Fissure Sealants");
       await form.locator('input[name="Consent to contact"]').check();
 
       await page.evaluate(async () => {
@@ -1513,9 +1523,15 @@ test.describe("live-style interaction flows", () => {
         landing_page: landingPage.slug,
         page_path: landingPage.path,
         utm_campaign: utmCampaign,
-        utm_content: "student_video_01",
-        utm_medium: "paid_social",
-        utm_source: "facebook",
+        utm_content: "renewal_ready_test",
+        utm_id: utmId,
+        utm_medium: "paid",
+        utm_source: "fb",
+        utm_source_platform: "meta_ads",
+      };
+      const expectedLeadAttribution = {
+        ...expectedAttribution,
+        renewal_focus: "pit_and_fissure_sealants",
       };
       const trackedPayload = JSON.stringify({
         contactEvent,
@@ -1532,10 +1548,10 @@ test.describe("live-style interaction flows", () => {
         content_name: landingPage.campaignIntent,
       });
       expect(leadEvent).toMatchObject({
-        ...expectedAttribution,
+        ...expectedLeadAttribution,
         content_category: "ad_landing_lead",
         content_name: "Ad Landing Lead",
-        selected_count: 1,
+        selected_count: landingPage.courseInterests.length,
       });
       expect(contactEvent).toMatchObject({
         content_category: "contact",
@@ -1550,20 +1566,20 @@ test.describe("live-style interaction flows", () => {
         form_id: "ad_landing_lead",
         lead_source: "website_ad_landing_lead",
         lead_type: "ad_landing_lead",
-        selected_count: 1,
-        ...expectedAttribution,
+        selected_count: landingPage.courseInterests.length,
+        ...expectedLeadAttribution,
       });
       expect(gaSubmitEvent).toMatchObject({
         form_id: "ad_landing_lead",
         lead_source: "website_ad_landing_lead",
         lead_type: "ad_landing_lead",
-        selected_count: 1,
-        ...expectedAttribution,
+        selected_count: landingPage.courseInterests.length,
+        ...expectedLeadAttribution,
       });
       expect(vercelLeadEvent).toMatchObject({
         form_id: "ad_landing_lead",
-        selected_count: 1,
-        ...expectedAttribution,
+        selected_count: landingPage.courseInterests.length,
+        ...expectedLeadAttribution,
       });
       expect(vercelEventNames).toEqual(
         expect.arrayContaining(["contact_action", "cta_click", "lead_form_submit"]),
@@ -1579,6 +1595,9 @@ test.describe("live-style interaction flows", () => {
       expect(submissionIds.every((submissionId) => submissionId === submissionIds[0])).toBe(true);
       expect(formspreeRequestBody).toContain("meta_click_123");
       expect(formspreeRequestBody).toContain("tiktok_click_456");
+      expect(formspreeRequestBody).toContain(utmId);
+      expect(formspreeRequestBody).toContain("meta_ads");
+      expect(formspreeRequestBody).toContain("Pit and Fissure Sealants");
       expect(formspreeRequestBody).toContain(String(submissionIds[0]));
       expect(trackedPayload).not.toContain("private-test@example.com");
       expect(trackedPayload).not.toContain("916-555-1234");

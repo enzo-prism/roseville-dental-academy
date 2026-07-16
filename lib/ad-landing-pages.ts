@@ -117,8 +117,11 @@ function firstAvailableDate(courseId: CourseScheduleId) {
 const dentalAssistingDates = availableDates("dental-assisting-program");
 const infectionControlDates = availableDates("infection-control");
 const coronalPolishDates = availableDates("coronal-polish");
-const coronalSealantsDates = availableDates("coronal-polish");
 const sealantsDates = availableDates("sealants");
+const availableSealantsDateSet = new Set(sealantsDates);
+const coronalSealantsDates = coronalPolishDates.filter((date) =>
+  availableSealantsDateSet.has(date),
+);
 
 function optionalFormspreeEndpoint(name: string, value: string | undefined) {
   const endpoint = value?.trim();
@@ -467,7 +470,7 @@ export const adLandingPages: AdLandingPage[] = [
         "Roseville Dental Academy student practicing infection control in a dental operatory.",
       imageSrc: "/assets/live/courses/rda-june-2026/infection-control-operatory.jpg",
       intro:
-        "If your office is reviewing personnel records, confirm whether each assistant has the required 8-hour Infection Control course. Roseville Dental Academy can help dentists and office managers check the January 1, 2025 requirement, prerequisites, and upcoming IC189 dates.",
+        "If your office is reviewing personnel records, confirm whether each unlicensed dental assistant has the required 8-hour Infection Control course before performing duties involving potential exposure to infectious materials. Roseville Dental Academy can help dentists and office managers check the January 1, 2025 requirement, prerequisites, and upcoming IC189 dates.",
       title: "Check your office's Infection Control training records",
     },
     leadSelects: [
@@ -505,12 +508,12 @@ export const adLandingPages: AdLandingPage[] = [
       },
     ],
     metaDescription:
-      "Dentists and office managers can ask Roseville Dental Academy about the required 8-hour IC189 Infection Control course, January 1, 2025 compliance, personnel records, and upcoming dates.",
+      "Dentists and office managers can ask Roseville Dental Academy about the required 8-hour IC189 Infection Control course for unlicensed dental assistants, January 1, 2025 compliance, personnel records, and upcoming dates.",
     metaTitle: "Infection Control Office Compliance | Roseville Dental Academy",
     path: "/lp/infection-control-office-compliance",
     primaryCtaLabel: "Check office requirements",
     proofPoints: [
-      "The page is built for dentists and office managers reviewing assistant personnel records.",
+      "The page is built for dentists and office managers reviewing unlicensed dental assistant personnel records.",
       "It highlights the January 1, 2025 Infection Control requirement and IC189 course path.",
       "The form captures office role, compliance-check reason, class interest, UTM fields, and this campaign's unique form key.",
     ],
@@ -544,7 +547,7 @@ export const adLandingPages: AdLandingPage[] = [
       {
         title: "Best for",
         items: [
-          "Dentists and practice owners reviewing whether assistants have current Infection Control records.",
+          "Dentists and practice owners reviewing whether unlicensed dental assistants have current Infection Control records.",
           "Office managers checking new-hire onboarding files before exposure to potentially infectious materials.",
           "Teams that want one clear call or email to confirm prerequisites, dates, and the right next step.",
         ],

@@ -480,8 +480,10 @@ for (const landingPage of adLandingPages) {
           wbraid: Boolean(form?.querySelector<HTMLInputElement>('input[name="wbraid"]')),
           utmCampaign: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_campaign"]')),
           utmContent: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_content"]')),
+          utmId: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_id"]')),
           utmMedium: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_medium"]')),
           utmSource: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_source"]')),
+          utmSourcePlatform: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_source_platform"]')),
           utmTerm: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_term"]')),
         },
         proofGalleryImageCount: document.querySelectorAll(
@@ -567,6 +569,8 @@ for (const landingPage of adLandingPages) {
       !result.hiddenFields.utmSource ||
       !result.hiddenFields.utmMedium ||
       !result.hiddenFields.utmCampaign ||
+      !result.hiddenFields.utmId ||
+      !result.hiddenFields.utmSourcePlatform ||
       !result.hiddenFields.utmTerm ||
       !result.hiddenFields.utmContent
     ) {

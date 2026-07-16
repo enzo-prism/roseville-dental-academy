@@ -26,12 +26,27 @@ Current paid social ad landing pages are noindex conversion routes, not SEO page
 
 Use readable landing-page paths and UTMs for campaign detail:
 
-`/lp/dental-assisting-student-story?utm_source=facebook&utm_medium=paid_social&utm_campaign=dental_assisting_testimonial&utm_content=student_video_01`
+`/lp/dental-assisting-student-story?utm_source={{site_source_name}}&utm_medium=paid&utm_campaign=dental_assisting_testimonial&utm_id={{campaign.id}}&utm_source_platform=meta_ads&utm_content=student_video_{{ad.id}}`
+
+### Current Meta ad routing
+
+The editable Roseville Dental Academy boosts audited on July 16, 2026 use this contract:
+
+| Meta ad | State at audit | Website route | `utm_campaign` | `utm_content` prefix |
+| --- | --- | --- | --- | --- |
+| July 16 Coronal + Sealants renewal | Active | `/lp/coronal-sealants-renewal` | `coronal_sealants_renewal` | `renewal_ready_original_copy_` |
+| July 9 Infection Control office compliance | Active | `/lp/infection-control-office-compliance` | `infection_control_office_compliance` | `office_compliance_ic189_` |
+| June 14 Dental Assisting enrollment | Active | `/lp/dental-assisting-enroll` | `dental_assisting_enrollment` | `student_story_` |
+| May 12 Sealants for existing RDAs | Paused | `/sealants` | `coronal_sealants_enrollment` | `existing_rda_` |
+
+Append `{{ad.id}}` to each `utm_content` prefix. Every Meta destination also uses `utm_source={{site_source_name}}`, `utm_medium=paid`, `utm_id={{campaign.id}}`, and `utm_source_platform=meta_ads`. Keep `utm_source` dynamic so Facebook and Instagram remain distinguishable while `utm_source_platform` supplies one stable Meta rollup.
+
+The active May 13 legacy boosted post is an exception: Meta controls its destination through the original post and does not expose the link in the boost editor. Do not report that legacy boost as UTM-complete. If it needs new attribution, recreate it as a new ad with the current contract instead of changing the original post in place.
 
 TikTok Dental Assisting ads should point to:
 `/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01`
 
-Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, a query-stripped external `referrer`, and the standard UTM fields. They also capture `dclid`, `fbclid`, `gbraid`, `gclid`, `msclkid`, `ttclid`, and `wbraid` for Formspree/offline attribution. The latest complete paid-touch values persist for the current browser session so a visitor can continue to another RDA form without losing the ad context; a later paid visit replaces the earlier campaign as one complete set rather than mixing fields. Ad click IDs are intentionally not copied into GA4, Meta, or Vercel custom-event properties.
+Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, a query-stripped external `referrer`, and the standard UTM fields, including `utm_id` and `utm_source_platform`. They also capture `dclid`, `fbclid`, `gbraid`, `gclid`, `msclkid`, `ttclid`, and `wbraid` for Formspree/offline attribution. The latest complete paid-touch values persist for the current browser session so a visitor can continue to another RDA form without losing the ad context; a later paid visit replaces the earlier campaign as one complete set rather than mixing fields. Ad click IDs are intentionally not copied into GA4, Meta, or Vercel custom-event properties.
 
 Every accepted AJAX form request receives a non-PII `submission_id`. The same ID is sent to Formspree, GA4, Meta, and Vercel so accepted leads can be joined across systems. Final lead/conversion events fire only after Formspree returns an HTTP-success response; rejected or failed requests show the inline error state and are not counted as leads. A short in-flight lock also prevents rapid double-clicks from creating duplicate requests.
 
@@ -101,7 +116,7 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | `lead_form_submit` | Custom | Accepted lead paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `lead_form_invalid` | Custom | Submit blocked by required selections | `form_id`, `reason`, `selected_count` |
 
-For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.
+For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `renewal_focus`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_id`, `utm_source_platform`, `utm_content`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.
 
 ## Meta Pixel
 
