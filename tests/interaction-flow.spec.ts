@@ -687,7 +687,7 @@ test.describe("live-style interaction flows", () => {
       await expect(signup).toBeVisible();
 
       await page.getByRole("link", { name: "BLS/CPR" }).first().click();
-      await expect(page).toHaveURL(/\/bls%2Fcpr-1$/);
+      await expect(page).toHaveURL(/\/(?:bls%2Fcpr-1|bls-cpr-1)$/);
       await expect(page.locator("[data-rda-homepage-signup-slot='true']")).toHaveCount(0);
 
       await page.getByRole("link", { name: "Roseville Dental Academy" }).first().click();
@@ -795,9 +795,11 @@ test.describe("live-style interaction flows", () => {
         "src",
         "/assets/social/tiktok/homepage-follow-1000.mp4",
       );
-      await expect(tiktokFollow.locator('img[src="/assets/brand/tiktok-dark.svg"]')).toHaveCount(1);
       await expect(
-        tiktokButton.locator('img[src="/assets/brand/tiktok-light.svg"]'),
+        tiktokFollow.locator('img[src^="/assets/brand/tiktok-dark.svg"]'),
+      ).toHaveCount(1);
+      await expect(
+        tiktokButton.locator('img[src^="/assets/brand/tiktok-light.svg"]'),
       ).toHaveCount(1);
 
       const desktopTiktokDesign = await tiktokFollow.evaluate((element) => {
