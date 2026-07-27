@@ -63,10 +63,10 @@ RDA currently uses three verified Formspree inboxes:
 | Landing route | Formspree ID | HTTP API state |
 | --- | --- | --- |
 | `/lp/dental-assisting-enroll` | `mpqgyjjg` | Enabled; dedicated read-only reporting credential verified |
-| `/lp/coronal-sealants-renewal` | `mwvdrnrk` | Enabled; dedicated read-only reporting credential verified |
+| `/lp/coronal-sealants-renewal` | `xzdkgaeg` with `form_key=mwvdrnrk` | Shared live Google Sheets inbox; dedicated ID retained for attribution |
 | All other `/lp/*` routes | `xzdkgaeg` | Shared registration/contact inbox and fallback |
 
-Operational reports must ingest all three IDs, merge them into one lead schema, and deduplicate by Formspree submission ID (or the website `submission_id` for new accepted leads). Reading only `xzdkgaeg` undercounts dedicated paid-ad leads.
+Operational reports must ingest `xzdkgaeg` and `mpqgyjjg`, merge them into one lead schema, and deduplicate by the website `submission_id`. Historical records from `mwvdrnrk` remain available through its read-only API, while new coronal/sealants leads arrive in `xzdkgaeg` tagged with `form_key=mwvdrnrk`.
 
 The two dedicated HTTP APIs are enabled. Only scoped, read-only credentials are retained. They live outside this repository in the ignored local integration at `~/.openclaw-mac-telegram/workspace/integrations/formspree/`; no Formspree API credential belongs in this repository, a Vercel environment variable, client-side code, screenshots, or logs. A credential authorized for one form must not be reused for another form.
 

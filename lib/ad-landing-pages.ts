@@ -598,6 +598,7 @@ export const adLandingPages: AdLandingPage[] = [
       { label: "Tuition", value: "$2,500" },
     ],
     formspreeEndpoint: "https://formspree.io/f/mpqgyjjg",
+    formKey: "mpqgyjjg",
     gallery: [
       {
         alt: "Recent Roseville Dental Academy students holding completion certificates",
@@ -839,7 +840,10 @@ export const adLandingPages: AdLandingPage[] = [
       { label: "Combined price", value: "$1,050" },
       { label: "Next date", value: firstAvailableDate("coronal-polish") },
     ],
-    formspreeEndpoint: "https://formspree.io/f/mwvdrnrk",
+    // The shared inbox has the verified live Google Sheets connection. Keep the
+    // original dedicated form ID as form_key so CRM attribution remains exact.
+    formspreeEndpoint: "https://formspree.io/f/xzdkgaeg",
+    formKey: "mwvdrnrk",
     gallery: [
       {
         alt: "Student practicing coronal polish technique in a Roseville Dental Academy operatory",

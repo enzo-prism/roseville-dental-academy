@@ -68,7 +68,7 @@ PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pn
 For paid-media changes, also verify attribution and analytics readiness without submitting a fake production lead:
 
 1. Open each dedicated route with test `utm_source`, `utm_medium`, `utm_campaign`, `utm_id`, `utm_source_platform`, `utm_content`, and a synthetic `fbclid`.
-2. Confirm the Dental Assisting form action is `https://formspree.io/f/mpqgyjjg` and the Coronal + Sealants action is `https://formspree.io/f/mwvdrnrk`.
+2. Confirm the Dental Assisting form action is `https://formspree.io/f/mpqgyjjg`; confirm the Coronal + Sealants action is `https://formspree.io/f/xzdkgaeg` with hidden `form_key=mwvdrnrk`.
 3. Confirm the attribution fields are present on the form and persist when the visitor continues to another RDA form in the same session.
 4. Confirm GA4 (`window.gtag`), Meta Pixel (`window.fbq`), and Vercel Web Analytics are loaded without browser errors.
 5. Check the new Vercel deployment logs for runtime errors.
@@ -110,10 +110,10 @@ Accepted-lead funnel:
 
 Formspree operations:
 
-- `mpqgyjjg`: `/lp/dental-assisting-enroll`; HTTP API enabled with a scoped read-only credential.
-- `mwvdrnrk`: `/lp/coronal-sealants-renewal`; HTTP API enabled with a scoped read-only credential.
-- `xzdkgaeg`: shared registration/contact and remaining landing-page fallback.
-- Reports must ingest all three inboxes. Keep API credentials outside the website repository, Vercel, browser code, screenshots, and logs.
+- `mpqgyjjg`: `/lp/dental-assisting-enroll`; dedicated inbox with live Google Sheets delivery.
+- `xzdkgaeg`: shared registration/contact inbox and `/lp/coronal-sealants-renewal`; coronal submissions keep `form_key=mwvdrnrk` for exact attribution.
+- `mwvdrnrk`: historical coronal/sealants inbox retained for reconciliation; new submissions use `xzdkgaeg`.
+- Reports ingest the two live Google Sheets feeds. Historical `mwvdrnrk` records can be reconciled separately. Keep credentials outside the website repository, Vercel, browser code, screenshots, and logs.
 
 Retired tracking:
 
