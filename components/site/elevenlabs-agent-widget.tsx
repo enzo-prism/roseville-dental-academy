@@ -144,7 +144,7 @@ export function ElevenLabsAgentWidget({
 }: ElevenLabsAgentWidgetProps) {
   const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID?.trim() || DEFAULT_AGENT_ID;
   const widgetRef = useRef<HTMLElement | null>(null);
-  const hasSyncedExpandedStateRef = useRef(false);
+  const lastObservedExpandedRef = useRef<boolean | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isControlOpen, setIsControlOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -185,20 +185,18 @@ export function ElevenLabsAgentWidget({
       setIsControlOpen(nextControlOpen);
       setIsMobileMinimized(nextMinimized);
 
-      setIsExpanded((currentExpanded) => {
-        if (!hasSyncedExpandedStateRef.current) {
-          hasSyncedExpandedStateRef.current = true;
-          return nextExpanded;
-        }
+      // Track transitions outside the setState updater — React may invoke
+      // updater functions more than once, which double-fires the GA event.
+      const previousExpanded = lastObservedExpandedRef.current;
+      lastObservedExpandedRef.current = nextExpanded;
 
-        if (currentExpanded !== nextExpanded) {
-          trackGaEvent(nextExpanded ? "elevenlabs_widget_expand" : "elevenlabs_widget_collapse", {
-            agent_id: agentId,
-          });
-        }
+      if (previousExpanded !== null && previousExpanded !== nextExpanded) {
+        trackGaEvent(nextExpanded ? "elevenlabs_widget_expand" : "elevenlabs_widget_collapse", {
+          agent_id: agentId,
+        });
+      }
 
-        return nextExpanded;
-      });
+      setIsExpanded(nextExpanded);
     };
 
     const scheduleSync = () => {

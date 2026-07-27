@@ -8,6 +8,7 @@ export const metadata: Metadata = buildPageMetadata({
   title: "404 Not Found | Roseville Dental Academy",
   description: "The page you are looking for was not found.",
   noindex: true,
+  omitCanonical: true,
 });
 
 export default async function NotFound() {

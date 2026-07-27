@@ -40,6 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: "404 Not Found | Roseville Dental Academy",
       description: "The page you are looking for was not found.",
       noindex: true,
+      omitCanonical: true,
     });
   }
 

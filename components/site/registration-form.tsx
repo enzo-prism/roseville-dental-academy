@@ -69,19 +69,29 @@ export function RegistrationForm() {
   const { status, submitLeadForm } = useLeadFormSubmit();
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
 
+  const appliedCourseParamRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
+    // Apply each ?course= prefill once. Re-running on selection changes would
+    // re-check a course the user deliberately unchecked.
+    if (appliedCourseParamRef.current === courseParamKey) {
+      return;
+    }
+
+    appliedCourseParamRef.current = courseParamKey;
+
     const requestedCourses = searchParams
       .getAll("course")
       .filter((course) =>
         registrationCourseOptions.some((option) => option.key === course),
       );
 
-    if (!requestedCourses.length || selectedCourses.length) {
+    if (!requestedCourses.length) {
       return;
     }
 
-    setSelectedCourses(requestedCourses);
-  }, [courseParamKey, searchParams, selectedCourses.length]);
+    setSelectedCourses((current) => (current.length ? current : requestedCourses));
+  }, [courseParamKey, searchParams]);
 
   if (status === "success") {
     return (

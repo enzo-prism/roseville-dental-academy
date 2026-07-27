@@ -121,7 +121,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $85.",
       "Duration 3 hours.",
       "Format Instructor-led course with classroom instruction, live skills practice, skills testing, and a written exam. The academy also notes a blended HeartCode BLS option with online learning followed by an in-person skills evaluation.",
-      `${classDateSentence("bls-cpr-1")} The June 6, 2026 class is full; July 18, 2026 is the next available date.`,
+      `${classDateSentence("bls-cpr-1")} The June 6 and July 18, 2026 classes are full; August 1, 2026 is the next available date.`,
       "Best next step Call 916-888-9821 to schedule and register.",
     ].join(" "),
   },

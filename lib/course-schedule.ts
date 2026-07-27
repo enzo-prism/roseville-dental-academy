@@ -38,7 +38,7 @@ export const courseScheduleCourseDetails: Record<
   }
 > = {
   "bls-cpr-1": {
-    href: "/bls%2Fcpr-1",
+    href: "/bls-cpr-1",
     label: "BLS / CPR",
     shortLabel: "BLS",
   },
@@ -107,9 +107,9 @@ const julyTwentyFiveCourses = [
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
-// July 18, 2026: X-rays and Infection Control are fully booked; BLS remains available.
+// July 18, 2026: the class date has passed — BLS, X-rays, and Infection Control are closed.
 const julyEighteenCourses = [
-  course("bls-cpr-1"),
+  course("bls-cpr-1", "full"),
   course("radiation-safety", "full"),
   course("infection-control", "full"),
 ] satisfies CourseScheduleCourse[];

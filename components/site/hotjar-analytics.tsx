@@ -5,12 +5,19 @@ import Script from "next/script";
 const DEFAULT_HOTJAR_SITE_ID = "6703871";
 const DEFAULT_HOTJAR_VERSION = "6";
 
+function numericEnvOrDefault(value: string | undefined, fallback: string) {
+  // A malformed override would inject NaN into the inline snippet
+  // (hjid:NaN, src .../hotjar-NaN.js); fall back to the default instead.
+  const trimmed = value?.trim();
+  return trimmed && /^\d+$/.test(trimmed) ? trimmed : fallback;
+}
+
 function getHotjarSiteId() {
-  return process.env.NEXT_PUBLIC_HOTJAR_SITE_ID?.trim() || DEFAULT_HOTJAR_SITE_ID;
+  return numericEnvOrDefault(process.env.NEXT_PUBLIC_HOTJAR_SITE_ID, DEFAULT_HOTJAR_SITE_ID);
 }
 
 function getHotjarVersion() {
-  return process.env.NEXT_PUBLIC_HOTJAR_VERSION?.trim() || DEFAULT_HOTJAR_VERSION;
+  return numericEnvOrDefault(process.env.NEXT_PUBLIC_HOTJAR_VERSION, DEFAULT_HOTJAR_VERSION);
 }
 
 export function HotjarAnalytics() {

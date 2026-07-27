@@ -15,6 +15,9 @@ export type BuildPageMetadataInput = {
   title?: string;
   description?: string;
   noindex?: boolean;
+  // 404-style pages have no canonical URL of their own; without this flag the
+  // "/" fallback would emit canonical + og:url pointing at the homepage.
+  omitCanonical?: boolean;
   image?: string;
   imageAlt?: string;
   type?: "website" | "article" | "profile";
@@ -72,9 +75,11 @@ export function buildPageMetadata(input: BuildPageMetadataInput = {}): Metadata 
     applicationName: SITE_NAME,
     title,
     description,
-    alternates: {
-      canonical: canonicalPath,
-    },
+    alternates: input.omitCanonical
+      ? undefined
+      : {
+          canonical: canonicalPath,
+        },
     robots: {
       index: !noindex,
       follow: !noindex,
@@ -93,7 +98,7 @@ export function buildPageMetadata(input: BuildPageMetadataInput = {}): Metadata 
     },
     openGraph: {
       type: ogType,
-      url,
+      url: input.omitCanonical ? undefined : url,
       siteName: SITE_NAME,
       title,
       description,

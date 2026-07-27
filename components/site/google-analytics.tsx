@@ -43,13 +43,20 @@ function PageViewTracking({ measurementId }: { measurementId: string }) {
   const hasSkippedInitialPageView = useRef(false);
 
   useEffect(() => {
-    if (!pathname || typeof window.gtag !== "function") {
+    if (!pathname) {
       return;
     }
 
-    // The base gtag config sends the initial page_view. Only send on client navigation.
+    // The base gtag config sends the initial page_view. Only send on client
+    // navigation. Consume the skip flag before checking window.gtag — the
+    // bootstrap script loads afterInteractive, so gtag is usually undefined on
+    // the initial-load effect run.
     if (!hasSkippedInitialPageView.current) {
       hasSkippedInitialPageView.current = true;
+      return;
+    }
+
+    if (typeof window.gtag !== "function") {
       return;
     }
 

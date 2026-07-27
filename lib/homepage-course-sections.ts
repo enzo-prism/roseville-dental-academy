@@ -22,7 +22,7 @@ export const homepageCourseSections = {
         {
           description:
             "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and includes live skills practice and certification support.",
-          href: "/bls%2Fcpr-1",
+          href: "/bls-cpr-1",
           icon: "heart",
           image:
             "/__live/img1.wsimg.com/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/blob-0401488__349c00ba12.png",

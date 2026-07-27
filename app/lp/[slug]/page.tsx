@@ -29,6 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return buildPageMetadata({
       description: "The landing page you are looking for was not found.",
       noindex: true,
+      omitCanonical: true,
       title: "Landing Page Not Found | Roseville Dental Academy",
     });
   }

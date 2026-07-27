@@ -62,7 +62,7 @@ type NavLinkItem = {
 
 const primaryLinks: NavLinkItem[] = [
   { href: "/", Icon: Home, iconKey: "home", label: "Home" },
-  { href: "/bls%2Fcpr-1", Icon: HeartPulse, iconKey: "heart-pulse", label: "BLS/CPR" },
+  { href: "/bls-cpr-1", Icon: HeartPulse, iconKey: "heart-pulse", label: "BLS/CPR" },
   { href: "/infection-control", Icon: ShieldCheck, iconKey: "shield-check", label: "Infection Control" },
   { href: "/coronal-polish", Icon: Sparkles, iconKey: "sparkles", label: "Coronal Polish" },
   { href: "/radiation-safety", Icon: Radiation, iconKey: "radiation", label: "Radiation Safety" },
