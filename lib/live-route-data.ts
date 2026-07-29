@@ -181,10 +181,10 @@ const COURSE_DATE_REPLACEMENTS: Array<{
       "$1June 20, 2026 (Full), July 25, 2026 (Full), August 8, September 12, October 24, November 14, and December 12, 2026$2",
   },
   {
-    // Pit and Fissure Sealants homepage menu item (MENU_SECTION1_ITEM1): June 20 and July 25 are full.
+    // Pit and Fissure Sealants homepage menu item (MENU_SECTION1_ITEM1): June 20, July 25, and August 8 are full.
     pattern: /(MENU_SECTION1_ITEM1_DESC[\s\S]*?<span>)May 9th,?\s*2026(<\/span>)/,
     replacement:
-      "$1June 20, 2026 (Full), July 25, 2026 (Full), August 8, September 12, October 24, November 14, and December 12, 2026$2",
+      "$1June 20, 2026 (Full), July 25, 2026 (Full), August 8, 2026 (Full), September 12, October 24, November 14, and December 12, 2026$2",
   },
 ];
 

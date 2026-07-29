@@ -269,7 +269,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $550.",
       "Duration 16 hours.",
       "Format Didactic, laboratory, and clinical.",
-      `${classDateSentence("sealants")} The June 20 and July 25, 2026 classes are full; August 8, 2026 is the next available date.`,
+      `${classDateSentence("sealants")} The June 20, July 25, and August 8, 2026 classes are full; September 12, 2026 is the next available date.`,
       "Best next step Call the office to confirm eligibility and register.",
     ].join(" "),
   },

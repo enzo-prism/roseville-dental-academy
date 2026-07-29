@@ -896,7 +896,7 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026 (full), October 12, 2026, and November 20, 2026. BLS is listed for June 6, 2026 (full), July 18 (full), August 1, September 5, October 17, November 7, and December 5, 2026. X-rays/Radiation Safety and Infection Control are listed for June 6, 2026 (full), July 18 (full), August 1, September 5, October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8, September 12, October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25 (full), August 8, September 12, October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
+      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026 (full), October 12, 2026, and November 20, 2026. BLS is listed for June 6, 2026 (full), July 18 (full), August 1, September 5, October 17, November 7, and December 5, 2026. X-rays/Radiation Safety and Infection Control are listed for June 6, 2026 (full), July 18 (full), August 1, September 5, October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8, September 12, October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12, October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -1111,7 +1111,7 @@ export const homeHero: HeroContent = {
       "BLS / CPR: June 6 and July 18 are full; next available is August 1, then September 5, October 17, November 7, and December 5, 2026",
       "X-rays and Infection Control: June 6 and July 18 are full; next available is August 1, then September 5, October 17, November 7, and December 5, 2026",
       "Coronal Polish: June 20 and July 25 are full; next available is August 8, then September 12, October 24, November 14, and December 12, 2026",
-      "Pit and Fissure Sealants: June 20 and July 25 are full; next available is August 8, then September 12, October 24, November 14, and December 12, 2026",
+      "Pit and Fissure Sealants: June 20, July 25, and August 8 are full; next available is September 12, then October 24, November 14, and December 12, 2026",
     ],
   },
 };

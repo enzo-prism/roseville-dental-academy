@@ -107,6 +107,12 @@ const julyTwentyFiveCourses = [
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
+// August 8, 2026: Pit and Fissure Sealants is fully booked; Coronal Polish remains available.
+const augustEightCourses = [
+  course("coronal-polish"),
+  course("sealants", "full"),
+] satisfies CourseScheduleCourse[];
+
 // July 18, 2026: the class date has passed — BLS, X-rays, and Infection Control are closed.
 const julyEighteenCourses = [
   course("bls-cpr-1", "full"),
@@ -174,7 +180,7 @@ export const courseScheduleMonths = [
         date: "August 8, 2026",
         day: "August 8",
         isoDate: "2026-08-08",
-        courses: coronalSealantsCourses,
+        courses: augustEightCourses,
       },
     ],
   },

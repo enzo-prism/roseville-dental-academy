@@ -854,6 +854,9 @@ test.describe("live-style interaction flows", () => {
       ).toBeVisible();
       await expect(courseSystem.getByLabel("BLS / CPR is full on July 18")).toBeVisible();
       await expect(
+        courseSystem.getByLabel("Pit and Fissure Sealants is full on August 8"),
+      ).toBeVisible();
+      await expect(
         courseSystem.getByLabel("Dental Assisting Training is full on September 4"),
       ).toBeVisible();
       await expect(courseSystem.getByText("October 12", { exact: true })).toBeVisible();
@@ -1798,8 +1801,8 @@ test.describe("live-style interaction flows", () => {
       await expect(form.getByText("Next open date: October 12, 2026")).toBeVisible();
       await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(3);
-      await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(2);
-      await expect(form.getByText("Next open date: September 12, 2026")).toHaveCount(0);
+      await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(1);
+      await expect(form.getByText("Next open date: September 12, 2026")).toHaveCount(1);
       await expect(form.getByText("By appointment")).toBeVisible();
       await expect(form.getByText("Team can recommend a starting point")).toBeVisible();
       await expect(submit).toHaveText(/Request next steps/);
