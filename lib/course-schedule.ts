@@ -107,9 +107,18 @@ const julyTwentyFiveCourses = [
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
-// August 8, 2026: Pit and Fissure Sealants is fully booked; Coronal Polish remains available.
+// August 1, 2026: X-rays / Radiation Safety is fully booked; BLS and Infection
+// Control still have seats, so this date needs its own list instead of the
+// shared `blsXrayInfectionCourses` reference used by the later 2026 dates.
+const augustOneCourses = [
+  course("bls-cpr-1"),
+  course("radiation-safety", "full"),
+  course("infection-control"),
+] satisfies CourseScheduleCourse[];
+
+// August 8, 2026: Coronal Polish and Pit and Fissure Sealants are both fully booked.
 const augustEightCourses = [
-  course("coronal-polish"),
+  course("coronal-polish", "full"),
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
@@ -174,7 +183,7 @@ export const courseScheduleMonths = [
         date: "August 1, 2026",
         day: "August 1",
         isoDate: "2026-08-01",
-        courses: blsXrayInfectionCourses,
+        courses: augustOneCourses,
       },
       {
         date: "August 8, 2026",

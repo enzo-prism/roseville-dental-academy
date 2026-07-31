@@ -110,6 +110,12 @@ Highlights:
 - `pnpm test:release`: full local production gate using `pnpm build && pnpm start`.
 - `pnpm test:preview`: run the same gate against a Vercel preview by setting `PREVIEW_URL`.
 
+Changing course dates or any visible page copy drifts the committed content baselines and must be
+refreshed in the same commit; see
+[docs/release-qa.md](docs/release-qa.md#updating-content-baselines). For the class-schedule data
+itself, follow [docs/course-approvals.md](docs/course-approvals.md#marking-a-class-date-full) — some
+dates share a course list, so a careless edit closes courses on unrelated dates.
+
 ## Analytics And Pixels
 
 The analytics and paid-media event contract lives in [docs/analytics.md](docs/analytics.md).

@@ -98,6 +98,44 @@ ElevenLabs is masked in content/visual baselines (`tests/support/qa-helpers.ts`)
 
 Do not raise `VISUAL_DIFF_TOLERANCE` as the fix for an intentional page redesign. Refresh the affected baseline PNGs instead.
 
+## Updating Content Baselines
+
+Any change to `lib/course-schedule.ts`, course copy, shared header/footer links, or other visible page text drifts `tests/baselines/live/content/`. Refresh it in the same commit as the change. Skipping this is the single most common cause of a red gate, because the failure surfaces on `main` rather than in the branch that caused it.
+
+`tests/live-parity.spec.ts` runs in serial mode, so it **stops at the first failing route and reports the other 19 as "did not run."** One reported failure does not mean one stale route. Refresh, re-run, and repeat until the suite is green — a schedule change usually drifts 8-11 routes, and a shared header/footer link change drifts all of them.
+
+The failing test writes everything needed to accept the drift:
+
+```bash
+PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:parity-content
+sed -n '1,40p' test-results/<failed-case>/<label>-body-diff.txt
+```
+
+Review the diff first. Accept it only when every change is one you intended; investigate instead when copy, titles, statuses, endpoints, or placeholders moved unexpectedly.
+
+To accept, rewrite the baseline from `localSnapshot` in `<label>-content-summary.json`, mapping the snapshot keys onto the baseline keys:
+
+| baseline key | `localSnapshot` key |
+| --- | --- |
+| `aboveFoldImages` | `visibleAboveFoldImages` |
+| `buttons` | `visibleButtons` |
+| `images` | `visibleImages` |
+| `inputs` | `visibleInputs` |
+| `links` | `visibleLinks` |
+| `bodyText`, `status`, `title` | same name |
+
+Use `localSnapshot` rather than re-deriving the values by hand — it is produced by the same `captureSnapshot()` normalization the comparison uses, so an accepted baseline matches on the next run.
+
+After the suite is green, confirm the accepted diff touched only the fields you expected:
+
+```bash
+git diff -U0 tests/baselines/live/content/ | grep -oE '^[+-]  "[a-zA-Z]+"' | sort | uniq -c
+```
+
+A schedule or copy change should report `bodyText` only. Unexpected `status`, `title`, `inputs`, or `aboveFoldImages` entries mean something broke rather than drifted.
+
+Avoid `pnpm snapshot:refresh` for this. It re-captures from live production (`LIVE_ORIGIN`) and rewrites visual baselines too; it is for intentionally re-syncing the frozen mirror, not for accepting a local content change.
+
 ## Updating Visual Baselines
 
 For an intentional local page change, update only the affected visual PNGs.
@@ -144,6 +182,17 @@ gh run watch <run-id> --repo enzo-prism/roseville-dental-academy --exit-status -
 ```
 
 For the full production push checklist, use [production-runbook.md](production-runbook.md).
+
+## Known 2026-07-31 Resolution
+
+`Release Gate` and `Vercel Preview Verify` were red on `main` across four consecutive pushes, ending at `1afe322` `Mark August 8 sealants course full`. Neither `110891c` nor `1afe322` refreshed the content baselines after changing `lib/course-schedule.ts` and the header BLS link, so `content parity home` failed and the serial suite reported the remaining 19 routes as "did not run."
+
+Two drift classes were involved, both intentional:
+
+- schedule text — BLS next-open-date `July 18` → `August 1`, sealants `August 8` → `September 12`, plus two new `Full` badges
+- shared header link — `/bls%2Fcpr-1` → the clean `/bls-cpr-1` alias, which drifts every route because the header is on all of them
+
+The fix refreshed 19 content baselines; only `bodyText` and the BLS `href` changed. Two takeaways now covered in [Updating Content Baselines](#updating-content-baselines): one reported failure in a serial suite is not one stale route, and a schedule edit is a page-output change that requires a baseline refresh in the same commit.
 
 ## Known 2026-05-26 Resolution
 
