@@ -186,9 +186,15 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
                   />
                 </Field>
                 <Field className="rda-contact-checkbox" orientation="horizontal">
-                  <Checkbox checked={updates} onCheckedChange={(checked) => setUpdates(checked === true)} />
+                  <Checkbox
+                    checked={updates}
+                    id={`${formId}-updates`}
+                    onCheckedChange={(checked) => setUpdates(checked === true)}
+                  />
                   <FieldContent>
-                    <FieldLabel>Sign up for our email list for updates, promotions, and more.</FieldLabel>
+                    <FieldLabel htmlFor={`${formId}-updates`}>
+                      Sign up for our email list for updates, promotions, and more.
+                    </FieldLabel>
                   </FieldContent>
                 </Field>
                 <Field>
