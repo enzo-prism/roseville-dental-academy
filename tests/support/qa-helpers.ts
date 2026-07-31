@@ -502,6 +502,24 @@ export async function settleMirrorPage(page: Page) {
   await page.waitForTimeout(3_000);
 }
 
+/**
+ * Block until the self-hosted `next/font` faces are applied.
+ *
+ * Without this the screenshot can land while the metric-fallback face is still
+ * in use. Fallback metrics are wider than Noto Sans, which overflows the
+ * desktop nav row onto a second line and shifts every section below it — a
+ * ~57px offset that reads as a six-figure pixel diff. It reproduces on cold
+ * caches (CI) and not on warm ones (local), so the gate fails in exactly one
+ * environment. `document.fonts.ready` is the deterministic barrier.
+ */
+export async function waitForFontsReady(page: Page) {
+  await page
+    .waitForFunction(() => document.fonts.status === "loaded", undefined, {
+      timeout: 15_000,
+    })
+    .catch(() => undefined);
+}
+
 async function prepareFullPageForVisual(page: Page) {
   const viewport = page.viewportSize() ?? { height: 900, width: 1280 };
   const step = Math.max(500, Math.floor(viewport.height * 0.7));
@@ -905,6 +923,7 @@ export async function captureVisual(
   const runtime = createRuntimeDiagnostics(page);
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await settleMirrorPage(page);
+  await waitForFontsReady(page);
   await prepareFullPageForVisual(page);
   await hideFloatingThirdPartyWidgets(page);
   const ui = await scanUi(page);

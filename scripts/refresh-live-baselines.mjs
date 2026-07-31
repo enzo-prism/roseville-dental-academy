@@ -332,6 +332,18 @@ async function captureContentSnapshot(page, url, assetMap) {
   };
 }
 
+// Mirror of waitForFontsReady in tests/support/qa-helpers.ts. A baseline
+// captured before the self-hosted next/font faces apply bakes in fallback
+// metrics, which then read as a large diff against any correctly-fonted run.
+// Keep both barriers in place or baselines and comparisons drift apart again.
+async function waitForFontsReady(page) {
+  await page
+    .waitForFunction(() => document.fonts.status === "loaded", undefined, {
+      timeout: 15_000,
+    })
+    .catch(() => undefined);
+}
+
 async function captureVisualBaseline(page, url, maskSelectors, viewport) {
   await page.setViewportSize(viewport);
   await page.goto(url, {
@@ -339,6 +351,7 @@ async function captureVisualBaseline(page, url, maskSelectors, viewport) {
     waitUntil: "domcontentloaded",
   });
   await settlePage(page);
+  await waitForFontsReady(page);
   await prepareFullPageForVisual(page);
   await hideFloatingThirdPartyWidgets(page);
 

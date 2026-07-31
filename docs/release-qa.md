@@ -136,6 +136,18 @@ A schedule or copy change should report `bodyText` only. Unexpected `status`, `t
 
 Avoid `pnpm snapshot:refresh` for this. It re-captures from live production (`LIVE_ORIGIN`) and rewrites visual baselines too; it is for intentionally re-syncing the frozen mirror, not for accepting a local content change.
 
+## Visual Capture Determinism
+
+A visual diff is only meaningful if the capture is reproducible. Two things in this app are not, and both must be handled in `captureVisual` (`tests/support/qa-helpers.ts`) and mirrored in `captureVisualBaseline` (`scripts/refresh-live-baselines.mjs`), or baselines and comparisons drift apart:
+
+**Web fonts.** `next/font` self-hosts Noto Sans and Playfair Display. Until those faces apply, the metric-fallback face is in use, and it is wider than Noto Sans — wide enough to overflow the desktop nav onto a second row and push every section below it down ~57px. A capture taken during that window differs from a correctly-fonted one by six figures of pixels. It reproduces on cold caches and not on warm ones, so it fails in CI and passes locally. `waitForFontsReady()` blocks on `document.fonts.status === "loaded"` before capture.
+
+**The homepage hero carousel.** It auto-advances every 7s, and `prepareFullPageForVisual` routinely takes longer than one tick, so `/` can be photographed on any slide. It is not covered by the `visualMasks` in `snapshot/live/manifest.json`, which only mask the retired GoDaddy review carousel. This makes the two `home` baselines flaky in both directions — a run can report ~1k or ~147k differing pixels on identical code.
+
+The controller stops auto-advancing under `prefers-reduced-motion: reduce`, and the matching CSS only disables animation, so `page.emulateMedia({ reducedMotion: "reduce" })` would pin it to slide 1. **This is not wired up yet**, because the committed `home-desktop.png` / `home-mobile.png` were themselves captured mid-carousel on a later slide: pinning to slide 1 raises `home` desktop drift from ~7k to ~35k against the current baselines. Adopting it means regenerating both `home` baselines from a pinned capture in the same change.
+
+Treat a `home` visual failure as suspect until that is done. Confirm it reproduces across runs before accepting or chasing it.
+
 ## Updating Visual Baselines
 
 For an intentional local page change, update only the affected visual PNGs.
@@ -193,6 +205,8 @@ Two drift classes were involved, both intentional:
 - shared header link — `/bls%2Fcpr-1` → the clean `/bls-cpr-1` alias, which drifts every route because the header is on all of them
 
 The fix refreshed 19 content baselines; only `bodyText` and the BLS `href` changed. Two takeaways now covered in [Updating Content Baselines](#updating-content-baselines): one reported failure in a serial suite is not one stale route, and a schedule edit is a page-output change that requires a baseline refresh in the same commit.
+
+Clearing that failure then re-exposed an older one. `test:release` runs visual parity last, so while content parity was red the visual stage had not executed in CI since 2026-07-16. `visual parity home on desktop` and `photos on desktop` had been failing since 2026-07-15 at an unchanged magnitude — 125,138 / 158,683 differing pixels then, 125,194 / 160,715 after the July 31 content fix — confirming the drift was pre-existing rather than schedule-related. The trigger was `e0670b3`, which switched the nav from Playfair to Noto Sans 600 without refreshing those two baselines; the amplifier was the missing font barrier described in [Visual Capture Determinism](#visual-capture-determinism), which is why it failed only in CI. `waitForFontsReady()` addresses the amplifier. The carousel nondeterminism found during the same investigation is documented there and still open.
 
 ## Known 2026-05-26 Resolution
 
