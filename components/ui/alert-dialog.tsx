@@ -31,7 +31,9 @@ function AlertDialogPortal({
 function AlertDialogOverlay({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
+}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay> & {
+  "data-rda-promo-overlay"?: string
+}) {
   return (
     <AlertDialogPrimitive.Overlay
       data-slot="alert-dialog-overlay"
@@ -49,20 +51,20 @@ function AlertDialogContent({
   size = "default",
   overlayClassName,
   onOverlayClick,
-  overlayProps,
+  promoOverlay = false,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
   size?: "default" | "sm"
   overlayClassName?: string
   onOverlayClick?: React.MouseEventHandler<HTMLDivElement>
-  overlayProps?: React.ComponentProps<typeof AlertDialogOverlay>
+  promoOverlay?: boolean
 }) {
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay
         className={overlayClassName}
+        data-rda-promo-overlay={promoOverlay ? "true" : undefined}
         onClick={onOverlayClick}
-        {...overlayProps}
       />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"

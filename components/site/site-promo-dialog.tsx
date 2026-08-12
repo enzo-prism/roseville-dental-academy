@@ -81,7 +81,7 @@ export function SitePromoDialog() {
         className="max-w-[min(92vw,28rem)] gap-5 rounded-lg border border-border bg-card p-6 text-card-foreground data-[size=default]:max-w-[min(92vw,28rem)] data-[size=default]:sm:max-w-md sm:max-w-md"
         data-rda-promo-dialog="true"
         onOverlayClick={dismiss}
-        overlayProps={{ "data-rda-promo-overlay": "true" }}
+        promoOverlay
         size="default"
       >
         <AlertDialogHeader className="gap-3 sm:place-items-start sm:text-left">
