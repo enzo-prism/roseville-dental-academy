@@ -34,7 +34,7 @@ export const siteContact = {
     "Office: Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM. Sat office closed (Saturday Academy classes start Sept 12). Sun closed",
   hoursLabel: "Office hours",
   hoursNote:
-    "Office hours are for the front desk. Saturday Academy classes start September 12, 2026. Monday, Friday, and Saturday class schedules are separate — students pick one, not all three.",
+    "Front-desk hours only. Saturday Academy classes start September 12, 2026; pick one class day (Mon, Fri, or Sat).",
   weeklyHours: [
     { day: "Monday", time: "9AM-5PM" },
     { day: "Tuesday", time: "9AM-6PM" },

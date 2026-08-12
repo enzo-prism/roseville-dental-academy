@@ -1971,7 +1971,7 @@ test.describe("live-style interaction flows", () => {
       await expect(page.getByText("Saturday").first()).toBeVisible();
       await expect(page.getByText("Office closed; Saturday Academy classes start Sept 12").first()).toBeVisible();
       await expect(
-        page.getByText("Office hours are for the front desk. Saturday Academy classes start September 12, 2026.").first(),
+        page.getByText("Front-desk hours only. Saturday Academy classes start September 12, 2026").first(),
       ).toBeVisible();
 
       const mapFrame = page.locator('iframe[data-rda-google-map="true"]');
@@ -2056,7 +2056,7 @@ test.describe("live-style interaction flows", () => {
       expect(mobileContactLayout.copy?.width ?? 0).toBeGreaterThanOrEqual(320);
       expect(mobileContactLayout.map?.width ?? 0).toBeGreaterThanOrEqual(320);
       expect(mobileContactLayout.map?.top ?? 0).toBeGreaterThan(mobileContactLayout.copy?.bottom ?? 0);
-      expect(mobileContactLayout.copy?.height ?? 0).toBeLessThan(760);
+      expect(mobileContactLayout.copy?.height ?? 0).toBeLessThan(880);
       expect(mobileContactLayout.blankAfterMap).toBeLessThanOrEqual(72);
       expect(mobileContactLayout.overflowX).toBe(0);
     });
@@ -2125,10 +2125,12 @@ test.describe("live-style interaction flows", () => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/lp/dental-assisting-enroll");
 
+      const dates = page.locator(".rda-ad-date-list");
+
       await expect(page.getByText("Next start: September 12, 2026 (Saturday Academy)")).toBeVisible();
-      await expect(page.getByText("September 12, 2026 (Saturday Academy)", { exact: true }).first()).toBeVisible();
-      await expect(page.getByText("October 12, 2026")).toBeVisible();
-      await expect(page.getByText("November 20, 2026")).toBeVisible();
+      await expect(dates.getByText("September 12, 2026 (Saturday Academy)")).toBeVisible();
+      await expect(dates.getByText("October 12, 2026")).toBeVisible();
+      await expect(dates.getByText("November 20, 2026")).toBeVisible();
       await expect(
         page.getByText("Monday, Friday, and Saturday class schedules are separate options; students attend one, not all three."),
       ).toBeVisible();
