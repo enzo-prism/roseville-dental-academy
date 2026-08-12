@@ -47,7 +47,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { announcement, socialLinks } from "@/lib/site-data";
+import { socialLinks } from "@/lib/site-data";
+import {
+  activeSitePromo,
+  fallbackAnnouncement,
+  isSitePromoActive,
+} from "@/lib/site-promo";
 
 const logoSrc = "/assets/live/home/logo-academy.png";
 const resumePortalHref =
@@ -208,7 +213,17 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
       data-rda-shell-header="true"
     >
       <div className="rda-promo-banner border-b border-primary/10 bg-primary text-primary-foreground" role="banner">
-        <span>{announcement}</span>
+        {isSitePromoActive(activeSitePromo) ? (
+          <Link
+            className="rda-promo-banner-link"
+            data-rda-promo-banner="true"
+            href={activeSitePromo.ctaHref}
+          >
+            {activeSitePromo.bannerText}
+          </Link>
+        ) : (
+          <span>{fallbackAnnouncement}</span>
+        )}
       </div>
 
       <div className="rda-mobile-topbar bg-background">

@@ -188,6 +188,22 @@ textarea {
   text-align: center;
 }
 
+.rda-promo-banner-link {
+  color: inherit;
+  display: inline;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  max-width: 72rem;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+}
+
+.rda-promo-banner-link:hover,
+.rda-promo-banner-link:focus-visible {
+  text-decoration: underline;
+}
+
 .rda-desktop-nav {
   background: var(--rda-color-surface);
   display: block;
@@ -443,7 +459,9 @@ textarea {
 body.rda-mobile-menu-open .live-elevenlabs-widget,
 body.rda-mobile-menu-open .rda-whatsapp-fab,
 body.is-mobile-nav-open .live-elevenlabs-widget,
-body.is-mobile-nav-open .rda-whatsapp-fab {
+body.is-mobile-nav-open .rda-whatsapp-fab,
+body.rda-promo-dialog-open .live-elevenlabs-widget,
+body.rda-promo-dialog-open .rda-whatsapp-fab {
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
@@ -3270,6 +3288,13 @@ body.is-mobile-nav-open .rda-whatsapp-fab {
 .rda-footer-hours dt,
 .rda-footer-hours dd {
   margin: 0;
+}
+
+.rda-hours-list .rda-hours-note,
+.rda-footer-hours .rda-hours-note {
+  font-family: var(--rda-font-body);
+  margin: 8px 0 0;
+  max-width: 42ch;
 }
 
 .rda-contact-actions {

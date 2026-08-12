@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { courseScheduleNote, getCourseSchedule } from "@/lib/course-schedule";
+import { courseScheduleNote, formatCourseDateLabel, getCourseSchedule } from "@/lib/course-schedule";
 import type {
   LiveCourseContent,
   LiveCourseLink,
@@ -286,7 +286,7 @@ function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
               variant="outline"
             >
               <CalendarDays aria-hidden="true" />
-              <time dateTime={entry.isoDate}>{entry.date}</time>
+              <time dateTime={entry.isoDate}>{formatCourseDateLabel(course.id, entry.date)}</time>
               {entry.status === "full" ? (
                 <span aria-label={`${entry.date} is full`} className="rda-course-date-flag ml-1">
                   Full

@@ -19,11 +19,11 @@ const LLMS_BODY = `# Roseville Dental Academy
 - Address: 1271 Pleasant Grove Boulevard, Ste. 100, Roseville, California 95747
 - Phone: 916-888-9821
 - Email: rosevilledentalacademy@gmail.com
-- Hours: Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM, Sat-Sun Closed
+- Office hours: Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM. Saturday office closed (Saturday Academy classes start September 12, 2026). Sunday closed.
 
 ## Programs
 
-- [Dental Assisting Program](${SITE_URL}/dental-assisting-program): Nine-week, 210-hour training with online lectures, chairside instruction, resume and job assistance, and a 64-hour internship for students 16 and older.
+- [Dental Assisting Program](${SITE_URL}/dental-assisting-program): Nine-week, 210-hour training with online lectures, chairside instruction, resume and job assistance, and a 64-hour internship for students 16 and older. Monday, Friday, and Saturday class schedules are separate options (pick one). Saturday Academy starts September 12, 2026.
 - [DA to RDA Career Journey](${SITE_URL}/journey): Guided California DA to RDA roadmap covering training, work experience, required course certificates, application, exam, and license next steps.
 - [BLS/CPR Certification](${SITE_URL}/bls-cpr-1): Three-hour Basic Life Support and CPR training for healthcare providers, $85, 2026 dates beginning June 6.
 - [Infection Control (IC189)](${SITE_URL}/infection-control): California Dental Board approved 8-hour course for unlicensed dental assistants.

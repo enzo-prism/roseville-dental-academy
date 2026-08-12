@@ -164,7 +164,7 @@ const COURSE_DATE_REPLACEMENTS: Array<{
 }> = [
   {
     pattern: /\bFriday,\s*June 19th,?\s*2026\b/g,
-    replacement: "June 19, 2026 (Full), July 13, 2026 (Full), September 4, 2026 (Full), October 12, and November 20, 2026",
+    replacement: "June 19, 2026 (Full), July 13, 2026 (Full), September 4, 2026 (Full), September 12, 2026 (Saturday Academy), October 12, and November 20, 2026",
   },
   {
     pattern: /\bMay 2nd,? 2026\b/g,
@@ -211,6 +211,12 @@ const RETIRED_PROGRAM_COPY_REPLACEMENTS: Array<{
   {
     pattern: /Dental Assisting or Front Office roles/gi,
     replacement: "Dental Assisting roles",
+  },
+  {
+    pattern:
+      /Classes generally meet on either Mondays or Friday with one day of assigned externship\./g,
+    replacement:
+      "Choose one class schedule — Monday, Friday, or Saturday. Those options are separate; you attend one schedule, not all three, plus one assigned externship day.",
   },
 ];
 

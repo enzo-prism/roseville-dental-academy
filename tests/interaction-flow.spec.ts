@@ -1,13 +1,23 @@
 import { expect, test } from "@playwright/test";
 
 import { adLandingPages } from "@/lib/ad-landing-pages";
+import { activeSitePromo } from "@/lib/site-promo";
 import {
   blockElevenLabsWidgetScript,
   elevenLabsScriptSrc,
   localOrigin,
+  suppressSitePromo,
 } from "./support/qa-helpers";
 
-async function gotoSettled(page: import("@playwright/test").Page, path: string) {
+async function gotoSettled(
+  page: import("@playwright/test").Page,
+  path: string,
+  options?: { allowPromo?: boolean },
+) {
+  if (!options?.allowPromo) {
+    await suppressSitePromo(page.context());
+  }
+
   await page.goto(`${localOrigin}${path}`, {
     timeout: 120_000,
     waitUntil: "domcontentloaded",
@@ -413,6 +423,7 @@ test.describe("live-style interaction flows", () => {
   test.describe("without third-party widget noise", () => {
     test.beforeEach(async ({ context }) => {
       await blockElevenLabsWidgetScript(context);
+      await suppressSitePromo(context);
     });
 
     test("desktop More menu opens and navigates to More Information pages", async ({ page }) => {
@@ -881,7 +892,12 @@ test.describe("live-style interaction flows", () => {
       ).toHaveAttribute("href", "/sealants");
       await expect(courseSystem.getByText("Dental Assisting Training Course - $2,500.00")).toBeVisible();
       await expect(
-        courseSystem.getByText("October 12, 2026. An additional start is November 20, 2026."),
+        courseSystem.getByText(
+          "Choose one class schedule — Monday, Friday, or Saturday. Those options are separate; you attend one schedule, not all three, plus one assigned externship day.",
+        ),
+      ).toBeVisible();
+      await expect(
+        courseSystem.getByText("September 12, 2026 (Saturday Academy). Additional starts are October 12 and November 20, 2026."),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",
@@ -1798,11 +1814,12 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="note"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
       await expect(form.getByText("Classes or certifications to ask about")).toBeVisible();
-      await expect(form.getByText("Next open date: October 12, 2026")).toBeVisible();
+      await expect(form.getByText("Next open date: September 12, 2026 (Saturday Academy)")).toHaveCount(1);
+      await expect(form.getByText("Next open date: September 12, 2026", { exact: true })).toHaveCount(2);
       await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(3);
-      await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(1);
-      await expect(form.getByText("Next open date: September 12, 2026")).toHaveCount(1);
+      await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(2);
+      await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(0);
+      await expect(form.getByText("Next open date: October 12, 2026")).toHaveCount(0);
       await expect(form.getByText("By appointment")).toBeVisible();
       await expect(form.getByText("Team can recommend a starting point")).toBeVisible();
       await expect(submit).toHaveText(/Request next steps/);
@@ -1944,6 +1961,7 @@ test.describe("live-style interaction flows", () => {
         page.getByRole("link", { name: "rosevilledentalacademy@gmail.com" }).first(),
       ).toHaveAttribute("href", "mailto:rosevilledentalacademy@gmail.com");
       await expect(page.getByText("Located in Woodcreek Plaza")).toBeVisible();
+      await expect(page.getByText("Office hours").first()).toBeVisible();
       await expect(page.getByText("Monday").first()).toBeVisible();
       await expect(page.getByText("9AM-5PM").first()).toBeVisible();
       await expect(page.getByText("Wednesday").first()).toBeVisible();
@@ -1951,7 +1969,10 @@ test.describe("live-style interaction flows", () => {
       await expect(page.getByText("Friday").first()).toBeVisible();
       await expect(page.getByText("9AM-3PM").first()).toBeVisible();
       await expect(page.getByText("Saturday").first()).toBeVisible();
-      await expect(page.getByText("Closed").first()).toBeVisible();
+      await expect(page.getByText("Office closed; Saturday Academy classes start Sept 12").first()).toBeVisible();
+      await expect(
+        page.getByText("Front-desk hours only. Saturday Academy classes start September 12, 2026").first(),
+      ).toBeVisible();
 
       const mapFrame = page.locator('iframe[data-rda-google-map="true"]');
 
@@ -2035,9 +2056,89 @@ test.describe("live-style interaction flows", () => {
       expect(mobileContactLayout.copy?.width ?? 0).toBeGreaterThanOrEqual(320);
       expect(mobileContactLayout.map?.width ?? 0).toBeGreaterThanOrEqual(320);
       expect(mobileContactLayout.map?.top ?? 0).toBeGreaterThan(mobileContactLayout.copy?.bottom ?? 0);
-      expect(mobileContactLayout.copy?.height ?? 0).toBeLessThan(760);
+      expect(mobileContactLayout.copy?.height ?? 0).toBeLessThan(880);
       expect(mobileContactLayout.blankAfterMap).toBeLessThanOrEqual(72);
       expect(mobileContactLayout.overflowX).toBe(0);
+    });
+  });
+
+  test.describe("Saturday Academy promo", () => {
+    test.beforeEach(async ({ context }) => {
+      await blockElevenLabsWidgetScript(context);
+    });
+
+    test("banner promotes Saturday Academy and links to the DA enroll LP", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(page, "/");
+
+      const banner = page.locator("[data-rda-promo-banner='true']");
+
+      await expect(banner).toBeVisible();
+      await expect(banner).toContainText("Saturday Academy starts Sept 12");
+      await expect(banner).toContainText("Mon, Fri, or Sat schedules (pick one)");
+      await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
+      expect(activeSitePromo.ctaHref).toBe("/lp/dental-assisting-enroll");
+    });
+
+    test("popup appears, uses the enroll CTA, and stays dismissed", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(page, "/", { allowPromo: true });
+
+      const dialog = page.locator("[data-rda-promo-dialog='true']");
+
+      await expect(dialog).toBeVisible({ timeout: 8_000 });
+      await expect(dialog.getByText("Now enrolling")).toBeVisible();
+      await expect(
+        dialog.getByRole("heading", { name: "Saturday Academy starts September 12, 2026" }),
+      ).toBeVisible();
+      await expect(dialog.getByText("You attend one schedule, not all three.")).toBeVisible();
+
+      const cta = dialog.locator("[data-rda-promo-cta='true']");
+
+      await expect(cta).toHaveAttribute("href", "/lp/dental-assisting-enroll");
+      await expect(cta).toHaveText("Ask about Saturday Academy");
+
+      await dialog.getByRole("button", { name: "Dismiss Saturday Academy announcement" }).click();
+      await expect(dialog).toHaveCount(0);
+
+      const stored = await page.evaluate(
+        (key) => window.localStorage.getItem(key),
+        activeSitePromo.storageKey,
+      );
+
+      expect(stored).toBe("dismissed");
+
+      await gotoSettled(page, "/contact", { allowPromo: true });
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+    });
+
+    test("popup is not shown on ad landing pages", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(page, "/lp/dental-assisting-enroll", { allowPromo: true });
+
+      await expect(page.locator("[data-rda-promo-banner='true']")).toBeVisible();
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+      await expect(page.locator('form[data-rda-landing-form="true"]')).toBeVisible();
+    });
+
+    test("DA enroll LP lists September 12 Saturday Academy as the next start", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(page, "/lp/dental-assisting-enroll");
+
+      const dates = page.locator(".rda-ad-date-list");
+
+      await expect(page.getByText("Next start: September 12, 2026 (Saturday Academy)")).toBeVisible();
+      await expect(dates.getByText("September 12, 2026 (Saturday Academy)")).toBeVisible();
+      await expect(dates.getByText("October 12, 2026")).toBeVisible();
+      await expect(dates.getByText("November 20, 2026")).toBeVisible();
+      await expect(
+        page.getByText("Monday, Friday, and Saturday class schedules are separate options; students attend one, not all three."),
+      ).toBeVisible();
+
+      const startSelect = page.locator('select[name="Preferred start date"]');
+
+      await expect(startSelect).toBeVisible();
+      await expect(startSelect.locator("option", { hasText: "September 12, 2026 (Saturday Academy)" })).toHaveCount(1);
     });
   });
 });
