@@ -30,14 +30,18 @@ export const siteContact = {
     "1271 Pleasant Grove Boulevard, Roseville, California 95747, United States",
   phone: "916-888-9821",
   email: "rosevilledentalacademy@gmail.com",
-  hours: "Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM, Sat-Sun Closed",
+  hours:
+    "Office: Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM. Sat office closed (Saturday Academy classes start Sept 12). Sun closed",
+  hoursLabel: "Office hours",
+  hoursNote:
+    "Office hours are for the front desk. Saturday Academy classes start September 12, 2026. Monday, Friday, and Saturday class schedules are separate — students pick one, not all three.",
   weeklyHours: [
     { day: "Monday", time: "9AM-5PM" },
     { day: "Tuesday", time: "9AM-6PM" },
     { day: "Wednesday", time: "8AM-5PM" },
     { day: "Thursday", time: "9AM-6PM" },
     { day: "Friday", time: "9AM-3PM" },
-    { day: "Saturday", time: "Closed" },
+    { day: "Saturday", time: "Office closed; Saturday Academy classes start Sept 12" },
     { day: "Sunday", time: "Closed" },
   ],
   directionsUrl:
@@ -782,6 +786,11 @@ export const faqItems = [
       "The academy frames accelerated training as a direct route into the field, concentrating practical skills, homework, and job-ready instruction into a shorter 9-week timeline.",
   },
   {
+    question: "Do Dental Assisting classes meet Monday, Friday, and Saturday?",
+    answer:
+      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Saturday Academy, the Saturday class option, starts September 12, 2026.",
+  },
+  {
     question: "How can a short program be as effective as a longer program?",
     answer:
       "The site emphasizes smaller class sizes, focused hands-on instruction, and teaching students exactly what the office staff expects them to know.",
@@ -897,6 +906,11 @@ export const studentFaqHighlights = [
     question: "When are the next 2026 class dates?",
     answer:
       "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026 (full), September 12, 2026 (Saturday Academy), October 12, 2026, and November 20, 2026. BLS is listed for June 6, 2026 (full), July 18 (full), August 1, September 5, October 17, November 7, and December 5, 2026. X-rays/Radiation Safety is listed for June 6, 2026 (full), July 18 (full), August 1 (full), September 5, October 17, November 7, and December 5, 2026. Infection Control is listed for June 6, 2026 (full), July 18 (full), August 1, September 5, October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12, October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12, October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
+  },
+  {
+    question: "Do Dental Assisting classes meet Monday, Friday, and Saturday?",
+    answer:
+      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Saturday Academy, the Saturday class option, starts September 12, 2026.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -1385,7 +1399,7 @@ export const dentalProgramPage = {
         "The program prepares students for an entry-level position in a dental office.",
       items: [
         "No prerequisites; students must be 16 or older",
-        "2 days a week: 1 class day and 1 assigned internship day",
+        "1 class day (Monday, Friday, or Saturday — pick one) and 1 assigned internship day",
         "Resume and job assistance",
       ],
     },
@@ -1403,8 +1417,7 @@ export const dentalProgramPage = {
       title: "What you can expect",
       list: [
         "9 weeks; 210 hours total",
-        "2 days a week",
-        "1 assigned internship day and 1 class day",
+        "1 class day (Monday, Friday, or Saturday — pick one) plus 1 assigned internship day",
         "Resume and job assistance",
       ],
       actions: [

@@ -91,12 +91,12 @@ export const homepageCourseSections = {
     programs: [
       {
         body:
-          "Our dental assisting program is designed to be completed in just 9 weeks. The program prepares students for an entry-level position in a dental office. All lectures and hands on learning will be done in our office at Waikiki Dental. We keep class sizes small for a better teacher to student focus. Our goal is to set students up for success by teaching you exactly what the staff at the dental office will expect you to know. Our accelerated program totals 9 weeks (210 hours) of combined class, clinical, and homework. Classes generally meet on either Mondays or Friday with one day of assigned externship. Dental Assisting is a 9-week, 210-hour training course for students age 16 and older, with online lectures, homework, chairside experience, resume and job assistance, and a 64-hour internship component.",
+          "Our dental assisting program is designed to be completed in just 9 weeks. The program prepares students for an entry-level position in a dental office. All lectures and hands on learning will be done in our office at Waikiki Dental. We keep class sizes small for a better teacher to student focus. Our goal is to set students up for success by teaching you exactly what the staff at the dental office will expect you to know. Our accelerated program totals 9 weeks (210 hours) of combined class, clinical, and homework. Choose one class schedule — Monday, Friday, or Saturday. Those options are separate; you attend one schedule, not all three, plus one assigned externship day. Dental Assisting is a 9-week, 210-hour training course for students age 16 and older, with online lectures, homework, chairside experience, resume and job assistance, and a 64-hour internship component.",
         ctaHref: "/dental-assisting-program",
         ctaLabel: "Learn more",
         icon: "graduation",
         image: "/assets/generated/roseville/homepage-typodont-training.jpg",
-        nextCourseDate: "September 12, 2026. Additional starts are October 12 and November 20, 2026.",
+        nextCourseDate: "September 12, 2026 (Saturday Academy). Additional starts are October 12 and November 20, 2026.",
         nextCourseLabel: "Next available start:",
         scheduleId: "dental-assisting-program",
         title: "Dental Assisting Training Course - $2,500.00",

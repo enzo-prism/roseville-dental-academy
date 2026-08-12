@@ -45,7 +45,7 @@ export function LiveFooter() {
             </a>
           </Button>
           <div className="rda-footer-hours">
-            <p>Hours</p>
+            <p>{siteContact.hoursLabel}</p>
             <dl>
               {siteContact.weeklyHours.map((entry) => (
                 <div key={entry.day}>
@@ -54,6 +54,7 @@ export function LiveFooter() {
                 </div>
               ))}
             </dl>
+            <p className="rda-hours-note">{siteContact.hoursNote}</p>
           </div>
         </div>
         <Separator className="rda-footer-separator bg-primary-foreground/20" />

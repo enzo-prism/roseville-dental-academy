@@ -304,12 +304,28 @@ export function getCourseSchedule(courseId: CourseScheduleId) {
     });
 }
 
+export const SATURDAY_ACADEMY_START_DATE = "September 12, 2026";
+
+export function formatCourseDateLabel(courseId: CourseScheduleId, date: string) {
+  if (courseId === "dental-assisting-program" && date === SATURDAY_ACADEMY_START_DATE) {
+    return `${date} (Saturday Academy)`;
+  }
+
+  return date;
+}
+
 export function getNextAvailableCourseDate(courseId: CourseScheduleId) {
-  return getCourseSchedule(courseId).find((entry) => entry.status !== "full")?.date;
+  const date = getCourseSchedule(courseId).find((entry) => entry.status !== "full")?.date;
+
+  return date ? formatCourseDateLabel(courseId, date) : undefined;
 }
 
 export function getCourseScheduleDateList(courseId: CourseScheduleId) {
   return getCourseSchedule(courseId)
-    .map((entry) => (entry.status === "full" ? `${entry.date} (Full)` : entry.date))
+    .map((entry) => {
+      const labeledDate = formatCourseDateLabel(courseId, entry.date);
+
+      return entry.status === "full" ? `${labeledDate} (Full)` : labeledDate;
+    })
     .join("; ");
 }

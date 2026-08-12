@@ -3290,6 +3290,13 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   margin: 0;
 }
 
+.rda-hours-list .rda-hours-note,
+.rda-footer-hours .rda-hours-note {
+  font-family: var(--rda-font-body);
+  margin: 8px 0 0;
+  max-width: 42ch;
+}
+
 .rda-contact-actions {
   display: flex;
   flex-wrap: wrap;

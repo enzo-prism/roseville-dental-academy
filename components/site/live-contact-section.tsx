@@ -57,7 +57,7 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
               <a href={`mailto:${siteContact.email}`}>Email: {siteContact.email}</a>
             </address>
             <div className="rda-hours-list">
-              <strong>Hours</strong>
+              <strong>{siteContact.hoursLabel}</strong>
               <dl>
                 {siteContact.weeklyHours.map((entry) => (
                   <div key={entry.day}>
@@ -66,6 +66,7 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
                   </div>
                 ))}
               </dl>
+              <p className="rda-hours-note">{siteContact.hoursNote}</p>
             </div>
             <div className="rda-contact-actions" data-slot="button-group">
               <Button
