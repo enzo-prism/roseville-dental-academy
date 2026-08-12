@@ -6,6 +6,7 @@ import { ElevenLabsAgentWidget } from "./elevenlabs-agent-widget";
 import { HomeHeroCarouselController } from "./home-hero-carousel-controller";
 import { LiveFooter } from "./live-footer";
 import { LiveHeader } from "./live-header";
+import { SitePromoDialog } from "./site-promo-dialog";
 
 type LiveShellProps = {
   children: ReactNode;
@@ -35,6 +36,7 @@ export function LiveShell({ children, route }: LiveShellProps) {
         Skip to main content
       </a>
       <LiveHeader currentRoute={route.route} />
+      {route.shellVariant === "public" ? <SitePromoDialog /> : null}
       {children}
       <HomeHeroCarouselController enabled={route.route === "/"} />
       <LiveFooter />

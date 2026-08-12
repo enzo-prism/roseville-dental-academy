@@ -212,7 +212,9 @@ export const courseScheduleMonths = [
         date: "September 12, 2026",
         day: "September 12",
         isoDate: "2026-09-12",
-        courses: coronalSealantsCourses,
+        // Saturday Academy DA cohort plus existing coronal/sealants courses
+        // on the same date (separate programs, not a combined attendance day).
+        courses: [course("dental-assisting-program"), ...coronalSealantsCourses],
       },
     ],
   },

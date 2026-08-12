@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import type { BrowserContext, Page, TestInfo } from "@playwright/test";
 
 import frozenManifest from "@/snapshot/live/manifest.json";
+import { SATURDAY_ACADEMY_PROMO_ID } from "@/lib/site-promo";
 
 import fixtures from "./qa-routes.json";
 
@@ -77,6 +78,16 @@ export async function blockElevenLabsWidgetScript(context: BrowserContext) {
       status: 204,
     });
   });
+}
+
+export async function suppressSitePromo(context: BrowserContext) {
+  await context.addInitScript((storageKey) => {
+    try {
+      window.localStorage.setItem(storageKey, "dismissed");
+    } catch {
+      // Ignore blocked storage; the dialog still has a close control.
+    }
+  }, SATURDAY_ACADEMY_PROMO_ID);
 }
 
 function normalizeTextValue(value: string) {
@@ -579,7 +590,9 @@ async function hideFloatingThirdPartyWidgets(page: Page) {
         .widget-reviews,
         .widget-trustedsite,
         .live-elevenlabs-widget,
-        [data-rda-whatsapp] {
+        [data-rda-whatsapp],
+        [data-rda-promo-dialog],
+        [data-rda-promo-overlay] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -753,6 +766,8 @@ export async function captureSnapshot(
     await page.setViewportSize(options.viewport);
   }
 
+  await suppressSitePromo(page.context());
+
   const runtime = createRuntimeDiagnostics(page);
   const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
@@ -791,7 +806,11 @@ export async function captureSnapshot(
 
 async function captureSnapshotRenderData(page: Page, currentUrl: string): Promise<SnapshotRenderData> {
   return page.evaluate((urlValue) => {
-    const additiveParitySelectors = ["[data-rda-course-reviews]"];
+    const additiveParitySelectors = [
+      "[data-rda-course-reviews]",
+      "[data-rda-promo-dialog]",
+      "[data-rda-promo-overlay]",
+    ];
 
     function normalizeValue(value: string) {
       return value.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
@@ -920,6 +939,7 @@ export async function captureVisual(
   maskSelectors: string[] = [],
 ) {
   await page.setViewportSize(viewport);
+  await suppressSitePromo(page.context());
   const runtime = createRuntimeDiagnostics(page);
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await settleMirrorPage(page);

@@ -17,6 +17,7 @@ import {
   routeMappings,
   sanitizeLabel,
   snapshotRoutes,
+  suppressSitePromo,
   writeJsonArtifact,
   writeSuiteSummary,
 } from "./support/qa-helpers";
@@ -27,6 +28,7 @@ test.describe.configure({ mode: "serial" });
 
 test.beforeEach(async ({ context }) => {
   await blockElevenLabsWidgetScript(context);
+  await suppressSitePromo(context);
 });
 
 test("verify frozen snapshot inputs and required local resources", async ({ request }, testInfo) => {
@@ -1345,7 +1347,7 @@ test("Drive-derived homepage details render without private student data", async
     viewport: { width: 1280, height: 900 },
   });
   const requiredPhrases = [
-    "Now accepting registration for 2026 Dental Assisting Training programs.",
+    "Saturday Academy starts Sept 12 — Mon, Fri, or Sat schedules (pick one). Ask about seats →",
     "Dental Board Course Details",
     "Radiation Safety X1036",
     "Infection Control IC189",

@@ -8,6 +8,7 @@ import {
   getVisualMaskSelectors,
   localOrigin,
   sanitizeLabel,
+  suppressSitePromo,
   visualMappings,
   visualPixelDiffThreshold,
   visualViewports,
@@ -21,6 +22,7 @@ const VISUAL_DIFF_TOLERANCE = Number(process.env.VISUAL_DIFF_TOLERANCE ?? (proce
 
 test.beforeEach(async ({ context }) => {
   await blockElevenLabsWidgetScript(context);
+  await suppressSitePromo(context);
 });
 
 for (const route of visualMappings) {

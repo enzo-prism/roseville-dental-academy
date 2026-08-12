@@ -8,6 +8,7 @@ import {
   localOrigin,
   routeMappings,
   sanitizeLabel,
+  suppressSitePromo,
   writeJsonArtifact,
   writeSuiteSummary,
   writeTextArtifact,
@@ -19,6 +20,7 @@ test.describe.configure({ mode: "serial" });
 
 test.beforeEach(async ({ context }) => {
   await blockElevenLabsWidgetScript(context);
+  await suppressSitePromo(context);
 });
 
 for (const route of routeMappings) {

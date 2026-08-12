@@ -205,7 +205,7 @@ export const adLandingPages: AdLandingPage[] = [
       {
         title: "What admissions will confirm",
         items: [
-          "September 4, 2026 is full; current class availability begins October 12, followed by November 20, 2026.",
+          "September 4, 2026 is full; current class availability begins September 12 (Saturday Academy), followed by October 12 and November 20, 2026.",
           "Registration paperwork, payment next steps, and whether a tour makes sense.",
           "How the 64-hour internship component fits into the 9-week schedule.",
         ],
@@ -681,7 +681,7 @@ export const adLandingPages: AdLandingPage[] = [
       {
         title: "What admissions will confirm",
         items: [
-          "September 4, 2026 is full; current start dates are October 12 and November 20, 2026.",
+          "September 4, 2026 is full; current start dates are September 12 (Saturday Academy), October 12, and November 20, 2026.",
           "Tuition, available payment plans, and registration next steps.",
           "How the 64-hour internship fits into the 9-week, 210-hour schedule.",
         ],
@@ -806,7 +806,7 @@ export const adLandingPages: AdLandingPage[] = [
       {
         title: "What admissions will confirm",
         items: [
-          "September 4, 2026 is full; current start dates are October 12 and November 20, 2026.",
+          "September 4, 2026 is full; current start dates are September 12 (Saturday Academy), October 12, and November 20, 2026.",
           "Tuition, available payment plans, registration paperwork, and whether a tour makes sense.",
           "How the 64-hour internship fits into the 9-week, 210-hour schedule.",
         ],
