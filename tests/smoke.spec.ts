@@ -1299,6 +1299,7 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
     "Dates are penciled in and may change; admissions will confirm current availability.",
     "June 19",
     "Full",
+    // Keep a later start fully qualified so the homepage copy is not date-ambiguous.
     "October 12, 2026",
     "Initial and renewal BLS/CPR training for healthcare providers",
     "Board-approved 8-hour Infection Control training for unlicensed dental assistants",
