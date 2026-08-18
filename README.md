@@ -100,6 +100,12 @@ Highlights:
 
 ## QA Commands
 
+The `pnpm test:*` suites use Playwright and require the browser to be installed once per machine:
+
+```bash
+pnpm exec playwright install chromium
+```
+
 - `pnpm lint`: ESLint across app, components, lib, tests, and config.
 - `pnpm build`: production Next.js build.
 - `pnpm test:smoke`: route/status/title sanity checks on localhost.
