@@ -900,7 +900,7 @@ test.describe("live-style interaction flows", () => {
         ),
       ).toBeVisible();
       await expect(
-        courseSystem.getByText("September 12, 2026 (Saturday Academy). Additional starts are October 12 and November 20, 2026."),
+        courseSystem.getByText("September 12, 2026 (Saturday Academy). Additional starts are October 12, 2026 and November 20, 2026."),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",
