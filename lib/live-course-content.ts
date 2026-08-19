@@ -191,7 +191,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $695.",
       "Duration 32 hours.",
       "Format Didactic, laboratory, and clinical application focused on x-ray safety, digital imaging, and evaluation.",
-      `${classDateSentence("radiation-safety")} The June 6, July 18, and August 1, 2026 classes are full; September 5, 2026 is the next available date.`,
+      `${classDateSentence("radiation-safety")} The June 6, July 18, August 1, and September 5, 2026 classes are full; October 17, 2026 is the next available date.`,
       "Best next step Call the office to register and confirm availability.",
     ].join(" "),
   },
