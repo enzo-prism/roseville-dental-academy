@@ -629,7 +629,7 @@ function ContactSection() {
               "BLS: next open date is August 1, 2026",
               "X-rays and Infection Control: next open date is August 1, 2026",
               "Coronal Polish: next open date is August 8, 2026",
-              "Pit and Fissure Sealants: next open date is September 12, 2026",
+              "Pit and Fissure Sealants: next open date is October 24, 2026",
             ]}
             icon="phone"
             title="Reach admissions"
