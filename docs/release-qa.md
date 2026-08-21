@@ -144,9 +144,7 @@ A visual diff is only meaningful if the capture is reproducible. Two things in t
 
 **The homepage hero carousel.** It auto-advances every 7s, and `prepareFullPageForVisual` routinely takes longer than one tick, so `/` can be photographed on any slide. It is not covered by the `visualMasks` in `snapshot/live/manifest.json`, which only mask the retired GoDaddy review carousel. This makes the two `home` baselines flaky in both directions — a run can report ~1k or ~147k differing pixels on identical code.
 
-The controller stops auto-advancing under `prefers-reduced-motion: reduce`, and the matching CSS only disables animation, so `page.emulateMedia({ reducedMotion: "reduce" })` would pin it to slide 1. **This is not wired up yet**, because the committed `home-desktop.png` / `home-mobile.png` were themselves captured mid-carousel on a later slide: pinning to slide 1 raises `home` desktop drift from ~7k to ~35k against the current baselines. Adopting it means regenerating both `home` baselines from a pinned capture in the same change.
-
-Treat a `home` visual failure as suspect until that is done. Confirm it reproduces across runs before accepting or chasing it.
+The controller stops auto-advancing under `prefers-reduced-motion: reduce`. `captureVisual` and `captureVisualBaseline` now call `page.emulateMedia({ reducedMotion: "reduce" })` for the homepage only, so both home baselines are captured on slide 1. Keep that pin when refreshing `home-desktop.png` / `home-mobile.png`.
 
 ## Updating Visual Baselines
 
