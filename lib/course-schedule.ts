@@ -132,6 +132,16 @@ const augustEightCourses = [
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
+// September 12, 2026: Pit and Fissure Sealants is fully booked; Dental Assisting
+// (Saturday Academy) and Coronal Polish still have seats, so this date needs
+// its own list instead of spreading the shared `coronalSealantsCourses`
+// reference used by Oct 24, Nov 14, and Dec 12.
+const septemberTwelveCourses = [
+  course("dental-assisting-program"),
+  course("coronal-polish"),
+  course("sealants", "full"),
+] satisfies CourseScheduleCourse[];
+
 // July 18, 2026: the class date has passed — BLS, X-rays, and Infection Control are closed.
 const julyEighteenCourses = [
   course("bls-cpr-1", "full"),
@@ -224,7 +234,7 @@ export const courseScheduleMonths = [
         isoDate: "2026-09-12",
         // Saturday Academy DA cohort plus existing coronal/sealants courses
         // on the same date (separate programs, not a combined attendance day).
-        courses: [course("dental-assisting-program"), ...coronalSealantsCourses],
+        courses: septemberTwelveCourses,
       },
     ],
   },

@@ -33,7 +33,7 @@ Official source links:
 
 Availability lives in `lib/course-schedule.ts`. A `"full"` status is also how a date that has already passed is retired, so this edit recurs often.
 
-**Check whether the date's course list is shared before editing it.** `blsXrayInfectionCourses` and `coronalSealantsCourses` are single array references reused by several dates. Adding `"full"` to `blsXrayInfectionCourses` marks BLS, X-rays, *and* Infection Control full on every remaining 2026 date, not just the one being edited. When only part of a shared date sells out, give that date its own list — `augustOneCourses`, `septemberFiveCourses`, and `julyEighteenCourses` are the pattern.
+**Check whether the date's course list is shared before editing it.** `blsXrayInfectionCourses` and `coronalSealantsCourses` are single array references reused by several dates. Adding `"full"` to `blsXrayInfectionCourses` marks BLS, X-rays, *and* Infection Control full on every remaining 2026 date, not just the one being edited. When only part of a shared date sells out, give that date its own list — `augustOneCourses`, `septemberFiveCourses`, `septemberTwelveCourses`, and `julyEighteenCourses` are the pattern.
 
 After changing the data, verify what the change actually produced:
 
