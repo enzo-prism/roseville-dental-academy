@@ -346,6 +346,10 @@ async function waitForFontsReady(page) {
 
 async function captureVisualBaseline(page, url, maskSelectors, viewport) {
   await page.setViewportSize(viewport);
+  const pathname = new URL(url).pathname;
+  if (pathname === "/" || pathname === "") {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+  }
   await page.goto(url, {
     timeout: 120_000,
     waitUntil: "domcontentloaded",

@@ -940,6 +940,12 @@ export async function captureVisual(
 ) {
   await page.setViewportSize(viewport);
   await suppressSitePromo(page.context());
+  // Homepage hero auto-advances every 7s unless reduced motion is set.
+  // Pin it to slide 1 so home baselines are not mid-carousel lottery.
+  const pathname = new URL(url).pathname;
+  if (pathname === "/" || pathname === "") {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+  }
   const runtime = createRuntimeDiagnostics(page);
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await settleMirrorPage(page);
