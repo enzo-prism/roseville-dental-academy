@@ -158,6 +158,8 @@ Current dedicated Meta landing-page examples:
 
 These routes submit to dedicated Formspree inboxes and capture UTMs plus supported ad click IDs such as `fbclid`. See [docs/analytics.md](docs/analytics.md) for the route-to-inbox map and the local-only, read-only reporting workflow.
 
+The lead runtime keeps separate 90-day first-touch and conversion-touch records, with session-only fallback when browser privacy signals restrict durable storage. Accepted requests use one browser-generated `lead_event_id` across browser events, pass it as Meta's `eventID`, and send a PII-free best-effort receipt to the private attribution ledger. This browser ID is not the immutable Formspree submission `_id`: authenticated reconciliation later establishes canonical identity as `form_id:_id` and verifies the browser receipt. See [docs/analytics.md](docs/analytics.md) for the field, consent, privacy, and reconciliation contracts.
+
 Use `/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01` for TikTok Dental Assisting Program ads.
 
 Important env vars:

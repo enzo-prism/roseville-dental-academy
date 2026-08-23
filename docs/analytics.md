@@ -46,9 +46,20 @@ The active May 13 legacy boosted post is an exception: Meta controls its destina
 TikTok Dental Assisting ads should point to:
 `/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01`
 
-Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, a query-stripped external `referrer`, and the standard UTM fields, including `utm_id` and `utm_source_platform`. They also capture `dclid`, `fbclid`, `gbraid`, `gclid`, `msclkid`, `ttclid`, and `wbraid` for Formspree/offline attribution. The latest complete paid-touch values persist for the current browser session so a visitor can continue to another RDA form without losing the ad context; a later paid visit replaces the earlier campaign as one complete set rather than mixing fields. Ad click IDs are intentionally not copied into GA4, Meta, or Vercel custom-event properties.
+Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, a query-stripped external `referrer`, and the standard UTM fields, including `utm_id` and `utm_source_platform`. They capture Google/Microsoft IDs (`gclid`, `gbraid`, `wbraid`, `dclid`, `msclkid`), Meta IDs (`fbclid`, `fbc`, `fbp`), TikTok IDs (`ttclid`, `ttp`), and Snap IDs (`ScCid`/`sccid`, `sc_click_id`) for private reconciliation. Meta/TikTok browser-cookie values (`_fbc`, `_fbp`, `_ttp`) are read when the equivalent URL value is absent.
 
-Every accepted AJAX form request receives a non-PII `submission_id`. The same ID is sent to Formspree, GA4, Meta, and Vercel so accepted leads can be joined across systems. Final lead/conversion events fire only after Formspree returns an HTTP-success response; rejected or failed requests show the inline error state and are not counted as leads. A short in-flight lock also prevents rapid double-clicks from creating duplicate requests.
+Attribution is stored as two independent records: the first meaningful touch is immutable, while a later meaningful touch becomes the conversion touch. Both include a capture time, landing path, first-party anonymous/session IDs, available GA client/session IDs, UTMs, exact click IDs, and native ad dimensions when those dimensions are present in the URL. The record lasts for 90 days in first-party local storage with a same-site cookie backup. Global Privacy Control, Do Not Track, or an explicit denied RDA consent cookie restricts storage to the current browser session; unavailable storage falls back to memory without blocking the form.
+
+Ad click IDs, first-party browser IDs, and native ad dimensions are intentionally not copied into GA4, Meta, or Vercel custom-event properties. They are sent only with the accepted Formspree lead and to the private same-origin attribution receipt endpoint.
+
+Every accepted AJAX form request receives one non-PII UUID before submission. It is sent only as `lead_event_id`, and the same value joins Formspree payload fields, GA4, Meta, Vercel, and the pending private-ledger receipt. It is not Formspree's immutable submission `_id`. Authenticated reconciliation uses the canonical `form_id:_id` lead identity and only then verifies the matching browser `lead_event_id`. Final lead/conversion events fire only after Formspree returns an HTTP-success response; rejected or failed requests show the inline error state and are not counted as leads. A short in-flight lock also prevents rapid double-clicks from creating duplicate requests.
+
+The site starts a best-effort request for a short-lived, server-signed receipt token bound to that
+form and browser event. The private ledger accepts only its durable nonce; an identical retry is safe,
+while a changed replay is rejected. Token or ledger downtime never changes an accepted Formspree lead
+into a form error.
+
+After Formspree accepts a request, the browser sends a best-effort `AttributionReceipt` to `/api/attribution/receipt`. The receipt contains no student-entered name, email, phone, notes, or message. It stores first/conversion touch metadata against the same lead event ID for later canonical Formspree verification. A receipt outage never changes an already accepted lead into a visible form error; the daily Formspree reconciliation remains the recovery path.
 
 Vercel receives `ad_landing_view`, `cta_click`, and accepted `lead_form_submit` custom events with the same non-PII campaign context. This supports a landing view → CTA → accepted lead funnel without sending names, email addresses, phone numbers, notes, or full ad click IDs to Vercel.
 
@@ -66,7 +77,7 @@ RDA currently uses three verified Formspree inboxes:
 | `/lp/coronal-sealants-renewal` | `xzdkgaeg` with `form_key=mwvdrnrk` | Shared live Google Sheets inbox; dedicated ID retained for attribution |
 | All other `/lp/*` routes | `xzdkgaeg` | Shared registration/contact inbox and fallback |
 
-Operational reports must ingest `xzdkgaeg` and `mpqgyjjg`, merge them into one lead schema, and deduplicate by the website `submission_id`. Historical records from `mwvdrnrk` remain available through its read-only API, while new coronal/sealants leads arrive in `xzdkgaeg` tagged with `form_key=mwvdrnrk`.
+Operational reports must ingest `xzdkgaeg` and `mpqgyjjg`, merge them into one lead schema, and deduplicate only by the immutable Formspree `form_id:_id`. The browser-provided `lead_event_id` is a separate reconciliation field and never replaces the Formspree `_id`. Historical records from `mwvdrnrk` remain available through its read-only API, while new coronal/sealants leads arrive in `xzdkgaeg` tagged with `form_key=mwvdrnrk`.
 
 The two dedicated HTTP APIs are enabled. Only scoped, read-only credentials are retained. They live outside this repository in the ignored local integration at `~/.openclaw-mac-telegram/workspace/integrations/formspree/`; no Formspree API credential belongs in this repository, a Vercel environment variable, client-side code, screenshots, or logs. A credential authorized for one form must not be reused for another form.
 
@@ -91,7 +102,7 @@ The event layer avoids student-entered names, email addresses, phone numbers, no
 | `portal_click` | Resume portal entry points | `portal`, `location`, `destination` |
 | `file_download` | Public PDF downloads | `file_name`, `file_type`, `location` |
 | `outbound_click` | Other external links | `domain`, `location`, `destination` |
-| `lead_form_submit` | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `source`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `lead_form_submit` | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `source`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `lead_form_invalid` | Sign-up or registration submit blocked by missing required selections | `form_id`, `reason`, `selected_count` |
 
 ## Google Analytics Events
@@ -103,7 +114,7 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | Event | Type | When it fires | Key parameters |
 | --- | --- | --- | --- |
 | `ad_landing_view` | Custom | `/lp/*` landing page view | `landing_page`, `campaign_intent`, `course_interest`, `content_category`, `page_path`, UTM fields |
-| `generate_lead` | GA4 recommended | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `generate_lead` | GA4 recommended | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `select_content` | GA4 recommended | CTA, nav, portal, social, and file selections | `content_type`, `content_id`, `link_location`, `link_url` |
 | `file_download` | GA4 enhanced/recommended-style | Public PDF downloads | `file_name`, `file_extension`, `link_location`, `link_url` |
 | `cta_click` | Custom | Primary CTAs | `cta_id`, `cta_location`, `link_url` |
@@ -113,7 +124,7 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | `social_click` | Custom | Facebook, Instagram, or TikTok links | `method`, `social_platform`, `link_location`, `link_url` |
 | `portal_click` | Custom | Resume portal entry points | `portal`, `link_location`, `link_url` |
 | `outbound_click` | Custom | External links not otherwise categorized | `link_domain`, `link_location`, `link_url`, `outbound` |
-| `lead_form_submit` | Custom | Accepted lead paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `lead_form_submit` | Custom | Accepted lead paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
 | `lead_form_invalid` | Custom | Submit blocked by required selections | `form_id`, `reason`, `selected_count` |
 
 For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `renewal_focus`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_id`, `utm_source_platform`, `utm_content`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.
@@ -127,10 +138,12 @@ Safe Meta standard events:
 | Event | When it fires | Safe parameters |
 | --- | --- | --- |
 | `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
-| `Lead` | Formspree accepts a valid lead request | `content_name`, `content_category`, `source_page`, `submission_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
+| `Lead` | Formspree accepts a valid lead request | `content_name`, `content_category`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name`, `content_category`, `link_location`, `page_path` |
 
 Do not send student-entered names, email addresses, phone numbers, notes, or message text to Meta events.
+
+The browser `Lead` event passes the accepted `lead_event_id` as Meta's separate `eventID` option. A future server-side Conversions API `Lead` must use the same event name and event ID so Meta can deduplicate the browser and server copies.
 
 ## Retired Snapchat Pixel
 
@@ -140,4 +153,4 @@ Snapchat Pixel is no longer mounted. The June 17, 2026 RDA meeting discontinued 
 
 Run `pnpm lint`, `pnpm build`, and `pnpm test:interactions` after changing event logic. `pnpm test:smoke` verifies the analytics and pixel script mounts.
 
-For production verification, do not create a fake lead. Open a landing page with test UTMs and a synthetic `fbclid`, confirm the hidden form fields and session persistence, and verify that GA4, Meta Pixel, and Vercel Analytics collectors are ready. Use the next real accepted lead to confirm Formspree arrival, GA4 Realtime plus the `generate_lead` key event, and the matching Vercel `ad_landing_view` → `cta_click` → `lead_form_submit` funnel.
+For production verification, do not create a fake lead. Open a landing page with test UTMs and synthetic click IDs, confirm the hidden form fields plus first/conversion-touch persistence, and verify that GA4, Meta Pixel, and Vercel Analytics collectors are ready. Use the next real accepted lead to confirm Formspree arrival, the private receipt, GA4 Realtime plus the `generate_lead` key event, Meta browser/server event-ID deduplication when CAPI is enabled, and the matching Vercel `ad_landing_view` → `cta_click` → `lead_form_submit` funnel.

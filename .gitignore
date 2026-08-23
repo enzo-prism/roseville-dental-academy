@@ -11,3 +11,5 @@ test-results
 dogfood-output
 pnpm-debug.log*
 *.tsbuildinfo
+.env*
+!.env.example

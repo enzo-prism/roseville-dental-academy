@@ -2,6 +2,16 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "trailingSlash": false,
+  "crons": [
+    {
+      "path": "/api/attribution/postbacks",
+      "schedule": "15 16 * * *"
+    },
+    {
+      "path": "/api/attribution/retention",
+      "schedule": "45 16 * * *"
+    }
+  ],
   "redirects": [
     {
       "source": "/bls%2Fcpr-1",

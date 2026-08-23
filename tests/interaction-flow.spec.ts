@@ -1333,6 +1333,7 @@ test.describe("live-style interaction flows", () => {
       const utmCampaign = "coronal_sealants_renewal";
       const utmId = "meta_campaign_123";
       let formspreeRequestBody = "";
+      let attributionReceipt: Record<string, unknown> | null = null;
 
       await page.route("https://formspree.io/f/**", async (route) => {
         formspreeRequestBody = route.request().postData() ?? "";
@@ -1340,6 +1341,25 @@ test.describe("live-style interaction flows", () => {
           body: JSON.stringify({ ok: true }),
           contentType: "application/json",
           status: 200,
+        });
+      });
+      await page.route("**/api/attribution/receipt-token", async (route) => {
+        await route.fulfill({
+          body: JSON.stringify({ token: "signed-test-receipt-token" }),
+          contentType: "application/json",
+          status: 201,
+        });
+      });
+      await page.route("**/api/attribution/receipt", async (route) => {
+        expect(route.request().headers()["x-rda-receipt-token"]).toBe("signed-test-receipt-token");
+        attributionReceipt = JSON.parse(route.request().postData() ?? "null") as Record<
+          string,
+          unknown
+        > | null;
+        await route.fulfill({
+          body: JSON.stringify({ error: "temporary_attribution_outage" }),
+          contentType: "application/json",
+          status: 503,
         });
       });
 
@@ -1376,7 +1396,7 @@ test.describe("live-style interaction flows", () => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(
         page,
-        `${landingPage.path}?utm_source=fb&utm_medium=paid&utm_campaign=${utmCampaign}&utm_id=${utmId}&utm_source_platform=meta_ads&utm_content=renewal_ready_test&fbclid=meta_click_123&ttclid=tiktok_click_456`,
+        `${landingPage.path}?utm_source=fb&utm_medium=paid&utm_campaign=${utmCampaign}&utm_id=${utmId}&utm_source_platform=meta_ads&utm_content=renewal_ready_test&fbclid=meta_click_123&fbc=meta_fbc_123&fbp=meta_fbp_123&ttclid=tiktok_click_456&ttp=tiktok_cookie_456&gclid=google_click_123&gbraid=google_braid_123&wbraid=google_web_braid_123&dclid=display_click_123&msclkid=microsoft_click_123&ScCid=snap_click_123&sc_click_id=snap_alt_click_123`,
       );
 
       const form = page.locator('form[data-rda-landing-form="true"]');
@@ -1538,6 +1558,9 @@ test.describe("live-style interaction flows", () => {
       const vercelEventNames = vercelEvents.map((event) => event[1].name);
       const viewContentEvent = metaTrackEvents.find((event) => event[1] === "ViewContent")?.[2] ?? {};
       const leadEvent = metaTrackEvents.find((event) => event[1] === "Lead")?.[2] ?? {};
+      const leadEventOptions = events.meta.find(
+        (event) => event[0] === "track" && event[1] === "Lead",
+      )?.[3] as { eventID?: string } | undefined;
       const contactEvent = metaTrackEvents.find((event) => event[1] === "Contact")?.[2] ?? {};
       const ctaEvent = gaEvents.find((event) => event[1] === "cta_click")?.[2] ?? {};
       const gaLeadEvent = gaEvents.find((event) => event[1] === "generate_lead")?.[2] ?? {};
@@ -1611,31 +1634,73 @@ test.describe("live-style interaction flows", () => {
       expect(vercelEventNames).toEqual(
         expect.arrayContaining(["contact_action", "cta_click", "lead_form_submit"]),
       );
-      const submissionIds = [
-        leadEvent.submission_id,
-        gaLeadEvent.submission_id,
-        gaSubmitEvent.submission_id,
-        vercelLeadEvent.submission_id,
+      const leadEventIds = [
+        leadEvent.lead_event_id,
+        gaLeadEvent.lead_event_id,
+        gaSubmitEvent.lead_event_id,
+        vercelLeadEvent.lead_event_id,
       ];
 
-      expect(submissionIds[0]).toEqual(expect.any(String));
-      expect(submissionIds.every((submissionId) => submissionId === submissionIds[0])).toBe(true);
+      expect(leadEventIds[0]).toEqual(expect.any(String));
+      expect(leadEventIds.every((leadEventId) => leadEventId === leadEventIds[0])).toBe(true);
+      expect(leadEventOptions).toEqual({ eventID: leadEventIds[0] });
+      await expect.poll(() => attributionReceipt).not.toBeNull();
+      const receivedReceipt = attributionReceipt as unknown as Record<string, unknown>;
+
+      expect(receivedReceipt).toMatchObject({
+        formId: "xzdkgaeg",
+        leadEventId: leadEventIds[0],
+        schemaVersion: 1,
+      });
+      expect(receivedReceipt.firstTouch).toMatchObject({
+        anonymousId: expect.any(String),
+        clickIds: {
+          fbclid: "meta_click_123",
+          gclid: "google_click_123",
+          sc_click_id: "snap_alt_click_123",
+          sccid: "snap_click_123",
+          ttclid: "tiktok_click_456",
+        },
+        sessionId: expect.any(String),
+        touchId: expect.any(String),
+        type: "first",
+        utm: { utm_campaign: utmCampaign },
+      });
+      expect(receivedReceipt.conversionTouch).toMatchObject({
+        clickIds: {
+          fbc: "meta_fbc_123",
+          fbp: "meta_fbp_123",
+          gbraid: "google_braid_123",
+          msclkid: "microsoft_click_123",
+          ttp: "tiktok_cookie_456",
+          wbraid: "google_web_braid_123",
+        },
+        type: "conversion",
+      });
+      expect((receivedReceipt.firstTouch as { touchId: string }).touchId)
+        .not.toBe((receivedReceipt.conversionTouch as { touchId: string }).touchId);
       expect(formspreeRequestBody).toContain("meta_click_123");
       expect(formspreeRequestBody).toContain("tiktok_click_456");
+      expect(formspreeRequestBody).toContain("snap_click_123");
+      expect(formspreeRequestBody).toContain("google_click_123");
       expect(formspreeRequestBody).toContain(utmId);
       expect(formspreeRequestBody).toContain("meta_ads");
       expect(formspreeRequestBody).toContain("Pit and Fissure Sealants");
-      expect(formspreeRequestBody).toContain(String(submissionIds[0]));
+      expect(formspreeRequestBody).toContain(String(leadEventIds[0]));
       expect(trackedPayload).not.toContain("private-test@example.com");
       expect(trackedPayload).not.toContain("916-555-1234");
       expect(trackedPayload).not.toContain("private note");
       expect(trackedPayload).not.toContain("private test student");
+      expect(trackedPayload).not.toContain("meta_click_123");
+      expect(trackedPayload).not.toContain("snap_click_123");
+      expect(trackedPayload).not.toContain("google_click_123");
     });
 
     test("failed Formspree requests are not counted as leads", async ({ page }) => {
       const landingPage =
         adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
         adLandingPages[0];
+      let receiptRequests = 0;
 
       await page.route("https://formspree.io/f/**", async (route) => {
         await route.fulfill({
@@ -1643,6 +1708,10 @@ test.describe("live-style interaction flows", () => {
           contentType: "application/json",
           status: 500,
         });
+      });
+      await page.route("**/api/attribution/receipt", async (route) => {
+        receiptRequests += 1;
+        await route.fulfill({ status: 202 });
       });
       await page.addInitScript(() => {
         const analyticsWindow = window as Window & {
@@ -1716,6 +1785,7 @@ test.describe("live-style interaction flows", () => {
       expect(eventNames.ga).not.toContain("lead_form_submit");
       expect(eventNames.meta).not.toContain("Lead");
       expect(eventNames.vercel).not.toContain("lead_form_submit");
+      expect(receiptRequests).toBe(0);
     });
 
     test("ad attribution persists when a visitor continues to another site form", async ({
@@ -1748,6 +1818,82 @@ test.describe("live-style interaction flows", () => {
       await expect(signupForm.locator('input[name="fbclid"]')).toHaveValue(
         "persisted_meta_click",
       );
+    });
+
+    test("first touch stays immutable while a later paid touch becomes the conversion touch", async ({
+      page,
+    }) => {
+      const landingPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=google&utm_medium=cpc&utm_campaign=first_campaign&gclid=first_google_click`,
+      );
+      await expect(
+        page.locator('form[data-rda-landing-form="true"] input[name="utm_campaign"]'),
+      ).toHaveValue("first_campaign");
+
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=instagram&utm_medium=paid_social&utm_campaign=conversion_campaign&fbclid=conversion_meta_click`,
+      );
+      await expect(
+        page.locator('form[data-rda-landing-form="true"] input[name="utm_campaign"]'),
+      ).toHaveValue("conversion_campaign");
+
+      const storedAttribution = await page.evaluate(() => {
+        const raw = window.localStorage.getItem("rda_lead_attribution_v2");
+        return raw ? JSON.parse(raw) : null;
+      });
+
+      expect(storedAttribution).toMatchObject({
+        anonymousId: expect.any(String),
+        conversionTouch: {
+          clickIds: { fbclid: "conversion_meta_click" },
+          touchId: expect.any(String),
+          utm: { utm_campaign: "conversion_campaign", utm_source: "instagram" },
+        },
+        firstTouch: {
+          clickIds: { gclid: "first_google_click" },
+          touchId: expect.any(String),
+          utm: { utm_campaign: "first_campaign", utm_source: "google" },
+        },
+        policyVersion: "2026-08-23",
+        version: 2,
+      });
+      expect(storedAttribution.firstTouch.touchId).not.toBe(
+        storedAttribution.conversionTouch.touchId,
+      );
+    });
+
+    test("privacy signals restrict durable attribution to the browser session", async ({ page }) => {
+      const landingPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, "globalPrivacyControl", {
+          configurable: true,
+          value: true,
+        });
+      });
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=facebook&utm_medium=paid_social&utm_campaign=privacy_restricted&fbclid=restricted_meta_click`,
+      );
+      await expect(
+        page.locator('form[data-rda-landing-form="true"] input[name="utm_campaign"]'),
+      ).toHaveValue("privacy_restricted");
+
+      const storageState = await page.evaluate(() => ({
+        durable: window.localStorage.getItem("rda_lead_attribution_v2"),
+        session: window.sessionStorage.getItem("rda_lead_attribution_session_v2"),
+      }));
+
+      expect(storageState.durable).toBeNull();
+      expect(storageState.session).toContain("privacy_restricted");
     });
 
     test("current ad attribution still works when session storage is unavailable", async ({

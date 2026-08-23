@@ -512,7 +512,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     course_interest: optionalCompactValue(getFormValue(formData, "course_interest")),
     landing_page: optionalCompactValue(getFormValue(formData, "landing_page")),
     page_path: optionalCompactValue(getFormValue(formData, "page_path")),
-    submission_id: optionalCompactValue(getFormValue(formData, "submission_id")),
+    lead_event_id: optionalCompactValue(getFormValue(formData, "lead_event_id")),
     utm_campaign: optionalSlugValue(getFormValue(formData, "utm_campaign")),
     utm_content: optionalSlugValue(getFormValue(formData, "utm_content")),
     utm_id: optionalSlugValue(getFormValue(formData, "utm_id")),
@@ -549,14 +549,18 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     selected_items: summarizeSelectedItems(selectedItems),
     source_page: sourcePage,
   });
-  trackMetaPixelEvent("Lead", {
-    ...campaignContext,
-    content_category: formId,
-    content_name: getLeadFormName(formId),
-    selected_count: selectedItems.length || undefined,
-    selected_items: summarizeSelectedItems(selectedItems),
-    source_page: sourcePage,
-  });
+  trackMetaPixelEvent(
+    "Lead",
+    {
+      ...campaignContext,
+      content_category: formId,
+      content_name: getLeadFormName(formId),
+      selected_count: selectedItems.length || undefined,
+      selected_items: summarizeSelectedItems(selectedItems),
+      source_page: sourcePage,
+    },
+    { eventID: campaignContext.lead_event_id },
+  );
 }
 
 function trackLeadInvalid(formId: string, reason: string, selectedCount = 0) {
@@ -618,8 +622,8 @@ function trackLeadSuccessEvent(event: Event) {
   const detail = event.detail as LeadFormSuccessDetail | undefined;
   const formData = new FormData(form);
 
-  if (detail?.submissionId) {
-    formData.set("submission_id", detail.submissionId);
+  if (detail?.leadEventId) {
+    formData.set("lead_event_id", detail.leadEventId);
   }
 
   if (form.matches("[data-rda-signup-form='true']")) {

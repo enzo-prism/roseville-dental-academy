@@ -29,8 +29,8 @@ export function trackGaEvent(eventName: string, params: Record<string, unknown> 
   }
 
   window.gtag("event", eventName, {
-    page_location: window.location.href,
-    page_path: window.location.pathname + window.location.search,
+    page_location: `${window.location.origin}${window.location.pathname}`,
+    page_path: window.location.pathname,
     ...params,
   });
 
@@ -60,12 +60,13 @@ function PageViewTracking({ measurementId }: { measurementId: string }) {
       return;
     }
 
-    const query = searchParams.toString();
-    const pagePath = query ? `${pathname}?${query}` : pathname;
+    // Keep click IDs out of GA event parameters. UTMs are sent as the explicit,
+    // allow-listed event fields defined by the analytics contract.
+    void searchParams;
 
     window.gtag("config", measurementId, {
-      page_location: window.location.href,
-      page_path: pagePath,
+      page_location: `${window.location.origin}${pathname}`,
+      page_path: pathname,
       page_title: document.title,
     });
   }, [measurementId, pathname, searchParams]);
@@ -93,7 +94,10 @@ export function GoogleAnalytics() {
           function gtag(){dataLayer.push(arguments);}
           window.gtag = window.gtag || gtag;
           gtag('js', new Date());
-          gtag('config', '${measurementId}');
+          gtag('config', '${measurementId}', {
+            page_location: window.location.origin + window.location.pathname,
+            page_path: window.location.pathname
+          });
         `}
       </Script>
       <Suspense fallback={null}>
