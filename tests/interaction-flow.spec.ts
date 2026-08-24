@@ -876,6 +876,9 @@ test.describe("live-style interaction flows", () => {
       await expect(
         courseSystem.getByLabel("Pit and Fissure Sealants is full on September 12"),
       ).toBeVisible();
+      await expect(
+        courseSystem.getByLabel("Coronal Polish is full on September 12"),
+      ).toBeVisible();
       await expect(courseSystem.getByText("October 12", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("October 17", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("October 24", { exact: true })).toBeVisible();
@@ -1967,14 +1970,14 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
       await expect(form.getByText("Classes or certifications to ask about")).toBeVisible();
       await expect(form.getByText("Next open date: September 12, 2026 (Saturday Academy)")).toHaveCount(1);
-      await expect(form.getByText("Next open date: September 12, 2026", { exact: true })).toHaveCount(1);
+      await expect(form.getByText("Next open date: September 12, 2026", { exact: true })).toHaveCount(0);
       await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(2);
       await expect(form.getByText("Next open date: September 5, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: October 17, 2026")).toHaveCount(1);
       await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: October 12, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: October 24, 2026")).toHaveCount(1);
+      await expect(form.getByText("Next open date: October 24, 2026")).toHaveCount(2);
       await expect(form.getByText("By appointment")).toBeVisible();
       await expect(form.getByText("Team can recommend a starting point")).toBeVisible();
       await expect(submit).toHaveText(/Request next steps/);
