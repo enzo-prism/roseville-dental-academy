@@ -874,6 +874,12 @@ test.describe("live-style interaction flows", () => {
         courseSystem.getByLabel("X-rays / Radiation Safety is full on September 5"),
       ).toBeVisible();
       await expect(
+        courseSystem.getByLabel("BLS / CPR is full on September 5"),
+      ).toBeVisible();
+      await expect(
+        courseSystem.getByLabel("Infection Control is full on September 5"),
+      ).toBeVisible();
+      await expect(
         courseSystem.getByLabel("Pit and Fissure Sealants is full on September 12"),
       ).toBeVisible();
       await expect(

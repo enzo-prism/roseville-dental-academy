@@ -116,14 +116,13 @@ const augustOneCourses = [
   course("infection-control"),
 ] satisfies CourseScheduleCourse[];
 
-// September 5, 2026: X-rays / Radiation Safety is fully booked; BLS and
-// Infection Control still have seats, so this date needs its own list instead
-// of the shared `blsXrayInfectionCourses` reference used by Oct 17, Nov 7,
-// and Dec 5.
+// September 5, 2026: BLS, X-rays / Radiation Safety, and Infection Control
+// are all fully booked. This date keeps its own list instead of the shared
+// `blsXrayInfectionCourses` reference used by Oct 17, Nov 7, and Dec 5.
 const septemberFiveCourses = [
-  course("bls-cpr-1"),
+  course("bls-cpr-1", "full"),
   course("radiation-safety", "full"),
-  course("infection-control"),
+  course("infection-control", "full"),
 ] satisfies CourseScheduleCourse[];
 
 // August 8, 2026: Coronal Polish and Pit and Fissure Sealants are both fully booked.
