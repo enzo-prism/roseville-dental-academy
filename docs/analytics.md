@@ -39,6 +39,10 @@ The editable Roseville Dental Academy boosts audited on July 16, 2026 use this c
 | June 14 Dental Assisting enrollment | Active | `/lp/dental-assisting-enroll` | `dental_assisting_enrollment` | `student_story_` |
 | May 12 Sealants for existing RDAs | Paused | `/sealants` | `coronal_sealants_enrollment` | `existing_rda_` |
 
+Live Saturday Academy ads already point at `/lp/dental-assisting-enroll`. Do not change those destinations. They currently send `utm_campaign=saturday_academy_sep12` and `utm_content` prefixes `static_photo_`, `tiktok_video_`, or `static_type_` plus `{{ad.id}}`. Keep those live tags; do not rewrite them to `student_story_`.
+
+The site parses a trailing numeric Meta ad id from those known `utm_content` prefixes (`static_photo_`, `tiktok_video_`, `static_type_`, `office_compliance_ic189_`, `renewal_ready_original_copy_`, `student_story_`) into a hidden `ad_id` field, and copies `campaign_id` from `utm_id` when present. Dashboard exact-ad matching uses `ad_id` / `fbclid` / `gclid` and the other click IDs; `utm_content` alone remains tier C.
+
 Append `{{ad.id}}` to each `utm_content` prefix. Every Meta destination also uses `utm_source={{site_source_name}}`, `utm_medium=paid`, `utm_id={{campaign.id}}`, and `utm_source_platform=meta_ads`. Keep `utm_source` dynamic so Facebook and Instagram remain distinguishable while `utm_source_platform` supplies one stable Meta rollup.
 
 The active May 13 legacy boosted post is an exception: Meta controls its destination through the original post and does not expose the link in the boost editor. Do not report that legacy boost as UTM-complete. If it needs new attribution, recreate it as a new ad with the current contract instead of changing the original post in place.
@@ -46,11 +50,13 @@ The active May 13 legacy boosted post is an exception: Meta controls its destina
 TikTok Dental Assisting ads should point to:
 `/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01`
 
-Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, a query-stripped external `referrer`, and the standard UTM fields, including `utm_id` and `utm_source_platform`. They capture Google/Microsoft IDs (`gclid`, `gbraid`, `wbraid`, `dclid`, `msclkid`), Meta IDs (`fbclid`, `fbc`, `fbp`), TikTok IDs (`ttclid`, `ttp`), and Snap IDs (`ScCid`/`sccid`, `sc_click_id`) for private reconciliation. Meta/TikTok browser-cookie values (`_fbc`, `_fbp`, `_ttp`) are read when the equivalent URL value is absent.
+Landing page forms submit the existing Formspree payload plus `landing_page`, `campaign_intent`, `course_interest`, `page_path`, a query-stripped external `referrer`, and the standard UTM fields, including `utm_id` and `utm_source_platform`. They also send parsed `ad_id` and `campaign_id`. They capture Google/Microsoft IDs (`gclid`, `gbraid`, `wbraid`, `dclid`, `msclkid`), Meta IDs (`fbclid`, `fbc`, `fbp`), TikTok IDs (`ttclid`, `ttp`), and Snap IDs (`ScCid`/`sccid`, `sc_click_id`) for private reconciliation. Meta/TikTok browser-cookie values (`_fbc`, `_fbp`, `_ttp`) are read when the equivalent URL value is absent.
 
-Attribution is stored as two independent records: the first meaningful touch is immutable, while a later meaningful touch becomes the conversion touch. Both include a capture time, landing path, first-party anonymous/session IDs, available GA client/session IDs, UTMs, exact click IDs, and native ad dimensions when those dimensions are present in the URL. The record lasts for 90 days in first-party local storage with a same-site cookie backup. Global Privacy Control, Do Not Track, or an explicit denied RDA consent cookie restricts storage to the current browser session; unavailable storage falls back to memory without blocking the form.
+Both live Formspree inboxes use this same first-touch stamp: `mpqgyjjg` on `/lp/dental-assisting-enroll`, and `xzdkgaeg` on course-info, contact, program, and other landing pages (including coronal `form_key=mwvdrnrk`). Do not move enroll posts onto `xzdkgaeg`. When the current URL is clean, hidden `utm_*` / click-ID / `ad_id` fields are filled from the stored first touch so a later homepage or `/contact` submit still carries the original paid tags.
 
-Ad click IDs, first-party browser IDs, and native ad dimensions are intentionally not copied into GA4, Meta, or Vercel custom-event properties. They are sent only with the accepted Formspree lead and to the private same-origin attribution receipt endpoint.
+Attribution is stored as two independent records: the first meaningful touch is immutable except for filling empty gaps, while a later paid/click-ID touch becomes the conversion touch. A later organic visit or referrer-only page view does not overwrite first-touch UTMs. Both include a capture time, landing path, first-party anonymous/session IDs, available GA client/session IDs, UTMs, exact click IDs, and native ad dimensions when those dimensions are present in the URL. The record lasts for 90 days in first-party local storage with a same-site cookie backup. Global Privacy Control, Do Not Track, or an explicit denied RDA consent cookie restricts storage to the current browser session; unavailable storage falls back to memory without blocking the form.
+
+Ad click IDs and first-party browser IDs stay out of GA4, Meta, and Vercel custom-event properties except for the accepted `Lead` payload and click-to-call/WhatsApp `Contact` events, which include stored `utm_content` plus parsed `ad_id`. The remaining click IDs are sent only with the accepted Formspree lead and to the private same-origin attribution receipt endpoint.
 
 Every accepted AJAX form request receives one non-PII UUID before submission. It is sent only as `lead_event_id`, and the same value joins Formspree payload fields, GA4, Meta, Vercel, and the pending private-ledger receipt. It is not Formspree's immutable submission `_id`. Authenticated reconciliation uses the canonical `form_id:_id` lead identity and only then verifies the matching browser `lead_event_id`. Final lead/conversion events fire only after Formspree returns an HTTP-success response; rejected or failed requests show the inline error state and are not counted as leads. A short in-flight lock also prevents rapid double-clicks from creating duplicate requests.
 
@@ -139,7 +145,9 @@ Safe Meta standard events:
 | --- | --- | --- |
 | `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Lead` | Formspree accepts a valid lead request | `content_name`, `content_category`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
-| `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name`, `content_category`, `link_location`, `page_path` |
+| `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name` (`call`, `email`, or `whatsapp`), `content_category`, `link_location`, `page_path`, stored `utm_content`, parsed `ad_id` |
+
+WhatsApp `wa.me` links keep the academy number `19165075157`. When a first-touch campaign is stored, the prefilled compose text may append a short `Ref: {utm_campaign} / {utm_content}` suffix. If that URL would change the number or fail to parse, the original untagged link is left in place.
 
 Do not send student-entered names, email addresses, phone numbers, notes, or message text to Meta events.
 

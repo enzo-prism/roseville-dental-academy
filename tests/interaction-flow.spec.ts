@@ -1829,6 +1829,154 @@ test.describe("live-style interaction flows", () => {
       );
     });
 
+    test("first-touch Saturday tags and parsed ad_id stamp both Formspree forms", async ({
+      page,
+    }) => {
+      const enrollPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+      const adId = "120248349183900567";
+      const utmContent = `static_photo_${adId}`;
+      let enrollRequestUrl = "";
+      let courseInfoRequestUrl = "";
+      let courseInfoRequestBody = "";
+
+      await page.route("https://formspree.io/f/**", async (route) => {
+        const url = route.request().url();
+        const body = route.request().postData() ?? "";
+
+        if (url.includes("mpqgyjjg")) {
+          enrollRequestUrl = url;
+        }
+
+        if (url.includes("xzdkgaeg")) {
+          courseInfoRequestUrl = url;
+          courseInfoRequestBody = body;
+        }
+
+        await route.fulfill({
+          body: JSON.stringify({ ok: true }),
+          contentType: "application/json",
+          status: 200,
+        });
+      });
+      await page.addInitScript(() => {
+        const analyticsWindow = window as Window & {
+          __rdaTestMetaEvents?: unknown[][];
+          fbq?: (...args: unknown[]) => void;
+        };
+
+        analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.fbq = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestMetaEvents?.push(args);
+        };
+      });
+
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(
+        page,
+        `${enrollPage.path}?utm_source=fb&utm_medium=paid&utm_campaign=saturday_academy_sep12&utm_id=120248349183900000&utm_source_platform=meta_ads&utm_content=${utmContent}&fbclid=saturday_click_123`,
+      );
+
+      const enrollForm = page.locator('form[data-rda-landing-form="true"]');
+      await expect(enrollForm).toHaveAttribute("action", "https://formspree.io/f/mpqgyjjg");
+      await expect(enrollForm.locator('input[name="utm_campaign"]')).toHaveValue(
+        "saturday_academy_sep12",
+      );
+      await expect(enrollForm.locator('input[name="utm_content"]')).toHaveValue(utmContent);
+      await expect(enrollForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+      await expect(enrollForm.locator('input[name="campaign_id"]')).toHaveValue(
+        "120248349183900000",
+      );
+
+      await enrollForm.locator('input[name="Name"]').fill("Saturday First Touch");
+      await enrollForm.locator('input[name="_replyto"]').fill("saturday-first-touch@example.com");
+      await enrollForm.locator('input[name="Phone"]').fill("916-555-0112");
+      await enrollForm.locator('input[name="Consent to contact"]').check();
+      await enrollForm.getByRole("button", { name: enrollPage.primaryCtaLabel }).click();
+      await expect(page.getByText("Request sent")).toBeVisible();
+      await expect.poll(() => enrollRequestUrl).toContain("mpqgyjjg");
+
+      await gotoSettled(page, "/");
+
+      const signupForm = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(signupForm).toHaveAttribute("action", "https://formspree.io/f/xzdkgaeg");
+      await expect(signupForm.locator('input[name="utm_campaign"]')).toHaveValue(
+        "saturday_academy_sep12",
+      );
+      await expect(signupForm.locator('input[name="utm_content"]')).toHaveValue(utmContent);
+      await expect(signupForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+      await expect(signupForm.locator('input[name="landing_page"]')).toHaveValue(enrollPage.path);
+
+      await signupForm.getByRole("checkbox").first().click();
+      await signupForm.locator('input[name="Name"]').fill("Course Info First Touch");
+      await signupForm.locator('input[name="_replyto"]').fill("course-info-first-touch@example.com");
+      await signupForm.locator('input[name="Phone"]').fill("916-555-0113");
+      await signupForm.getByRole("button", { name: "Request next steps" }).click();
+      await expect(page.getByText("Request sent")).toBeVisible();
+      await expect.poll(() => courseInfoRequestUrl).toContain("xzdkgaeg");
+      expect(courseInfoRequestBody).toContain("saturday_academy_sep12");
+      expect(courseInfoRequestBody).toContain(utmContent);
+      expect(courseInfoRequestBody).toContain(adId);
+      expect(courseInfoRequestBody).toContain(enrollPage.path);
+
+      await gotoSettled(page, "/dental-assisting-program");
+      const programForm = page.locator('form[data-rda-signup-form="true"]');
+      await expect(programForm).toHaveAttribute("action", "https://formspree.io/f/xzdkgaeg");
+      await expect(programForm.locator('input[name="landing_page"]')).toHaveValue(enrollPage.path);
+      await expect(programForm.locator('input[name="campaign_intent"]')).toHaveValue(
+        "saturday_academy_sep12",
+      );
+      await expect(programForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+      await expect(programForm.locator('input[name="course_interest"]')).toHaveCount(1);
+
+      await gotoSettled(page, "/contact");
+      await page.locator('[data-rda-contact-form-toggle="true"]').click();
+      const contactForm = page.locator('form[data-rda-contact-form="true"]');
+      await expect(contactForm.locator('input[name="utm_content"]')).toHaveValue(utmContent);
+      await expect(contactForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+
+      const whatsappHref = await page.locator("[data-rda-whatsapp]").first().getAttribute("href");
+      expect(whatsappHref).toContain(`wa.me/19165075157`);
+      expect(decodeURIComponent(whatsappHref ?? "")).toContain("saturday_academy_sep12");
+      expect(decodeURIComponent(whatsappHref ?? "")).toContain(utmContent);
+
+      await page.evaluate(() => {
+        const analyticsWindow = window as Window & { __rdaTestMetaEvents?: unknown[][] };
+        analyticsWindow.__rdaTestMetaEvents = [];
+        document
+          .querySelector<HTMLAnchorElement>('a[href^="tel:"]')
+          ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        document
+          .querySelector<HTMLAnchorElement>("[data-rda-whatsapp]")
+          ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      });
+
+      const contactEvents = await page.evaluate(() => {
+        const analyticsWindow = window as Window & { __rdaTestMetaEvents?: unknown[][] };
+        return (analyticsWindow.__rdaTestMetaEvents ?? []).filter(
+          (event): event is ["track", string, Record<string, unknown>?] =>
+            event[0] === "track" && event[1] === "Contact",
+        );
+      });
+
+      expect(contactEvents.length).toBeGreaterThanOrEqual(2);
+      expect(contactEvents.map((event) => event[2])).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ad_id: adId,
+            content_name: "call",
+            utm_content: utmContent,
+          }),
+          expect.objectContaining({
+            ad_id: adId,
+            content_name: "whatsapp",
+            utm_content: utmContent,
+          }),
+        ]),
+      );
+    });
+
     test("first touch stays immutable while a later paid touch becomes the conversion touch", async ({
       page,
     }) => {
@@ -1850,7 +1998,7 @@ test.describe("live-style interaction flows", () => {
       );
       await expect(
         page.locator('form[data-rda-landing-form="true"] input[name="utm_campaign"]'),
-      ).toHaveValue("conversion_campaign");
+      ).toHaveValue("first_campaign");
 
       const storedAttribution = await page.evaluate(() => {
         const raw = window.localStorage.getItem("rda_lead_attribution_v2");

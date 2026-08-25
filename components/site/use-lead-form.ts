@@ -5,11 +5,16 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import {
   buildAttributionReceipt,
   getLeadAttributionFormFields,
+  getLeadAttributionStamp,
   resolveLeadAttribution,
   type LeadAttribution,
 } from "@/lib/lead-attribution";
 
-export { AD_CLICK_ID_FIELDS, UTM_FIELDS } from "@/lib/lead-attribution";
+export {
+  AD_CLICK_ID_FIELDS,
+  getLeadAttributionStamp,
+  UTM_FIELDS,
+} from "@/lib/lead-attribution";
 export type { AdClickIdField, LeadAttribution, UtmField } from "@/lib/lead-attribution";
 
 export const LEAD_FORM_SUCCESS_EVENT = "rda:lead-form-success";
@@ -143,6 +148,7 @@ export function useLeadFormSubmit() {
           ? crypto.randomUUID()
           : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
       const attribution = resolveLeadAttribution();
+      const stamp = getLeadAttributionStamp(attribution);
       const formData = new FormData(form);
       const receiptTokenPromise = requestAttributionReceiptToken(form, leadEventId);
 
@@ -155,6 +161,14 @@ export function useLeadFormSubmit() {
         if (value) {
           formData.set(field, value);
         }
+      }
+
+      if (!String(formData.get("landing_page") || "").trim() && stamp.landing_page) {
+        formData.set("landing_page", stamp.landing_page);
+      }
+
+      if (!String(formData.get("campaign_intent") || "").trim() && stamp.campaign_intent) {
+        formData.set("campaign_intent", stamp.campaign_intent);
       }
 
       const response = await fetch(form.action, {

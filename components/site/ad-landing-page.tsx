@@ -20,8 +20,8 @@ import { trackGaEvent } from "@/components/site/google-analytics";
 import { trackSiteEvent } from "@/components/site/interaction-analytics";
 import { trackMetaPixelEvent } from "@/components/site/meta-pixel";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
+import { LeadAttributionHiddenFields } from "@/components/site/lead-attribution-fields";
 import {
-  AD_CLICK_ID_FIELDS,
   UTM_FIELDS,
   useLeadAttribution,
   useLeadFormSubmit,
@@ -356,17 +356,7 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
               <input name="landing_page" type="hidden" value={page.slug} />
               <input name="campaign_intent" type="hidden" value={page.campaignIntent} />
               <input name="course_interest" type="hidden" value={interestsLabel} />
-              {UTM_FIELDS.map((field) => (
-                <input key={field} name={field} type="hidden" value={attribution.utm[field]} />
-              ))}
-              {AD_CLICK_ID_FIELDS.map((field) => (
-                <input
-                  key={field}
-                  name={field}
-                  type="hidden"
-                  value={attribution.clickIds[field]}
-                />
-              ))}
+              <LeadAttributionHiddenFields attribution={attribution} />
               {page.courseInterests.map((interest) => (
                 <input key={interest} name="Interested classes[]" type="hidden" value={interest} />
               ))}
