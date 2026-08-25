@@ -7,6 +7,7 @@ import { GoogleAnalytics } from "@/components/site/google-analytics";
 import { GlobalStructuredData } from "@/components/site/structured-data";
 import { HotjarAnalytics } from "@/components/site/hotjar-analytics";
 import { InteractionAnalytics } from "@/components/site/interaction-analytics";
+import { LeadAttributionCapture } from "@/components/site/lead-attribution-capture";
 import { MetaPixel } from "@/components/site/meta-pixel";
 import { WhatsAppFab } from "@/components/site/whatsapp-fab";
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
@@ -48,6 +49,7 @@ export default function RootLayout({
         <GoogleAnalytics />
         <HotjarAnalytics />
         <MetaPixel />
+        <LeadAttributionCapture />
         <Analytics mode={analyticsMode} />
         <SpeedInsights />
         <InteractionAnalytics />

@@ -3,9 +3,8 @@
 import { useId, useState } from "react";
 
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
+import { LeadAttributionHiddenFields } from "@/components/site/lead-attribution-fields";
 import {
-  AD_CLICK_ID_FIELDS,
-  UTM_FIELDS,
   useLeadAttribution,
   useLeadFormSubmit,
 } from "@/components/site/use-lead-form";
@@ -158,17 +157,7 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
               <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
               <input name="page_path" type="hidden" value="/#contact" />
               <input name="referrer" type="hidden" value={attribution.referrer} />
-              {UTM_FIELDS.map((field) => (
-                <input key={field} name={field} type="hidden" value={attribution.utm[field]} />
-              ))}
-              {AD_CLICK_ID_FIELDS.map((field) => (
-                <input
-                  key={field}
-                  name={field}
-                  type="hidden"
-                  value={attribution.clickIds[field]}
-                />
-              ))}
+              <LeadAttributionHiddenFields attribution={attribution} includeLandingContext />
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor={`${formId}-name`}>Name</FieldLabel>

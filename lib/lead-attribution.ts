@@ -10,6 +10,15 @@ import {
 export const UTM_FIELDS = ATTRIBUTION_UTM_FIELDS;
 export const AD_CLICK_ID_FIELDS = ATTRIBUTION_CLICK_ID_FIELDS;
 
+export const META_UTM_CONTENT_AD_PREFIXES = [
+  "static_photo_",
+  "tiktok_video_",
+  "static_type_",
+  "office_compliance_ic189_",
+  "renewal_ready_original_copy_",
+  "student_story_",
+] as const;
+
 export const ATTRIBUTION_POLICY_VERSION = "2026-08-23";
 export const ATTRIBUTION_UPDATED_EVENT = "rda:lead-attribution-updated";
 
@@ -76,6 +85,29 @@ let memorySessionId = "";
 
 function compactAttributionValue(value: string | null | undefined) {
   return value?.trim().slice(0, MAX_ATTRIBUTION_VALUE_LENGTH) ?? "";
+}
+
+export function parseMetaAdIdFromUtmContent(utmContent: string | null | undefined) {
+  const value = compactAttributionValue(utmContent);
+
+  if (!value) {
+    return "";
+  }
+
+  const normalized = value.toLowerCase();
+  const hasKnownPrefix = META_UTM_CONTENT_AD_PREFIXES.some((prefix) =>
+    normalized.startsWith(prefix),
+  );
+
+  if (!hasKnownPrefix) {
+    return "";
+  }
+
+  return value.match(/_(\d{5,40})$/u)?.[1] ?? "";
+}
+
+function firstWins(first: string, conversion: string) {
+  return first || conversion;
 }
 
 function createId() {
@@ -260,6 +292,7 @@ export function parseAttributionTouch(
 
   dimensions.platform ||= utm.utm_source_platform || utm.utm_source;
   dimensions.campaign_id ||= utm.utm_id;
+  dimensions.ad_id ||= parseMetaAdIdFromUtmContent(utm.utm_content);
 
   return {
     capturedAt,
@@ -292,6 +325,9 @@ function normalizeTouch(value: Partial<AttributionTouch> | undefined): Attributi
     ]),
   ) as Record<AttributionAdDimensionField, string>;
 
+  dimensions.campaign_id ||= utm.utm_id;
+  dimensions.ad_id ||= parseMetaAdIdFromUtmContent(utm.utm_content);
+
   return {
     capturedAt: compactAttributionValue(value?.capturedAt),
     clickIds,
@@ -306,15 +342,24 @@ function normalizeTouch(value: Partial<AttributionTouch> | undefined): Attributi
   };
 }
 
-function hasMeaningfulAttribution(touch: AttributionTouch) {
-  const hasExplicitClickId = AD_CLICK_ID_FIELDS.some(
+function hasExplicitClickId(touch: AttributionTouch) {
+  return AD_CLICK_ID_FIELDS.some(
     (field) => !["fbc", "fbp", "ttp"].includes(field) && Boolean(touch.clickIds[field]),
   );
+}
 
+function hasMeaningfulAttribution(touch: AttributionTouch) {
   return Boolean(
-    touch.referrer ||
-      Object.values(touch.utm).some(Boolean) ||
-      hasExplicitClickId,
+    touch.referrer || Object.values(touch.utm).some(Boolean) || hasExplicitClickId(touch),
+  );
+}
+
+function hasCampaignTouch(touch: AttributionTouch) {
+  return Boolean(
+    Object.values(touch.utm).some(Boolean) ||
+      hasExplicitClickId(touch) ||
+      touch.dimensions.ad_id ||
+      touch.dimensions.campaign_id,
   );
 }
 
@@ -476,6 +521,26 @@ function enrichStoredTouch(current: AttributionTouch, stored: AttributionTouch):
   };
 }
 
+function fillTouchGaps(stored: AttributionTouch, current: AttributionTouch): AttributionTouch {
+  return {
+    ...stored,
+    clickIds: Object.fromEntries(
+      AD_CLICK_ID_FIELDS.map((field) => [field, stored.clickIds[field] || current.clickIds[field]]),
+    ) as Record<AdClickIdField, string>,
+    dimensions: Object.fromEntries(
+      ATTRIBUTION_AD_DIMENSION_FIELDS.map((field) => [
+        field,
+        stored.dimensions[field] || current.dimensions[field],
+      ]),
+    ) as Record<AttributionAdDimensionField, string>,
+    gaClientId: stored.gaClientId || current.gaClientId,
+    gaSessionId: stored.gaSessionId || current.gaSessionId,
+    utm: Object.fromEntries(
+      UTM_FIELDS.map((field) => [field, stored.utm[field] || current.utm[field]]),
+    ) as Record<UtmField, string>,
+  };
+}
+
 function createRecord(
   stored: StoredAttributionRecord | null,
   currentTouch: AttributionTouch,
@@ -493,16 +558,17 @@ function createRecord(
     };
   }
 
-  const hasCurrentTouch = hasMeaningfulAttribution(currentTouch);
+  const hasCurrentCampaign = hasCampaignTouch(currentTouch);
 
   return {
     ...stored,
-    conversionTouch: hasCurrentTouch
+    conversionTouch: hasCurrentCampaign
       ? mergeTouch(currentTouch, stored.conversionTouch)
       : enrichStoredTouch(currentTouch, stored.conversionTouch),
-    expiresAt: hasCurrentTouch
+    expiresAt: hasCurrentCampaign
       ? new Date(now.getTime() + MAX_ATTRIBUTION_AGE_MS).toISOString()
       : stored.expiresAt,
+    firstTouch: fillTouchGaps(stored.firstTouch, currentTouch),
     policyVersion: ATTRIBUTION_POLICY_VERSION,
   };
 }
@@ -626,7 +692,7 @@ export function resolveLeadAttribution(input?: {
     ? persistRecord(record, consentState)
     : storedRaw.scope;
 
-  return {
+  const attribution = {
     anonymousId: record.anonymousId,
     clickIds: record.conversionTouch.clickIds,
     consentState,
@@ -638,14 +704,61 @@ export function resolveLeadAttribution(input?: {
     storageScope,
     utm: record.conversionTouch.utm,
   };
+  const stamp = getLeadAttributionStamp(attribution);
+
+  return {
+    ...attribution,
+    clickIds: stamp.clickIds,
+    utm: stamp.utm,
+  };
+}
+
+export type LeadAttributionStamp = {
+  ad_id: string;
+  campaign_id: string;
+  campaign_intent: string;
+  clickIds: Record<AdClickIdField, string>;
+  landing_page: string;
+  utm: Record<UtmField, string>;
+};
+
+export function getLeadAttributionStamp(
+  attribution: Pick<LeadAttribution, "conversionTouch" | "firstTouch">,
+): LeadAttributionStamp {
+  const first = attribution.firstTouch;
+  const conversion = attribution.conversionTouch;
+  const utm = Object.fromEntries(
+    UTM_FIELDS.map((field) => [field, firstWins(first.utm[field], conversion.utm[field])]),
+  ) as Record<UtmField, string>;
+  const clickIds = Object.fromEntries(
+    AD_CLICK_ID_FIELDS.map((field) => [
+      field,
+      firstWins(first.clickIds[field], conversion.clickIds[field]),
+    ]),
+  ) as Record<AdClickIdField, string>;
+
+  return {
+    ad_id:
+      first.dimensions.ad_id ||
+      conversion.dimensions.ad_id ||
+      parseMetaAdIdFromUtmContent(utm.utm_content),
+    campaign_id: first.dimensions.campaign_id || conversion.dimensions.campaign_id || utm.utm_id,
+    campaign_intent: utm.utm_campaign,
+    clickIds,
+    landing_page: first.pagePath || conversion.pagePath,
+    utm,
+  };
 }
 
 export function getLeadAttributionFormFields(attribution: LeadAttribution) {
+  const stamp = getLeadAttributionStamp(attribution);
   const fields: Record<string, string> = {
+    ad_id: stamp.ad_id,
     anonymous_id: attribution.anonymousId,
     attribution_consent_state: attribution.consentState,
     attribution_policy_version: attribution.policyVersion,
     attribution_storage_scope: attribution.storageScope,
+    campaign_id: stamp.campaign_id,
     conversion_touch_captured_at: attribution.conversionTouch.capturedAt,
     conversion_touch_ga_client_id: attribution.conversionTouch.gaClientId,
     conversion_touch_ga_session_id: attribution.conversionTouch.gaSessionId,
@@ -664,13 +777,13 @@ export function getLeadAttributionFormFields(attribution: LeadAttribution) {
   };
 
   for (const field of UTM_FIELDS) {
-    fields[field] = attribution.conversionTouch.utm[field];
+    fields[field] = stamp.utm[field];
     fields[`conversion_touch_${field}`] = attribution.conversionTouch.utm[field];
     fields[`first_touch_${field}`] = attribution.firstTouch.utm[field];
   }
 
   for (const field of AD_CLICK_ID_FIELDS) {
-    fields[field] = attribution.conversionTouch.clickIds[field];
+    fields[field] = stamp.clickIds[field];
     fields[`conversion_touch_${field}`] = attribution.conversionTouch.clickIds[field];
     fields[`first_touch_${field}`] = attribution.firstTouch.clickIds[field];
   }

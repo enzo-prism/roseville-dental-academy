@@ -4,9 +4,8 @@ import * as React from "react";
 import { useSearchParams } from "next/navigation";
 
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
+import { LeadAttributionHiddenFields } from "@/components/site/lead-attribution-fields";
 import {
-  AD_CLICK_ID_FIELDS,
-  UTM_FIELDS,
   useLeadAttribution,
   useLeadFormSubmit,
 } from "@/components/site/use-lead-form";
@@ -177,12 +176,7 @@ export function RegistrationForm() {
         <input type="hidden" name={siteContact.formspreeOps.qaField} value="false" />
         <input type="hidden" name="page_path" value="/registration" />
         <input type="hidden" name="referrer" value={attribution.referrer} />
-        {UTM_FIELDS.map((field) => (
-          <input key={field} type="hidden" name={field} value={attribution.utm[field]} />
-        ))}
-        {AD_CLICK_ID_FIELDS.map((field) => (
-          <input key={field} type="hidden" name={field} value={attribution.clickIds[field]} />
-        ))}
+        <LeadAttributionHiddenFields attribution={attribution} includeLandingContext />
         <input
           type="hidden"
           name="Preferred contact method"

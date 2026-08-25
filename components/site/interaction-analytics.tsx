@@ -9,6 +9,7 @@ import {
   LEAD_FORM_SUCCESS_EVENT,
   type LeadFormSuccessDetail,
 } from "@/components/site/use-lead-form";
+import { getLeadAttributionStamp, resolveLeadAttribution } from "@/lib/lead-attribution";
 
 type AnalyticsValue = boolean | number | string | null | undefined;
 type AnalyticsProperties = Record<string, AnalyticsValue>;
@@ -189,6 +190,15 @@ function trackGaContactAction(
   });
 }
 
+function getStoredContactAttribution() {
+  const stamp = getLeadAttributionStamp(resolveLeadAttribution(undefined, false));
+
+  return {
+    ad_id: stamp.ad_id || undefined,
+    utm_content: stamp.utm.utm_content || undefined,
+  };
+}
+
 function trackClickEvent(target: Element) {
   const link = target.closest<HTMLAnchorElement>("a[href]");
 
@@ -288,24 +298,29 @@ function trackClickEvent(target: Element) {
     }
 
     if (href.startsWith("tel:")) {
+      const storedAttribution = getStoredContactAttribution();
+
       trackSiteEvent("contact_action", {
         action: "call",
         destination: "phone",
         location,
       });
       trackGaContactAction("phone", location, {
+        ...storedAttribution,
         link_text: linkText,
         link_url: destination,
       });
       trackSafeGaEvent("click_to_call", {
+        ...storedAttribution,
         contact_method: "phone",
         link_location: location,
         link_text: linkText,
         link_url: destination,
       });
       trackMetaPixelEvent("Contact", {
+        ...storedAttribution,
         content_category: "contact",
-        content_name: "phone",
+        content_name: "call",
         link_location: location,
       });
       return;
@@ -336,22 +351,27 @@ function trackClickEvent(target: Element) {
     }
 
     if (link.matches("[data-rda-whatsapp]") || href.includes("wa.me")) {
+      const storedAttribution = getStoredContactAttribution();
+
       trackSiteEvent("contact_action", {
         action: "whatsapp",
         destination: "whatsapp",
         location,
       });
       trackGaContactAction("whatsapp", location, {
+        ...storedAttribution,
         link_text: linkText,
         link_url: destination,
       });
       trackSafeGaEvent("whatsapp_click", {
+        ...storedAttribution,
         contact_method: "whatsapp",
         link_location: location,
         link_text: linkText,
         link_url: destination,
       });
       trackMetaPixelEvent("Contact", {
+        ...storedAttribution,
         content_category: "contact",
         content_name: "whatsapp",
         link_location: location,
@@ -520,6 +540,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     utm_source: optionalSlugValue(getFormValue(formData, "utm_source")),
     utm_source_platform: optionalSlugValue(getFormValue(formData, "utm_source_platform")),
     utm_term: optionalSlugValue(getFormValue(formData, "utm_term")),
+    ad_id: optionalCompactValue(getFormValue(formData, "ad_id")),
     renewal_focus: optionalSlugValue(getFormValue(formData, "Renewal focus")),
   };
 
