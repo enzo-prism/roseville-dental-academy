@@ -74,6 +74,37 @@ export const whatsAppUrl = `https://wa.me/${siteContact.whatsAppNumber}?text=${e
   siteContact.whatsAppMessage,
 )}`;
 
+export function buildAttributedWhatsAppUrl(input?: {
+  utm_campaign?: string;
+  utm_content?: string;
+}) {
+  const number = siteContact.whatsAppNumber;
+  const tags = [input?.utm_campaign, input?.utm_content]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+  const uniqueTags = [...new Set(tags)].slice(0, 2);
+  const text = uniqueTags.length
+    ? `${siteContact.whatsAppMessage}\n\nRef: ${uniqueTags.join(" / ")}`.slice(0, 400)
+    : siteContact.whatsAppMessage;
+  const url = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+
+  try {
+    const parsed = new URL(url);
+
+    if (
+      parsed.protocol !== "https:" ||
+      parsed.hostname !== "wa.me" ||
+      parsed.pathname.replace(/^\//u, "") !== number
+    ) {
+      return whatsAppUrl;
+    }
+
+    return url;
+  } catch {
+    return whatsAppUrl;
+  }
+}
+
 export const signupInterestOptions: SignupInterestOption[] = [
   {
     label: "Dental Assisting Program",

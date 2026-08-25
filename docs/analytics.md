@@ -147,6 +147,8 @@ Safe Meta standard events:
 | `Lead` | Formspree accepts a valid lead request | `content_name`, `content_category`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name` (`call`, `email`, or `whatsapp`), `content_category`, `link_location`, `page_path`, stored `utm_content`, parsed `ad_id` |
 
+WhatsApp `wa.me` links keep the academy number `19165075157`. When a first-touch campaign is stored, the prefilled compose text may append a short `Ref: {utm_campaign} / {utm_content}` suffix. If that URL would change the number or fail to parse, the original untagged link is left in place.
+
 Do not send student-entered names, email addresses, phone numbers, notes, or message text to Meta events.
 
 The browser `Lead` event passes the accepted `lead_event_id` as Meta's separate `eventID` option. A future server-side Conversions API `Lead` must use the same event name and event ID so Meta can deduplicate the browser and server copies.

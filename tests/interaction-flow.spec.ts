@@ -1928,12 +1928,18 @@ test.describe("live-style interaction flows", () => {
         "saturday_academy_sep12",
       );
       await expect(programForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+      await expect(programForm.locator('input[name="course_interest"]')).toHaveCount(1);
 
       await gotoSettled(page, "/contact");
       await page.locator('[data-rda-contact-form-toggle="true"]').click();
       const contactForm = page.locator('form[data-rda-contact-form="true"]');
       await expect(contactForm.locator('input[name="utm_content"]')).toHaveValue(utmContent);
       await expect(contactForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+
+      const whatsappHref = await page.locator("[data-rda-whatsapp]").first().getAttribute("href");
+      expect(whatsappHref).toContain(`wa.me/19165075157`);
+      expect(decodeURIComponent(whatsappHref ?? "")).toContain("saturday_academy_sep12");
+      expect(decodeURIComponent(whatsappHref ?? "")).toContain(utmContent);
 
       await page.evaluate(() => {
         const analyticsWindow = window as Window & { __rdaTestMetaEvents?: unknown[][] };
