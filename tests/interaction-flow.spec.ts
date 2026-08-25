@@ -1920,6 +1920,15 @@ test.describe("live-style interaction flows", () => {
       expect(courseInfoRequestBody).toContain(adId);
       expect(courseInfoRequestBody).toContain(enrollPage.path);
 
+      await gotoSettled(page, "/dental-assisting-program");
+      const programForm = page.locator('form[data-rda-signup-form="true"]');
+      await expect(programForm).toHaveAttribute("action", "https://formspree.io/f/xzdkgaeg");
+      await expect(programForm.locator('input[name="landing_page"]')).toHaveValue(enrollPage.path);
+      await expect(programForm.locator('input[name="campaign_intent"]')).toHaveValue(
+        "saturday_academy_sep12",
+      );
+      await expect(programForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+
       await gotoSettled(page, "/contact");
       await page.locator('[data-rda-contact-form-toggle="true"]').click();
       const contactForm = page.locator('form[data-rda-contact-form="true"]');
