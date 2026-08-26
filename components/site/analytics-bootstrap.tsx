@@ -1,5 +1,3 @@
-import Script from "next/script";
-
 const DEFAULT_GA_MEASUREMENT_ID = "G-LKJFEYVM1Q";
 const DEFAULT_META_PIXEL_ID = "356932321507746";
 const META_PIXEL_SCRIPT_SRC = "https://connect.facebook.net/en_US/fbevents.js";
@@ -36,28 +34,29 @@ export function AnalyticsBootstrap() {
     <>
       {measurementId ? (
         <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-            strategy="beforeInteractive"
+          <script async src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`} />
+          <script
+            id="rda-google-analytics"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                window.gtag = window.gtag || gtag;
+                gtag('js', new Date());
+                gtag('config', '${measurementId}', {
+                  page_location: window.location.origin + window.location.pathname + window.location.search,
+                  page_path: window.location.pathname + window.location.search
+                });
+              `,
+            }}
           />
-          <Script id="rda-google-analytics" strategy="beforeInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              window.gtag = window.gtag || gtag;
-              gtag('js', new Date());
-              gtag('config', '${measurementId}', {
-                page_location: window.location.origin + window.location.pathname + window.location.search,
-                page_path: window.location.pathname + window.location.search
-              });
-            `}
-          </Script>
         </>
       ) : null}
       {pixelId ? (
-        <Script id="rda-meta-pixel" strategy="beforeInteractive" type="text/javascript">
-          {getMetaPixelCode(pixelId)}
-        </Script>
+        <script
+          id="rda-meta-pixel"
+          dangerouslySetInnerHTML={{ __html: getMetaPixelCode(pixelId) }}
+        />
       ) : null}
     </>
   );

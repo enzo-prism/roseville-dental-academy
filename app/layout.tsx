@@ -44,8 +44,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${notoSans.variable} ${playfairDisplay.variable}`}>
-      <body className={LIVE_BODY_CLASS}>
+      <head>
         <AnalyticsBootstrap />
+      </head>
+      <body className={LIVE_BODY_CLASS}>
         <GlobalStructuredData />
         {children}
         <WhatsAppFab />
