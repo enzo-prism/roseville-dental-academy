@@ -1,8 +1,9 @@
 "use client";
 
-import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
+
+import { getAnalyticsPageLocation, getAnalyticsPagePath } from "@/lib/analytics-page-url";
 
 const DEFAULT_GA_MEASUREMENT_ID = "G-LKJFEYVM1Q";
 
@@ -29,8 +30,8 @@ export function trackGaEvent(eventName: string, params: Record<string, unknown> 
   }
 
   window.gtag("event", eventName, {
-    page_location: `${window.location.origin}${window.location.pathname}`,
-    page_path: window.location.pathname,
+    page_location: getAnalyticsPageLocation(),
+    page_path: getAnalyticsPagePath(),
     ...params,
   });
 
@@ -49,8 +50,7 @@ function PageViewTracking({ measurementId }: { measurementId: string }) {
 
     // The base gtag config sends the initial page_view. Only send on client
     // navigation. Consume the skip flag before checking window.gtag — the
-    // bootstrap script loads afterInteractive, so gtag is usually undefined on
-    // the initial-load effect run.
+    // bootstrap script can still be undefined on the first effect run.
     if (!hasSkippedInitialPageView.current) {
       hasSkippedInitialPageView.current = true;
       return;
@@ -60,13 +60,11 @@ function PageViewTracking({ measurementId }: { measurementId: string }) {
       return;
     }
 
-    // Keep click IDs out of GA event parameters. UTMs are sent as the explicit,
-    // allow-listed event fields defined by the analytics contract.
-    void searchParams;
+    const search = window.location.search || (searchParams.toString() ? `?${searchParams}` : "");
 
     window.gtag("config", measurementId, {
-      page_location: `${window.location.origin}${pathname}`,
-      page_path: pathname,
+      page_location: getAnalyticsPageLocation(pathname, search),
+      page_path: getAnalyticsPagePath(pathname, search),
       page_title: document.title,
     });
   }, [measurementId, pathname, searchParams]);
@@ -82,27 +80,8 @@ export function GoogleAnalytics() {
   }
 
   return (
-    <>
-      <Script
-        async
-        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-        strategy="afterInteractive"
-      />
-      <Script id="rda-google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          window.gtag = window.gtag || gtag;
-          gtag('js', new Date());
-          gtag('config', '${measurementId}', {
-            page_location: window.location.origin + window.location.pathname,
-            page_path: window.location.pathname
-          });
-        `}
-      </Script>
-      <Suspense fallback={null}>
-        <PageViewTracking measurementId={measurementId} />
-      </Suspense>
-    </>
+    <Suspense fallback={null}>
+      <PageViewTracking measurementId={measurementId} />
+    </Suspense>
   );
 }

@@ -456,6 +456,7 @@ textarea {
 }
 
 /* Keep floating agents under open mobile nav / dialogs (AGENTS contract). */
+body:has([data-rda-ad-lander="true"]) .rda-whatsapp-fab,
 body.rda-mobile-menu-open .live-elevenlabs-widget,
 body.rda-mobile-menu-open .rda-whatsapp-fab,
 body.is-mobile-nav-open .live-elevenlabs-widget,
@@ -2747,6 +2748,92 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   color: var(--rda-color-body);
 }
 
+.rda-ad-lander-header {
+  align-items: center;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 10px 24px;
+}
+
+.rda-ad-lander-logo {
+  display: block;
+  line-height: 0;
+  width: 56px;
+}
+
+.rda-ad-lander-logo img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.rda-ad-lander-footer {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  display: grid;
+  gap: 8px;
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.rda-ad-lander-footer a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.rda-ad-lander-footer-name {
+  font-family: var(--rda-font-heading);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.rda-ad-lander-footer-copy {
+  font-size: 13px;
+  margin: 8px 0 0;
+  opacity: 0.85;
+}
+
+.rda-ad-hero-paid {
+  grid-template-areas:
+    "copy form"
+    "media form";
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+}
+
+.rda-ad-hero-paid .rda-ad-hero-copy {
+  grid-area: copy;
+}
+
+.rda-ad-hero-paid .rda-ad-form-panel {
+  grid-area: form;
+  position: static;
+}
+
+.rda-ad-hero-media-paid {
+  grid-area: media;
+  margin: 0 auto 8px;
+  max-width: 1180px;
+  min-height: 0;
+  padding: 0 24px 26px;
+  width: 100%;
+}
+
+.rda-ad-hero-media-paid img {
+  display: block;
+  height: auto;
+  max-height: 280px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.rda-ad-details-paid {
+  grid-template-columns: 1fr;
+}
+
 .rda-ad-hero {
   align-items: stretch;
   display: grid;
@@ -3765,9 +3852,16 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 
 @media (max-width: 1024px) {
   .rda-ad-hero,
+  .rda-ad-hero-paid,
   .rda-ad-course-proof-layout,
   .rda-ad-details {
+    grid-template-areas: none;
     grid-template-columns: 1fr;
+  }
+
+  .rda-ad-hero-paid .rda-ad-hero-copy,
+  .rda-ad-hero-paid .rda-ad-form-panel {
+    grid-area: auto;
   }
 
   .rda-ad-hero-media {
@@ -3859,9 +3953,25 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 }
 
 @media (max-width: 760px) {
+  .rda-ad-lander-header {
+    padding: 8px 18px;
+  }
+
+  .rda-ad-lander-logo {
+    width: 48px;
+  }
+
   .rda-ad-hero {
     gap: 24px;
     padding: 34px 18px 20px;
+  }
+
+  .rda-ad-hero-paid {
+    padding-top: 20px;
+  }
+
+  .rda-ad-hero-media-paid {
+    padding: 0 18px 20px;
   }
 
   .rda-ad-hero h1 {
