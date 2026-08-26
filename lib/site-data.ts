@@ -111,10 +111,7 @@ export function buildWhatsAppChatUrl(leadSource: ContactChannelSource = "whatsap
 // a source mark. Do not append campaign tags or invent ad_id.
 export const whatsAppUrl = buildWhatsAppChatUrl();
 
-export function buildAttributedWhatsAppUrl(_input?: {
-  utm_campaign?: string;
-  utm_content?: string;
-}) {
+export function buildAttributedWhatsAppUrl() {
   return buildWhatsAppChatUrl();
 }
 
