@@ -71,8 +71,9 @@ For paid-media changes, also verify attribution and analytics readiness without 
 2. Confirm the Dental Assisting form action is `https://formspree.io/f/mpqgyjjg`; confirm the Coronal + Sealants action is `https://formspree.io/f/xzdkgaeg` with hidden `form_key=mwvdrnrk`.
 3. Confirm the attribution fields are present on the form and persist when the visitor continues to another RDA form in the same session. Public forms also send `lead_source=website` and `how-heard=website`.
 4. Confirm click-to-call and WhatsApp do **not** inherit UTMs or `ad_id`. WhatsApp compose text should include only `how-heard: whatsapp` and `lead_source=whatsapp`. Phone clicks are analytics-only; `tel:` cannot stamp a Formspree or ledger lead without a call-tracking backend.
-5. Confirm GA4 (`window.gtag`), Meta Pixel (`window.fbq`), and Vercel Web Analytics are loaded without browser errors.
-6. Check the new Vercel deployment logs for runtime errors.
+5. Confirm GA4 (`window.gtag`), Meta Pixel (`window.fbq`), ChatGPT Ads Pixel (`window.oaiq`), and Vercel Web Analytics are loaded without browser errors.
+6. Confirm the ChatGPT Ads queue initializes pixel `Ek4Sce2YRxrGHS3oL51Qac` after a consent command and sends one PII-free `page_viewed` event. Do not submit a fake production lead. Verify a real accepted inquiry later appears as `lead_created` in the Ads Manager Event Stream with the same browser `lead_event_id` used by the other platforms.
+7. Check the new Vercel deployment logs for runtime errors.
 
 For Meta boosts, compare the live destination against the audited routing table in `docs/analytics.md`. A legacy boosted post whose destination is locked to the original post is not compliant merely because its website route loads; recreate it as a new ad before treating it as fully attributable.
 
@@ -102,12 +103,14 @@ Active sitewide tracking:
 - GA4
 - Hotjar
 - Meta Pixel
+- ChatGPT Ads Measurement Pixel (`Ek4Sce2YRxrGHS3oL51Qac`)
 
 Accepted-lead funnel:
 
 - Vercel: `ad_landing_view` → `cta_click` → `lead_form_submit`
 - GA4: `generate_lead` is the key event; do not also mark `lead_form_submit` as a key event.
 - Meta: `ViewContent` on the landing page and `Lead` only after Formspree accepts the request.
+- ChatGPT Ads: `page_viewed` on route loads and `lead_created` only after Formspree accepts the request; the lead payload contains only `{ type: "customer_action" }` plus the non-PII deduplication `event_id`.
 
 Formspree operations:
 

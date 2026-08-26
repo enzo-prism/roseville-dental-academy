@@ -4,6 +4,7 @@ import { adLandingPages } from "@/lib/ad-landing-pages";
 import { activeSitePromo } from "@/lib/site-promo";
 import {
   blockElevenLabsWidgetScript,
+  blockOpenAIAdsPixelNetwork,
   elevenLabsScriptSrc,
   localOrigin,
   suppressSitePromo,
@@ -423,6 +424,7 @@ test.describe("live-style interaction flows", () => {
   test.describe("without third-party widget noise", () => {
     test.beforeEach(async ({ context }) => {
       await blockElevenLabsWidgetScript(context);
+      await blockOpenAIAdsPixelNetwork(context);
       await suppressSitePromo(context);
     });
 
@@ -1376,20 +1378,26 @@ test.describe("live-style interaction flows", () => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
+          __rdaTestOpenAIEvents?: unknown[][];
           __rdaTestVercelEvents?: unknown[][];
           fbq?: (...args: unknown[]) => void;
           gtag?: (...args: unknown[]) => void;
+          oaiq?: (...args: unknown[]) => void;
           va?: (...args: unknown[]) => void;
         };
 
         analyticsWindow.__rdaTestGtagEvents = [];
         analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.__rdaTestOpenAIEvents = [];
         analyticsWindow.__rdaTestVercelEvents = [];
         analyticsWindow.gtag = (...args: unknown[]) => {
           analyticsWindow.__rdaTestGtagEvents?.push(args);
         };
         analyticsWindow.fbq = (...args: unknown[]) => {
           analyticsWindow.__rdaTestMetaEvents?.push(args);
+        };
+        analyticsWindow.oaiq = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestOpenAIEvents?.push(args);
         };
         const captureVercelEvent = (...args: unknown[]) => {
           analyticsWindow.__rdaTestVercelEvents?.push(args);
@@ -1450,14 +1458,19 @@ test.describe("live-style interaction flows", () => {
       const initialEvents = await page.evaluate(() => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
+          __rdaTestOpenAIEvents?: unknown[][];
           __rdaTestVercelEvents?: unknown[][];
         };
 
         return {
           ga: analyticsWindow.__rdaTestGtagEvents ?? [],
+          openai: analyticsWindow.__rdaTestOpenAIEvents ?? [],
           vercel: analyticsWindow.__rdaTestVercelEvents ?? [],
         };
       });
+      const openAIPageViewEvents = initialEvents.openai.filter(
+        (event) => event[0] === "measure" && event[1] === "page_viewed",
+      );
       const gaViewEvent =
         initialEvents.ga
           .filter(
@@ -1498,6 +1511,17 @@ test.describe("live-style interaction flows", () => {
         utm_source: "fb",
         utm_source_platform: "meta_ads",
       });
+      expect(openAIPageViewEvents).toHaveLength(1);
+      expect(openAIPageViewEvents[0]?.[2]).toEqual({
+        contents: [
+          {
+            content_type: "page",
+            id: landingPage.path,
+            name: expect.any(String),
+          },
+        ],
+        type: "contents",
+      });
 
       await form.locator('input[name="Name"]').fill("Private Test Student");
       await form.locator('input[name="_replyto"]').fill("private-test@example.com");
@@ -1512,12 +1536,14 @@ test.describe("live-style interaction flows", () => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
+          __rdaTestOpenAIEvents?: unknown[][];
           __rdaTestVercelEvents?: unknown[][];
           gtag?: (...args: unknown[]) => void;
           va?: (...args: unknown[]) => void;
         };
 
         analyticsWindow.__rdaTestGtagEvents = [];
+        analyticsWindow.__rdaTestOpenAIEvents = [];
         analyticsWindow.__rdaTestVercelEvents = [];
         analyticsWindow.gtag = (...args: unknown[]) => {
           analyticsWindow.__rdaTestGtagEvents?.push(args);
@@ -1544,12 +1570,14 @@ test.describe("live-style interaction flows", () => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
+          __rdaTestOpenAIEvents?: unknown[][];
           __rdaTestVercelEvents?: unknown[][];
         };
 
         return {
           ga: analyticsWindow.__rdaTestGtagEvents ?? [],
           meta: analyticsWindow.__rdaTestMetaEvents ?? [],
+          openai: analyticsWindow.__rdaTestOpenAIEvents ?? [],
           vercel: analyticsWindow.__rdaTestVercelEvents ?? [],
         };
       });
@@ -1570,6 +1598,10 @@ test.describe("live-style interaction flows", () => {
       const leadEventOptions = events.meta.find(
         (event) => event[0] === "track" && event[1] === "Lead",
       )?.[3] as { eventID?: string } | undefined;
+      const openAILeadEvents = events.openai.filter(
+        (event) => event[0] === "measure" && event[1] === "lead_created",
+      );
+      const openAILeadEvent = openAILeadEvents[0];
       const contactEvent = metaTrackEvents.find((event) => event[1] === "Contact")?.[2] ?? {};
       const ctaEvent = gaEvents.find((event) => event[1] === "cta_click")?.[2] ?? {};
       const gaLeadEvent = gaEvents.find((event) => event[1] === "generate_lead")?.[2] ?? {};
@@ -1597,6 +1629,7 @@ test.describe("live-style interaction flows", () => {
         gaLeadEvent,
         gaSubmitEvent,
         leadEvent,
+        openAILeadEvent,
         vercelLeadEvent,
         viewContentEvent,
       }).toLowerCase();
@@ -1658,6 +1691,13 @@ test.describe("live-style interaction flows", () => {
       expect(leadEventIds[0]).toEqual(expect.any(String));
       expect(leadEventIds.every((leadEventId) => leadEventId === leadEventIds[0])).toBe(true);
       expect(leadEventOptions).toEqual({ eventID: leadEventIds[0] });
+      expect(openAILeadEvents).toHaveLength(1);
+      expect(openAILeadEvent).toEqual([
+        "measure",
+        "lead_created",
+        { type: "customer_action" },
+        { event_id: leadEventIds[0] },
+      ]);
       await expect.poll(() => attributionReceipt).not.toBeNull();
       const receivedReceipt = attributionReceipt as unknown as Record<string, unknown>;
 
@@ -1731,20 +1771,26 @@ test.describe("live-style interaction flows", () => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
+          __rdaTestOpenAIEvents?: unknown[][];
           __rdaTestVercelEvents?: unknown[][];
           fbq?: (...args: unknown[]) => void;
           gtag?: (...args: unknown[]) => void;
+          oaiq?: (...args: unknown[]) => void;
           va?: (...args: unknown[]) => void;
         };
 
         analyticsWindow.__rdaTestGtagEvents = [];
         analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.__rdaTestOpenAIEvents = [];
         analyticsWindow.__rdaTestVercelEvents = [];
         analyticsWindow.gtag = (...args: unknown[]) => {
           analyticsWindow.__rdaTestGtagEvents?.push(args);
         };
         analyticsWindow.fbq = (...args: unknown[]) => {
           analyticsWindow.__rdaTestMetaEvents?.push(args);
+        };
+        analyticsWindow.oaiq = (...args: unknown[]) => {
+          analyticsWindow.__rdaTestOpenAIEvents?.push(args);
         };
         analyticsWindow.va = (...args: unknown[]) => {
           analyticsWindow.__rdaTestVercelEvents?.push(args);
@@ -1766,11 +1812,13 @@ test.describe("live-style interaction flows", () => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
+          __rdaTestOpenAIEvents?: unknown[][];
           __rdaTestVercelEvents?: unknown[][];
         };
 
         analyticsWindow.__rdaTestGtagEvents = [];
         analyticsWindow.__rdaTestMetaEvents = [];
+        analyticsWindow.__rdaTestOpenAIEvents = [];
         analyticsWindow.__rdaTestVercelEvents = [];
       });
 
@@ -1781,12 +1829,14 @@ test.describe("live-style interaction flows", () => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
           __rdaTestMetaEvents?: unknown[][];
+          __rdaTestOpenAIEvents?: unknown[][];
           __rdaTestVercelEvents?: unknown[][];
         };
 
         return {
           ga: (analyticsWindow.__rdaTestGtagEvents ?? []).map((event) => event[1]),
           meta: (analyticsWindow.__rdaTestMetaEvents ?? []).map((event) => event[1]),
+          openai: (analyticsWindow.__rdaTestOpenAIEvents ?? []).map((event) => event[1]),
           vercel: (analyticsWindow.__rdaTestVercelEvents ?? []).map((event) =>
             typeof event[1] === "object" && event[1] && "name" in event[1]
               ? (event[1] as { name: string }).name
@@ -1798,9 +1848,109 @@ test.describe("live-style interaction flows", () => {
       expect(eventNames.ga).not.toContain("generate_lead");
       expect(eventNames.ga).not.toContain("lead_form_submit");
       expect(eventNames.meta).not.toContain("Lead");
+      expect(eventNames.openai).not.toContain("lead_created");
       expect(eventNames.vercel).not.toContain("lead_form_submit");
       expect(receiptRequests).toBe(0);
     });
+
+    test("ChatGPT Ads deduplicates repeated accepted-lead notifications", async ({ page }) => {
+      await page.addInitScript(() => {
+        const adsWindow = window as Window & {
+          __rdaTestOpenAIEvents?: unknown[][];
+          oaiq?: (...args: unknown[]) => void;
+        };
+        adsWindow.__rdaTestOpenAIEvents = [];
+        adsWindow.oaiq = (...args: unknown[]) => {
+          adsWindow.__rdaTestOpenAIEvents?.push(args);
+        };
+      });
+
+      await gotoSettled(page, "/lp/dental-assisting-enroll");
+      await page.evaluate(() => {
+        const adsWindow = window as Window & { __rdaTestOpenAIEvents?: unknown[][] };
+        const detail = { leadEventId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" };
+        adsWindow.__rdaTestOpenAIEvents = [];
+        document.dispatchEvent(new CustomEvent("rda:lead-form-success", { detail }));
+        document.dispatchEvent(new CustomEvent("rda:lead-form-success", { detail }));
+      });
+
+      const leadEvents = await page.evaluate(
+        () =>
+          (
+            (window as Window & { __rdaTestOpenAIEvents?: unknown[][] })
+              .__rdaTestOpenAIEvents ?? []
+          ).filter((event) => event[0] === "measure" && event[1] === "lead_created"),
+      );
+
+      expect(leadEvents).toEqual([
+        [
+          "measure",
+          "lead_created",
+          { type: "customer_action" },
+          { event_id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" },
+        ],
+      ]);
+    });
+
+    for (const privacyCase of ["global privacy control", "denied consent cookie"] as const) {
+      test(`ChatGPT Ads measurement stays blocked with ${privacyCase}`, async ({
+        context,
+        page,
+      }) => {
+        const landingPage =
+          adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+          adLandingPages[0];
+
+        if (privacyCase === "denied consent cookie") {
+          await context.addCookies([
+            {
+              name: "rda_analytics_consent",
+              url: localOrigin,
+              value: "denied",
+            },
+          ]);
+        }
+
+        await page.addInitScript((enableGpc) => {
+          if (enableGpc) {
+            Object.defineProperty(navigator, "globalPrivacyControl", {
+              configurable: true,
+              value: true,
+            });
+          }
+
+          const adsWindow = window as Window & {
+            __rdaTestOpenAIEvents?: unknown[][];
+            oaiq?: (...args: unknown[]) => void;
+          };
+          adsWindow.__rdaTestOpenAIEvents = [];
+          adsWindow.oaiq = (...args: unknown[]) => {
+            adsWindow.__rdaTestOpenAIEvents?.push(args);
+          };
+        }, privacyCase === "global privacy control");
+
+        await gotoSettled(page, landingPage.path);
+        await page.evaluate(() => {
+          document.dispatchEvent(
+            new CustomEvent("rda:lead-form-success", {
+              detail: { leadEventId: "11111111-2222-4333-8444-555555555555" },
+            }),
+          );
+        });
+
+        const events = await page.evaluate(
+          () =>
+            (window as Window & { __rdaTestOpenAIEvents?: unknown[][] })
+              .__rdaTestOpenAIEvents ?? [],
+        );
+
+        expect(events[0]).toEqual(["consent", false]);
+        expect(events.find((event) => event[0] === "init")?.[1]).toMatchObject({
+          pixelId: "Ek4Sce2YRxrGHS3oL51Qac",
+        });
+        expect(events.filter((event) => event[0] === "measure")).toEqual([]);
+      });
+    }
 
     test("ad attribution persists when a visitor continues to another site form", async ({
       page,

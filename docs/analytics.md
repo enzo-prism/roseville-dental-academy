@@ -1,14 +1,15 @@
 # Analytics Event Contract
 
-Roseville Dental Academy uses Vercel Web Analytics for page views and custom events, plus GA4, Hotjar, and Meta Pixel for the current reporting and paid-media paths.
+Roseville Dental Academy uses Vercel Web Analytics for page views and custom events, plus GA4, Hotjar, Meta Pixel, and the ChatGPT Ads Measurement Pixel for the current reporting and paid-media paths.
 
 ## Runtime Sources
 
-- `app/layout.tsx` mounts `@vercel/analytics/next`, GA4, Hotjar, Meta Pixel, and the shared interaction listener.
+- `app/layout.tsx` mounts `@vercel/analytics/next`, GA4, Hotjar, Meta Pixel, the ChatGPT Ads Measurement Pixel, and the shared interaction listener.
 - `app/lp/[slug]/page.tsx` serves noindex ad landing pages for paid social campaigns.
 - `components/site/interaction-analytics.tsx` is the custom event source of truth.
 - `components/site/google-analytics.tsx` owns only the GA4 script and page-view updates.
 - `components/site/meta-pixel.tsx` owns Meta Pixel page-view tracking and safe standard event helpers.
+- `components/site/openai-ads-pixel.tsx` owns ChatGPT Ads Pixel initialization, consent enforcement, PII-free page views, and accepted-lead measurement.
 
 ## Paid Social Landing Pages
 
@@ -167,6 +168,41 @@ The browser `Lead` event passes the accepted `lead_event_id` as Meta's separate 
 ## Retired Snapchat Pixel
 
 Snapchat Pixel is no longer mounted. The June 17, 2026 RDA meeting discontinued Snapchat ads because location control was poor, so active paid-media tracking now prioritizes Meta and Google.
+
+## ChatGPT Ads Measurement Pixel
+
+The OpenAI browser SDK is installed sitewide with pixel ID
+`Ek4Sce2YRxrGHS3oL51Qac`. `NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID` can override the public ID
+without changing code. SDK debug logging is enabled outside production only.
+
+The integration sets consent before `init`. Global Privacy Control, Do Not Track, or an
+explicit denied value in `rda_attribution_consent`, `rda_analytics_consent`, or
+`rda_cookie_consent` sets Pixel consent to `false`. Restricted browsers load no
+measurement-event pings. Unknown or explicitly granted consent sets Pixel consent to
+`true`.
+
+The initial load and each client-side pathname change send one `page_viewed` event with
+the documented `contents` data shape. The payload contains only a query-free, sanitized
+path and sanitized public document title. It never includes UTMs, `oppref`, ad click IDs,
+browser identifiers, or student-entered values. The SDK manages its own privacy-preserving
+`oppref` capture.
+
+After Formspree accepts a lead, the existing `rda:lead-form-success` event sends:
+
+```ts
+oaiq(
+  "measure",
+  "lead_created",
+  { type: "customer_action" },
+  { event_id: leadEventId },
+);
+```
+
+`leadEventId` is the existing browser-generated non-PII UUID. Reuse it for a future
+server-side OpenAI Conversions API event so browser and server copies can deduplicate.
+Failed and rejected forms never dispatch the success event and are not measured as leads.
+Runtime guards prevent duplicate initial page views and accepted leads under React Strict
+Mode.
 
 ## Validation
 

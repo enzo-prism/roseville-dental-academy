@@ -9,6 +9,7 @@ import {
   aliasMappings,
   baselineDir,
   blockElevenLabsWidgetScript,
+  blockOpenAIAdsPixelNetwork,
   captureSnapshot,
   coreWarmRoutes,
   elevenLabsAgentId,
@@ -28,6 +29,7 @@ test.describe.configure({ mode: "serial" });
 
 test.beforeEach(async ({ context }) => {
   await blockElevenLabsWidgetScript(context);
+  await blockOpenAIAdsPixelNetwork(context);
   await suppressSitePromo(context);
 });
 
@@ -435,6 +437,87 @@ test("Meta pixel tag is configured", async ({ page }, testInfo) => {
   expect(mismatches).toEqual([]);
 });
 
+test("ChatGPT Ads pixel is configured with consent-first page measurement", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const adsWindow = window as Window & {
+          oaiq?: ((...args: unknown[]) => void) & { q?: unknown[][] };
+        };
+
+        return adsWindow.oaiq?.q?.length ?? 0;
+      }),
+    )
+    .toBeGreaterThanOrEqual(3);
+
+  const result = await page.evaluate(() => {
+    const adsWindow = window as Window & {
+      oaiq?: ((...args: unknown[]) => void) & { q?: unknown[][] };
+    };
+    const calls = adsWindow.oaiq?.q ?? [];
+    const initCall = calls.find((call) => call[0] === "init");
+    const pageViewCalls = calls.filter(
+      (call) => call[0] === "measure" && call[1] === "page_viewed",
+    );
+
+    return {
+      calls,
+      hasSdkScript: Boolean(
+        document.querySelector(
+          'script[data-rda-openai-ads-pixel-sdk="true"][src="https://bzrcdn.openai.com/sdk/oaiq.min.js"]',
+        ),
+      ),
+      initializedPixelId:
+        typeof initCall?.[1] === "object" && initCall[1] && "pixelId" in initCall[1]
+          ? initCall[1].pixelId
+          : null,
+      oaiqReady: typeof adsWindow.oaiq === "function",
+      pageViewCalls,
+    };
+  });
+  const mismatches: string[] = [];
+
+  if (!result.oaiqReady) {
+    mismatches.push("homepage did not initialize the ChatGPT Ads oaiq queue");
+  }
+
+  if (!result.hasSdkScript) {
+    mismatches.push("homepage is missing the ChatGPT Ads Measurement Pixel SDK");
+  }
+
+  if (result.initializedPixelId !== "Ek4Sce2YRxrGHS3oL51Qac") {
+    mismatches.push("homepage ChatGPT Ads Pixel has the wrong Pixel ID");
+  }
+
+  if (JSON.stringify(result.calls[0]) !== JSON.stringify(["consent", true])) {
+    mismatches.push("homepage ChatGPT Ads Pixel did not set consent before init");
+  }
+
+  if (result.pageViewCalls.length !== 1) {
+    mismatches.push("homepage did not queue exactly one ChatGPT Ads page_viewed event");
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "/",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "chatgpt-ads-pixel",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "chatgpt-ads-pixel-summary.json", {
+      mismatches,
+      result,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 for (const landingPage of adLandingPages) {
   test(`ad landing page ${landingPage.slug} is configured`, async ({
     page,
@@ -457,6 +540,7 @@ for (const landingPage of adLandingPages) {
     const result = await page.evaluate(() => {
       const metaWindow = window as Window & {
         fbq?: unknown;
+        oaiq?: unknown;
       };
       const form = document.querySelector<HTMLFormElement>(
         'form[data-rda-landing-form="true"]',
@@ -467,6 +551,9 @@ for (const landingPage of adLandingPages) {
         formAction: form?.getAttribute("action"),
         hasLandingForm: Boolean(form),
         hasMetaBootstrap: Boolean(document.querySelector("#rda-meta-pixel")),
+        hasOpenAIAdsSdk: Boolean(
+          document.querySelector('script[data-rda-openai-ads-pixel-sdk="true"]'),
+        ),
         hiddenFields: {
           campaignIntent: form?.querySelector<HTMLInputElement>('input[name="campaign_intent"]')?.value,
           courseInterest: form?.querySelector<HTMLInputElement>('input[name="course_interest"]')?.value,
@@ -499,6 +586,7 @@ for (const landingPage of adLandingPages) {
           '[data-rda-course-review="true"]',
         ).length,
         robots: document.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content ?? "",
+        oaiqReady: typeof metaWindow.oaiq === "function",
         submitText: form?.querySelector<HTMLButtonElement>('button[type="submit"]')?.textContent ?? "",
         title: document.title,
       };
@@ -593,6 +681,10 @@ for (const landingPage of adLandingPages) {
 
     if (!result.hasMetaBootstrap || !result.fbqReady) {
       mismatches.push(`${landingPage.path} Meta Pixel is not available`);
+    }
+
+    if (!result.hasOpenAIAdsSdk || !result.oaiqReady) {
+      mismatches.push(`${landingPage.path} ChatGPT Ads Pixel is not available`);
     }
 
     if (sitemapXml.includes(landingPage.path)) {

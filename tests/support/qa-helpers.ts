@@ -80,6 +80,18 @@ export async function blockElevenLabsWidgetScript(context: BrowserContext) {
   });
 }
 
+export async function blockOpenAIAdsPixelNetwork(context: BrowserContext) {
+  for (const pattern of ["https://bzrcdn.openai.com/**", "https://bzr.openai.com/**"]) {
+    await context.route(pattern, async (route) => {
+      await route.fulfill({
+        body: "",
+        contentType: pattern.includes("bzrcdn") ? "text/javascript" : "text/plain",
+        status: 204,
+      });
+    });
+  }
+}
+
 export async function suppressSitePromo(context: BrowserContext) {
   await context.addInitScript((storageKey) => {
     try {
