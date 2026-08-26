@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
-import { adLandingPages } from "@/lib/ad-landing-pages";
+import { adLandingPages, isPaidTrafficLanderSlug } from "@/lib/ad-landing-pages";
 import { siteContact } from "@/lib/site-data";
 import { socialChannelPages } from "@/lib/social-channel-data";
 import {
@@ -529,6 +529,7 @@ for (const landingPage of adLandingPages) {
       },
       timeout: 120_000,
     });
+    const html = await response.text();
 
     await page.goto(`${localOrigin}${landingPage.path}`, {
       timeout: 120_000,
@@ -652,10 +653,15 @@ for (const landingPage of adLandingPages) {
     }
 
     if (
+      !isPaidTrafficLanderSlug(landingPage.slug) &&
       landingPage.gallery?.length &&
       result.proofGalleryImageCount < Math.min(2, landingPage.gallery.length)
     ) {
       mismatches.push(`${landingPage.path} course gallery images are missing`);
+    }
+
+    if (isPaidTrafficLanderSlug(landingPage.slug) && result.proofGalleryImageCount > 0) {
+      mismatches.push(`${landingPage.path} paid lander should not load extra gallery JPEGs`);
     }
 
     if (
@@ -685,6 +691,24 @@ for (const landingPage of adLandingPages) {
 
     if (!result.hasOpenAIAdsSdk || !result.oaiqReady) {
       mismatches.push(`${landingPage.path} ChatGPT Ads Pixel is not available`);
+    }
+
+    if (
+      !html.includes("window.location.search") ||
+      !html.includes("googletagmanager.com/gtag/js") ||
+      !html.includes("fbq('track', 'PageView')")
+    ) {
+      mismatches.push(`${landingPage.path} is missing early GA4 or Meta Pixel bootstrap`);
+    }
+
+    if (isPaidTrafficLanderSlug(landingPage.slug)) {
+      if (html.includes("<elevenlabs-convai") || html.includes("@elevenlabs/convai-widget-embed")) {
+        mismatches.push(`${landingPage.path} should not preload ElevenLabs`);
+      }
+
+      if (html.includes("data-rda-promo-banner") || html.includes("data-rda-contact-us")) {
+        mismatches.push(`${landingPage.path} still has full site chrome`);
+      }
     }
 
     if (sitemapXml.includes(landingPage.path)) {

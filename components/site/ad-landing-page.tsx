@@ -14,6 +14,7 @@ import {
   Star,
   UserRound,
 } from "lucide-react";
+import Image from "next/image";
 
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import { trackGaEvent } from "@/components/site/google-analytics";
@@ -29,7 +30,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { AdLandingPage as AdLandingPageData } from "@/lib/ad-landing-pages";
+import {
+  isPaidTrafficLanderSlug,
+  type AdLandingPage as AdLandingPageData,
+} from "@/lib/ad-landing-pages";
 import { siteContact, whatsAppUrl } from "@/lib/site-data";
 
 type AdLandingPageProps = {
@@ -132,13 +136,165 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+function AdLandingLeadForm({
+  attribution,
+  environment,
+  formId,
+  interestsLabel,
+  onSubmit,
+  page,
+  status,
+}: {
+  attribution: ReturnType<typeof useLeadAttribution>;
+  environment: string;
+  formId: string;
+  interestsLabel: string;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  page: AdLandingPageData;
+  status: ReturnType<typeof useLeadFormSubmit>["status"];
+}) {
+  return (
+    <aside className="rda-ad-form-panel" aria-labelledby={`${formId}-form-title`}>
+      <div className="rda-ad-form-heading">
+        <span className="rda-ad-form-icon">
+          <ClipboardCheck aria-hidden="true" />
+        </span>
+        <div>
+          <p className="rda-ad-eyebrow">Request info</p>
+          <h2 id={`${formId}-form-title`}>{page.primaryCtaLabel}</h2>
+          <p>{interestsLabel}</p>
+        </div>
+      </div>
+
+      {status === "success" ? (
+        <LeadFormSuccess
+          copy="Your request is on its way. Admissions will follow up with availability, requirements, and registration next steps."
+          title="Request sent"
+        />
+      ) : (
+        <form
+          action={page.formspreeEndpoint ?? siteContact.formspreeEndpoint}
+          className="rda-ad-form"
+          data-rda-form-id="ad_landing_lead"
+          data-rda-landing-form="true"
+          data-rda-signup-form="true"
+          id="ad-lead-form"
+          method="post"
+          onSubmit={onSubmit}
+        >
+          <input name="_subject" type="hidden" value={`RDA landing page lead: ${page.slug}`} />
+          <input name="Source page" type="hidden" value={page.metaTitle} />
+          <input name="site" type="hidden" value={siteContact.formspreeOps.site} />
+          <input
+            name="form_key"
+            type="hidden"
+            value={page.formKey ?? siteContact.formspreeOps.formKey}
+          />
+          <input name="environment" type="hidden" value={environment} />
+          <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
+          <input name="page_path" type="hidden" value={page.path} />
+          <input name="referrer" type="hidden" value={attribution.referrer} />
+          <input name="landing_page" type="hidden" value={page.slug} />
+          <input name="campaign_intent" type="hidden" value={page.campaignIntent} />
+          <input name="course_interest" type="hidden" value={interestsLabel} />
+          <LeadAttributionHiddenFields attribution={attribution} />
+          {page.courseInterests.map((interest) => (
+            <input key={interest} name="Interested classes[]" type="hidden" value={interest} />
+          ))}
+
+          <label>
+            <span>
+              <UserRound aria-hidden="true" />
+              Name
+            </span>
+            <Input autoComplete="name" name="Name" placeholder="Name" required type="text" />
+          </label>
+          <label>
+            <span>
+              <Mail aria-hidden="true" />
+              Email
+            </span>
+            <Input
+              autoComplete="email"
+              name="_replyto"
+              placeholder="Email"
+              required
+              type="email"
+            />
+          </label>
+          <label>
+            <span>
+              <Phone aria-hidden="true" />
+              Phone
+            </span>
+            <Input autoComplete="tel" name="Phone" placeholder="Phone" required type="tel" />
+          </label>
+          {page.leadSelects?.map((field) => {
+            const Icon = field.icon ? SELECT_ICONS[field.icon] : null;
+
+            return (
+              <label key={field.name}>
+                <span>
+                  {Icon ? <Icon aria-hidden="true" /> : null}
+                  {field.label}
+                </span>
+                <select
+                  defaultValue={field.required ? "" : field.options[0]}
+                  name={field.name}
+                  required={field.required}
+                >
+                  {field.required ? (
+                    <option disabled value="">
+                      Select one
+                    </option>
+                  ) : null}
+                  {field.options.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            );
+          })}
+          <label>
+            <span>Questions or timing notes</span>
+            <Textarea
+              name="Notes"
+              placeholder="Best times, current certifications, or class questions"
+              rows={4}
+            />
+          </label>
+          {page.consent ? (
+            <label className="rda-ad-form-consent">
+              <input name={page.consent.name} required type="checkbox" value="Yes" />
+              <span>{page.consent.label}</span>
+            </label>
+          ) : null}
+          {status === "error" ? <LeadFormError /> : null}
+          <Button disabled={status === "submitting"} type="submit">
+            {status === "submitting" ? "Sending..." : page.primaryCtaLabel}
+            <Send aria-hidden="true" />
+          </Button>
+          <p className="rda-ad-form-note">
+            This request does not reserve a seat or collect payment. Admissions will
+            confirm the right next step directly.
+          </p>
+        </form>
+      )}
+    </aside>
+  );
+}
+
 export function AdLandingPage({ page }: AdLandingPageProps) {
   const formId = useId();
   const attribution = useLeadAttribution();
   const { status, submitLeadForm } = useLeadFormSubmit();
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
   const interestsLabel = page.courseInterests.join(", ");
-  const hasCourseProof = Boolean(page.gallery?.length || page.reviews?.length);
+  const isPaidLander = isPaidTrafficLanderSlug(page.slug);
+  const showGallery = Boolean(page.gallery?.length) && !isPaidLander;
+  const hasCourseProof = Boolean(showGallery || page.reviews?.length);
   const socialProof = page.socialProof;
 
   useEffect(() => trackLandingView(page), [page]);
@@ -152,12 +308,41 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
     void submitLeadForm(event.currentTarget);
   }
 
+  const leadForm = (
+    <AdLandingLeadForm
+      attribution={attribution}
+      environment={environment}
+      formId={formId}
+      interestsLabel={interestsLabel}
+      onSubmit={handleSubmit}
+      page={page}
+      status={status}
+    />
+  );
+
   return (
-    <article className="rda-ad-landing" data-rda-ad-landing-page={page.slug}>
-      <section className="rda-ad-hero" aria-labelledby={`${formId}-hero-title`}>
+    <article
+      className={isPaidLander ? "rda-ad-landing rda-ad-landing-paid" : "rda-ad-landing"}
+      data-rda-ad-landing-page={page.slug}
+      data-rda-ad-lander={isPaidLander ? "true" : undefined}
+    >
+      <section
+        className={isPaidLander ? "rda-ad-hero rda-ad-hero-paid" : "rda-ad-hero"}
+        aria-labelledby={`${formId}-hero-title`}
+      >
+        {isPaidLander ? (
+          <div className="rda-ad-hero-heading">
+            <p className="rda-ad-eyebrow">{page.eyebrow}</p>
+            <h1 id={`${formId}-hero-title`}>{page.hero.title}</h1>
+          </div>
+        ) : null}
         <div className="rda-ad-hero-copy">
-          <p className="rda-ad-eyebrow">{page.eyebrow}</p>
-          <h1 id={`${formId}-hero-title`}>{page.hero.title}</h1>
+          {isPaidLander ? null : (
+            <>
+              <p className="rda-ad-eyebrow">{page.eyebrow}</p>
+              <h1 id={`${formId}-hero-title`}>{page.hero.title}</h1>
+            </>
+          )}
           <p className="rda-ad-hero-intro">{page.hero.intro}</p>
           <div className="rda-ad-hero-actions">
             <Button asChild>
@@ -178,28 +363,47 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
                 Call {siteContact.phone}
               </a>
             </Button>
-            <Button asChild data-rda-lead-source="whatsapp" data-rda-whatsapp="true" variant="whatsapp">
-              <a
-                aria-label={siteContact.whatsAppLabel}
-                href={whatsAppUrl}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <WhatsAppIcon />
-                <span>{siteContact.whatsAppLabel}</span>
-              </a>
-            </Button>
+            {isPaidLander ? null : (
+              <Button asChild data-rda-lead-source="whatsapp" data-rda-whatsapp="true" variant="whatsapp">
+                <a
+                  aria-label={siteContact.whatsAppLabel}
+                  href={whatsAppUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <WhatsAppIcon />
+                  <span>{siteContact.whatsAppLabel}</span>
+                </a>
+              </Button>
+            )}
           </div>
           <div className="rda-ad-hero-signals" aria-label="Landing page highlights">
             <IconLabel icon="calendar">{page.hero.badge}</IconLabel>
             <IconLabel icon="check">Roseville, CA hands-on training</IconLabel>
           </div>
         </div>
-        <figure className="rda-ad-hero-media">
-          {/* eslint-disable-next-line @next/next/no-img-element -- Existing live assets are literal paths. */}
-          <img alt={page.hero.imageAlt} src={page.hero.imageSrc} />
-        </figure>
+        {isPaidLander ? (
+          leadForm
+        ) : (
+          <figure className="rda-ad-hero-media">
+            {/* eslint-disable-next-line @next/next/no-img-element -- Existing live assets are literal paths. */}
+            <img alt={page.hero.imageAlt} src={page.hero.imageSrc} />
+          </figure>
+        )}
       </section>
+
+      {isPaidLander ? (
+        <figure className="rda-ad-hero-media rda-ad-hero-media-paid">
+          <Image
+            alt={page.hero.imageAlt}
+            height={720}
+            priority
+            sizes="(max-width: 760px) 100vw, 720px"
+            src={page.hero.imageSrc}
+            width={1080}
+          />
+        </figure>
+      ) : null}
 
       <section className="rda-ad-section rda-ad-facts" aria-label="Course facts">
         {page.facts.map((fact) => (
@@ -221,8 +425,8 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
               {socialProof?.title ?? "Real reviews and photos from this training path"}
             </h2>
           </div>
-          <div className="rda-ad-course-proof-layout">
-            {page.gallery?.length ? (
+          <div className={showGallery ? "rda-ad-course-proof-layout" : undefined}>
+            {showGallery && page.gallery ? (
               <div
                 className="rda-ad-gallery"
                 aria-label={socialProof?.galleryLabel ?? "Student success photos"}
@@ -291,7 +495,14 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
         </div>
       </section>
 
-      <section className="rda-ad-section rda-ad-details" aria-label="Program details">
+      <section
+        className={
+          isPaidLander
+            ? "rda-ad-section rda-ad-details rda-ad-details-paid"
+            : "rda-ad-section rda-ad-details"
+        }
+        aria-label="Program details"
+      >
         <div className="rda-ad-detail-column">
           {page.sections.map((section) => (
             <section className="rda-ad-detail-block" key={section.title}>
@@ -315,136 +526,7 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
             </p>
           </section>
         </div>
-
-        <aside className="rda-ad-form-panel" aria-labelledby={`${formId}-form-title`}>
-          <div className="rda-ad-form-heading">
-            <span className="rda-ad-form-icon">
-              <ClipboardCheck aria-hidden="true" />
-            </span>
-            <div>
-              <p className="rda-ad-eyebrow">Request info</p>
-              <h2 id={`${formId}-form-title`}>{page.primaryCtaLabel}</h2>
-              <p>{interestsLabel}</p>
-            </div>
-          </div>
-
-          {status === "success" ? (
-            <LeadFormSuccess
-              copy="Your request is on its way. Admissions will follow up with availability, requirements, and registration next steps."
-              title="Request sent"
-            />
-          ) : (
-            <form
-              action={page.formspreeEndpoint ?? siteContact.formspreeEndpoint}
-              className="rda-ad-form"
-              data-rda-form-id="ad_landing_lead"
-              data-rda-landing-form="true"
-              data-rda-signup-form="true"
-              id="ad-lead-form"
-              method="post"
-              onSubmit={handleSubmit}
-            >
-              <input name="_subject" type="hidden" value={`RDA landing page lead: ${page.slug}`} />
-              <input name="Source page" type="hidden" value={page.metaTitle} />
-              <input name="site" type="hidden" value={siteContact.formspreeOps.site} />
-              <input
-                name="form_key"
-                type="hidden"
-                value={page.formKey ?? siteContact.formspreeOps.formKey}
-              />
-              <input name="environment" type="hidden" value={environment} />
-              <input name={siteContact.formspreeOps.qaField} type="hidden" value="false" />
-              <input name="page_path" type="hidden" value={page.path} />
-              <input name="referrer" type="hidden" value={attribution.referrer} />
-              <input name="landing_page" type="hidden" value={page.slug} />
-              <input name="campaign_intent" type="hidden" value={page.campaignIntent} />
-              <input name="course_interest" type="hidden" value={interestsLabel} />
-              <LeadAttributionHiddenFields attribution={attribution} />
-              {page.courseInterests.map((interest) => (
-                <input key={interest} name="Interested classes[]" type="hidden" value={interest} />
-              ))}
-
-              <label>
-                <span>
-                  <UserRound aria-hidden="true" />
-                  Name
-                </span>
-                <Input autoComplete="name" name="Name" placeholder="Name" required type="text" />
-              </label>
-              <label>
-                <span>
-                  <Mail aria-hidden="true" />
-                  Email
-                </span>
-                <Input
-                  autoComplete="email"
-                  name="_replyto"
-                  placeholder="Email"
-                  required
-                  type="email"
-                />
-              </label>
-              <label>
-                <span>
-                  <Phone aria-hidden="true" />
-                  Phone
-                </span>
-                <Input autoComplete="tel" name="Phone" placeholder="Phone" required type="tel" />
-              </label>
-              {page.leadSelects?.map((field) => {
-                const Icon = field.icon ? SELECT_ICONS[field.icon] : null;
-
-                return (
-                  <label key={field.name}>
-                    <span>
-                      {Icon ? <Icon aria-hidden="true" /> : null}
-                      {field.label}
-                    </span>
-                    <select
-                      defaultValue={field.required ? "" : field.options[0]}
-                      name={field.name}
-                      required={field.required}
-                    >
-                      {field.required ? (
-                        <option disabled value="">
-                          Select one
-                        </option>
-                      ) : null}
-                      {field.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                );
-              })}
-              <label>
-                <span>Questions or timing notes</span>
-                <Textarea
-                  name="Notes"
-                  placeholder="Best times, current certifications, or class questions"
-                  rows={4}
-                />
-              </label>
-              {page.consent ? (
-                <label className="rda-ad-form-consent">
-                  <input name={page.consent.name} required type="checkbox" value="Yes" />
-                  <span>{page.consent.label}</span>
-                </label>
-              ) : null}
-              {status === "error" ? <LeadFormError /> : null}
-              <Button disabled={status === "submitting"} type="submit">
-                {status === "submitting" ? "Sending..." : page.primaryCtaLabel}
-                <Send aria-hidden="true" />
-              </Button>
-              <p className="rda-ad-form-note">
-                This request does not reserve a seat or collect payment. Admissions will
-                confirm the right next step directly.
-              </p>
-            </form>
-          )}
-        </aside>
+        {isPaidLander ? null : leadForm}
       </section>
     </article>
   );

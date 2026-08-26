@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { adLandingPages } from "@/lib/ad-landing-pages";
+import { adLandingPages, PAID_TRAFFIC_LANDER_SLUGS } from "@/lib/ad-landing-pages";
 import { activeSitePromo } from "@/lib/site-promo";
 import {
   blockElevenLabsWidgetScript,
@@ -1628,15 +1628,32 @@ test.describe("live-style interaction flows", () => {
         ...expectedAttribution,
         renewal_focus: "pit_and_fissure_sealants",
       };
-      const trackedPayload = JSON.stringify({
-        contactEvent,
-        gaLeadEvent,
-        gaSubmitEvent,
-        leadEvent,
-        openAILeadEvent,
-        vercelLeadEvent,
-        viewContentEvent,
-      }).toLowerCase();
+      const omitPageUrls = (value: unknown): unknown => {
+        if (Array.isArray(value)) {
+          return value.map(omitPageUrls);
+        }
+
+        if (value && typeof value === "object") {
+          return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>)
+              .filter(([key]) => key !== "page_location" && key !== "page_path")
+              .map(([key, entry]) => [key, omitPageUrls(entry)]),
+          );
+        }
+
+        return value;
+      };
+      const trackedPayload = JSON.stringify(
+        omitPageUrls({
+          contactEvent,
+          gaLeadEvent,
+          gaSubmitEvent,
+          leadEvent,
+          openAILeadEvent,
+          vercelLeadEvent,
+          viewContentEvent,
+        }),
+      ).toLowerCase();
 
       expect(viewContentEvent).toMatchObject({
         ...expectedAttribution,
@@ -2212,6 +2229,7 @@ test.describe("live-style interaction flows", () => {
         await expect(form.locator('input[name="how-heard"]')).toHaveValue("website");
       }
 
+      await gotoSettled(page, "/");
       const whatsappHref = await page.locator("[data-rda-whatsapp]").first().getAttribute("href");
       const decodedWhatsAppHref = decodeURIComponent(whatsappHref ?? "");
       expect(decodedWhatsAppHref).toContain("how-heard: whatsapp");
@@ -2670,7 +2688,7 @@ test.describe("live-style interaction flows", () => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/lp/dental-assisting-enroll", { allowPromo: true });
 
-      await expect(page.locator("[data-rda-promo-banner='true']")).toBeVisible();
+      await expect(page.locator("[data-rda-promo-banner='true']")).toHaveCount(0);
       await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
       await expect(page.locator('form[data-rda-landing-form="true"]')).toBeVisible();
     });
@@ -2693,6 +2711,77 @@ test.describe("live-style interaction flows", () => {
 
       await expect(startSelect).toBeVisible();
       await expect(startSelect.locator("option", { hasText: "September 12, 2026 (Saturday Academy)" })).toHaveCount(1);
+    });
+  });
+
+  test.describe("paid Meta landers", () => {
+    test.beforeEach(async ({ context }) => {
+      await blockElevenLabsWidgetScript(context);
+    });
+
+    for (const slug of PAID_TRAFFIC_LANDER_SLUGS) {
+      test(`${slug} uses stripped chrome and a first-viewport form`, async ({ page }) => {
+        await page.setViewportSize({ height: 900, width: 390 });
+        await gotoSettled(page, `/lp/${slug}`);
+
+        await expect(page.locator("[data-rda-ad-lander='true']").first()).toBeVisible();
+        await expect(page.locator("[data-rda-promo-banner='true']")).toHaveCount(0);
+        await expect(page.locator("[data-rda-contact-us='true']")).toHaveCount(0);
+        await expect(page.locator('[aria-label="Hamburger Site Navigation Icon"]')).toHaveCount(0);
+        await expect(page.locator("elevenlabs-convai")).toHaveCount(0);
+        await expect(page.locator("[data-rda-whatsapp]")).toHaveCount(0);
+        await expect(page.locator('img[data-rda-course-gallery-image="true"]')).toHaveCount(0);
+        await expect(page.locator('form[data-rda-landing-form="true"]')).toBeVisible();
+        await expect(page.locator('input[name="Consent to contact"]')).toBeVisible();
+        await expect(page.locator('a[href^="tel:"]').first()).toBeVisible();
+
+        const formInViewport = await page.locator("#ad-lead-form").evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          return rect.top < window.innerHeight && rect.bottom > 0;
+        });
+        expect(formInViewport).toBe(true);
+      });
+    }
+
+    test("GA4 config keeps the query string on paid landers", async ({ page }) => {
+      await gotoSettled(
+        page,
+        "/lp/dental-assisting-enroll?utm_content=test123&fbclid=meta_preview_click",
+      );
+
+      const analytics = await page.evaluate(() => {
+        const bootstrap = document.querySelector("#rda-google-analytics");
+        const gtagSrc = document.querySelector(
+          'script[src^="https://www.googletagmanager.com/gtag/js?id="]',
+        );
+        const pixel = document.querySelector("#rda-meta-pixel");
+        const dataLayer = (window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? [];
+        const config = dataLayer.find((entry) => {
+          return (
+            entry &&
+            entry[0] === "config" &&
+            typeof entry[2] === "object" &&
+            entry[2] !== null
+          );
+        }) as ["config", string, { page_location?: string; page_path?: string }] | undefined;
+
+        return {
+          bootstrapInHead: bootstrap?.parentElement?.tagName === "HEAD",
+          gtagSrcInHead: gtagSrc?.parentElement?.tagName === "HEAD",
+          hasSearchInBootstrap: Boolean(bootstrap?.textContent?.includes("window.location.search")),
+          pageLocation: config?.[2]?.page_location ?? "",
+          pagePath: config?.[2]?.page_path ?? "",
+          pixelInHead: pixel?.parentElement?.tagName === "HEAD",
+          pixelHasPageView: Boolean(pixel?.textContent?.includes("fbq('track', 'PageView')")),
+        };
+      });
+
+      expect(analytics.hasSearchInBootstrap).toBe(true);
+      expect(analytics.bootstrapInHead || analytics.gtagSrcInHead).toBe(true);
+      expect(analytics.pixelInHead || analytics.pixelHasPageView).toBe(true);
+      expect(analytics.pageLocation).toContain("utm_content=test123");
+      expect(analytics.pagePath).toContain("utm_content=test123");
+      expect(analytics.pageLocation).toContain("fbclid=meta_preview_click");
     });
   });
 });

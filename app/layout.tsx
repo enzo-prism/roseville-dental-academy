@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Noto_Sans, Playfair_Display } from "next/font/google";
 
+import { AnalyticsBootstrap } from "@/components/site/analytics-bootstrap";
 import { GoogleAnalytics } from "@/components/site/google-analytics";
 import { GlobalStructuredData } from "@/components/site/structured-data";
 import { HotjarAnalytics } from "@/components/site/hotjar-analytics";
@@ -43,6 +44,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${notoSans.variable} ${playfairDisplay.variable}`}>
+      <head>
+        <AnalyticsBootstrap />
+      </head>
       <body className={LIVE_BODY_CLASS}>
         <GlobalStructuredData />
         {children}

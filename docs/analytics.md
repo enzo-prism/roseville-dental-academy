@@ -5,11 +5,13 @@ Roseville Dental Academy uses Vercel Web Analytics for page views and custom eve
 ## Runtime Sources
 
 - `app/layout.tsx` mounts `@vercel/analytics/next`, GA4, Hotjar, Meta Pixel, the ChatGPT Ads Measurement Pixel, and the shared interaction listener.
-- `app/lp/[slug]/page.tsx` serves noindex ad landing pages for paid social campaigns.
+- `components/site/analytics-bootstrap.tsx` injects the GA4 and Meta Pixel snippets in the document head so a 2–3s in-app visit still records `page_view`.
+- `app/lp/[slug]/page.tsx` serves noindex ad landing pages for paid social campaigns. The three live Meta landers (`/lp/dental-assisting-enroll`, `/lp/coronal-sealants-renewal`, `/lp/infection-control-office-compliance`) use stripped chrome and a first-viewport form.
 - `components/site/interaction-analytics.tsx` is the custom event source of truth.
-- `components/site/google-analytics.tsx` owns only the GA4 script and page-view updates.
-- `components/site/meta-pixel.tsx` owns Meta Pixel page-view tracking and safe standard event helpers.
-- `components/site/openai-ads-pixel.tsx` owns ChatGPT Ads Pixel initialization, consent enforcement, PII-free page views, and accepted-lead measurement.
+- `components/site/google-analytics.tsx` owns SPA page-view updates after the head bootstrap.
+- `components/site/meta-pixel.tsx` owns Meta Pixel SPA page-view tracking and safe standard event helpers.
+- `components/site/openai-ads-pixel.tsx` owns ChatGPT Ads Pixel initialization, consent enforcement, PII-free page views, and accepted-lead measurement. Phone and WhatsApp clicks do not fire `lead_created`.
+- `lib/analytics-page-url.ts` keeps `page_location` and `page_path` as origin + pathname + `window.location.search` so `utm_*` and `fbclid` survive the gtag config.
 
 ## Paid Social Landing Pages
 

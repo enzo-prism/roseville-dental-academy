@@ -162,7 +162,7 @@ Use shadcn semantic tokens first: `bg-background`, `bg-card`, `text-foreground`,
 
 Do not introduce raw visual values inside components. If a new durable color, type, radius, or spacing decision is needed, add it here and map it through `app/globals.css`.
 
-`whatsapp` (`#25D366`, the official WhatsApp brand green) with `whatsapp-foreground` (white) is a reserved brand token. It maps to the `bg-whatsapp` / `text-whatsapp-foreground` utilities and the Button `whatsapp` variant, and is used only for the WhatsApp click-to-chat controls: the global floating button (`.rda-whatsapp-fab`, pinned bottom-left so it never collides with the bottom-right ElevenLabs agent) and the inline "Message Us on WhatsApp" CTAs in the footer, contact section, and ad landing hero. Do not reuse the WhatsApp green for non-WhatsApp UI, and keep the official logo glyph unaltered (sourced via svgl in `components/site/whatsapp-icon.tsx`).
+`whatsapp` (`#25D366`, the official WhatsApp brand green) with `whatsapp-foreground` (white) is a reserved brand token. It maps to the `bg-whatsapp` / `text-whatsapp-foreground` utilities and the Button `whatsapp` variant, and is used only for the WhatsApp click-to-chat controls: the global floating button (`.rda-whatsapp-fab`, pinned bottom-left so it never collides with the bottom-right ElevenLabs agent) and the inline "Message Us on WhatsApp" CTAs in the footer, contact section, and non-paid ad landing heroes. Paid Meta landers omit WhatsApp and keep a single phone CTA. Do not reuse the WhatsApp green for non-WhatsApp UI, and keep the official logo glyph unaltered (sourced via svgl in `components/site/whatsapp-icon.tsx`).
 
 ## Typography
 
@@ -183,6 +183,8 @@ ElevenLabs (bottom-right) has three visual states that must not share one fixed 
 3. **Expanded conversation** — sheet / composer; use the large expanded slot (full-width on small viewports).
 
 Size the `.live-elevenlabs-widget` host from real widget state attributes (`data-elevenlabs-mobile-minimized`, `data-elevenlabs-open`, `is-expanded`), never from route compact flags alone.
+
+Paid Meta landers (`/lp/dental-assisting-enroll`, `/lp/coronal-sealants-renewal`, `/lp/infection-control-office-compliance`) use stripped chrome: compact logo + one phone CTA, no promo banner, no main nav, no ElevenLabs, and no WhatsApp FAB. The lead form sits in the first viewport beside a single hero image.
 
 ## Components
 

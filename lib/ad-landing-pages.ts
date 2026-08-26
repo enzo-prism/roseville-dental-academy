@@ -105,6 +105,23 @@ export type AdLandingPage = {
   socialProof?: AdLandingPageSocialProof;
 };
 
+export const PAID_TRAFFIC_LANDER_SLUGS = [
+  "coronal-sealants-renewal",
+  "dental-assisting-enroll",
+  "infection-control-office-compliance",
+] as const;
+
+export type PaidTrafficLanderSlug = (typeof PAID_TRAFFIC_LANDER_SLUGS)[number];
+
+export function isPaidTrafficLanderSlug(slug: string): slug is PaidTrafficLanderSlug {
+  return (PAID_TRAFFIC_LANDER_SLUGS as readonly string[]).includes(slug);
+}
+
+export function isPaidTrafficLanderPath(pathname: string | null | undefined) {
+  const path = (pathname ?? "").replace(/\/+$/, "") || "/";
+  return PAID_TRAFFIC_LANDER_SLUGS.some((slug) => path === `/lp/${slug}`);
+}
+
 function availableDates(courseId: CourseScheduleId) {
   return getCourseSchedule(courseId)
     .filter((entry) => entry.status !== "full")

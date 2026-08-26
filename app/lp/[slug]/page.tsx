@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { AdLandingFooter, AdLandingHeader } from "@/components/site/ad-landing-chrome";
 import { AdLandingPage } from "@/components/site/ad-landing-page";
-import { ElevenLabsAgentWidget } from "@/components/site/elevenlabs-agent-widget";
 import { LiveFooter } from "@/components/site/live-footer";
 import { LiveHeader } from "@/components/site/live-header";
 import {
   adLandingPages,
   getAdLandingPage,
+  isPaidTrafficLanderSlug,
 } from "@/lib/ad-landing-pages";
 import { buildPageMetadata } from "@/lib/site-metadata";
 
@@ -52,22 +53,24 @@ export default async function LandingPageRoute({ params }: PageProps) {
     notFound();
   }
 
+  const isPaidLander = isPaidTrafficLanderSlug(page.slug);
+
   return (
     <div
       className="rda-live-shell"
+      data-rda-ad-lander={isPaidLander ? "true" : undefined}
       data-rda-current-route={page.path}
-      data-rda-shell="public"
+      data-rda-shell={isPaidLander ? "ad-lander" : "public"}
       data-rda-shell-ready="true"
     >
       <a className="rda-skip-link" href="#rda-main-content">
         Skip to main content
       </a>
-      <LiveHeader currentRoute={page.path} />
+      {isPaidLander ? <AdLandingHeader /> : <LiveHeader currentRoute={page.path} />}
       <main className="rda-live-main" data-rda-route={page.slug} id="rda-main-content">
         <AdLandingPage page={page} />
       </main>
-      <LiveFooter />
-      <ElevenLabsAgentWidget compactDefault />
+      {isPaidLander ? <AdLandingFooter /> : <LiveFooter />}
     </div>
   );
 }
