@@ -330,9 +330,19 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
         className={isPaidLander ? "rda-ad-hero rda-ad-hero-paid" : "rda-ad-hero"}
         aria-labelledby={`${formId}-hero-title`}
       >
+        {isPaidLander ? (
+          <div className="rda-ad-hero-heading">
+            <p className="rda-ad-eyebrow">{page.eyebrow}</p>
+            <h1 id={`${formId}-hero-title`}>{page.hero.title}</h1>
+          </div>
+        ) : null}
         <div className="rda-ad-hero-copy">
-          <p className="rda-ad-eyebrow">{page.eyebrow}</p>
-          <h1 id={`${formId}-hero-title`}>{page.hero.title}</h1>
+          {isPaidLander ? null : (
+            <>
+              <p className="rda-ad-eyebrow">{page.eyebrow}</p>
+              <h1 id={`${formId}-hero-title`}>{page.hero.title}</h1>
+            </>
+          )}
           <p className="rda-ad-hero-intro">{page.hero.intro}</p>
           <div className="rda-ad-hero-actions">
             <Button asChild>

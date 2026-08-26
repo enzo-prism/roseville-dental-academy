@@ -40,10 +40,9 @@ export function AnalyticsBootstrap() {
             dangerouslySetInnerHTML={{
               __html: `
                 window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                window.gtag = window.gtag || gtag;
-                gtag('js', new Date());
-                gtag('config', '${measurementId}', {
+                window.gtag = window.gtag || function(){dataLayer.push(arguments);};
+                window.gtag('js', new Date());
+                window.gtag('config', '${measurementId}', {
                   page_location: window.location.origin + window.location.pathname + window.location.search,
                   page_path: window.location.pathname + window.location.search
                 });

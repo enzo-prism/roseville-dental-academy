@@ -2799,9 +2799,16 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 
 .rda-ad-hero-paid {
   grid-template-areas:
-    "copy form"
-    "media form";
+    "heading form"
+    "copy form";
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+}
+
+.rda-ad-hero-paid .rda-ad-hero-heading {
+  align-content: end;
+  display: grid;
+  gap: 12px;
+  grid-area: heading;
 }
 
 .rda-ad-hero-paid .rda-ad-hero-copy {
@@ -3852,16 +3859,38 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 
 @media (max-width: 1024px) {
   .rda-ad-hero,
-  .rda-ad-hero-paid,
   .rda-ad-course-proof-layout,
   .rda-ad-details {
-    grid-template-areas: none;
     grid-template-columns: 1fr;
   }
 
+  .rda-ad-hero-paid {
+    grid-template-areas:
+      "heading"
+      "form"
+      "copy";
+  }
+
+  .rda-ad-hero-paid .rda-ad-hero-heading,
   .rda-ad-hero-paid .rda-ad-hero-copy,
   .rda-ad-hero-paid .rda-ad-form-panel {
     grid-area: auto;
+  }
+
+  .rda-ad-hero-paid .rda-ad-hero-heading {
+    grid-area: heading;
+  }
+
+  .rda-ad-hero-paid .rda-ad-form-panel {
+    grid-area: form;
+  }
+
+  .rda-ad-hero-paid .rda-ad-hero-copy {
+    grid-area: copy;
+  }
+
+  .rda-ad-hero-paid .rda-ad-hero-actions {
+    display: none;
   }
 
   .rda-ad-hero-media {
@@ -3967,7 +3996,16 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   }
 
   .rda-ad-hero-paid {
+    gap: 16px;
     padding-top: 20px;
+  }
+
+  .rda-ad-hero-paid h1 {
+    font-size: 30px;
+  }
+
+  .rda-ad-hero-paid .rda-ad-hero-intro {
+    font-size: 16px;
   }
 
   .rda-ad-hero-media-paid {

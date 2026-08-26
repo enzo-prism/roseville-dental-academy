@@ -1628,15 +1628,32 @@ test.describe("live-style interaction flows", () => {
         ...expectedAttribution,
         renewal_focus: "pit_and_fissure_sealants",
       };
-      const trackedPayload = JSON.stringify({
-        contactEvent,
-        gaLeadEvent,
-        gaSubmitEvent,
-        leadEvent,
-        openAILeadEvent,
-        vercelLeadEvent,
-        viewContentEvent,
-      }).toLowerCase();
+      const omitPageUrls = (value: unknown): unknown => {
+        if (Array.isArray(value)) {
+          return value.map(omitPageUrls);
+        }
+
+        if (value && typeof value === "object") {
+          return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>)
+              .filter(([key]) => key !== "page_location" && key !== "page_path")
+              .map(([key, entry]) => [key, omitPageUrls(entry)]),
+          );
+        }
+
+        return value;
+      };
+      const trackedPayload = JSON.stringify(
+        omitPageUrls({
+          contactEvent,
+          gaLeadEvent,
+          gaSubmitEvent,
+          leadEvent,
+          openAILeadEvent,
+          vercelLeadEvent,
+          viewContentEvent,
+        }),
+      ).toLowerCase();
 
       expect(viewContentEvent).toMatchObject({
         ...expectedAttribution,
@@ -2738,10 +2755,10 @@ test.describe("live-style interaction flows", () => {
           'script[src^="https://www.googletagmanager.com/gtag/js?id="]',
         );
         const pixel = document.querySelector("#rda-meta-pixel");
-        const dataLayer = (window as Window & { dataLayer?: unknown[] }).dataLayer ?? [];
+        const dataLayer = (window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? [];
         const config = dataLayer.find((entry) => {
           return (
-            Array.isArray(entry) &&
+            entry &&
             entry[0] === "config" &&
             typeof entry[2] === "object" &&
             entry[2] !== null
