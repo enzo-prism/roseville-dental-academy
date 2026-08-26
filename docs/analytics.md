@@ -56,7 +56,18 @@ Both live Formspree inboxes use this same first-touch stamp: `mpqgyjjg` on `/lp/
 
 Attribution is stored as two independent records: the first meaningful touch is immutable except for filling empty gaps, while a later paid/click-ID touch becomes the conversion touch. A later organic visit or referrer-only page view does not overwrite first-touch UTMs. Both include a capture time, landing path, first-party anonymous/session IDs, available GA client/session IDs, UTMs, exact click IDs, and native ad dimensions when those dimensions are present in the URL. The record lasts for 90 days in first-party local storage with a same-site cookie backup. Global Privacy Control, Do Not Track, or an explicit denied RDA consent cookie restricts storage to the current browser session; unavailable storage falls back to memory without blocking the form.
 
-Ad click IDs and first-party browser IDs stay out of GA4, Meta, and Vercel custom-event properties except for the accepted `Lead` payload and click-to-call/WhatsApp `Contact` events, which include stored `utm_content` plus parsed `ad_id`. The remaining click IDs are sent only with the accepted Formspree lead and to the private same-origin attribution receipt endpoint.
+Ad click IDs and first-party browser IDs stay out of GA4, Meta, and Vercel custom-event properties except for the accepted `Lead` payload. Click-to-call and WhatsApp `Contact` events do **not** inherit stored UTMs or parsed `ad_id`. Those channels drop query tags the moment the visitor leaves the site, so the site only sends a source mark (`how_heard` / `lead_source` = `phone` or `whatsapp`) so reporting can bucket them as Unattributed-phone / Unattributed-whatsapp instead of pretending they came from an ad. The remaining click IDs are sent only with the accepted Formspree lead and to the private same-origin attribution receipt endpoint.
+
+`tel:` cannot carry a source mark into the phone system or Formspree without a new call-tracking backend (for example CallRail). Phone clicks are therefore marked only in on-site analytics. They stay unattributed in the lead ledger. Do not invent `ad_id` for those clicks.
+
+WhatsApp compose text keeps the academy number `19165075157` and appends only:
+
+```
+how-heard: whatsapp
+lead_source=whatsapp
+```
+
+Do not append campaign, creative, or `ad_id` tags to that prefill. Public Formspree forms send the same first-touch UTM / click-ID / `ad_id` stamp plus `lead_source=website` and `how-heard=website`. `SitePageRenderer` in `components/site/site-page.tsx` is not mounted on the live shell and is not a public lead path.
 
 Every accepted AJAX form request receives one non-PII UUID before submission. It is sent only as `lead_event_id`, and the same value joins Formspree payload fields, GA4, Meta, Vercel, and the pending private-ledger receipt. It is not Formspree's immutable submission `_id`. Authenticated reconciliation uses the canonical `form_id:_id` lead identity and only then verifies the matching browser `lead_event_id`. Final lead/conversion events fire only after Formspree returns an HTTP-success response; rejected or failed requests show the inline error state and are not counted as leads. A short in-flight lock also prevents rapid double-clicks from creating duplicate requests.
 
@@ -103,7 +114,7 @@ The event layer avoids student-entered names, email addresses, phone numbers, no
 | --- | --- | --- |
 | `cta_click` | Hero, contact, and quick sign-up CTAs | `cta`, `location`, `destination` |
 | `nav_click` | Header and footer navigation links | `label`, `location`, `destination` |
-| `contact_action` | Phone, email, WhatsApp, directions, or contact-form-open actions | `action`, `location`, `destination` |
+| `contact_action` | Phone, email, WhatsApp, directions, or contact-form-open actions | `action`, `location`, `destination`; phone/WhatsApp also send `how_heard` and `lead_source` |
 | `social_click` | Facebook, Instagram, or TikTok links | `platform`, `location`, `destination` |
 | `portal_click` | Resume portal entry points | `portal`, `location`, `destination` |
 | `file_download` | Public PDF downloads | `file_name`, `file_type`, `location` |
@@ -125,8 +136,8 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | `file_download` | GA4 enhanced/recommended-style | Public PDF downloads | `file_name`, `file_extension`, `link_location`, `link_url` |
 | `cta_click` | Custom | Primary CTAs | `cta_id`, `cta_location`, `link_url` |
 | `nav_click` | Custom | Header and footer navigation | `nav_label`, `link_location`, `link_url` |
-| `contact_action` | Custom | Phone, email, WhatsApp, directions, or contact-form-open actions | `contact_method`, `link_location`, `link_url` |
-| `click_to_call` / `email_click` / `whatsapp_click` | Custom | Phone, email, and WhatsApp click-to-chat clicks | `contact_method`, `link_location`, `link_text`, `link_url` |
+| `contact_action` | Custom | Phone, email, WhatsApp, directions, or contact-form-open actions | `contact_method`, `link_location`, `link_url`; phone/WhatsApp also send `how_heard` and `lead_source` |
+| `click_to_call` / `email_click` / `whatsapp_click` | Custom | Phone, email, and WhatsApp click-to-chat clicks | `contact_method`, `link_location`, `link_text`, `link_url`; phone/WhatsApp also send `how_heard` and `lead_source` |
 | `social_click` | Custom | Facebook, Instagram, or TikTok links | `method`, `social_platform`, `link_location`, `link_url` |
 | `portal_click` | Custom | Resume portal entry points | `portal`, `link_location`, `link_url` |
 | `outbound_click` | Custom | External links not otherwise categorized | `link_domain`, `link_location`, `link_url`, `outbound` |
@@ -145,9 +156,9 @@ Safe Meta standard events:
 | --- | --- | --- |
 | `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Lead` | Formspree accepts a valid lead request | `content_name`, `content_category`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
-| `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name` (`call`, `email`, or `whatsapp`), `content_category`, `link_location`, `page_path`, stored `utm_content`, parsed `ad_id` |
+| `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name` (`call`, `email`, or `whatsapp`), `content_category`, `link_location`, `page_path`; phone/WhatsApp also send `how_heard` and `lead_source` (`phone` or `whatsapp`) and never send stored `utm_content` or `ad_id` |
 
-WhatsApp `wa.me` links keep the academy number `19165075157`. When a first-touch campaign is stored, the prefilled compose text may append a short `Ref: {utm_campaign} / {utm_content}` suffix. If that URL would change the number or fail to parse, the original untagged link is left in place.
+WhatsApp `wa.me` links keep the academy number `19165075157`. The prefilled compose text always includes a source mark (`how-heard: whatsapp` and `lead_source=whatsapp`) and never campaign or `ad_id` tags. If that URL would change the number or fail to parse, the original untagged number-only link is left in place.
 
 Do not send student-entered names, email addresses, phone numbers, notes, or message text to Meta events.
 

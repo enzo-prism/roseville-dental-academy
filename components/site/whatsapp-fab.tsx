@@ -18,6 +18,7 @@ export function WhatsAppFab() {
     <a
       aria-label={siteContact.whatsAppLabel}
       className="rda-whatsapp-fab"
+      data-rda-lead-source="whatsapp"
       data-rda-whatsapp="true"
       href={whatsAppUrl}
       rel="noreferrer"

@@ -22,7 +22,9 @@ export function LiveFooter() {
           <p className="rda-footer-name">{siteContact.school}</p>
           <p>{siteContact.address}</p>
           <p>
-            <a href={`tel:${siteContact.phone.replace(/\D/g, "")}`}>{siteContact.phone}</a>
+            <a data-rda-lead-source="phone" href={`tel:${siteContact.phone.replace(/\D/g, "")}`}>
+              {siteContact.phone}
+            </a>
           </p>
           <p>
             <a href={`mailto:${siteContact.email}`}>{siteContact.email}</a>
@@ -30,6 +32,7 @@ export function LiveFooter() {
           <Button
             asChild
             className="rda-footer-whatsapp mt-1"
+            data-rda-lead-source="whatsapp"
             data-rda-whatsapp="true"
             size="sm"
             variant="whatsapp"

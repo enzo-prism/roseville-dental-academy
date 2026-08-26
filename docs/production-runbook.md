@@ -69,9 +69,10 @@ For paid-media changes, also verify attribution and analytics readiness without 
 
 1. Open each dedicated route with test `utm_source`, `utm_medium`, `utm_campaign`, `utm_id`, `utm_source_platform`, `utm_content`, and a synthetic `fbclid`.
 2. Confirm the Dental Assisting form action is `https://formspree.io/f/mpqgyjjg`; confirm the Coronal + Sealants action is `https://formspree.io/f/xzdkgaeg` with hidden `form_key=mwvdrnrk`.
-3. Confirm the attribution fields are present on the form and persist when the visitor continues to another RDA form in the same session.
-4. Confirm GA4 (`window.gtag`), Meta Pixel (`window.fbq`), and Vercel Web Analytics are loaded without browser errors.
-5. Check the new Vercel deployment logs for runtime errors.
+3. Confirm the attribution fields are present on the form and persist when the visitor continues to another RDA form in the same session. Public forms also send `lead_source=website` and `how-heard=website`.
+4. Confirm click-to-call and WhatsApp do **not** inherit UTMs or `ad_id`. WhatsApp compose text should include only `how-heard: whatsapp` and `lead_source=whatsapp`. Phone clicks are analytics-only; `tel:` cannot stamp a Formspree or ledger lead without a call-tracking backend.
+5. Confirm GA4 (`window.gtag`), Meta Pixel (`window.fbq`), and Vercel Web Analytics are loaded without browser errors.
+6. Check the new Vercel deployment logs for runtime errors.
 
 For Meta boosts, compare the live destination against the audited routing table in `docs/analytics.md`. A legacy boosted post whose destination is locked to the original post is not compliant merely because its website route loads; recreate it as a new ad before treating it as fully attributable.
 

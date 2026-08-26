@@ -9,7 +9,7 @@ import {
   LEAD_FORM_SUCCESS_EVENT,
   type LeadFormSuccessDetail,
 } from "@/components/site/use-lead-form";
-import { getLeadAttributionStamp, resolveLeadAttribution } from "@/lib/lead-attribution";
+import { CONTACT_CHANNEL_SOURCE, type ContactChannelSource } from "@/lib/site-data";
 
 type AnalyticsValue = boolean | number | string | null | undefined;
 type AnalyticsProperties = Record<string, AnalyticsValue>;
@@ -190,12 +190,12 @@ function trackGaContactAction(
   });
 }
 
-function getStoredContactAttribution() {
-  const stamp = getLeadAttributionStamp(resolveLeadAttribution(undefined, false));
+function getUnattributedContactChannel(channel: Extract<ContactChannelSource, "phone" | "whatsapp">) {
+  const source = CONTACT_CHANNEL_SOURCE[channel];
 
   return {
-    ad_id: stamp.ad_id || undefined,
-    utm_content: stamp.utm.utm_content || undefined,
+    how_heard: source.howHeard,
+    lead_source: source.leadSource,
   };
 }
 
@@ -298,27 +298,28 @@ function trackClickEvent(target: Element) {
     }
 
     if (href.startsWith("tel:")) {
-      const storedAttribution = getStoredContactAttribution();
+      const channel = getUnattributedContactChannel("phone");
 
       trackSiteEvent("contact_action", {
         action: "call",
         destination: "phone",
         location,
+        ...channel,
       });
       trackGaContactAction("phone", location, {
-        ...storedAttribution,
+        ...channel,
         link_text: linkText,
         link_url: destination,
       });
       trackSafeGaEvent("click_to_call", {
-        ...storedAttribution,
+        ...channel,
         contact_method: "phone",
         link_location: location,
         link_text: linkText,
         link_url: destination,
       });
       trackMetaPixelEvent("Contact", {
-        ...storedAttribution,
+        ...channel,
         content_category: "contact",
         content_name: "call",
         link_location: location,
@@ -351,27 +352,28 @@ function trackClickEvent(target: Element) {
     }
 
     if (link.matches("[data-rda-whatsapp]") || href.includes("wa.me")) {
-      const storedAttribution = getStoredContactAttribution();
+      const channel = getUnattributedContactChannel("whatsapp");
 
       trackSiteEvent("contact_action", {
         action: "whatsapp",
         destination: "whatsapp",
         location,
+        ...channel,
       });
       trackGaContactAction("whatsapp", location, {
-        ...storedAttribution,
+        ...channel,
         link_text: linkText,
         link_url: destination,
       });
       trackSafeGaEvent("whatsapp_click", {
-        ...storedAttribution,
+        ...channel,
         contact_method: "whatsapp",
         link_location: location,
         link_text: linkText,
         link_url: destination,
       });
       trackMetaPixelEvent("Contact", {
-        ...storedAttribution,
+        ...channel,
         content_category: "contact",
         content_name: "whatsapp",
         link_location: location,

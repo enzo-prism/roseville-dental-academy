@@ -489,6 +489,8 @@ for (const landingPage of adLandingPages) {
           utmTerm: Boolean(form?.querySelector<HTMLInputElement>('input[name="utm_term"]')),
           adId: Boolean(form?.querySelector<HTMLInputElement>('input[name="ad_id"]')),
           campaignId: Boolean(form?.querySelector<HTMLInputElement>('input[name="campaign_id"]')),
+          howHeard: form?.querySelector<HTMLInputElement>('input[name="how-heard"]')?.value,
+          leadSource: form?.querySelector<HTMLInputElement>('input[name="lead_source"]')?.value,
         },
         proofGalleryImageCount: document.querySelectorAll(
           'img[data-rda-course-gallery-image="true"]',
@@ -578,7 +580,9 @@ for (const landingPage of adLandingPages) {
       !result.hiddenFields.utmTerm ||
       !result.hiddenFields.utmContent ||
       !result.hiddenFields.adId ||
-      !result.hiddenFields.campaignId
+      !result.hiddenFields.campaignId ||
+      result.hiddenFields.howHeard !== "website" ||
+      result.hiddenFields.leadSource !== "website"
     ) {
       mismatches.push(`${landingPage.path} attribution hidden fields are missing`);
     }
