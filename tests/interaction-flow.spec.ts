@@ -1249,9 +1249,13 @@ test.describe("live-style interaction flows", () => {
           analyticsWindow.__rdaTestVercelEvents?.push(args);
         };
         const dispatchClick = (selector: string) => {
-          document
-            .querySelector<HTMLElement>(selector)
-            ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+          const target = document.querySelector<HTMLElement>(selector);
+          const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+
+          // Exercise the delegated analytics listener without allowing anchor
+          // defaults to navigate away before the remaining actions run.
+          event.preventDefault();
+          target?.dispatchEvent(event);
         };
         const waitForReactUpdate = () =>
           new Promise<void>((resolve) => {
