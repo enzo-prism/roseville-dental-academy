@@ -171,6 +171,14 @@ export function useLeadFormSubmit() {
         formData.set("campaign_intent", stamp.campaign_intent);
       }
 
+      if (!String(formData.get("lead_source") || "").trim()) {
+        formData.set("lead_source", "website");
+      }
+
+      if (!String(formData.get("how-heard") || "").trim()) {
+        formData.set("how-heard", "website");
+      }
+
       const response = await fetch(form.action, {
         body: formData,
         headers: { Accept: "application/json" },

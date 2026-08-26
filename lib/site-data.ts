@@ -67,26 +67,26 @@ export const siteContact = {
   whatsAppLabel: "Message Us on WhatsApp",
 } as const;
 
-// Pre-built click-to-chat link. wa.me opens the WhatsApp app on mobile and
-// WhatsApp Web/desktop otherwise; the prefilled text lands in the compose box
-// (the user still taps send).
-export const whatsAppUrl = `https://wa.me/${siteContact.whatsAppNumber}?text=${encodeURIComponent(
-  siteContact.whatsAppMessage,
-)}`;
+export const CONTACT_CHANNEL_SOURCE = {
+  phone: { howHeard: "phone", leadSource: "phone" },
+  website: { howHeard: "website", leadSource: "website" },
+  whatsapp: { howHeard: "whatsapp", leadSource: "whatsapp" },
+} as const;
 
-export function buildAttributedWhatsAppUrl(input?: {
-  utm_campaign?: string;
-  utm_content?: string;
-}) {
+export type ContactChannelSource = keyof typeof CONTACT_CHANNEL_SOURCE;
+
+function buildWhatsAppChatText(leadSource: ContactChannelSource = "whatsapp") {
+  const channel = CONTACT_CHANNEL_SOURCE[leadSource];
+
+  return `${siteContact.whatsAppMessage}\n\nhow-heard: ${channel.howHeard}\nlead_source=${channel.leadSource}`.slice(
+    0,
+    400,
+  );
+}
+
+export function buildWhatsAppChatUrl(leadSource: ContactChannelSource = "whatsapp") {
   const number = siteContact.whatsAppNumber;
-  const tags = [input?.utm_campaign, input?.utm_content]
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-  const uniqueTags = [...new Set(tags)].slice(0, 2);
-  const text = uniqueTags.length
-    ? `${siteContact.whatsAppMessage}\n\nRef: ${uniqueTags.join(" / ")}`.slice(0, 400)
-    : siteContact.whatsAppMessage;
-  const url = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+  const url = `https://wa.me/${number}?text=${encodeURIComponent(buildWhatsAppChatText(leadSource))}`;
 
   try {
     const parsed = new URL(url);
@@ -96,13 +96,26 @@ export function buildAttributedWhatsAppUrl(input?: {
       parsed.hostname !== "wa.me" ||
       parsed.pathname.replace(/^\//u, "") !== number
     ) {
-      return whatsAppUrl;
+      return `https://wa.me/${number}`;
     }
 
     return url;
   } catch {
-    return whatsAppUrl;
+    return `https://wa.me/${number}`;
   }
+}
+
+// Pre-built click-to-chat link. wa.me opens the WhatsApp app on mobile and
+// WhatsApp Web/desktop otherwise; the prefilled text lands in the compose box
+// (the user still taps send). Call and WhatsApp drop UTMs, so this only adds
+// a source mark. Do not append campaign tags or invent ad_id.
+export const whatsAppUrl = buildWhatsAppChatUrl();
+
+export function buildAttributedWhatsAppUrl(_input?: {
+  utm_campaign?: string;
+  utm_content?: string;
+}) {
+  return buildWhatsAppChatUrl();
 }
 
 export const signupInterestOptions: SignupInterestOption[] = [

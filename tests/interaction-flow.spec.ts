@@ -1614,7 +1614,12 @@ test.describe("live-style interaction flows", () => {
       });
       expect(contactEvent).toMatchObject({
         content_category: "contact",
+        content_name: "call",
+        how_heard: "phone",
+        lead_source: "phone",
       });
+      expect(contactEvent).not.toHaveProperty("ad_id");
+      expect(contactEvent).not.toHaveProperty("utm_content");
       expect(ctaEvent).toMatchObject({
         campaign_intent: landingPage.campaignIntent,
         cta_id: "ad_landing_form",
@@ -1888,6 +1893,8 @@ test.describe("live-style interaction flows", () => {
       await expect(enrollForm.locator('input[name="campaign_id"]')).toHaveValue(
         "120248349183900000",
       );
+      await expect(enrollForm.locator('input[name="lead_source"]')).toHaveValue("website");
+      await expect(enrollForm.locator('input[name="how-heard"]')).toHaveValue("website");
 
       await enrollForm.locator('input[name="Name"]').fill("Saturday First Touch");
       await enrollForm.locator('input[name="_replyto"]').fill("saturday-first-touch@example.com");
@@ -1906,6 +1913,8 @@ test.describe("live-style interaction flows", () => {
       );
       await expect(signupForm.locator('input[name="utm_content"]')).toHaveValue(utmContent);
       await expect(signupForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+      await expect(signupForm.locator('input[name="lead_source"]')).toHaveValue("website");
+      await expect(signupForm.locator('input[name="how-heard"]')).toHaveValue("website");
       await expect(signupForm.locator('input[name="landing_page"]')).toHaveValue(enrollPage.path);
 
       await signupForm.getByRole("checkbox").first().click();
@@ -1935,11 +1944,17 @@ test.describe("live-style interaction flows", () => {
       const contactForm = page.locator('form[data-rda-contact-form="true"]');
       await expect(contactForm.locator('input[name="utm_content"]')).toHaveValue(utmContent);
       await expect(contactForm.locator('input[name="ad_id"]')).toHaveValue(adId);
+      await expect(contactForm.locator('input[name="lead_source"]')).toHaveValue("website");
+      await expect(contactForm.locator('input[name="how-heard"]')).toHaveValue("website");
 
       const whatsappHref = await page.locator("[data-rda-whatsapp]").first().getAttribute("href");
+      const decodedWhatsAppHref = decodeURIComponent(whatsappHref ?? "");
       expect(whatsappHref).toContain(`wa.me/19165075157`);
-      expect(decodeURIComponent(whatsappHref ?? "")).toContain("saturday_academy_sep12");
-      expect(decodeURIComponent(whatsappHref ?? "")).toContain(utmContent);
+      expect(decodedWhatsAppHref).toContain("how-heard: whatsapp");
+      expect(decodedWhatsAppHref).toContain("lead_source=whatsapp");
+      expect(decodedWhatsAppHref).not.toContain("saturday_academy_sep12");
+      expect(decodedWhatsAppHref).not.toContain(utmContent);
+      expect(decodedWhatsAppHref).not.toContain(adId);
 
       await page.evaluate(() => {
         const analyticsWindow = window as Window & { __rdaTestMetaEvents?: unknown[][] };
@@ -1964,17 +1979,90 @@ test.describe("live-style interaction flows", () => {
       expect(contactEvents.map((event) => event[2])).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            ad_id: adId,
             content_name: "call",
-            utm_content: utmContent,
+            how_heard: "phone",
+            lead_source: "phone",
           }),
           expect.objectContaining({
-            ad_id: adId,
             content_name: "whatsapp",
-            utm_content: utmContent,
+            how_heard: "whatsapp",
+            lead_source: "whatsapp",
           }),
         ]),
       );
+      expect(contactEvents.map((event) => event[2])).toEqual(
+        expect.not.arrayContaining([
+          expect.objectContaining({ ad_id: adId }),
+          expect.objectContaining({ utm_content: utmContent }),
+        ]),
+      );
+    });
+
+    test("every public Formspree form emits first-touch stamp fields", async ({
+      page,
+    }) => {
+      const requiredFields = [
+        "ad_id",
+        "campaign_id",
+        "how-heard",
+        "lead_source",
+        "utm_campaign",
+        "utm_content",
+        "utm_id",
+        "utm_medium",
+        "utm_source",
+        "utm_source_platform",
+        "utm_term",
+        "fbclid",
+        "gclid",
+      ];
+      const publicForms = [
+        { open: async () => undefined, path: "/", selector: 'form[data-rda-signup-form="true"]' },
+        {
+          open: async () => {
+            await page.locator('[data-rda-contact-form-toggle="true"]').click();
+          },
+          path: "/contact",
+          selector: 'form[data-rda-contact-form="true"]',
+        },
+        {
+          open: async () => undefined,
+          path: "/dental-assisting-program",
+          selector: 'form[data-rda-signup-form="true"]',
+        },
+        {
+          open: async () => undefined,
+          path: "/lp/dental-assisting-enroll",
+          selector: 'form[data-rda-landing-form="true"]',
+        },
+        {
+          open: async () => undefined,
+          path: "/lp/coronal-sealants-renewal",
+          selector: 'form[data-rda-landing-form="true"]',
+        },
+      ];
+
+      for (const publicForm of publicForms) {
+        await gotoSettled(page, publicForm.path);
+        await publicForm.open();
+        const form = page.locator(publicForm.selector).first();
+
+        await expect(form).toBeVisible();
+        await expect(form).toHaveAttribute("action", /https:\/\/formspree\.io\/f\/(xzdkgaeg|mpqgyjjg)/);
+
+        for (const field of requiredFields) {
+          await expect(form.locator(`input[name="${field}"]`)).toHaveCount(1);
+        }
+
+        await expect(form.locator('input[name="lead_source"]')).toHaveValue("website");
+        await expect(form.locator('input[name="how-heard"]')).toHaveValue("website");
+      }
+
+      const whatsappHref = await page.locator("[data-rda-whatsapp]").first().getAttribute("href");
+      const decodedWhatsAppHref = decodeURIComponent(whatsappHref ?? "");
+      expect(decodedWhatsAppHref).toContain("how-heard: whatsapp");
+      expect(decodedWhatsAppHref).toContain("lead_source=whatsapp");
+      expect(decodedWhatsAppHref).not.toMatch(/utm_|ad_id=/);
     });
 
     test("first touch stays immutable while a later paid touch becomes the conversion touch", async ({

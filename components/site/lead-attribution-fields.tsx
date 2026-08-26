@@ -5,6 +5,7 @@ import {
   getLeadAttributionStamp,
   type LeadAttribution,
 } from "@/lib/lead-attribution";
+import { CONTACT_CHANNEL_SOURCE } from "@/lib/site-data";
 
 type LeadAttributionHiddenFieldsProps = {
   attribution: LeadAttribution;
@@ -16,6 +17,7 @@ export function LeadAttributionHiddenFields({
   includeLandingContext = false,
 }: LeadAttributionHiddenFieldsProps) {
   const stamp = getLeadAttributionStamp(attribution);
+  const channel = CONTACT_CHANNEL_SOURCE.website;
 
   return (
     <>
@@ -27,6 +29,8 @@ export function LeadAttributionHiddenFields({
       ))}
       <input name="ad_id" type="hidden" value={stamp.ad_id} />
       <input name="campaign_id" type="hidden" value={stamp.campaign_id} />
+      <input name="how-heard" type="hidden" value={channel.howHeard} />
+      <input name="lead_source" type="hidden" value={channel.leadSource} />
       {includeLandingContext ? (
         <>
           <input name="landing_page" type="hidden" value={stamp.landing_page} />

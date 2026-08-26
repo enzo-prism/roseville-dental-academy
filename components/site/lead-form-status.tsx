@@ -10,6 +10,7 @@ function ContactFallbackLinks() {
     <>
       <a
         className="font-semibold text-primary underline-offset-4 hover:underline"
+        data-rda-lead-source="phone"
         href={`tel:${siteContact.phone.replace(/\D/g, "")}`}
       >
         {siteContact.phone}

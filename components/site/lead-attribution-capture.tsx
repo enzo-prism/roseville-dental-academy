@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 
-import { getLeadAttributionStamp, useLeadAttribution } from "@/components/site/use-lead-form";
-import { buildAttributedWhatsAppUrl, siteContact, whatsAppUrl } from "@/lib/site-data";
+import { useLeadAttribution } from "@/components/site/use-lead-form";
+import { buildWhatsAppChatUrl, siteContact } from "@/lib/site-data";
 
 function isSameWhatsAppNumber(href: string) {
   try {
@@ -18,17 +18,11 @@ function isSameWhatsAppNumber(href: string) {
 }
 
 export function LeadAttributionCapture() {
-  const attribution = useLeadAttribution();
+  // Persist first-touch on every public route, including pages with no form.
+  useLeadAttribution();
 
   useEffect(() => {
-    const stamp = getLeadAttributionStamp(attribution);
-    const href =
-      stamp.utm.utm_campaign || stamp.utm.utm_content
-        ? buildAttributedWhatsAppUrl({
-            utm_campaign: stamp.utm.utm_campaign,
-            utm_content: stamp.utm.utm_content,
-          })
-        : whatsAppUrl;
+    const href = buildWhatsAppChatUrl();
 
     if (!isSameWhatsAppNumber(href)) {
       return;
@@ -43,7 +37,7 @@ export function LeadAttributionCapture() {
 
       link.href = href;
     });
-  }, [attribution]);
+  }, []);
 
   return null;
 }

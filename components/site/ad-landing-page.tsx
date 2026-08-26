@@ -171,11 +171,14 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
               </a>
             </Button>
             <Button asChild variant="outline">
-              <a href={`tel:${siteContact.phone.replace(/\D/g, "")}`}>
+              <a
+                data-rda-lead-source="phone"
+                href={`tel:${siteContact.phone.replace(/\D/g, "")}`}
+              >
                 Call {siteContact.phone}
               </a>
             </Button>
-            <Button asChild data-rda-whatsapp="true" variant="whatsapp">
+            <Button asChild data-rda-lead-source="whatsapp" data-rda-whatsapp="true" variant="whatsapp">
               <a
                 aria-label={siteContact.whatsAppLabel}
                 href={whatsAppUrl}

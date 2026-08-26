@@ -51,7 +51,12 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
               <br />
               {siteContact.address}
               <br />
-              <a href={`tel:${siteContact.phone.replace(/\D/g, "")}`}>Phone: {siteContact.phone}</a>
+              <a
+                data-rda-lead-source="phone"
+                href={`tel:${siteContact.phone.replace(/\D/g, "")}`}
+              >
+                Phone: {siteContact.phone}
+              </a>
               <br />
               <a href={`mailto:${siteContact.email}`}>Email: {siteContact.email}</a>
             </address>
@@ -80,7 +85,7 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
                   Get directions
                 </a>
               </Button>
-              <Button asChild data-rda-whatsapp="true" variant="whatsapp">
+              <Button asChild data-rda-lead-source="whatsapp" data-rda-whatsapp="true" variant="whatsapp">
                 <a
                   aria-label={siteContact.whatsAppLabel}
                   href={whatsAppUrl}
