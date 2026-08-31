@@ -181,7 +181,7 @@ export const siteImages = {
 } as const;
 
 export const dentalAssistingRegistrationFormHref =
-  "/__live/img1.wsimg.com/blobby/go/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/Dental%2520Assistant%2520Training%2520Program%2520Registration.pdf";
+  "/assets/forms/dap-registration-form.pdf";
 
 const admissionsCta: CtaLink = {
   label: "Start registration",

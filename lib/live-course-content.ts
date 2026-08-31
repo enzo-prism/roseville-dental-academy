@@ -43,7 +43,7 @@ export type LiveCourseContent = {
 };
 
 const dentalAssistingPdfHref =
-  "/__live/img1.wsimg.com/blobby/go/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/Dental%2520Assistant%2520Training%2520Program%2520Registration.pdf";
+  "/assets/forms/dap-registration-form.pdf";
 
 function classDateSentence(courseId: LiveCourseId, label = "Class date(s)") {
   return `${label} ${getCourseScheduleDateList(courseId)}. ${courseScheduleNote}`;
