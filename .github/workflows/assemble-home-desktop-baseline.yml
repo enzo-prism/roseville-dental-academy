@@ -1,0 +1,48 @@
+name: Assemble home desktop baseline
+
+on:
+  push:
+    branches:
+      - cursor/home-desktop-baseline-da0e
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decode PNG parts
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+
+          parts_dir = Path("tests/baselines/live/visual/_png_parts")
+          b64 = "".join(path.read_text().strip() for path in sorted(parts_dir.glob("part-*.b64")))
+          data = base64.b64decode(b64)
+          expected = "b87bf326dc64a62603df7e697247c3d02cf8a7ff35e3611bcc8b6bc9e61ca722"
+          digest = hashlib.sha256(data).hexdigest()
+          if digest != expected:
+              raise SystemExit(f"png sha256 mismatch: {digest}")
+          out = Path("tests/baselines/live/visual/home-desktop.png")
+          out.write_bytes(data)
+          print(f"wrote {out} ({len(data)} bytes)")
+          PY
+          rm -rf tests/baselines/live/visual/_png_parts
+
+      - name: Commit assembled baseline
+        run: |
+          git config user.name "enzo"
+          git config user.email "enzo@design-prism.com"
+          git add tests/baselines/live/visual/home-desktop.png
+          git add -u tests/baselines/live/visual/_png_parts
+          git add -u .github/workflows/assemble-home-desktop-baseline.yml
+          git rm -f .github/workflows/assemble-home-desktop-baseline.yml || true
+          git status
+          git commit -m "Refresh home-desktop visual baseline after September 12 DA filled."
+          git push
