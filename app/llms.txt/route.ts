@@ -23,7 +23,7 @@ const LLMS_BODY = `# Roseville Dental Academy
 
 ## Programs
 
-- [Dental Assisting Program](${SITE_URL}/dental-assisting-program): Nine-week, 210-hour training with online lectures, chairside instruction, resume and job assistance, and a 64-hour internship for students 16 and older. Monday, Friday, and Saturday class schedules are separate options (pick one). Saturday Academy starts September 12, 2026.
+- [Dental Assisting Program](${SITE_URL}/dental-assisting-program): Nine-week, 210-hour training with online lectures, chairside instruction, resume and job assistance, and a 64-hour internship for students 16 and older. Monday, Friday, and Saturday class schedules are separate options (pick one). Saturday Academy on September 12, 2026 is full; the next start is October 12, 2026.
 - [DA to RDA Career Journey](${SITE_URL}/journey): Guided California DA to RDA roadmap covering training, work experience, required course certificates, application, exam, and license next steps.
 - [BLS/CPR Certification](${SITE_URL}/bls-cpr-1): Three-hour Basic Life Support and CPR training for healthcare providers, $85, 2026 dates beginning June 6.
 - [Infection Control (IC189)](${SITE_URL}/infection-control): California Dental Board approved 8-hour course for unlicensed dental assistants.
