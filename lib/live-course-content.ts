@@ -90,7 +90,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Price $2,500.00.",
       "Duration 9 weeks; 210 hours total; 1 class day (Monday, Friday, or Saturday — pick one) plus 1 assigned internship day.",
       "Format Online lectures, homework, chairside experience, and assigned externship hours.",
-      `${classDateSentence("dental-assisting-program", "Class start dates")} The June 19, July 13, and September 4, 2026 starts are full; September 12, 2026 (Saturday Academy) is the next available start.`,
+      `${classDateSentence("dental-assisting-program", "Class start dates")} The June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) starts are full; October 12, 2026 is the next available start.`,
       "Best next step Download the registration form and call the office at 916-888-9821 to enroll or schedule a tour.",
     ].join(" "),
   },

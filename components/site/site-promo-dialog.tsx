@@ -105,7 +105,7 @@ export function SitePromoDialog() {
           </Button>
         </AlertDialogFooter>
         <AlertDialogCancel
-          aria-label="Dismiss Saturday Academy announcement"
+          aria-label="Dismiss class announcement"
           className="absolute top-3 right-3"
           size="icon-sm"
           variant="ghost"

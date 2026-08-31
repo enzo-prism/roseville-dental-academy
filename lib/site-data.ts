@@ -829,7 +829,7 @@ export const faqItems = [
   {
     question: "Do Dental Assisting classes meet Monday, Friday, and Saturday?",
     answer:
-      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Saturday Academy, the Saturday class option, starts September 12, 2026.",
+      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Saturday Academy, the Saturday class option, starts September 12, 2026 (full). The next available Dental Assisting start is October 12, 2026.",
   },
   {
     question: "How can a short program be as effective as a longer program?",
@@ -946,12 +946,12 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026 (full), September 12, 2026 (Saturday Academy), October 12, 2026, and November 20, 2026. BLS is listed for June 6, 2026 (full), July 18 (full), August 1, September 5 (full), October 17, November 7, and December 5, 2026. X-rays/Radiation Safety is listed for June 6, 2026 (full), July 18 (full), August 1 (full), September 5 (full), October 17, November 7, and December 5, 2026. Infection Control is listed for June 6, 2026 (full), July 18 (full), August 1, September 5 (full), October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12 (full), October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12 (full), October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
+      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026 (full), September 12, 2026 (Saturday Academy) (full), October 12, 2026, and November 20, 2026. BLS is listed for June 6, 2026 (full), July 18 (full), August 1, September 5 (full), October 17, November 7, and December 5, 2026. X-rays/Radiation Safety is listed for June 6, 2026 (full), July 18 (full), August 1 (full), September 5 (full), October 17, November 7, and December 5, 2026. Infection Control is listed for June 6, 2026 (full), July 18 (full), August 1, September 5 (full), October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12 (full), October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12 (full), October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
   },
   {
     question: "Do Dental Assisting classes meet Monday, Friday, and Saturday?",
     answer:
-      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Saturday Academy, the Saturday class option, starts September 12, 2026.",
+      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Saturday Academy, the Saturday class option, starts September 12, 2026 (full). The next available Dental Assisting start is October 12, 2026.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -1095,7 +1095,7 @@ export const registrationCourseOptions: RegistrationCourseOption[] = [
     key: "dental-assisting",
     label: "Dental Assisting Training Program",
     price: "$2500.00",
-    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. The June 19, July 13, and September 4, 2026 starts are full; the next available start is September 12, 2026 (Saturday Academy).",
+    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. The June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) starts are full; the next available start is October 12, 2026.",
     icon: "graduation",
   },
   {
@@ -1162,7 +1162,7 @@ export const homeHero: HeroContent = {
     copy:
       "Dates are penciled in and may change; admissions will confirm current availability before students plan around them.",
     items: [
-      "Dental Assisting Training Course: June 19, July 13, and September 4, 2026 are full; next available start is September 12, 2026 (Saturday Academy)",
+      "Dental Assisting Training Course: June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) are full; next available start is October 12, 2026",
       "BLS / CPR: June 6, July 18, and September 5 are full; next available is August 1, then October 17, November 7, and December 5, 2026",
       "X-rays / Radiation Safety: June 6, July 18, August 1, and September 5 are full; next available is October 17, then November 7, and December 5, 2026",
       "Infection Control: June 6, July 18, and September 5 are full; next available is August 1, then October 17, November 7, and December 5, 2026",
@@ -1184,7 +1184,7 @@ export const homePrimarySplit: SplitSectionContent = {
   imageAlt: "Students practicing chairside dental assisting skills inside Waikiki Dental",
   supporting: {
     title: "Dental assisting start dates",
-    copy: ["June 19, July 13, and September 4, 2026 are full. Next available starts: September 12 (Saturday Academy), October 12, and November 20, 2026."],
+    copy: ["June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) are full. Next available starts: October 12 and November 20, 2026."],
     actions: [
       {
         label: "Learn more",
@@ -1510,7 +1510,7 @@ export const dentalProgramPage = {
   ribbon: {
     title: "Admissions and registration",
     copy:
-      "The June 19, July 13, and September 4, 2026 starts are full. The next available starts are September 12 (Saturday Academy), October 12, and November 20, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
+      "The June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) starts are full. The next available starts are October 12 and November 20, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
     actions: [
       {
         label: "Download registration form",
