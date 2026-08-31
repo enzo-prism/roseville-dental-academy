@@ -19,3 +19,5 @@ import type {
   TestimonialData,
 } from "@/lib/site-types";
 import { activeSitePromo } from "@/lib/site-promo";
+
+export const announcement = activeSitePromo.bannerText;
