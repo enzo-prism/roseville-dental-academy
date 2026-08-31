@@ -1,17 +1,17 @@
-export const SATURDAY_ACADEMY_PROMO_ID = "rda-promo-saturday-academy-2026-09-12";
+export const SATURDAY_ACADEMY_PROMO_ID = "rda-promo-da-next-start-2026-10-12";
 
 export const saturdayAcademyPromo = {
   id: SATURDAY_ACADEMY_PROMO_ID,
   storageKey: SATURDAY_ACADEMY_PROMO_ID,
-  eyebrow: "Now enrolling",
-  headline: "Saturday Academy starts September 12, 2026",
-  body: "Looking for a weekend path into dental assisting? Choose the schedule that fits your life — Monday, Friday, or Saturday options are separate. You attend one schedule, not all three.",
-  ctaLabel: "Ask about Saturday Academy",
+  eyebrow: "September 12 is full",
+  headline: "Next Dental Assisting start is October 12, 2026",
+  body: "Saturday Academy on September 12 is full. Monday, Friday, and Saturday remain separate schedule options for the next 9-week start — you attend one, not all three.",
+  ctaLabel: "Ask about October 12",
   ctaHref: "/lp/dental-assisting-enroll",
   bannerText:
-    "Saturday Academy starts Sept 12 — Mon, Fri, or Sat schedules (pick one). Ask about seats →",
-  // Keep the campaign through the start date so last-minute seats can still convert.
-  endsAt: "2026-09-12",
+    "September 12 Saturday Academy is full — next start October 12. Ask about seats →",
+  // Keep the campaign through the next open start so remaining seats can convert.
+  endsAt: "2026-10-12",
 } as const;
 
 export type SitePromo = {
