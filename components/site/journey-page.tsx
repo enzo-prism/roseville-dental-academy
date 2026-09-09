@@ -19,6 +19,7 @@ import type { LucideIcon } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useMemo, useState } from "react";
 
+import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import {
   journeyOfficialLinks,
   journeyPathways,
@@ -606,9 +607,27 @@ export function JourneyPage() {
       </section>
 
       <section
+        aria-labelledby="certificate-expiration-heading"
+        className="rda-journey-reveal border-b border-border bg-background"
+        data-rda-journey-delay="2"
+      >
+        <div className="mx-auto max-w-6xl space-y-5 px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+          <div className="max-w-3xl space-y-3">
+            <p className="text-sm font-semibold text-primary">Certificate timing</p>
+            <p className="text-base leading-7 text-muted-foreground">
+              Applicants for RDA licensure, Orthodontic Assistant permits, and Dental Sedation
+              Assistant permits should review these Dental Board certificate windows before
+              registering or applying.
+            </p>
+          </div>
+          <CertificateExpirationNotice />
+        </div>
+      </section>
+
+      <section
         aria-labelledby="journey-sources"
         className="rda-journey-reveal mx-auto max-w-6xl space-y-8 px-4 py-12 sm:px-6 sm:py-14 lg:px-8"
-        data-rda-journey-delay="2"
+        data-rda-journey-delay="3"
       >
         <div className="max-w-3xl space-y-3">
           <p className="text-sm font-semibold text-primary">Official requirements</p>

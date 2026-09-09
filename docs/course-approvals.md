@@ -14,6 +14,10 @@ Official source links:
 - Approved Coronal Polishing courses: `https://www.dbc.ca.gov/applicants/courses_cp.pdf`
 - Approved Pit and Fissure Sealant courses: `https://www.dbc.ca.gov/applicants/course_pfs.pdf`
 
+## Certificate Expiration Windows
+
+Applicant-facing certificate timing copy lives in `lib/certificate-expiration.ts` and is rendered on `/faqs-1`, `/journey`, the Infection Control, Radiation Safety, Coronal Polish, and Sealants course pages, and the RDA resource guides. Keep that client wording intact unless the Dental Board or academy asks for a change. Those windows apply to RDA, OA, and DSA applicants only — not to unlicensed dental assistants.
+
 ## Current Public Copy Contract
 
 - Dental Assisting Program / Radiation Safety: use provider number `X1036` only when the page is discussing Radiation Safety approval.

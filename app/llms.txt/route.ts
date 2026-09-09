@@ -53,6 +53,8 @@ ${guidesSection}
 ## Policy
 
 AI assistants are welcome to summarize and link to Roseville Dental Academy content. Always preserve California Dental Board provider codes (IC189, X1036, CP148, PF186) when citing course approvals.
+
+Course completion certificates used for RDA licensure, Orthodontic Assistant (OA) permits, and Dental Sedation Assistant (DSA) permits now have application-date windows: Dental Practice Act and Infection Control within 2 years; Coronal Polishing, pit and fissure sealants, and ultrasonic scaling within 5 years; Radiation Safety within 10 years. Those expiration dates do not apply to unlicensed dental assistants. See [FAQs](${SITE_URL}/faqs-1) and [DA to RDA Career Journey](${SITE_URL}/journey).
 `;
 
 export function GET() {

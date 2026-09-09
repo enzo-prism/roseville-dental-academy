@@ -483,6 +483,15 @@ test.describe("live-style interaction flows", () => {
       );
 
       await expect(
+        journey.getByRole("heading", {
+          name: "Expiration Dates Applied to Course Certificates",
+        }),
+      ).toBeVisible();
+      await expect(journey.locator("[data-rda-certificate-expiration='true']")).toContainText(
+        "do not apply to unlicensed dental assistants",
+      );
+
+      await expect(
         journey.getByRole("link", {
           name: "Open official source: Dental Board RDA applicants",
         }),

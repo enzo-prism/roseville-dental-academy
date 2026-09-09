@@ -9,6 +9,7 @@ import {
   Phone,
 } from "lucide-react";
 
+import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -122,6 +123,8 @@ export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
             ) : null}
           </section>
         ))}
+
+        {article.showCertificateExpiration ? <CertificateExpirationNotice /> : null}
 
         <section aria-labelledby="resource-faq-heading" className="space-y-4">
           <h2
