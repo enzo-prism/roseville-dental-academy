@@ -1,3 +1,7 @@
+import {
+  CERTIFICATE_EXPIRATION_FAQ_QUESTION,
+  getCertificateExpirationAnswer,
+} from "@/lib/certificate-expiration";
 import type {
   AuthPageData,
   CoursePageData,
@@ -841,6 +845,10 @@ export const faqItems = [
     answer:
       "Reach out to the academy directly so they can help you with replacement certificate guidance.",
   },
+  {
+    question: CERTIFICATE_EXPIRATION_FAQ_QUESTION,
+    answer: getCertificateExpirationAnswer(),
+  },
 ] as const;
 
 export const instructorBios = [
@@ -962,6 +970,10 @@ export const studentFaqHighlights = [
     question: "Does the academy offer financial aid?",
     answer:
       "The academy does not list traditional financial aid. Students can call admissions to ask about current payment options and timing before choosing a course date.",
+  },
+  {
+    question: CERTIFICATE_EXPIRATION_FAQ_QUESTION,
+    answer: getCertificateExpirationAnswer(),
   },
 ] as const;
 

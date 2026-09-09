@@ -1987,6 +1987,11 @@ test("faq page uses current board-approval answers without stale mirror copy", a
     "Coronal Polishing CP148",
     "Pit and Fissure Sealants PF186",
     "Does this request reserve a seat?",
+    "Expiration Dates Applied to Course Certificates",
+    "within 2 years of the application date",
+    "within 5 years of the application date",
+    "within 10 years of the application date",
+    "do not apply to unlicensed dental assistants",
   ];
   const retiredPhrases = [
     "Yes, our provider number is X899.",
@@ -2093,6 +2098,58 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
       faqBodyText: faqSnapshot.bodyText,
       instructorBodyText: instructorSnapshot.bodyText,
       mismatches,
+    });
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
+test("Dental Board certificate expiration copy is visible to students and applicants", async ({
+  page,
+}, testInfo) => {
+  const requiredPhrases = [
+    "Expiration Dates Applied to Course Certificates",
+    "RDA licensure, Orthodontic Assistant (OA) permits, and Dental Sedation Assistant (DSA) permits",
+    "within 2 years of the application date",
+    "within 5 years of the application date",
+    "within 10 years of the application date",
+    "do not apply to unlicensed dental assistants",
+  ];
+  const routes = [
+    "/faqs-1",
+    "/journey",
+    "/infection-control",
+    "/radiation-safety",
+    "/coronal-polish",
+    "/sealants",
+    "/resources/how-to-become-a-dental-assistant-in-california",
+    "/resources/rda-vs-dental-assistant-california",
+  ];
+  const mismatches: string[] = [];
+
+  for (const route of routes) {
+    const snapshot = await captureSnapshot(page, `${localOrigin}${route}`, {
+      viewport: { width: 1280, height: 900 },
+    });
+
+    for (const phrase of requiredPhrases) {
+      if (!snapshot.bodyText.includes(phrase)) {
+        mismatches.push(`${route} missing certificate expiration phrase: ${phrase}`);
+      }
+    }
+  }
+
+  smokeSummary.push({
+    mismatches,
+    routes,
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "certificate-expiration-copy",
+  });
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "certificate-expiration-copy-summary.json", {
+      mismatches,
+      routes,
     });
   }
 

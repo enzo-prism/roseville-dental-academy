@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Award, BadgeCheck, CheckCircle2, ClipboardCheck, ListChecks } from "lucide-react";
 
+import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { HomepageCourseSections } from "@/components/site/homepage-course-sections";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import {
@@ -270,6 +271,7 @@ function StableStudentFaqs() {
         Common student questions based on current course notes and recent admissions conversations,
         with private student details removed.
       </p>
+      <CertificateExpirationNotice className="mb-8" />
       <div className="rda-student-faq-grid">
         {studentFaqHighlights.map((item) => (
           <Card className="rda-student-faq-card border-border bg-card" key={item.question}>

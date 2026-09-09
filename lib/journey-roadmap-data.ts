@@ -136,7 +136,7 @@ export const journeySteps: JourneyStep[] = [
     ctaHref: "/infection-control",
     ctaLabel: "Review courses",
     detail:
-      "RDA applicants submit required course certificates. Timing windows can matter, so verify current requirements before registering or applying.",
+      "RDA applicants submit required course certificates. Dental Practice Act and Infection Control must be within 2 years of the application date, Coronal Polish and sealants within 5 years, and Radiation Safety within 10 years.",
     eyebrow: "Certify",
     icon: "clipboard",
     id: "complete-courses",

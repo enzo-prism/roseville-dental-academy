@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { CalendarDays } from "lucide-react";
 
+import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { showsCertificateExpiration } from "@/lib/certificate-expiration";
 import { courseScheduleNote, formatCourseDateLabel, getCourseSchedule } from "@/lib/course-schedule";
 import type {
   LiveCourseContent,
@@ -437,6 +439,9 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               />
             ))}
           </div>
+          {showsCertificateExpiration(course.id) ? (
+            <CertificateExpirationNotice className="mt-6" headingLevel="h2" />
+          ) : null}
           <p className="rda-course-policy-note mt-5 border-t border-border pt-4 text-sm leading-6 text-muted-foreground">
             * {COURSE_NONREFUNDABLE_NOTE}
           </p>

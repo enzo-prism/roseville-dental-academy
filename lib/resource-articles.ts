@@ -1,3 +1,7 @@
+import {
+  CERTIFICATE_EXPIRATION_FAQ_QUESTION,
+  getCertificateExpirationAnswer,
+} from "@/lib/certificate-expiration";
 import type { LiveRoute } from "@/lib/live-route-data";
 import { SITE_NAME } from "@/lib/site-metadata";
 
@@ -52,6 +56,7 @@ export type ResourceArticle = {
   faqs: ResourceFaq[];
   relatedCourses: ResourceRelatedCourse[];
   relatedSlugs: string[];
+  showCertificateExpiration?: boolean;
 };
 
 const DA_PROGRAM_COURSE: ResourceRelatedCourse = {
@@ -102,7 +107,8 @@ export const resourceArticles: ResourceArticle[] = [
     category: "Career Guide",
     readMinutes: 8,
     datePublished: "2026-07-12",
-    dateModified: "2026-07-12",
+    dateModified: "2026-09-09",
+    showCertificateExpiration: true,
     heroImage: {
       src: "/assets/live/programs/dental-assisting-chairside.jpg",
       alt: "Instructor guiding a student through chairside dental assisting practice in Roseville, California.",
@@ -187,6 +193,10 @@ export const resourceArticles: ResourceArticle[] = [
         question: "What is the difference between a dental assistant and an RDA?",
         answer:
           "A dental assistant (unlicensed) performs basic chairside support and can begin without a state license. A Registered Dental Assistant (RDA) is licensed by the Dental Board of California, can perform additional allowable duties, and typically earns more. Becoming an RDA requires qualifying work experience, specific course certificates, and a state exam.",
+      },
+      {
+        question: CERTIFICATE_EXPIRATION_FAQ_QUESTION,
+        answer: getCertificateExpirationAnswer(),
       },
     ],
     relatedCourses: [DA_PROGRAM_COURSE, INFECTION_CONTROL_COURSE, RADIATION_SAFETY_COURSE],
@@ -383,7 +393,8 @@ export const resourceArticles: ResourceArticle[] = [
     category: "Career Guide",
     readMinutes: 6,
     datePublished: "2026-07-12",
-    dateModified: "2026-07-12",
+    dateModified: "2026-09-09",
+    showCertificateExpiration: true,
     heroImage: {
       src: "/assets/live/courses/bls-hands-on.jpg",
       alt: "Dental assisting students practicing clinical skills during certification training.",
@@ -452,6 +463,10 @@ export const resourceArticles: ResourceArticle[] = [
         question: "What is an RDAEF?",
         answer:
           "An RDAEF is a Registered Dental Assistant in Extended Functions — an advanced California credential that authorizes additional clinical functions and requires further education and examination beyond the RDA license.",
+      },
+      {
+        question: CERTIFICATE_EXPIRATION_FAQ_QUESTION,
+        answer: getCertificateExpirationAnswer(),
       },
     ],
     relatedCourses: [CORONAL_POLISH_COURSE, SEALANTS_COURSE, RADIATION_SAFETY_COURSE],
