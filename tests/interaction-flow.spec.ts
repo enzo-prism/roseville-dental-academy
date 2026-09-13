@@ -860,45 +860,13 @@ test.describe("live-style interaction flows", () => {
         courseSystem.getByRole("link", { name: "Link for online portion" }),
       ).toHaveAttribute("href", "https://shopcpr.heart.org/heartcode-bls");
       await expect(courseSystem.getByText("OFFERED COURSES", { exact: true })).toHaveCount(2);
-      await expect(courseSystem.getByText("2026 Class Schedule", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByText("Upcoming 2026 Class Schedule", { exact: true })).toBeVisible();
       await expect(
         courseSystem.getByText("Dates are penciled in and may change; admissions will confirm current availability.", { exact: true }),
       ).toBeVisible();
-      await expect(courseSystem.getByText("June 19", { exact: true })).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("Dental Assisting Training is full on June 19"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("X-rays / Radiation Safety is full on July 18"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("Infection Control is full on July 18"),
-      ).toBeVisible();
-      await expect(courseSystem.getByLabel("BLS / CPR is full on July 18")).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("Pit and Fissure Sealants is full on August 8"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("Dental Assisting Training is full on September 4"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("X-rays / Radiation Safety is full on September 5"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("BLS / CPR is full on September 5"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("Infection Control is full on September 5"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("Dental Assisting Training is full on September 12"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("Pit and Fissure Sealants is full on September 12"),
-      ).toBeVisible();
-      await expect(
-        courseSystem.getByLabel("Coronal Polish is full on September 12"),
-      ).toBeVisible();
+      for (const month of ["June", "July", "August", "September"]) {
+        await expect(courseSystem.locator("time").filter({ hasText: month })).toHaveCount(0);
+      }
       await expect(courseSystem.getByText("October 12", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("October 17", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("October 24", { exact: true })).toBeVisible();
@@ -926,7 +894,7 @@ test.describe("live-style interaction flows", () => {
         ),
       ).toBeVisible();
       await expect(
-        courseSystem.getByText("October 12, 2026. Additional start is November 20, 2026."),
+        courseSystem.getByText("October 12, 2026; November 20, 2026"),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",
@@ -2399,9 +2367,9 @@ test.describe("live-style interaction flows", () => {
       await expect(form.getByText("Next open date: September 12, 2026 (Saturday Academy)")).toHaveCount(0);
       await expect(form.getByText("Next open date: September 12, 2026", { exact: true })).toHaveCount(0);
       await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(2);
+      await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: September 5, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: October 17, 2026")).toHaveCount(1);
+      await expect(form.getByText("Next open date: October 17, 2026")).toHaveCount(3);
       await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: October 24, 2026")).toHaveCount(2);
       await expect(form.getByText("By appointment")).toBeVisible();
@@ -2553,9 +2521,9 @@ test.describe("live-style interaction flows", () => {
       await expect(page.getByText("Friday").first()).toBeVisible();
       await expect(page.getByText("9AM-3PM").first()).toBeVisible();
       await expect(page.getByText("Saturday").first()).toBeVisible();
-      await expect(page.getByText("Office closed; Saturday Academy classes start Sept 12").first()).toBeVisible();
+      await expect(page.getByText("Office closed; scheduled classes only").first()).toBeVisible();
       await expect(
-        page.getByText("Front-desk hours only. Saturday Academy classes start September 12, 2026").first(),
+        page.getByText("Front-desk hours only. Monday, Friday, and Saturday are separate class schedules").first(),
       ).toBeVisible();
 
       const mapFrame = page.locator('iframe[data-rda-google-map="true"]');
@@ -2651,15 +2619,15 @@ test.describe("live-style interaction flows", () => {
       await blockElevenLabsWidgetScript(context);
     });
 
-    test("banner promotes the next DA start after September 12 filled", async ({ page }) => {
+    test("banner promotes the next upcoming DA start", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
       const banner = page.locator("[data-rda-promo-banner='true']");
 
       await expect(banner).toBeVisible();
-      await expect(banner).toContainText("September 12 Saturday Academy is full");
-      await expect(banner).toContainText("next start October 12");
+      await expect(banner).toContainText("Next Dental Assisting start:");
+      await expect(banner).toContainText("October 12, 2026");
       await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
       expect(activeSitePromo.ctaHref).toBe("/lp/dental-assisting-enroll");
     });
@@ -2671,11 +2639,11 @@ test.describe("live-style interaction flows", () => {
       const dialog = page.locator("[data-rda-promo-dialog='true']");
 
       await expect(dialog).toBeVisible({ timeout: 8_000 });
-      await expect(dialog.getByText("September 12 is full", { exact: true })).toBeVisible();
+      await expect(dialog.getByText("Upcoming Dental Assisting classes", { exact: true })).toBeVisible();
       await expect(
         dialog.getByRole("heading", { name: "Next Dental Assisting start is October 12, 2026" }),
       ).toBeVisible();
-      await expect(dialog.getByText("You attend one, not all three.")).toBeVisible();
+      await expect(dialog.getByText("Ask admissions which upcoming start fits your preferred class day.", { exact: false })).toBeVisible();
 
       const cta = dialog.locator("[data-rda-promo-cta='true']");
 

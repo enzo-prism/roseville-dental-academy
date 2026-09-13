@@ -1,3 +1,4 @@
+import { getAvailableCourseDateList, getNextAvailableCourseDate } from "@/lib/course-schedule";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -91,7 +92,7 @@ const ROUTE_DESCRIPTION_OVERRIDES: Record<string, string> = {
   "/photos":
     "Student moments, hands-on training, and graduation photos from Roseville Dental Academy's dental assisting and certification courses in Roseville, California.",
   "/bls%2Fcpr-1":
-    "Initial and renewal BLS/CPR certification for healthcare providers at Roseville Dental Academy — a 3-hour, $85 course with 2026 dates beginning June 6.",
+    "Initial and renewal BLS/CPR certification for healthcare providers at Roseville Dental Academy — a 3-hour, $85 course. See the course schedule for upcoming dates.",
   "/infection-control":
     "California Dental Board approved 8-hour Infection Control course (provider IC189) for unlicensed dental assistants at Roseville Dental Academy.",
   "/radiation-safety":
@@ -150,7 +151,7 @@ const HOMEPAGE_REFUND_POLICY_COPY_PATTERN =
   /Due to limited space all sales are final and no refunds will be issued\.?(?:&nbsp;)?/;
 
 const HOMEPAGE_COURSE_COPY_REPLACEMENTS = [
-  "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and upcoming 2026 dates begin June 6.",
+  "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and includes live skills practice and certification support.",
   "Board-approved 8-hour Infection Control training for unlicensed dental assistants. Current BLS through AHA or ARC plus a 2-hour Dental Practice Act certification are required.",
   "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant.",
   "12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements.",
@@ -164,27 +165,27 @@ const COURSE_DATE_REPLACEMENTS: Array<{
 }> = [
   {
     pattern: /\bFriday,\s*June 19th,?\s*2026\b/g,
-    replacement: "June 19, 2026 (Full), July 13, 2026 (Full), September 4, 2026 (Full), September 12, 2026 (Saturday Academy) (Full), October 12, and November 20, 2026",
+    replacement: getAvailableCourseDateList("dental-assisting-program"),
   },
   {
     pattern: /\bMay 2nd,? 2026\b/g,
-    replacement: "June 6, 2026",
+    replacement: getNextAvailableCourseDate("bls-cpr-1") ?? "Ask admissions",
   },
   {
     pattern: /\bMay 2, 2026\b/g,
-    replacement: "June 6, 2026",
+    replacement: getNextAvailableCourseDate("bls-cpr-1") ?? "Ask admissions",
   },
   {
     // Coronal Polish homepage menu item (MENU_SECTION1_ITEM0): June 20, July 25, August 8, and September 12 are full.
     pattern: /(MENU_SECTION1_ITEM0_DESC[\s\S]*?<span>)May 9th,?\s*2026(<\/span>)/,
     replacement:
-      "$1June 20, 2026 (Full), July 25, 2026 (Full), August 8, 2026 (Full), September 12, 2026 (Full), October 24, November 14, and December 12, 2026$2",
+      `$1${getAvailableCourseDateList("coronal-polish")}$2`,
   },
   {
     // Pit and Fissure Sealants homepage menu item (MENU_SECTION1_ITEM1): June 20, July 25, August 8, and September 12 are full.
     pattern: /(MENU_SECTION1_ITEM1_DESC[\s\S]*?<span>)May 9th,?\s*2026(<\/span>)/,
     replacement:
-      "$1June 20, 2026 (Full), July 25, 2026 (Full), August 8, 2026 (Full), September 12, 2026 (Full), October 24, November 14, and December 12, 2026$2",
+      `$1${getAvailableCourseDateList("sealants")}$2`,
   },
 ];
 

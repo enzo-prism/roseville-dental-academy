@@ -1,3 +1,4 @@
+import { getAvailableCourseDateList } from "@/lib/course-schedule";
 import Image from "next/image";
 import { Suspense } from "react";
 
@@ -625,11 +626,12 @@ function ContactSection() {
             details={[
               siteContact.phone,
               siteContact.email,
-              "Dental Assisting: next open date is October 12, 2026; additional start is November 20, 2026",
-              "BLS: next open date is August 1, 2026",
-              "X-rays and Infection Control: next open date is August 1, 2026",
-              "Coronal Polish: next open date is October 24, 2026",
-              "Pit and Fissure Sealants: next open date is October 24, 2026",
+              `Dental Assisting: ${getAvailableCourseDateList("dental-assisting-program")}`,
+              `BLS: ${getAvailableCourseDateList("bls-cpr-1")}`,
+              `X-rays / Radiation Safety: ${getAvailableCourseDateList("radiation-safety")}`,
+              `Infection Control: ${getAvailableCourseDateList("infection-control")}`,
+              `Coronal Polish: ${getAvailableCourseDateList("coronal-polish")}`,
+              `Pit and Fissure Sealants: ${getAvailableCourseDateList("sealants")}`,
             ]}
             icon="phone"
             title="Reach admissions"

@@ -1,6 +1,7 @@
 import {
   formatCourseDateLabel,
-  getCourseSchedule,
+  getUpcomingCourseSchedule,
+  getAvailableCourseDateList,
   getNextAvailableCourseDate,
   type CourseScheduleId,
 } from "@/lib/course-schedule";
@@ -123,7 +124,7 @@ export function isPaidTrafficLanderPath(pathname: string | null | undefined) {
 }
 
 function availableDates(courseId: CourseScheduleId) {
-  return getCourseSchedule(courseId)
+  return getUpcomingCourseSchedule(courseId)
     .filter((entry) => entry.status !== "full")
     .map((entry) => formatCourseDateLabel(courseId, entry.date));
 }
@@ -223,7 +224,7 @@ export const adLandingPages: AdLandingPage[] = [
       {
         title: "What admissions will confirm",
         items: [
-          "September 4 and September 12, 2026 (Saturday Academy) are full; current class availability begins October 12, 2026, followed by November 20, 2026.",
+          `Upcoming start dates: ${getAvailableCourseDateList("dental-assisting-program")}.`,
           "Monday, Friday, and Saturday class schedules are separate options; students attend one, not all three.",
           "Registration paperwork, payment next steps, and whether a tour makes sense.",
           "How the 64-hour internship component fits into the 9-week schedule.",
@@ -641,7 +642,7 @@ export const adLandingPages: AdLandingPage[] = [
         "Roseville Dental Academy students practicing hands-on dental assisting skills.",
       imageSrc: siteImages.programHero,
       intro:
-        "Start a hands-on dental assisting career in just 9 weeks. Saturday Academy on September 12, 2026 is full; the next start is October 12, 2026. Monday, Friday, and Saturday are separate schedule options — you pick one. Tell us where to send class dates, tuition details, and enrollment next steps for the Roseville Dental Academy Dental Assisting Training Program.",
+        "Start a hands-on dental assisting career in just 9 weeks. Monday, Friday, and Saturday are separate schedule options — you pick one. Tell us where to send class dates, tuition details, and enrollment next steps for the Roseville Dental Academy Dental Assisting Training Program.",
       title: "Enroll in hands-on dental assistant training in Roseville",
     },
     leadSelects: [
@@ -659,7 +660,7 @@ export const adLandingPages: AdLandingPage[] = [
     primaryCtaLabel: "Get enrollment info",
     proofPoints: [
       "Accelerated 9-week, 210-hour program taught inside a working dental office.",
-      "Saturday Academy on September 12, 2026 is full. Choose Monday, Friday, or Saturday for the next 9-week start — those schedules are separate, so you attend one, not all three.",
+      "Monday, Friday, and Saturday are separate schedule options. Ask admissions which start dates are available for your preferred class day.",
       "Chairside experience, online lectures, homework, and a 64-hour internship.",
       "Resume and job assistance to help you land your first dental assistant role.",
     ],
@@ -701,7 +702,7 @@ export const adLandingPages: AdLandingPage[] = [
       {
         title: "What admissions will confirm",
         items: [
-          "September 4 and September 12, 2026 (Saturday Academy) are full; current start dates are October 12 and November 20, 2026.",
+          `Upcoming start dates: ${getAvailableCourseDateList("dental-assisting-program")}.`,
           "Monday, Friday, and Saturday class schedules are separate options; students attend one, not all three.",
           "Tuition, available payment plans, and registration next steps.",
           "How the 64-hour internship fits into the 9-week, 210-hour schedule.",
@@ -755,7 +756,7 @@ export const adLandingPages: AdLandingPage[] = [
         "Roseville Dental Academy students practicing hands-on dental assisting skills.",
       imageSrc: siteImages.programHero,
       intro:
-        "Saw Roseville Dental Academy on TikTok? Get the next start dates — October 12 and November 20, 2026 — plus tuition details and enrollment steps for the 9-week Dental Assisting Training Program in Roseville. Saturday Academy on September 12, 2026 is full.",
+        "Saw Roseville Dental Academy on TikTok? Get upcoming start dates, tuition details and enrollment steps for the 9-week Dental Assisting Training Program in Roseville.",
       title: "Turn your TikTok interest into dental assistant training",
     },
     leadSelects: [
@@ -786,7 +787,7 @@ export const adLandingPages: AdLandingPage[] = [
     primaryCtaLabel: "Get TikTok program info",
     proofPoints: [
       "Built for TikTok traffic with dedicated campaign intent, form key, UTM capture, and lead attribution.",
-      "Saturday Academy on September 12, 2026 is full. Monday, Friday, and Saturday class schedules are separate — pick one for the next 9-week start.",
+      "Monday, Friday, and Saturday class schedules are separate — pick one for the next 9-week start.",
       "Highlights the 9-week, 210-hour program with hands-on chairside training and a 64-hour internship.",
       "Admissions can follow up with start dates, tuition, payment options, tours, and enrollment steps.",
     ],
@@ -828,7 +829,7 @@ export const adLandingPages: AdLandingPage[] = [
       {
         title: "What admissions will confirm",
         items: [
-          "September 4 and September 12, 2026 (Saturday Academy) are full; current start dates are October 12 and November 20, 2026.",
+          `Upcoming start dates: ${getAvailableCourseDateList("dental-assisting-program")}.`,
           "Monday, Friday, and Saturday class schedules are separate options; students attend one, not all three.",
           "Tuition, available payment plans, registration paperwork, and whether a tour makes sense.",
           "How the 64-hour internship fits into the 9-week, 210-hour schedule.",

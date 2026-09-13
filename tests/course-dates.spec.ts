@@ -1,0 +1,75 @@
+import { expect, test } from "@playwright/test";
+import {
+  COURSE_SCHEDULE_REVIEWED_ON,
+  getAvailableCourseDates,
+  getCourseSchedule,
+  getNextAvailableCourseDate,
+  getUpcomingScheduleMonths,
+} from "../lib/course-schedule";
+import { adLandingPages } from "../lib/ad-landing-pages";
+import { blockElevenLabsWidgetScript, suppressSitePromo } from "./support/qa-helpers";
+
+test("reviewed schedule excludes elapsed dates without inventing sold-out history", () => {
+  expect(COURSE_SCHEDULE_REVIEWED_ON).toBe("2026-09-13");
+  expect(getUpcomingScheduleMonths().map((month) => month.month)).toEqual(["October", "November", "December"]);
+  expect(getAvailableCourseDates("dental-assisting-program")).toEqual(["October 12, 2026", "November 20, 2026"]);
+  for (const id of ["bls-cpr-1", "infection-control", "radiation-safety"] as const) {
+    expect(getAvailableCourseDates(id)).toEqual(["October 17, 2026", "November 7, 2026", "December 5, 2026"]);
+    expect(getNextAvailableCourseDate(id, "2026-10-18")).toBe("November 7, 2026");
+    expect(getNextAvailableCourseDate(id, "2026-12-06")).toBeUndefined();
+  }
+  for (const id of ["coronal-polish", "sealants"] as const) {
+    expect(getAvailableCourseDates(id)).toEqual(["October 24, 2026", "November 14, 2026", "December 12, 2026"]);
+  }
+  expect(getNextAvailableCourseDate("dental-assisting-program", "2026-09-12")).toBe("October 12, 2026");
+  expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-17")).toBe("October 17, 2026");
+  expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-08-01")?.status).toBe("available");
+});
+
+test.beforeEach(async ({ context }) => {
+  await blockElevenLabsWidgetScript(context);
+  await suppressSitePromo(context);
+  // This is a read-only check: no synthetic leads may reach a production inbox.
+  await context.route("https://formspree.io/**", (route) => route.abort());
+});
+
+for (const width of [390, 1280]) {
+  test(`homepage schedule, cards, and request choices agree at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    const schedule = page.locator('[data-rda-home-course-block="schedule"]');
+    await expect(schedule.getByText("Upcoming 2026 Class Schedule")).toBeVisible();
+    expect(await schedule.locator("time").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("datetime")))).toEqual([
+      "2026-10-12", "2026-10-17", "2026-10-24", "2026-11-07", "2026-11-14", "2026-11-20", "2026-12-05", "2026-12-12",
+    ]);
+    await expect(page.getByText("Next open date: October 17, 2026", { exact: true })).toHaveCount(3);
+    await expect(page.getByText("Next open date: October 24, 2026", { exact: true })).toHaveCount(2);
+    await expect(page.getByText("Next open date: October 12, 2026", { exact: true })).toHaveCount(1);
+    expect(await page.locator("body").innerText()).not.toMatch(/(?:June|July|August|September) \d/);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  });
+}
+
+for (const path of ["/bls-cpr-1", "/infection-control", "/radiation-safety", "/coronal-polish", "/sealants", "/dental-assisting-program", "/faqs-1", "/contact", ...adLandingPages.map((page) => page.path)]) {
+  test(`current dates across ${path}`, async ({ page }) => {
+    await page.goto(path);
+    const body = await page.locator("body").innerText();
+    expect(body).not.toMatch(/(?:June|July|August|September) \d/);
+    expect(body).not.toContain("next available date is August");
+    const schemaDates = await page.locator('script[type="application/ld+json"]').allTextContents();
+    for (const schema of schemaDates) {
+      for (const match of schema.matchAll(/"startDate":"([^"]+)"/g)) {
+        expect(match[1] >= COURSE_SCHEDULE_REVIEWED_ON).toBe(true);
+      }
+    }
+  });
+}
+
+test("AI discovery dates match the reviewed course schedule", async ({ request }) => {
+  const response = await request.get("/llms.txt");
+  expect(response.ok()).toBe(true);
+  const text = await response.text();
+  expect(text).toContain("October 17, 2026");
+  expect(text).toContain("October 12, 2026");
+  expect(text).not.toMatch(/(?:June|July|August|September) \d/);
+});

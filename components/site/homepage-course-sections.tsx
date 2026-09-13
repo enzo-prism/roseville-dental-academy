@@ -27,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   courseScheduleCourseDetails,
-  courseScheduleMonths,
+  getUpcomingScheduleMonths,
   courseScheduleNote,
   getNextAvailableCourseDate,
 } from "@/lib/course-schedule";
@@ -114,11 +114,11 @@ function HomepageScheduleSection() {
     <div className="rda-home-schedule-section" data-rda-home-course-block="schedule">
       <div className="rda-home-course-heading rda-home-schedule-heading">
         <p className="rda-home-course-kicker">2026 dates</p>
-        <h2>2026 Class Schedule</h2>
+        <h2>Upcoming 2026 Class Schedule</h2>
         <p>{courseScheduleNote}</p>
       </div>
       <div className="rda-home-schedule-grid">
-        {courseScheduleMonths.map((month) => (
+        {getUpcomingScheduleMonths().map((month) => (
           <Card className="rda-home-schedule-month-card border-border bg-card" key={month.month}>
             <CardHeader className="rda-home-schedule-month-header">
               <IconShell icon="calendar" marker="schedule" />

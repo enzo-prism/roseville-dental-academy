@@ -29,6 +29,11 @@ export type CourseScheduleMonth = {
 export const courseScheduleNote =
   "Dates are penciled in and may change; admissions will confirm current availability.";
 
+// One reviewed cutoff for static HTML, metadata, and client hydration. Advance
+// this during each schedule review and rebuild; do not use separate wall clocks
+// in client/server modules. Elapsed dates are not evidence a class sold out.
+export const COURSE_SCHEDULE_REVIEWED_ON = "2026-09-13";
+
 export const courseScheduleCourseDetails: Record<
   CourseScheduleId,
   {
@@ -333,14 +338,42 @@ export function formatCourseDateLabel(courseId: CourseScheduleId, date: string) 
   return date;
 }
 
-export function getNextAvailableCourseDate(courseId: CourseScheduleId) {
-  const date = getCourseSchedule(courseId).find((entry) => entry.status !== "full")?.date;
+export function getUpcomingCourseSchedule(
+  courseId: CourseScheduleId,
+  asOf = COURSE_SCHEDULE_REVIEWED_ON,
+) {
+  return getCourseSchedule(courseId).filter((entry) => entry.isoDate >= asOf);
+}
+
+export function getUpcomingScheduleMonths(asOf = COURSE_SCHEDULE_REVIEWED_ON) {
+  return courseScheduleMonths
+    .map((month) => ({ ...month, entries: month.entries.filter((entry) => entry.isoDate >= asOf) }))
+    .filter((month) => month.entries.length > 0);
+}
+
+export function getAvailableCourseDates(courseId: CourseScheduleId, asOf = COURSE_SCHEDULE_REVIEWED_ON) {
+  return getUpcomingCourseSchedule(courseId, asOf)
+    .filter((entry) => entry.status !== "full")
+    .map((entry) => formatCourseDateLabel(courseId, entry.date));
+}
+
+export function getAvailableCourseDateList(courseId: CourseScheduleId) {
+  return getAvailableCourseDates(courseId).join("; ") || "Ask admissions for current availability";
+}
+
+export function getNextCourseDateSentence(courseId: CourseScheduleId) {
+  const date = getNextAvailableCourseDate(courseId);
+  return date ? `Next available date: ${date}.` : "Ask admissions for upcoming dates.";
+}
+
+export function getNextAvailableCourseDate(courseId: CourseScheduleId, asOf = COURSE_SCHEDULE_REVIEWED_ON) {
+  const date = getUpcomingCourseSchedule(courseId, asOf).find((entry) => entry.status !== "full")?.date;
 
   return date ? formatCourseDateLabel(courseId, date) : undefined;
 }
 
 export function getCourseScheduleDateList(courseId: CourseScheduleId) {
-  return getCourseSchedule(courseId)
+  return getUpcomingCourseSchedule(courseId)
     .map((entry) => {
       const labeledDate = formatCourseDateLabel(courseId, entry.date);
 

@@ -3,13 +3,13 @@ export const SATURDAY_ACADEMY_PROMO_ID = "rda-promo-da-next-start-2026-10-12";
 export const saturdayAcademyPromo = {
   id: SATURDAY_ACADEMY_PROMO_ID,
   storageKey: SATURDAY_ACADEMY_PROMO_ID,
-  eyebrow: "September 12 is full",
+  eyebrow: "Upcoming Dental Assisting classes",
   headline: "Next Dental Assisting start is October 12, 2026",
-  body: "Saturday Academy on September 12 is full. Monday, Friday, and Saturday remain separate schedule options for the next 9-week start — you attend one, not all three.",
+  body: "Monday, Friday, and Saturday are separate class schedules. Ask admissions which upcoming start fits your preferred class day.",
   ctaLabel: "Ask about October 12",
   ctaHref: "/lp/dental-assisting-enroll",
   bannerText:
-    "September 12 Saturday Academy is full — next start October 12. Ask about seats →",
+    "Next Dental Assisting start: October 12, 2026. Ask about seats →",
   // Keep the campaign through the next open start so remaining seats can convert.
   endsAt: "2026-10-12",
 } as const;

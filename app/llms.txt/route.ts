@@ -1,3 +1,4 @@
+import { getAvailableCourseDateList } from "@/lib/course-schedule";
 import { resourceArticlePath, resourceArticles } from "@/lib/resource-articles";
 import { SITE_URL } from "@/lib/site-config";
 
@@ -19,13 +20,13 @@ const LLMS_BODY = `# Roseville Dental Academy
 - Address: 1271 Pleasant Grove Boulevard, Ste. 100, Roseville, California 95747
 - Phone: 916-888-9821
 - Email: rosevilledentalacademy@gmail.com
-- Office hours: Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM. Saturday office closed (Saturday Academy classes start September 12, 2026). Sunday closed.
+- Office hours: Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM. Saturday office closed (scheduled classes only). Sunday closed.
 
 ## Programs
 
-- [Dental Assisting Program](${SITE_URL}/dental-assisting-program): Nine-week, 210-hour training with online lectures, chairside instruction, resume and job assistance, and a 64-hour internship for students 16 and older. Monday, Friday, and Saturday class schedules are separate options (pick one). Saturday Academy on September 12, 2026 is full; the next start is October 12, 2026.
+- [Dental Assisting Program](${SITE_URL}/dental-assisting-program): Nine-week, 210-hour training with online lectures, chairside instruction, resume and job assistance, and a 64-hour internship for students 16 and older. Monday, Friday, and Saturday class schedules are separate options (pick one). Upcoming starts: ${getAvailableCourseDateList("dental-assisting-program")}.
 - [DA to RDA Career Journey](${SITE_URL}/journey): Guided California DA to RDA roadmap covering training, work experience, required course certificates, application, exam, and license next steps.
-- [BLS/CPR Certification](${SITE_URL}/bls-cpr-1): Three-hour Basic Life Support and CPR training for healthcare providers, $85, 2026 dates beginning June 6.
+- [BLS/CPR Certification](${SITE_URL}/bls-cpr-1): Three-hour Basic Life Support and CPR training for healthcare providers, $85, upcoming dates: ${getAvailableCourseDateList("bls-cpr-1")}.
 - [Infection Control (IC189)](${SITE_URL}/infection-control): California Dental Board approved 8-hour course for unlicensed dental assistants.
 - [Radiation Safety / Dental X-Ray (X1036)](${SITE_URL}/radiation-safety): California Dental Board approved 32-hour course for dental personnel and dentists.
 - [Coronal Polish (CP148)](${SITE_URL}/coronal-polish): California Dental Board approved 12-hour course for eligible dental assistants.

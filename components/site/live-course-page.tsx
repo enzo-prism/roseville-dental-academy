@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { showsCertificateExpiration } from "@/lib/certificate-expiration";
-import { courseScheduleNote, formatCourseDateLabel, getCourseSchedule } from "@/lib/course-schedule";
+import { courseScheduleNote, formatCourseDateLabel, getUpcomingCourseSchedule } from "@/lib/course-schedule";
 import type {
   LiveCourseContent,
   LiveCourseLink,
@@ -259,7 +259,7 @@ function CourseSectionCard({
 }
 
 function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
-  const scheduleEntries = getCourseSchedule(course.id);
+  const scheduleEntries = getUpcomingCourseSchedule(course.id);
 
   if (!scheduleEntries.length) {
     return null;

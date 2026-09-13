@@ -1421,8 +1421,8 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
   const requiredCourseCopy = [
     "2026 Class Schedule",
     "Dates are penciled in and may change; admissions will confirm current availability.",
-    "June 19",
-    "Full",
+    "October 17",
+    "October 24",
     "October 12, 2026",
     "Initial and renewal BLS/CPR training for healthcare providers",
     "Board-approved 8-hour Infection Control training for unlicensed dental assistants",
@@ -1471,7 +1471,7 @@ test("Drive-derived homepage details render without private student data", async
     viewport: { width: 1280, height: 900 },
   });
   const requiredPhrases = [
-    "September 12 Saturday Academy is full — next start October 12. Ask about seats →",
+    "Next Dental Assisting start: October 12, 2026. Ask about seats →",
     "Dental Board Course Details",
     "Radiation Safety X1036",
     "Infection Control IC189",

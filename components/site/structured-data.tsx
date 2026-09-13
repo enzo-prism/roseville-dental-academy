@@ -1,4 +1,4 @@
-import { getCourseSchedule, type CourseScheduleId } from "@/lib/course-schedule";
+import { getUpcomingCourseSchedule, type CourseScheduleId } from "@/lib/course-schedule";
 import {
   faqItems,
   siteContact,
@@ -41,7 +41,7 @@ const COURSE_SCHEMA_BY_PATH: Record<
   "/bls-cpr-1": {
     name: "BLS/CPR Certification for Healthcare Providers",
     description:
-      "Initial and renewal Basic Life Support / CPR training for dental healthcare providers. Three-hour course with 2026 dates beginning June 6.",
+      "Initial and renewal Basic Life Support / CPR training for dental healthcare providers. Three-hour course. See the course schedule for upcoming dates.",
     courseMode: "Onsite",
     price: 85,
     scheduleId: "bls-cpr-1",
@@ -232,7 +232,7 @@ function buildCourseInstances(
   courseMode: "Blended" | "Onsite",
   courseWorkload?: string,
 ): JsonLdValue[] {
-  return getCourseSchedule(scheduleId).map((entry) => ({
+  return getUpcomingCourseSchedule(scheduleId).map((entry) => ({
     "@type": "CourseInstance",
     courseMode,
     startDate: entry.isoDate,

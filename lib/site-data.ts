@@ -1,3 +1,4 @@
+import { courseScheduleCourseDetails, courseScheduleNote, getAvailableCourseDateList, getNextCourseDateSentence, type CourseScheduleId } from "@/lib/course-schedule";
 import {
   CERTIFICATE_EXPIRATION_FAQ_QUESTION,
   getCertificateExpirationAnswer,
@@ -35,17 +36,17 @@ export const siteContact = {
   phone: "916-888-9821",
   email: "rosevilledentalacademy@gmail.com",
   hours:
-    "Office: Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM. Sat office closed (Saturday Academy classes start Sept 12). Sun closed",
+    "Office: Mon 9AM-5PM, Tue 9AM-6PM, Wed 8AM-5PM, Thu 9AM-6PM, Fri 9AM-3PM. Sat office closed (scheduled classes only). Sun closed",
   hoursLabel: "Office hours",
   hoursNote:
-    "Front-desk hours only. Saturday Academy classes start September 12, 2026; pick one class day (Mon, Fri, or Sat).",
+    "Front-desk hours only. Monday, Friday, and Saturday are separate class schedules; admissions will confirm dates for your chosen schedule.",
   weeklyHours: [
     { day: "Monday", time: "9AM-5PM" },
     { day: "Tuesday", time: "9AM-6PM" },
     { day: "Wednesday", time: "8AM-5PM" },
     { day: "Thursday", time: "9AM-6PM" },
     { day: "Friday", time: "9AM-3PM" },
-    { day: "Saturday", time: "Office closed; Saturday Academy classes start Sept 12" },
+    { day: "Saturday", time: "Office closed; scheduled classes only" },
     { day: "Sunday", time: "Closed" },
   ],
   directionsUrl:
@@ -308,7 +309,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$85",
     summary:
-      "Initial or renewal BLS/CPR for healthcare providers. The course is 3 hours, costs $85, and upcoming 2026 dates begin June 6.",
+      "Initial or renewal BLS/CPR for healthcare providers. The course is 3 hours, costs $85, and includes live skills practice and certification support.",
     href: "/bls-cpr-1",
     media: siteImages.bls,
     analyticsKey: "card-bls",
@@ -330,7 +331,7 @@ export const programCards: ProgramCardData[] = [
     type: "Stand-alone course",
     price: "$695",
     summary:
-      "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified, with upcoming 2026 X-ray dates beginning June 6.",
+      "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified, with classroom and clinical instruction.",
     href: "/radiation-safety",
     media: siteImages.radiation,
     analyticsKey: "card-radiation-safety",
@@ -833,7 +834,7 @@ export const faqItems = [
   {
     question: "Do Dental Assisting classes meet Monday, Friday, and Saturday?",
     answer:
-      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Saturday Academy, the Saturday class option, starts September 12, 2026 (full). The next available Dental Assisting start is October 12, 2026.",
+      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Admissions will confirm the next available start for your chosen class day.",
   },
   {
     question: "How can a short program be as effective as a longer program?",
@@ -954,12 +955,12 @@ export const studentFaqHighlights = [
   {
     question: "When are the next 2026 class dates?",
     answer:
-      "Dental Assisting Training is listed for June 19, 2026 (full), July 13, 2026 (full), September 4, 2026 (full), September 12, 2026 (Saturday Academy) (full), October 12, 2026, and November 20, 2026. BLS is listed for June 6, 2026 (full), July 18 (full), August 1, September 5 (full), October 17, November 7, and December 5, 2026. X-rays/Radiation Safety is listed for June 6, 2026 (full), July 18 (full), August 1 (full), September 5 (full), October 17, November 7, and December 5, 2026. Infection Control is listed for June 6, 2026 (full), July 18 (full), August 1, September 5 (full), October 17, November 7, and December 5, 2026. Coronal Polish is listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12 (full), October 24, November 14, and December 12, 2026. Pit and Fissure Sealants are listed for June 20, 2026 (full), July 25 (full), August 8 (full), September 12 (full), October 24, November 14, and December 12, 2026. Dates are penciled in; admissions will confirm current availability.",
+      Object.entries(courseScheduleCourseDetails).map(([id, course]) => `${course.label}: ${getAvailableCourseDateList(id as CourseScheduleId)}.`).join(" ") + ` ${courseScheduleNote}`,
   },
   {
     question: "Do Dental Assisting classes meet Monday, Friday, and Saturday?",
     answer:
-      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Saturday Academy, the Saturday class option, starts September 12, 2026 (full). The next available Dental Assisting start is October 12, 2026.",
+      "No. Monday, Friday, and Saturday are separate schedule options. Students pick one class day, plus one assigned externship day — not all three. Admissions will confirm the next available start for your chosen class day.",
   },
   {
     question: "What is the best next step to enroll?",
@@ -1107,28 +1108,28 @@ export const registrationCourseOptions: RegistrationCourseOption[] = [
     key: "dental-assisting",
     label: "Dental Assisting Training Program",
     price: "$2500.00",
-    note: "9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. The June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) starts are full; the next available start is October 12, 2026.",
+    note: `9-week, 210-hour program with online lectures, homework, chairside experience, and a 64-hour internship component. ${getNextCourseDateSentence("dental-assisting-program")}`,
     icon: "graduation",
   },
   {
     key: "radiation-safety",
     label: "Radiation Safety / X-ray License",
     price: "$695.00",
-    note: "32-hour radiography course for dental personnel and dentists who want staff x-ray certified. The June 6, July 18, August 1, and September 5, 2026 classes are full; the next available date is October 17, 2026.",
+    note: `32-hour radiography course for dental personnel and dentists who want staff x-ray certified. ${getNextCourseDateSentence("radiation-safety")}`,
     icon: "scan",
   },
   {
     key: "infection-control",
     label: "8-Hour Infection Control Certification",
     price: "$395.00",
-    note: "Board-approved infection control course for unlicensed dental assistants. The June 6, July 18, and September 5, 2026 classes are full; the next available date is August 1, 2026.",
+    note: `Board-approved infection control course for unlicensed dental assistants. ${getNextCourseDateSentence("infection-control")}`,
     icon: "shield",
   },
   {
     key: "bls-cpr",
     label: "BLS / CPR",
     price: "$85.00",
-    note: "Initial or renewal BLS/CPR for healthcare providers. 3 hours. The June 6, July 18, and September 5, 2026 classes are full; the next available date is August 1, 2026.",
+    note: `Initial or renewal BLS/CPR for healthcare providers. 3 hours. ${getNextCourseDateSentence("bls-cpr-1")}`,
     icon: "heart",
   },
 ] as const;
@@ -1174,12 +1175,12 @@ export const homeHero: HeroContent = {
     copy:
       "Dates are penciled in and may change; admissions will confirm current availability before students plan around them.",
     items: [
-      "Dental Assisting Training Course: June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) are full; next available start is October 12, 2026",
-      "BLS / CPR: June 6, July 18, and September 5 are full; next available is August 1, then October 17, November 7, and December 5, 2026",
-      "X-rays / Radiation Safety: June 6, July 18, August 1, and September 5 are full; next available is October 17, then November 7, and December 5, 2026",
-      "Infection Control: June 6, July 18, and September 5 are full; next available is August 1, then October 17, November 7, and December 5, 2026",
-      "Coronal Polish: June 20, July 25, August 8, and September 12 are full; next available is October 24, then November 14, and December 12, 2026",
-      "Pit and Fissure Sealants: June 20, July 25, August 8, and September 12 are full; next available is October 24, then November 14, and December 12, 2026",
+      `Dental Assisting Training Course: ${getAvailableCourseDateList("dental-assisting-program")}`,
+      `BLS / CPR: ${getAvailableCourseDateList("bls-cpr-1")}`,
+      `X-rays / Radiation Safety: ${getAvailableCourseDateList("radiation-safety")}`,
+      `Infection Control: ${getAvailableCourseDateList("infection-control")}`,
+      `Coronal Polish: ${getAvailableCourseDateList("coronal-polish")}`,
+      `Pit and Fissure Sealants: ${getAvailableCourseDateList("sealants")}`,
     ],
   },
 };
@@ -1196,7 +1197,7 @@ export const homePrimarySplit: SplitSectionContent = {
   imageAlt: "Students practicing chairside dental assisting skills inside Waikiki Dental",
   supporting: {
     title: "Dental assisting start dates",
-    copy: ["June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) are full. Next available starts: October 12 and November 20, 2026."],
+    copy: [`Upcoming starts: ${getAvailableCourseDateList("dental-assisting-program")}.`],
     actions: [
       {
         label: "Learn more",
@@ -1522,7 +1523,7 @@ export const dentalProgramPage = {
   ribbon: {
     title: "Admissions and registration",
     copy:
-      "The June 19, July 13, September 4, and September 12, 2026 (Saturday Academy) starts are full. The next available starts are October 12 and November 20, 2026. Download the registration form and call 916-888-9821 to enroll or schedule a tour.",
+      `Upcoming starts: ${getAvailableCourseDateList("dental-assisting-program")}. Download the registration form and call 916-888-9821 to enroll or schedule a tour.`,
     actions: [
       {
         label: "Download registration form",

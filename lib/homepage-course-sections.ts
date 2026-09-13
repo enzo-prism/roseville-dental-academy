@@ -1,3 +1,4 @@
+import { getAvailableCourseDateList } from "@/lib/course-schedule";
 export const homepageCourseSections = {
   bls: {
     ctaHref: "https://shopcpr.heart.org/heartcode-bls",
@@ -96,7 +97,7 @@ export const homepageCourseSections = {
         ctaLabel: "Learn more",
         icon: "graduation",
         image: "/assets/generated/roseville/homepage-typodont-training.jpg",
-        nextCourseDate: "October 12, 2026. Additional start is November 20, 2026.",
+        nextCourseDate: getAvailableCourseDateList("dental-assisting-program"),
         nextCourseLabel: "Next available start:",
         scheduleId: "dental-assisting-program",
         title: "Dental Assisting Training Course - $2,500.00",
