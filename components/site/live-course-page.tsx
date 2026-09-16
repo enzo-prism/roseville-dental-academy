@@ -227,6 +227,34 @@ function CourseSectionCard({
 }) {
   const body =
     section.heading === "Price" ? addPricePolicyMarker(section.body) : section.body;
+  // Short fact sections (price, duration, format) read better as compact stat
+  // cards than full badge-headed panels. Text, links, and order are unchanged.
+  const isQuickFact =
+    body.length > 0 &&
+    body.length <= 80 &&
+    !body.startsWith("- ") &&
+    !body.includes(": - ") &&
+    !(links ?? []).some((link) => body.includes(link.text));
+
+  if (isQuickFact) {
+    return (
+      <Card
+        className={
+          prominent
+            ? "rounded-lg border-border bg-card shadow-sm"
+            : "rounded-lg border-border bg-card"
+        }
+        data-rda-quick-fact="true"
+      >
+        <CardContent className="space-y-1.5 px-5 py-4">
+          <h2 className="rda-quick-fact-label">{section.heading}</h2>
+          <div className="rda-quick-fact-body">
+            <CourseBody body={body} links={links} />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -378,23 +406,31 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   return (
     <section className="bg-background" data-rda-live-course={course.id}>
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.78fr)] lg:items-start lg:px-8 lg:py-16">
-        <div className="overflow-hidden rounded-lg bg-card shadow-sm ring-1 ring-foreground/10 lg:order-2">
-          <AspectRatio ratio={4 / 3}>
-            {supportingMedia.length ? (
-              <div className="grid size-full grid-cols-[minmax(0,1.42fr)_minmax(0,0.82fr)] gap-1 bg-muted">
+        <div
+          className="overflow-hidden rounded-lg bg-card shadow-sm ring-1 ring-foreground/10 lg:order-2"
+          data-rda-course-hero="true"
+        >
+          {supportingMedia.length ? (
+            <div className="grid gap-1 bg-muted max-lg:grid-cols-2 lg:aspect-[4/3] lg:grid-cols-[minmax(0,1.42fr)_minmax(0,0.82fr)]">
+              <div className="relative min-w-0 max-lg:col-span-2 max-lg:aspect-[16/10] lg:min-h-0">
                 <CourseHeroMedia loading="eager" media={course.image} />
-                <div className="grid min-h-0 gap-1">
-                  {supportingMedia.map((media) => (
-                    <div className="min-h-0" key={media.src}>
-                      <CourseHeroMedia media={media} />
-                    </div>
-                  ))}
-                </div>
               </div>
-            ) : (
+              <div className="grid min-h-0 min-w-0 gap-1 max-lg:col-span-2 max-lg:grid-cols-2 lg:grid-cols-1 lg:grid-rows-[repeat(auto-fit,minmax(0,1fr))]">
+                {supportingMedia.map((media) => (
+                  <div
+                    className="relative min-h-0 min-w-0 max-lg:aspect-[4/3]"
+                    key={media.src}
+                  >
+                    <CourseHeroMedia media={media} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <AspectRatio ratio={4 / 3}>
               <CourseHeroMedia loading="eager" media={course.image} />
-            )}
-          </AspectRatio>
+            </AspectRatio>
+          )}
         </div>
 
         <div className="space-y-6 lg:order-1">

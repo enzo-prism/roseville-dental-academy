@@ -99,23 +99,21 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
             </div>
           </CardContent>
         </Card>
-        {!compact ? (
-          <Card
-            aria-label="Roseville Dental Academy Google Maps location"
-            className="rda-contact-map-card border-border bg-card"
-          >
-            <CardContent className="rda-contact-map-content">
-              <iframe
-                allowFullScreen
-                data-rda-google-map="true"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                src={siteContact.mapsEmbedUrl}
-                title="Google Maps location for Roseville Dental Academy"
-              />
-            </CardContent>
-          </Card>
-        ) : null}
+        <Card
+          aria-label="Roseville Dental Academy Google Maps location"
+          className="rda-contact-map-card border-border bg-card"
+        >
+          <CardContent className="rda-contact-map-content">
+            <iframe
+              allowFullScreen
+              data-rda-google-map="true"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              src={siteContact.mapsEmbedUrl}
+              title="Google Maps location for Roseville Dental Academy"
+            />
+          </CardContent>
+        </Card>
         <Card
           className="rda-contact-form-card border-border bg-card"
           data-aid="CONTACT_FORM_CONTAINER_REND"

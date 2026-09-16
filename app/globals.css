@@ -1176,6 +1176,24 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   text-transform: uppercase;
 }
 
+.rda-quick-fact-label {
+  color: var(--rda-color-primary-deep);
+  font-family: var(--rda-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.rda-quick-fact-body,
+.rda-quick-fact-body p {
+  color: var(--rda-color-text);
+  font-family: var(--rda-font-heading);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .rda-home-course-icon-shell {
   align-items: center;
   background: var(--rda-color-accent-surface);
@@ -3398,14 +3416,15 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 }
 
 .rda-contact-map-card {
+  align-self: stretch;
   padding: 0;
 }
 
 .rda-contact-map-content {
   display: block;
   flex: none;
-  height: 340px;
-  min-height: 0;
+  height: 100%;
+  min-height: 340px;
   padding: 0;
 }
 
@@ -3423,6 +3442,10 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 }
 
 .rda-contact-section:not(.rda-contact-section-compact) .rda-contact-form-card {
+  grid-column: 1 / -1;
+}
+
+.rda-contact-section-compact .rda-contact-form-card {
   grid-column: 1 / -1;
 }
 
@@ -4433,6 +4456,10 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   .rda-contact-map-content,
   .rda-contact-map-content iframe {
     height: 280px;
+  }
+
+  .rda-contact-map-content {
+    min-height: 0;
   }
 
   .rda-live-footer {
