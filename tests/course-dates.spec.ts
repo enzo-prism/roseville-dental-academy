@@ -13,16 +13,20 @@ test("reviewed schedule excludes elapsed dates without inventing sold-out histor
   expect(COURSE_SCHEDULE_REVIEWED_ON).toBe("2026-09-13");
   expect(getUpcomingScheduleMonths().map((month) => month.month)).toEqual(["October", "November", "December"]);
   expect(getAvailableCourseDates("dental-assisting-program")).toEqual(["October 12, 2026", "November 20, 2026"]);
-  for (const id of ["bls-cpr-1", "infection-control", "radiation-safety"] as const) {
+  for (const id of ["bls-cpr-1", "infection-control"] as const) {
     expect(getAvailableCourseDates(id)).toEqual(["October 17, 2026", "November 7, 2026", "December 5, 2026"]);
     expect(getNextAvailableCourseDate(id, "2026-10-18")).toBe("November 7, 2026");
     expect(getNextAvailableCourseDate(id, "2026-12-06")).toBeUndefined();
   }
+  expect(getAvailableCourseDates("radiation-safety")).toEqual(["November 7, 2026", "December 5, 2026"]);
+  expect(getNextAvailableCourseDate("radiation-safety", "2026-10-18")).toBe("November 7, 2026");
+  expect(getNextAvailableCourseDate("radiation-safety", "2026-12-06")).toBeUndefined();
   for (const id of ["coronal-polish", "sealants"] as const) {
     expect(getAvailableCourseDates(id)).toEqual(["October 24, 2026", "November 14, 2026", "December 12, 2026"]);
   }
   expect(getNextAvailableCourseDate("dental-assisting-program", "2026-09-12")).toBe("October 12, 2026");
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-17")).toBe("October 17, 2026");
+  expect(getNextAvailableCourseDate("radiation-safety", "2026-10-17")).toBe("November 7, 2026");
   expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-08-01")?.status).toBe("available");
 });
 
@@ -42,7 +46,7 @@ for (const width of [390, 1280]) {
     expect(await schedule.locator("time").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("datetime")))).toEqual([
       "2026-10-12", "2026-10-17", "2026-10-24", "2026-11-07", "2026-11-14", "2026-11-20", "2026-12-05", "2026-12-12",
     ]);
-    await expect(page.getByText("Next open date: October 17, 2026", { exact: true })).toHaveCount(3);
+    await expect(page.getByText("Next open date: October 17, 2026", { exact: true })).toHaveCount(2);
     await expect(page.getByText("Next open date: October 24, 2026", { exact: true })).toHaveCount(2);
     await expect(page.getByText("Next open date: October 12, 2026", { exact: true })).toHaveCount(1);
     expect(await page.locator("body").innerText()).not.toMatch(/(?:June|July|August|September) \d/);

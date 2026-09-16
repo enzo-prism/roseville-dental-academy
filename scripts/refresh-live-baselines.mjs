@@ -174,7 +174,9 @@ async function hideFloatingThirdPartyWidgets(page) {
         .widget-reviews,
         .widget-trustedsite,
         .live-elevenlabs-widget,
-        [data-rda-whatsapp] {
+        [data-rda-whatsapp],
+        [data-rda-promo-dialog],
+        [data-rda-promo-overlay] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -202,7 +204,14 @@ async function captureContentSnapshot(page, url, assetMap) {
   await settlePage(page);
 
   const raw = await page.evaluate(() => {
-    const additiveParitySelectors = ["[data-rda-course-reviews]"];
+    // Mirrors the additive parity selectors in tests/support/qa-helpers.ts. The
+    // site promo dialog/overlay is suppressed in every parity suite via
+    // suppressSitePromo, so baseline capture must exclude it too.
+    const additiveParitySelectors = [
+      "[data-rda-course-reviews]",
+      "[data-rda-promo-dialog]",
+      "[data-rda-promo-overlay]",
+    ];
 
     function isVisible(element) {
       const style = window.getComputedStyle(element);

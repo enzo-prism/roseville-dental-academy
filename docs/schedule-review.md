@@ -10,7 +10,8 @@ to clients; adding a browser clock alone would leave static copy stale.
 Upcoming dates:
 
 - Dental Assisting: October 12; November 20, 2026.
-- BLS, Radiation Safety, Infection Control: October 17; November 7; December 5, 2026.
+- BLS, Infection Control: October 17; November 7; December 5, 2026.
+- Radiation Safety: November 7; December 5, 2026 (October 17, 2026 is full).
 - Coronal Polish, Sealants: October 24; November 14; December 12, 2026.
 
 Sources: Jessica's May 20 Course Dates email establishes November/December.
