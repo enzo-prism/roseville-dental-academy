@@ -5,7 +5,7 @@ This repo ships through two GitHub Actions gates:
 - `Release Gate` runs on pull requests and pushes to `main`.
 - `Vercel Preview Verify` runs after successful Vercel deployment-status events.
 
-Both gates install dependencies, install Playwright Chromium and Pillow, then run the same QA contract against committed baselines. Treat a green local run as useful evidence, but the GitHub run is the source of truth for release health.
+Both gates install dependencies, install Playwright Chromium and Pillow, then run the same six Playwright suites (smoke, course-dates, interactions, parity-content, UX, parity-visual) against committed baselines. `Release Gate` additionally runs `lint` and `build` first via `pnpm test:release`; the preview gate runs only the suites via `pnpm test:preview`. Treat a green local run as useful evidence, but the GitHub run is the source of truth for release health.
 
 ## Gate Commands
 
@@ -15,10 +15,10 @@ Local production reproduction:
 CI=true PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:release
 ```
 
-Preview reproduction:
+Preview reproduction (`PREVIEW_URL` alone disables the local webserver; the script points `LOCAL_ORIGIN` at it):
 
 ```bash
-PREVIEW_URL=https://example-preview.vercel.app PLAYWRIGHT_NO_WEBSERVER=1 pnpm test:preview
+PREVIEW_URL=https://example-preview.vercel.app pnpm test:preview
 ```
 
 Production-domain smoke and content checks after a live deployment:
@@ -37,7 +37,7 @@ PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:parity-
 Visual tolerance is intentionally stricter locally than in CI:
 
 - local default: `50000` differing pixels
-- CI default: `75000` differing pixels
+- CI default: `80000` differing pixels (see `VISUAL_DIFF_TOLERANCE` in `tests/live-parity.visual.spec.ts`)
 
 Use the stricter local default before pushing baseline changes. It catches near-limit drift that CI would allow.
 
@@ -45,10 +45,10 @@ Use the stricter local default before pushing baseline changes. It catches near-
 
 - `tests/baselines/live/content/` locks visible text, titles, statuses, links, button labels, input placeholders, and above-fold image URLs.
 - `tests/baselines/live/visual/` locks screenshots for selected visual routes.
-- `snapshot/live/manifest.json` registers each route's content baseline path, visual baseline paths, and visual masks.
+- `snapshot/live/manifest.json` registers 19 routes, each with a content baseline path, visual baseline paths, and visual masks. `/journey` is not in the manifest: `getContentBaseline()` resolves it through a filename fallback, and the refresh script does not re-capture it — update `tests/baselines/live/content/journey.json` by hand when its output intentionally changes.
 - `tests/support/qa-routes.json` defines the QA route set and visual viewports.
 
-Additive, non-mirrored routes are intentionally outside `qa-routes.json` so they cannot drift the committed baselines: the paid landing pages (`/lp/*`) and the `/resources/*` content hub (see [seo.md](seo.md)). New pages under those prefixes ship without a baseline refresh. Adding a link to any of them from the shared header/footer, however, does touch gated pages and requires the baseline-refresh flow in [Updating Visual Baselines](#updating-visual-baselines).
+Additive, non-mirrored routes are intentionally outside `qa-routes.json` so they cannot drift the committed baselines: the paid landing pages (`/lp/*`) and the `/resources/*` content hub (see [seo.md](seo.md)). New pages under those prefixes ship without a baseline refresh. Adding a link to any of them from the shared header/footer, however, does touch gated pages and requires the baseline-refresh flow in [Updating Content Baselines](#updating-content-baselines) (plus [Updating Visual Baselines](#updating-visual-baselines) if the layout shifts).
 
 `snapshot/live/` is a migration and parity reference. It is not the current shared shell runtime and should not be treated as the long-term visual source of truth.
 
@@ -94,7 +94,7 @@ Usually fix code instead of accepting the screenshot when:
 - the drift is caused by missing assets, lazy image placeholders, widget collision, broken nav, or layout overflow,
 - only a third-party script, telemetry request, or transient masked widget moved.
 
-ElevenLabs is masked in content/visual baselines (`tests/support/qa-helpers.ts`). Behavior is covered by `pnpm test:interactions` (mock embed). When changing widget CSS/TS, assert: orb-minimized slot ≤72px, open control bar slot ≥280px wide with call/dismiss in viewport, expanded sheet fills safely on mobile — never shrink the host to orb size for `compactDefault` alone.
+ElevenLabs is masked in content/visual baselines (`tests/support/qa-helpers.ts`). Behavior is covered by `pnpm test:interactions` (mock embed). When changing widget CSS/TS, assert: orb-minimized slot ≤72px, open control bar slot 250–310px wide with call/dismiss in viewport, expanded sheet fills safely on mobile — never shrink the host to orb size for `compactDefault` alone.
 
 Do not raise `VISUAL_DIFF_TOLERANCE` as the fix for an intentional page redesign. Refresh the affected baseline PNGs instead.
 
@@ -119,7 +119,7 @@ To accept, rewrite the baseline from `localSnapshot` in `<label>-content-summary
 | --- | --- |
 | `aboveFoldImages` | `visibleAboveFoldImages` |
 | `buttons` | `visibleButtons` |
-| `images` | `visibleImages` |
+| `images` | `visibleImages` (captured for forensics; the comparison only checks `aboveFoldImages`) |
 | `inputs` | `visibleInputs` |
 | `links` | `visibleLinks` |
 | `bodyText`, `status`, `title` | same name |
@@ -132,19 +132,19 @@ After the suite is green, confirm the accepted diff touched only the fields you 
 git diff -U0 tests/baselines/live/content/ | grep -oE '^[+-]  "[a-zA-Z]+"' | sort | uniq -c
 ```
 
-A schedule or copy change should report `bodyText` only. Unexpected `status`, `title`, `inputs`, or `aboveFoldImages` entries mean something broke rather than drifted.
+A schedule or copy change should report `bodyText` only. Unexpected `status`, `title`, `inputs`, `buttons`, `links`, or `aboveFoldImages` entries mean something broke rather than drifted (the spec compares all of those fields).
 
 Avoid `pnpm snapshot:refresh` for this. It re-captures from live production (`LIVE_ORIGIN`) and rewrites visual baselines too; it is for intentionally re-syncing the frozen mirror, not for accepting a local content change.
 
 ## Visual Capture Determinism
 
-A visual diff is only meaningful if the capture is reproducible. Two things in this app are not, and both must be handled in `captureVisual` (`tests/support/qa-helpers.ts`) and mirrored in `captureVisualBaseline` (`scripts/refresh-live-baselines.mjs`), or baselines and comparisons drift apart:
+A visual diff is only meaningful if the capture is reproducible. Two timing hazards plus one systematic exclusion live in this app, and all three must be handled identically in `captureVisual` (`tests/support/qa-helpers.ts`) and `captureVisualBaseline` (`scripts/refresh-live-baselines.mjs`), or baselines and comparisons drift apart:
 
 **Web fonts.** `next/font` self-hosts Noto Sans and Playfair Display. Until those faces apply, the metric-fallback face is in use, and it is wider than Noto Sans — wide enough to overflow the desktop nav onto a second row and push every section below it down ~57px. A capture taken during that window differs from a correctly-fonted one by six figures of pixels. It reproduces on cold caches and not on warm ones, so it fails in CI and passes locally. `waitForFontsReady()` blocks on `document.fonts.status === "loaded"` before capture.
 
-**The homepage hero carousel.** It auto-advances every 7s, and `prepareFullPageForVisual` routinely takes longer than one tick, so `/` can be photographed on any slide. It is not covered by the `visualMasks` in `snapshot/live/manifest.json`, which only mask the retired GoDaddy review carousel. This makes the two `home` baselines flaky in both directions — a run can report ~1k or ~147k differing pixels on identical code.
+**The homepage hero carousel.** It auto-advances every 7s, and `prepareFullPageForVisual` routinely takes longer than one tick, so `/` can be photographed on any slide. The `visualMasks` in `snapshot/live/manifest.json` do not cover it — they mask the retired GoDaddy review carousel on `/` plus TrustedSite and ElevenLabs widgets on every route. The controller stops auto-advancing under `prefers-reduced-motion: reduce`, so `captureVisual` and `captureVisualBaseline` call `page.emulateMedia({ reducedMotion: "reduce" })` for the homepage only, pinning both home baselines to slide 1. Keep that pin when refreshing `home-desktop.png` / `home-mobile.png`.
 
-The controller stops auto-advancing under `prefers-reduced-motion: reduce`. `captureVisual` and `captureVisualBaseline` now call `page.emulateMedia({ reducedMotion: "reduce" })` for the homepage only, so both home baselines are captured on slide 1. Keep that pin when refreshing `home-desktop.png` / `home-mobile.png`.
+**Systematic exclusions.** Course-review sections, the promo dialog, and the promo overlay are stripped from content captures and hidden from visual captures in both pipelines (see the additive selectors in `tests/support/qa-helpers.ts` and `scripts/refresh-live-baselines.mjs`). A refresh script that omits any of them bakes promo copy into baselines that the suites can never match.
 
 ## Updating Visual Baselines
 
@@ -204,7 +204,7 @@ Two drift classes were involved, both intentional:
 
 The fix refreshed 19 content baselines; only `bodyText` and the BLS `href` changed. Two takeaways now covered in [Updating Content Baselines](#updating-content-baselines): one reported failure in a serial suite is not one stale route, and a schedule edit is a page-output change that requires a baseline refresh in the same commit.
 
-Clearing that failure then re-exposed an older one. `test:release` runs visual parity last, so while content parity was red the visual stage had not executed in CI since 2026-07-16. `visual parity home on desktop` and `photos on desktop` had been failing since 2026-07-15 at an unchanged magnitude — 125,138 / 158,683 differing pixels then, 125,194 / 160,715 after the July 31 content fix — confirming the drift was pre-existing rather than schedule-related. The trigger was `e0670b3`, which switched the nav from Playfair to Noto Sans 600 without refreshing those two baselines; the amplifier was the missing font barrier described in [Visual Capture Determinism](#visual-capture-determinism), which is why it failed only in CI. `waitForFontsReady()` addresses the amplifier. The carousel nondeterminism found during the same investigation is documented there and still open.
+Clearing that failure then re-exposed an older one. `test:release` runs visual parity last, so while content parity was red the visual stage had not executed in CI since 2026-07-16. `visual parity home on desktop` and `photos on desktop` had been failing since 2026-07-15 at an unchanged magnitude — 125,138 / 158,683 differing pixels then, 125,194 / 160,715 after the July 31 content fix — confirming the drift was pre-existing rather than schedule-related. The trigger was `e0670b3`, which switched the nav from Playfair to Noto Sans 600 without refreshing those two baselines; the amplifier was the missing font barrier described in [Visual Capture Determinism](#visual-capture-determinism), which is why it failed only in CI. `waitForFontsReady()` addresses the amplifier. The carousel pin described in that section has since landed; as of September 2026 `visual parity home on desktop` remains red on `main` for a separate reason (the committed baseline predates current renders — triage per [Updating Visual Baselines](#updating-visual-baselines)), not carousel flakiness.
 
 ## Known 2026-05-26 Resolution
 
@@ -224,4 +224,4 @@ Verification after that fix:
 - GitHub `Vercel Preview Verify`: passed
 - production homepage: 200, schedule present, GA4 and Vercel Analytics initialized, no horizontal overflow
 
-CI uses Node.js `24.x` and pnpm `10.34.5`, matching `package.json` and the Vercel project runtime. Keep those pins aligned when either workflow is updated.
+CI installs Node.js `24` and pnpm `10.34.5`; `package.json` pins `node: 24.x` plus `pnpm@10.34.5`, and the Vercel project runtime is set to Node `24.x` in the dashboard (`vercel.json` carries no Node pin). Keep those aligned when either workflow is updated.

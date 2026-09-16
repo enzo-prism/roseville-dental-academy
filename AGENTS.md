@@ -36,7 +36,7 @@ For UI or design-system changes, run the smallest meaningful set first, then bro
 - `pnpm design:check` when `/DESIGN.md` changes.
 - `pnpm lint` for code/style edits.
 - `pnpm build` for route/runtime changes.
-- `pnpm test:interactions` for nav, contact, cookie, newsletter, and widget behavior.
+- `pnpm test:interactions` for nav, contact, forms, attribution, and widget behavior. (There is no newsletter feature and no cookie banner; the suite asserts the banner is absent.)
 - `pnpm test:ux` for cross-device stability.
 - `pnpm test:parity-content` and `pnpm test:parity-visual` when page output or snapshot handling changes.
 
@@ -55,6 +55,5 @@ This is a single Next.js 16 app (App Router). Standard commands live in `README.
 
 - Node/pnpm toolchain: the project requires Node `24.x` + pnpm `10.34.5`. The base image ships a `/exec-daemon/node` (Node 22) that sits ahead of nvm on `PATH`, so plain `node` would otherwise resolve to 22. Node 24 (via nvm) is made the active version for login/agent shells; run commands through a login shell (e.g. `bash -lc '...'`) so `node -v` reports 24 and the corepack `pnpm` shim is on `PATH`. The startup update script only runs `pnpm install`; it does not need re-running by hand.
 - Dev server: `pnpm dev --hostname 127.0.0.1 --port 3000`. It uses the webpack dev runtime (`next dev --webpack`). First hits to each route compile on demand, so the initial page load and the first Playwright run are slow (the `test:smoke` suite can take ~5 min in dev). This is normal, not a hang.
-- Playwright: browsers are preinstalled (chromium). The `test:*` scripts start/reuse a dev server on port 3000 with `reuseExistingServer` in dev mode and health-check `/manifest.webmanifest`; if a dev server is already running on 3000 they attach to it. Set `PLAYWRIGHT_SERVER_MODE=prod` (as `test:release` does) to test against `pnpm start` on port 3100 instead.
-- Manual testing caveat: the "Request Course Info" / contact / newsletter lead forms (`components/site/live-signup-section.tsx`, `use-lead-form.ts`) POST to a production Formspree endpoint on a *trusted* user submit. When manually exercising these forms, stop before the final submit (or intercept the request) so you don't create real production leads. Client-side validation and field entry are safe to demo.
-- Known pre-existing test drift (not an environment problem): `tests/interaction-flow.spec.ts` ("homepage course sections use React cards…") asserts the exact string "October 12 and November 20, 2026" while `lib/homepage-course-sections.ts` currently renders "October 12, 2026 and November 20, 2026". This is committed content-vs-test drift; fixing it is a content/baseline change and out of scope for environment setup.
+- Playwright: browsers are preinstalled (chromium). The `test:*` scripts start/reuse a server with `reuseExistingServer` in dev mode and health-check `/manifest.webmanifest`; host and port come from `LOCAL_ORIGIN` (default `http://127.0.0.1:3000`), and setting `PREVIEW_URL` disables the webserver entirely. Set `PLAYWRIGHT_SERVER_MODE=prod` (as `test:release` does) to test against `pnpm start` instead of `pnpm dev`.
+- Manual testing caveat: the "Request Course Info" / contact lead forms (`components/site/live-signup-section.tsx`, `use-lead-form.ts`) POST to a production Formspree endpoint on a *trusted* user submit. When manually exercising these forms, stop before the final submit (or intercept the request) so you don't create real production leads. Client-side validation and field entry are safe to demo.

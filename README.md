@@ -4,7 +4,7 @@ This repo is a production-ready, live-faithful Next.js rebuild of [rosevilledent
 
 The current runtime is a shell-first hybrid:
 
-- React owns the shared shell: header, navigation, mobile menu, footer, contact blocks, cookie banner, the WhatsApp click-to-chat button, and ElevenLabs placement.
+- React owns the shared shell: header, navigation, mobile menu, footer, contact blocks, the WhatsApp click-to-chat button, and ElevenLabs placement. There is no cookie banner (consent state lives in pixel/consent modules, and the interaction suite asserts the banner is absent).
 - Sanitized frozen snapshots provide page-specific content and imagery.
 - Stable React replacements handle widgets that were unstable in the original GoDaddy runtime.
 - Snapshot files remain the visual/content reference and QA baseline, not the long-term source for shared shell behavior.
@@ -49,7 +49,7 @@ pnpm design:check
 
 ## Local Development
 
-Use Node.js `24.x` and pnpm `10.34.5`; both versions are pinned in `package.json` and CI.
+Use Node.js `24.x` and pnpm `10.34.5`. `package.json` pins `node: 24.x` plus `pnpm@10.34.5`; both CI workflows install Node `24` and pnpm `10.34.5`, and the Vercel project runtime is set to Node `24.x` in the dashboard (`vercel.json` carries no Node pin).
 
 Install and run the draft locally:
 
@@ -77,9 +77,13 @@ This updates:
 
 - `snapshot/live/html/`
 - `snapshot/live/assets.json`
+- `snapshot/live/manifest.json` (regenerated timestamps/route entries)
 - `public/__live/`
 - `tests/baselines/live/content/`
 - `tests/baselines/live/visual/`
+- `tests/baselines/live/refresh-summary.json`
+
+The baseline step iterates the 19 routes in `snapshot/live/manifest.json`; `/journey` resolves via a filename fallback in `tests/support/qa-helpers.ts` and is not re-captured, so refresh it by hand if its output intentionally changes.
 
 Use this intentionally when the live site changes. Normal QA compares against committed baselines and does not hit live production in real time.
 
@@ -95,7 +99,7 @@ Organic-search surfaces — JSON-LD structured data, metadata/canonicals, the si
 Highlights:
 
 - Review markup: Organization and Course schemas intentionally omit Google-sourced ratings/reviews to avoid self-serving or cross-site review markup. Visible testimonials remain unchanged.
-- `/resources` content hub: add a `ResourceArticle` to `lib/resource-articles.ts` and the guide prerenders, joins the sitemap and `llms.txt`, and gets Article + FAQ + Breadcrumb schema automatically. Like `/lp/*`, these routes are outside the QA gate, so they never require a baseline refresh.
+- `/resources` content hub: add a `ResourceArticle` to `lib/resource-articles.ts` and the guide prerenders, joins the sitemap and `llms.txt`, and gets Article + FAQ + Breadcrumb schema automatically. Like `/lp/*`, these routes are outside the parity baselines, so they never require a baseline refresh — but both prefixes are still covered by `test:smoke` and `test:course-dates` assertions.
 - Image loading: `promoteLazyImages` in `lib/live-route-data.ts` adds `decoding="async"` to snapshot images and `loading="lazy"` to all but the LCP image.
 
 ## QA Commands
@@ -109,12 +113,17 @@ pnpm exec playwright install chromium
 - `pnpm lint`: ESLint across app, components, lib, tests, and config.
 - `pnpm build`: production Next.js build.
 - `pnpm test:smoke`: route/status/title sanity checks on localhost.
-- `pnpm test:interactions`: nav, contact, newsletter, cookie, and widget behavior.
+- `pnpm test:course-dates`: the authoritative class-schedule gate — reviewed cutoff, available/next dates per course, homepage schedule cards, per-route date copy, and `llms.txt`.
+- `pnpm test:interactions`: nav, contact, forms, attribution persistence, analytics events, and widget behavior. (There is no newsletter feature and no cookie banner; the suite asserts the banner is absent.)
 - `pnpm test:parity-content`: visible content parity against committed baselines.
 - `pnpm test:ux`: overflow, header, placeholder image, console, and runtime stability checks.
 - `pnpm test:parity-visual`: visual regression checks against committed screenshots.
-- `pnpm test:release`: full local production gate using `pnpm build && pnpm start`.
-- `pnpm test:preview`: run the same gate against a Vercel preview by setting `PREVIEW_URL`.
+- `pnpm test:parity`: content plus visual parity in one command.
+- `pnpm test:design`: UX stability plus visual parity.
+- `pnpm test:attribution`: attribution API flow against localhost (manual gate, not in CI).
+- `pnpm test:attribution-db`: ledger migrations and triggers in an isolated in-memory Postgres (manual pre-release gate, not in CI; see `db/README.md`).
+- `pnpm test:release`: `lint` + `build`, then smoke, course-dates, interactions, parity-content, UX, and parity-visual against a local production server (`pnpm start` on port 3100 by default).
+- `pnpm test:preview`: the same six suites against a Vercel preview (`PREVIEW_URL` is required, no webserver is started, no lint/build).
 
 Changing course dates or any visible page copy drifts the committed content baselines and must be
 refreshed in the same commit; see
@@ -133,8 +142,10 @@ WhatsApp click-to-chat clicks are tracked through the document-level delegation 
 `components/site/interaction-analytics.tsx` (keyed on `data-rda-whatsapp`): they fire a
 Vercel `contact_action`, a GA `whatsapp_click`, and a Meta Pixel `Contact` event, mirroring
 the existing `tel:`/`mailto:` contact actions. The WhatsApp UI is icon-only/label-stripped and
-excluded from the content and visual QA baselines the same way the ElevenLabs widget is
-(see `tests/support/qa-helpers.ts`), so adding it does not require a baseline refresh.
+excluded from the content and visual QA baselines the same way the ElevenLabs widget is;
+course-review sections and the promo dialog/overlay are excluded as well
+(see `tests/support/qa-helpers.ts` and `scripts/refresh-live-baselines.mjs`), so adding to
+those surfaces does not require a baseline refresh.
 
 Paid social landing pages live under `/lp/*` and are intentionally noindex:
 
@@ -180,6 +191,10 @@ Important env vars:
 - `NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID`: optional override for the ChatGPT Ads Measurement Pixel ID.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional override for the GA4 measurement ID.
 - `NEXT_PUBLIC_HOTJAR_SITE_ID`: optional override for the Hotjar site ID.
+- `NEXT_PUBLIC_HOTJAR_VERSION`: optional override for the Hotjar snippet version.
+- `NEXT_PUBLIC_ELEVENLABS_AGENT_ID`: override for the ElevenLabs conversational agent.
+- `LIVE_ORIGIN`: production origin used by snapshot/baseline capture; defaults to the live site.
+- `VISUAL_DIFF_TOLERANCE`: differing-pixel budget for visual parity (defaults: 50000 local, 80000 in CI).
 - `NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT`: optional dedicated endpoint for the Infection Control office-compliance landing page; otherwise it uses the shared inbox.
 - `NEXT_PUBLIC_FORMSPREE_DENTAL_ASSISTING_TIKTOK_ENDPOINT`: optional dedicated endpoint for the Dental Assisting TikTok landing page; otherwise it uses the shared inbox.
 
@@ -188,7 +203,7 @@ Formspree read-only reporting credentials are operational secrets, not website e
 ## CI And Preview Verification
 
 - `.github/workflows/release-gate.yml` runs the local production gate on pull requests and pushes to `main`.
-- `.github/workflows/vercel-preview-verify.yml` runs smoke, parity, UX, and visual checks against successful Vercel preview deployment URLs.
+- `.github/workflows/vercel-preview-verify.yml` runs smoke, course-dates, interactions, parity, UX, and visual checks against successful Vercel preview deployment URLs.
 - Both workflows upload Playwright/test artifacts on failure.
 - Release QA and visual-baseline triage are documented in [docs/release-qa.md](docs/release-qa.md).
 

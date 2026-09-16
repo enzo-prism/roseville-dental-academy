@@ -37,24 +37,23 @@ Applicant-facing certificate timing copy lives in `lib/certificate-expiration.ts
 
 Availability lives in `lib/course-schedule.ts`. A `"full"` status is also how a date that has already passed is retired, so this edit recurs often.
 
-**Check whether the date's course list is shared before editing it.** `blsXrayInfectionCourses` and `coronalSealantsCourses` are single array references reused by several dates. Adding `"full"` to `blsXrayInfectionCourses` marks BLS, X-rays, *and* Infection Control full on every remaining 2026 date, not just the one being edited. When only part of a shared date sells out, give that date its own list — `augustOneCourses`, `septemberFiveCourses`, `septemberTwelveCourses`, and `julyEighteenCourses` are the pattern.
+**Check whether the date's course list is shared before editing it.** `blsXrayInfectionCourses` and `coronalSealantsCourses` are single array references reused by several dates. Adding `"full"` to `blsXrayInfectionCourses` marks BLS, X-rays, *and* Infection Control full on every remaining 2026 date, not just the one being edited. When only part of a shared date sells out, give that date its own list — `augustOneCourses`, `septemberFiveCourses`, `septemberTwelveCourses`, `julyEighteenCourses`, and `octoberSeventeenCourses` are the pattern.
+
+All visible date prose derives from the schedule data, so a `full` edit needs no hand-written copy changes:
+
+- `lib/live-course-content.ts`: `classDateSentence(...)` composes `getCourseScheduleDateList(...)` + `getNextCourseDateSentence(...)`.
+- `lib/site-data.ts`: the `When are the next 2026 class dates?` FAQ answer builds per-course sentences with `getAvailableCourseDateList(...)`; `registrationCourseOptions` notes use `getNextCourseDateSentence(...)` and `homeHero` items use `getAvailableCourseDateList(...)`.
+- `lib/live-route-data.ts`: `COURSE_DATE_REPLACEMENTS` substitutes `getAvailableCourseDateList(...)` / `getNextAvailableCourseDate(...)` into snapshot menu text.
+- Schedule grids, `Full` badges, signup next-open dates, stand-alone card badges, ad landing-page date lists, and `Course` JSON-LD all derive from the schedule data too. Note that `hasCourseInstance` intentionally lists every date regardless of status; it does not encode availability.
 
 After changing the data, verify what the change actually produced:
 
 ```bash
+pnpm test:course-dates
 PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:parity-content
 ```
 
-Then sync the hand-written prose, which is not derived from the schedule and will silently contradict it:
-
-- `lib/live-course-content.ts`: the `classDateSentence(...)` follow-up sentence for the affected course. Course pages render this.
-- `lib/site-data.ts`: the `When are the next 2026 class dates?` FAQ answer. `/faqs-1` renders this. When two courses share a sentence and their availability diverges, split the sentence.
-- `lib/site-data.ts`: `registrationCourseOptions` notes and the `homeHero` panel items.
-- `lib/live-route-data.ts`: the `COURSE_DATE_REPLACEMENTS` menu-item strings.
-
-Schedule grids, `Full` badges, signup next-open dates, stand-alone card badges, ad landing-page date lists, and `Course` JSON-LD all derive from the schedule data and need no manual edit. Note that `hasCourseInstance` intentionally lists every date regardless of status; it does not encode availability.
-
-Finish by refreshing the committed content baselines — see [release-qa.md](release-qa.md#updating-content-baselines).
+`test:course-dates` is the authoritative schedule gate; update its expectations in the same change when availability intentionally moves. Finish by refreshing the committed content baselines — see [release-qa.md](release-qa.md#updating-content-baselines).
 
 ## Review Checklist
 

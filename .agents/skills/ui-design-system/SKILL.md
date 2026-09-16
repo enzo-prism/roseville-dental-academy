@@ -25,7 +25,7 @@ Use this skill whenever a task changes the website UI, layout, shell behavior, s
 
 ## Visual Rules
 
-- Use the shadcn/Sera taupe neutral foundation from `/DESIGN.md` with Roseville teal as semantic `primary`.
+- Use the shadcn/Sera taupe neutral foundation from `/DESIGN.md` with Roseville logo-blue (`#2472A9`) as semantic `primary`.
 - Use Noto Sans for body, nav, labels, and forms; use Playfair Display for editorial headings.
 - Keep controls low-radius, restrained, and token-driven.
 - Do not add decorative gradients, glass effects, bokeh/orb backgrounds, generic SaaS card grids, or a modernized rebrand.
@@ -44,10 +44,14 @@ For visual, route, or snapshot-affecting edits, also run:
 
 ```bash
 pnpm build
+pnpm test:smoke
+pnpm test:course-dates
 pnpm test:ux
 pnpm test:parity-content
 pnpm test:parity-visual
 ```
+
+For schedule-date changes, `pnpm test:course-dates` is the authoritative gate. For lead/attribution changes, add `pnpm test:attribution` and `pnpm test:attribution-db` (manual gates, not in CI). The full production gate is `pnpm test:release`, which runs lint, build, and the six Playwright suites against `pnpm start` (port 3100 by default).
 
 When `/DESIGN.md` changes, run:
 

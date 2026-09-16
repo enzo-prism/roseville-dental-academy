@@ -26,6 +26,7 @@ Run the smallest affected suites while developing, then use the production gate 
 pnpm lint
 pnpm build
 PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:smoke
+PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:course-dates
 PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:interactions
 PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:parity-content
 PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:ux
@@ -37,11 +38,13 @@ Run visual parity when layout, imagery, page structure, or visual baselines chan
 PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:parity-visual
 ```
 
+Or run the whole gate at once with `pnpm test:release` (lint + build + all six suites). The attribution suites stay manual — run `pnpm test:attribution` and `pnpm test:attribution-db` (see `db/README.md`) before release when lead or ledger code changes; neither runs in CI.
+
 ## Post-Deploy Checks
 
 After Vercel marks the deployment ready, verify live production routes:
 
-The apex homepage should return `307` with `Location: https://www.rosevilledentalacademy.com/`; the `www` routes should return `200`.
+The apex homepage should return `307` with `Location: https://www.rosevilledentalacademy.com/`; the `www` routes should return `200`. The apex redirect is a Vercel domain-level setting, not a `vercel.json` rule (that file only carries the encoded-path redirects).
 
 ```bash
 curl -I https://rosevilledentalacademy.com/
