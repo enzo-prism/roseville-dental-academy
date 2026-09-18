@@ -2371,7 +2371,8 @@ test.describe("live-style interaction flows", () => {
       await expect(form.getByText("Next open date: September 5, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: October 17, 2026")).toHaveCount(2);
       await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: October 24, 2026")).toHaveCount(2);
+      await expect(form.getByText("Next open date: October 24, 2026")).toHaveCount(1);
+      await expect(form.getByText("Next open date: November 14, 2026")).toHaveCount(1);
       await expect(form.getByText("By appointment")).toBeVisible();
       await expect(form.getByText("Team can recommend a starting point")).toBeVisible();
       await expect(submit).toHaveText(/Request next steps/);

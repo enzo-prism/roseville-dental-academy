@@ -12,13 +12,15 @@ Upcoming dates:
 - Dental Assisting: October 12; November 20, 2026.
 - BLS, Infection Control: October 17; November 7; December 5, 2026.
 - Radiation Safety: November 7; December 5, 2026 (October 17, 2026 is full).
-- Coronal Polish, Sealants: October 24; November 14; December 12, 2026.
+- Coronal Polish: October 24; November 14; December 12, 2026.
+- Sealants: November 14; December 12, 2026 (October 24, 2026 is full).
 
 Sources: Jessica's May 20 Course Dates email establishes November/December.
 July 10 commit `ebfbce61b231f57decbe8d75691de517d8afac10` revises the October
 schedule; August 19 and August 24 correspondence corroborates October 17 X-rays
 and October 24 Coronal Polish. September 9 meeting notes contain no calendar revision.
-No newer change was found in the September 13 email review. Dates remain penciled
+Jessica later flagged the October 24, 2026 Pit and Fissure Sealants cohort as full;
+November 14 and December 12 remain listed as open. Dates remain penciled
 in, subject to admissions confirmation; exact remaining seat counts are unverified.
 
 Elapsed dates are excluded from upcoming cards, dates, forms, and CourseInstance
