@@ -148,10 +148,18 @@ const augustEightCourses = [
 // September 12, 2026: Dental Assisting (Saturday Academy), Coronal Polish, and
 // Pit and Fissure Sealants are all fully booked. This date keeps its own list
 // instead of spreading the shared `coronalSealantsCourses` reference used by
-// Oct 24, Nov 14, and Dec 12.
+// Nov 14 and Dec 12.
 const septemberTwelveCourses = [
   course("dental-assisting-program", "full"),
   course("coronal-polish", "full"),
+  course("sealants", "full"),
+] satisfies CourseScheduleCourse[];
+
+// October 24, 2026: Pit and Fissure Sealants is fully booked; Coronal Polish
+// still has seats, so this date needs its own list instead of the shared
+// `coronalSealantsCourses` reference used by Nov 14 and Dec 12.
+const octoberTwentyFourCourses = [
+  course("coronal-polish"),
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
@@ -270,7 +278,7 @@ export const courseScheduleMonths = [
         date: "October 24, 2026",
         day: "October 24",
         isoDate: "2026-10-24",
-        courses: coronalSealantsCourses,
+        courses: octoberTwentyFourCourses,
       },
     ],
   },
