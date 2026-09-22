@@ -130,13 +130,12 @@ const septemberFiveCourses = [
   course("infection-control", "full"),
 ] satisfies CourseScheduleCourse[];
 
-// October 17, 2026: X-rays / Radiation Safety is fully booked; BLS and
-// Infection Control still have seats, so this date needs its own list instead
-// of the shared `blsXrayInfectionCourses` reference used by Nov 7 and Dec 5.
+// October 17, 2026: X-rays / Radiation Safety is fully booked; BLS still
+// has seats. Infection Control uses November 14 instead of this shared
+// BLS / X-ray date, so this list cannot reuse `blsXrayInfectionCourses`.
 const octoberSeventeenCourses = [
   course("bls-cpr-1"),
   course("radiation-safety", "full"),
-  course("infection-control"),
 ] satisfies CourseScheduleCourse[];
 
 // August 8, 2026: Coronal Polish and Pit and Fissure Sealants are both fully booked.
@@ -148,7 +147,7 @@ const augustEightCourses = [
 // September 12, 2026: Dental Assisting (Saturday Academy), Coronal Polish, and
 // Pit and Fissure Sealants are all fully booked. This date keeps its own list
 // instead of spreading the shared `coronalSealantsCourses` reference used by
-// Nov 14 and Dec 12.
+// Dec 12.
 const septemberTwelveCourses = [
   course("dental-assisting-program", "full"),
   course("coronal-polish", "full"),
@@ -157,10 +156,19 @@ const septemberTwelveCourses = [
 
 // October 24, 2026: Pit and Fissure Sealants is fully booked; Coronal Polish
 // still has seats, so this date needs its own list instead of the shared
-// `coronalSealantsCourses` reference used by Nov 14 and Dec 12.
+// `coronalSealantsCourses` reference used by Dec 12.
 const octoberTwentyFourCourses = [
   course("coronal-polish"),
   course("sealants", "full"),
+] satisfies CourseScheduleCourse[];
+
+// November 14, 2026: Coronal Polish and Pit and Fissure Sealants plus
+// Infection Control. Infection Control moved here from October 17, so this
+// date cannot reuse `coronalSealantsCourses`.
+const novemberFourteenCourses = [
+  course("coronal-polish"),
+  course("sealants"),
+  course("infection-control"),
 ] satisfies CourseScheduleCourse[];
 
 // July 18, 2026: the class date has passed — BLS, X-rays, and Infection Control are closed.
@@ -295,7 +303,7 @@ export const courseScheduleMonths = [
         date: "November 14, 2026",
         day: "November 14",
         isoDate: "2026-11-14",
-        courses: coronalSealantsCourses,
+        courses: novemberFourteenCourses,
       },
       {
         date: "November 20, 2026",
