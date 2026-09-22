@@ -76,6 +76,67 @@ for (const path of ["/bls-cpr-1", "/infection-control", "/radiation-safety", "/c
   });
 }
 
+test("infection-control mobile FABs do not cover course copy", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/infection-control");
+
+  const policyNote = page.locator('[data-rda-live-course="infection-control"] .rda-course-policy-note');
+  await policyNote.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
+
+  const overlap = await page.evaluate(() => {
+    const copy = document.querySelector<HTMLElement>(
+      '[data-rda-live-course="infection-control"] .rda-course-policy-note',
+    );
+    const fabs = [
+      document.querySelector<HTMLElement>(".rda-whatsapp-fab"),
+      document.querySelector<HTMLElement>(".live-elevenlabs-widget"),
+    ].filter((node): node is HTMLElement => Boolean(node));
+    const copyRect = copy?.getBoundingClientRect();
+
+    if (!copyRect) {
+      return true;
+    }
+
+    return fabs.some((fab) => {
+      const fabRect = fab.getBoundingClientRect();
+      return (
+        copyRect.left < fabRect.right &&
+        copyRect.right > fabRect.left &&
+        copyRect.top < fabRect.bottom &&
+        copyRect.bottom > fabRect.top
+      );
+    });
+  });
+
+  expect(overlap).toBe(false);
+
+  const mainClearance = await page.locator(".rda-live-main").evaluate((element) => {
+    return Number.parseFloat(getComputedStyle(element).paddingBottom);
+  });
+  expect(mainClearance).toBeGreaterThanOrEqual(120);
+});
+
+test("course JSON-LD omits sold-out October instances", async ({ page }) => {
+  await page.goto("/radiation-safety");
+  const radiationSchema = JSON.parse(
+    (await page.locator("#rda-ld-course-radiation-safety").textContent()) ?? "{}",
+  ) as { hasCourseInstance?: Array<{ startDate?: string; eventStatus?: string }> };
+  const radiationDates = (radiationSchema.hasCourseInstance ?? []).map((entry) => entry.startDate);
+
+  expect(radiationDates).toEqual(["2026-11-07", "2026-12-05"]);
+  expect(radiationDates).not.toContain("2026-10-17");
+
+  await page.goto("/sealants");
+  const sealantsSchema = JSON.parse(
+    (await page.locator("#rda-ld-course-sealants").textContent()) ?? "{}",
+  ) as { hasCourseInstance?: Array<{ startDate?: string; eventStatus?: string }> };
+  const sealantsDates = (sealantsSchema.hasCourseInstance ?? []).map((entry) => entry.startDate);
+
+  expect(sealantsDates).toEqual(["2026-11-14", "2026-12-12"]);
+  expect(sealantsDates).not.toContain("2026-10-24");
+});
+
 test("AI discovery dates match the reviewed course schedule", async ({ request }) => {
   const response = await request.get("/llms.txt");
   expect(response.ok()).toBe(true);

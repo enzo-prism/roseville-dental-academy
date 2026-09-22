@@ -44,7 +44,7 @@ All visible date prose derives from the schedule data, so a `full` edit needs no
 - `lib/live-course-content.ts`: `classDateSentence(...)` composes `getCourseScheduleDateList(...)` + `getNextCourseDateSentence(...)`.
 - `lib/site-data.ts`: the `When are the next 2026 class dates?` FAQ answer builds per-course sentences with `getAvailableCourseDateList(...)`; `registrationCourseOptions` notes use `getNextCourseDateSentence(...)` and `homeHero` items use `getAvailableCourseDateList(...)`.
 - `lib/live-route-data.ts`: `COURSE_DATE_REPLACEMENTS` substitutes `getAvailableCourseDateList(...)` / `getNextAvailableCourseDate(...)` into snapshot menu text.
-- Schedule grids, `Full` badges, signup next-open dates, stand-alone card badges, ad landing-page date lists, and `Course` JSON-LD all derive from the schedule data too. Note that `hasCourseInstance` intentionally lists every date regardless of status; it does not encode availability.
+- Schedule grids, `Full` badges, signup next-open dates, stand-alone card badges, ad landing-page date lists, and `Course` JSON-LD all derive from the schedule data too. `hasCourseInstance` lists upcoming open dates only — sold-out (`full`) classes are omitted so crawlers do not advertise a Full cohort as available.
 
 After changing the data, verify what the change actually produced:
 

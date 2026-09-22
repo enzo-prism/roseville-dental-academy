@@ -232,13 +232,17 @@ function buildCourseInstances(
   courseMode: "Blended" | "Onsite",
   courseWorkload?: string,
 ): JsonLdValue[] {
-  return getUpcomingCourseSchedule(scheduleId).map((entry) => ({
-    "@type": "CourseInstance",
-    courseMode,
-    startDate: entry.isoDate,
-    location: buildCourseLocation(),
-    ...(courseWorkload ? { courseWorkload } : {}),
-  }));
+  // Omit sold-out dates so crawlers do not advertise Full classes as open.
+  // Visible page badges still list those dates; schema follows the next-open list.
+  return getUpcomingCourseSchedule(scheduleId)
+    .filter((entry) => entry.status !== "full")
+    .map((entry) => ({
+      "@type": "CourseInstance",
+      courseMode,
+      startDate: entry.isoDate,
+      location: buildCourseLocation(),
+      ...(courseWorkload ? { courseWorkload } : {}),
+    }));
 }
 
 export function CourseStructuredData({ path }: { path: string }) {

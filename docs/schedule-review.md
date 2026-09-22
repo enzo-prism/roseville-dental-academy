@@ -27,8 +27,10 @@ Dates remain penciled in, subject to admissions confirmation; exact remaining
 seat counts are unverified.
 
 Elapsed dates are excluded from upcoming cards, dates, forms, and CourseInstance
-schema. Historical records remain intact: an elapsed class is not necessarily
-sold out. Superseded date-specific promotional/office-hours copy is removed.
+schema. Sold-out (`full`) dates stay on the page with a Full badge but are omitted
+from `hasCourseInstance` so crawlers do not advertise a closed class as open.
+Historical records remain intact: an elapsed class is not necessarily sold out.
+Superseded date-specific promotional/office-hours copy is removed.
 
 Verification: `pnpm exec playwright test tests/course-dates.spec.ts` checks source
 dates, future cutoff behavior, full-course exclusion, desktop/mobile cards and
