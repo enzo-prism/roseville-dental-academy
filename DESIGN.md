@@ -174,7 +174,7 @@ Snapshot HTML may still contain Adamina, Fjalla One, or GoDaddy-generated font r
 
 Public pages should feel calm, editorial, and academy-specific rather than like a generic SaaS landing page. Keep real course imagery and academy logo assets. Use full-width sections with constrained inner content; use cards for repeated items, forms, menus, modals, reviews, gallery items, and true framed tools.
 
-Keep the header, footer, forms, and stable widgets responsive across desktop, tablet, and mobile. The design must avoid horizontal overflow, header overlap, broken above-fold imagery, and widget collisions.
+Keep the header, footer, forms, and stable widgets responsive across desktop, tablet, and mobile. The design must avoid horizontal overflow, header overlap, broken above-fold imagery, and widget collisions. On compact viewports, main content and the footer reserve `--rda-shell-fab-clearance` so the bottom-right WhatsApp FAB does not cover course copy.
 
 The WhatsApp floating button is the only persistent corner control. Keep it bottom-right on every viewport, inset by the safe area, and hidden while the mobile menu or promo dialog is open. It must not cover the header, footer policy/copyright, or a paid-lander form.
 
