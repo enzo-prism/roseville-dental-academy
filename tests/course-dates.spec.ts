@@ -136,7 +136,7 @@ test("infection-control mobile FABs do not cover course copy", async ({ page }) 
     await copyOverlapsFabs('[data-rda-live-course="infection-control"] .rda-course-policy-note'),
   ).toBe(false);
 
-  const mainClearance = await page.locator(".rda-live-main").evaluate((element) => {
+  const mainClearance = await page.locator('.rda-live-main[data-rda-route="infection-control"]').evaluate((element) => {
     return Number.parseFloat(getComputedStyle(element).paddingBottom);
   });
   expect(mainClearance).toBeGreaterThanOrEqual(120);
