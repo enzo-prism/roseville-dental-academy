@@ -42,7 +42,7 @@
   /* Floating agents sit above page chrome but below menus/dialogs. */
   --rda-shell-z-fab: 900;
   --rda-shell-z-widget: 950;
-  /* Reserved band so fixed WhatsApp + ElevenLabs FABs do not cover body copy. */
+  /* Reserved band so the fixed WhatsApp FAB does not cover body copy. */
   --rda-shell-fab-clearance: 120px;
   /* Overlay must stay UNDER sheet/menu content or the panel is blurred + untappable. */
   --rda-shell-z-dialog-overlay: 1100;
@@ -534,15 +534,15 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
     scroll-padding-bottom: calc(var(--rda-shell-fab-clearance) + env(safe-area-inset-bottom));
   }
 
-  .rda-live-main {
-    padding-bottom: calc(var(--rda-shell-fab-clearance) + env(safe-area-inset-bottom));
-  }
-
   /*
    * /infection-control stacks a 4:3 hero under the logo masthead, so the intro
    * lands in the FAB band at ~390px. Shorten the hero and pad the first column
-   * so body copy finishes above the WhatsApp + chat orbs.
+   * so body copy finishes above the WhatsApp button.
    */
+  .rda-live-main[data-rda-route="infection-control"] {
+    padding-bottom: calc(var(--rda-shell-fab-clearance) + env(safe-area-inset-bottom));
+  }
+
   [data-rda-live-course="infection-control"] > div:first-child {
     padding-top: 16px;
   }
