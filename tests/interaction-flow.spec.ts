@@ -130,8 +130,10 @@ test.describe("live-style interaction flows", () => {
 
     await page.setViewportSize({ height: 844, width: 390 });
     await gotoSettled(page, "/contact");
+    await page.locator("[data-rda-contact-form-toggle='true']").click();
     const sendButton = page.locator("form").getByRole("button", { name: "Send" });
-    await sendButton.scrollIntoViewIfNeeded();
+    await expect(sendButton).toBeVisible();
+    await sendButton.evaluate((button) => button.scrollIntoView({ block: "center", inline: "nearest" }));
     const formClear = await sendButton.evaluate((button) => {
       const fabElement = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
       const fabRect = fabElement?.getBoundingClientRect();
