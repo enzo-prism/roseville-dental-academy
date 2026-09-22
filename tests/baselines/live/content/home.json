@@ -138,10 +138,6 @@
       "text": "X-rays / Radiation Safety"
     },
     {
-      "href": "/infection-control",
-      "text": "Infection Control"
-    },
-    {
       "href": "/coronal-polish",
       "text": "Coronal Polish"
     },
@@ -168,6 +164,10 @@
     {
       "href": "/sealants",
       "text": "Pit and Fissure Sealants"
+    },
+    {
+      "href": "/infection-control",
+      "text": "Infection Control"
     },
     {
       "href": "/dental-assisting-program",
