@@ -7,7 +7,7 @@ import {
   getUpcomingScheduleMonths,
 } from "../lib/course-schedule";
 import { adLandingPages } from "../lib/ad-landing-pages";
-import { blockElevenLabsWidgetScript, suppressSitePromo } from "./support/qa-helpers";
+import { suppressSitePromo } from "./support/qa-helpers";
 
 test("reviewed schedule excludes elapsed dates without inventing sold-out history", () => {
   expect(COURSE_SCHEDULE_REVIEWED_ON).toBe("2026-09-13");
@@ -37,7 +37,6 @@ test("reviewed schedule excludes elapsed dates without inventing sold-out histor
 });
 
 test.beforeEach(async ({ context }) => {
-  await blockElevenLabsWidgetScript(context);
   await suppressSitePromo(context);
   // This is a read-only check: no synthetic leads may reach a production inbox.
   await context.route("https://formspree.io/**", (route) => route.abort());

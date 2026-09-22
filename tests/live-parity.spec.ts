@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 import {
-  blockElevenLabsWidgetScript,
   buildTextDiff,
   captureSnapshot,
   getContentBaseline,
@@ -19,7 +18,6 @@ const contentParitySummary: Array<Record<string, unknown>> = [];
 test.describe.configure({ mode: "serial" });
 
 test.beforeEach(async ({ context }) => {
-  await blockElevenLabsWidgetScript(context);
   await suppressSitePromo(context);
 });
 

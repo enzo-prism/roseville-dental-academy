@@ -27,8 +27,6 @@ export const visualPixelDiffThreshold = Number(
 export const primaryNavLabels = fixtures.primaryNavLabels;
 export const coreWarmRoutes = fixtures.coreWarmRoutes;
 export const snapshotRoutes = frozenManifest.routes;
-export const elevenLabsAgentId = "agent_6301kn20gh9denavkvn1bg9krf54";
-export const elevenLabsScriptSrc = "https://unpkg.com/@elevenlabs/convai-widget-embed";
 
 export type RuntimeDiagnostics = {
   blockingResourceErrors: Array<{ detail: string; kind: "request-failed" | "response"; url: string }>;
@@ -69,16 +67,6 @@ type SnapshotRenderData = {
   visibleInputs: string[];
   visibleLinks: Array<{ href: string; text: string }>;
 };
-
-export async function blockElevenLabsWidgetScript(context: BrowserContext) {
-  await context.route(`${elevenLabsScriptSrc}**`, async (route) => {
-    await route.fulfill({
-      body: "",
-      contentType: "text/javascript",
-      status: 204,
-    });
-  });
-}
 
 export async function blockOpenAIAdsPixelNetwork(context: BrowserContext) {
   for (const pattern of ["https://bzrcdn.openai.com/**", "https://bzr.openai.com/**"]) {

@@ -14,8 +14,8 @@ import { siteContact, whatsAppUrl } from "@/lib/site-data";
  * analytics (Meta Pixel `Contact`, GA, Vercel) fire through the document-level
  * click delegation in `interaction-analytics.tsx`, keyed on `data-rda-whatsapp`.
  *
- * Positioned bottom-left via `.rda-whatsapp-fab` (see app/globals.css) so it
- * never collides with the bottom-right ElevenLabs agent widget.
+ * Positioned bottom-right via `.rda-whatsapp-fab` (see app/globals.css),
+ * including safe-area insets, and hidden under open menus and dialogs.
  */
 export function WhatsAppFab() {
   const pathname = usePathname();

@@ -3,9 +3,7 @@ import { expect, test } from "@playwright/test";
 import { adLandingPages, PAID_TRAFFIC_LANDER_SLUGS } from "@/lib/ad-landing-pages";
 import { activeSitePromo } from "@/lib/site-promo";
 import {
-  blockElevenLabsWidgetScript,
   blockOpenAIAdsPixelNetwork,
-  elevenLabsScriptSrc,
   localOrigin,
   suppressSitePromo,
 } from "./support/qa-helpers";
@@ -28,402 +26,159 @@ async function gotoSettled(
 }
 
 test.describe("live-style interaction flows", () => {
-  test("ElevenLabs widget stays bounded and does not block primary navigation", async ({
-    context,
-    page,
-  }) => {
-    await context.route(`${elevenLabsScriptSrc}**`, async (route) => {
-      await route.fulfill({
-        body: `
-          class MockElevenLabsConvai extends HTMLElement {
-            connectedCallback() {
-              if (!this.shadowRoot) {
-                this.attachShadow({ mode: "open" });
-              }
-              this.expanded = false;
-              this.dismissed = false;
-              this.render();
-            }
+  test("WhatsApp button stays bottom-right and ElevenLabs is gone", async ({ page }) => {
+    const viewports = [
+      { height: 900, name: "desktop", width: 1280 },
+      { height: 1024, name: "tablet", width: 768 },
+      { height: 844, name: "mobile", width: 390 },
+    ] as const;
 
-            render() {
-              const expandedMarkup = [
-                '<div class="mock-elevenlabs-overlay">',
-                '<div class="sheet mock-elevenlabs-sheet">',
-                '<div class="mock-elevenlabs-avatar"></div>',
-                '<textarea aria-label="Send a message..."></textarea>',
-                "</div>",
-                '<button class="mock-elevenlabs-collapse" aria-label="Collapse">⌄</button>',
-                '<p class="mock-elevenlabs-powered">Powered by ElevenAgents</p>',
-                "</div>",
-              ].join("");
-              const minimizedMarkup = [
-                '<div class="mock-elevenlabs-overlay">',
-                '<button class="mock-elevenlabs-open" aria-label="Open chat"></button>',
-                "</div>",
-              ].join("");
-              const collapsedMarkup = [
-                '<div class="mock-elevenlabs-overlay">',
-                '<div class="mock-elevenlabs-card">',
-                '<div class="mock-elevenlabs-row">Need help?</div>',
-                '<button aria-label="Start a call" class="mock-elevenlabs-row">Start a call</button>',
-                '<button aria-label="Dismiss" class="mock-elevenlabs-dismiss">Dismiss</button>',
-                "</div>",
-                "</div>",
-              ].join("");
+    for (const viewport of viewports) {
+      await page.setViewportSize({ height: viewport.height, width: viewport.width });
+      await gotoSettled(page, "/");
 
-              this.shadowRoot.innerHTML = [
-                "<style>",
-                ":host { display: block; height: 100%; position: relative; width: 100%; }",
-                ".mock-elevenlabs-overlay {",
-                "align-items: flex-end;",
-                "display: flex;",
-                "inset: 32px;",
-                "justify-content: flex-end;",
-                "position: absolute;",
-                "}",
-                ".mock-elevenlabs-card, .mock-elevenlabs-sheet {",
-                "background: #fff;",
-                "border-radius: 18px;",
-                "box-sizing: border-box;",
-                "box-shadow: 0 20px 50px rgba(0, 0, 0, .18);",
-                "color: #111827;",
-                "overflow: hidden;",
-                "}",
-                ".mock-elevenlabs-card { padding: 4px; width: 256px; }",
-                ".mock-elevenlabs-open {",
-                "background: radial-gradient(circle at 35% 35%, #8EC5E8, #2472A9 62%, #16344F);",
-                "border: 0;",
-                "border-radius: 999px;",
-                "box-shadow: 0 14px 28px rgba(0, 0, 0, .18);",
-                "height: 48px;",
-                "width: 48px;",
-                "}",
-                ".mock-elevenlabs-row {",
-                "align-items: center;",
-                "box-sizing: border-box;",
-                "display: flex;",
-                "height: 44px;",
-                "padding: 0 12px;",
-                "}",
-                "button.mock-elevenlabs-row { border: 0; width: 100%; }",
-                ".mock-elevenlabs-dismiss { height: 36px; margin-left: auto; width: 44px; }",
-                ".mock-elevenlabs-sheet {",
-                "bottom: 80px;",
-                "height: calc(100% - 120px);",
-                "max-height: 560px;",
-                "min-height: 360px;",
-                "position: absolute;",
-                "right: 0;",
-                "width: min(356px, calc(100% - 64px));",
-                "}",
-                ".mock-elevenlabs-avatar {",
-                "background: linear-gradient(135deg, #9ce6e6, #2792dc);",
-                "border-radius: 999px;",
-                "height: 192px;",
-                "margin: 72px auto 0;",
-                "width: 192px;",
-                "}",
-                "textarea {",
-                "border: 1px solid #d9dee8;",
-                "border-radius: 16px;",
-                "bottom: 20px;",
-                "box-sizing: border-box;",
-                "height: 96px;",
-                "left: 16px;",
-                "padding: 16px;",
-                "position: absolute;",
-                "right: 16px;",
-                "}",
-                ".mock-elevenlabs-collapse {",
-                "background: #000;",
-                "border: 6px solid #fff;",
-                "border-radius: 999px;",
-                "bottom: 0;",
-                "color: #fff;",
-                "height: 66px;",
-                "position: absolute;",
-                "right: 0;",
-                "width: 66px;",
-                "}",
-                ".mock-elevenlabs-powered {",
-                "bottom: -32px;",
-                "font-size: 10px;",
-                "margin: 0;",
-                "opacity: .45;",
-                "position: absolute;",
-                "right: 0;",
-                "}",
-                "</style>",
-                this.expanded ? expandedMarkup : this.dismissed ? minimizedMarkup : collapsedMarkup,
-              ].join("");
+      await expect(page.locator("elevenlabs-convai")).toHaveCount(0);
+      await expect(page.locator(".live-elevenlabs-widget")).toHaveCount(0);
+      await expect(page.locator('script[src*="elevenlabs"], script[src*="convai-widget-embed"]')).toHaveCount(0);
 
-              this.shadowRoot.querySelector('[aria-label="Open chat"]')?.addEventListener("click", (event) => {
-                event.preventDefault();
-                this.dismissed = false;
-                this.render();
-              });
-              this.shadowRoot.querySelector('[aria-label="Dismiss"]')?.addEventListener("click", (event) => {
-                event.preventDefault();
-                this.dismissed = true;
-                this.expanded = false;
-                this.render();
-              });
-              this.shadowRoot.querySelector('[aria-label="Start a call"]')?.addEventListener("click", (event) => {
-                event.preventDefault();
-                this.dismissed = false;
-                this.expanded = true;
-                this.render();
-              });
-              this.shadowRoot.querySelector('[aria-label="Collapse"]')?.addEventListener("click", (event) => {
-                event.preventDefault();
-                this.expanded = false;
-                this.render();
-              });
-            }
-          }
-          customElements.define("elevenlabs-convai", MockElevenLabsConvai);
-        `,
-        contentType: "text/javascript",
-        status: 200,
+      const fab = page.locator(".rda-whatsapp-fab");
+      await expect(fab).toBeVisible();
+      await expect(fab).toHaveAttribute("href", /wa\.me\/19165075157/);
+      await expect(fab).toHaveCSS("position", "fixed");
+      await expect(fab).toHaveCSS("pointer-events", "auto");
+
+      const mainTop = await page.locator("#rda-main-content").evaluate((element) => {
+        return Math.round(element.getBoundingClientRect().top);
       });
-    });
 
-    await page.setViewportSize({ height: 720, width: 1280 });
-    await gotoSettled(page, "/");
+      const placement = await page.evaluate(() => {
+        const fabElement = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
+        const header = document.querySelector<HTMLElement>(".rda-live-header");
+        const fabRect = fabElement?.getBoundingClientRect();
+        const headerRect = header?.getBoundingClientRect();
+        const hit = fabRect
+          ? document.elementFromPoint(
+              fabRect.left + fabRect.width / 2,
+              fabRect.top + fabRect.height / 2,
+            )
+          : null;
 
-    const widgetBounds = await page.locator("elevenlabs-convai").evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      return {
-        height: Math.round(rect.height),
-        width: Math.round(rect.width),
-        x: Math.round(rect.x),
-        y: Math.round(rect.y),
-      };
-    });
-
-    expect(widgetBounds.width).toBeLessThanOrEqual(370);
-    expect(widgetBounds.height).toBeLessThanOrEqual(180);
-
-    const mockWidgetFit = await page.locator("elevenlabs-convai").evaluate((element) => {
-      const card = element.shadowRoot?.querySelector<HTMLElement>(".mock-elevenlabs-card");
-      const rows = Array.from(
-        element.shadowRoot?.querySelectorAll<HTMLElement>(".mock-elevenlabs-row") ?? [],
-      );
-      const cardRect = card?.getBoundingClientRect();
-      const lastRowRect = rows.at(-1)?.getBoundingClientRect();
-
-      return {
-        cardHeight: Math.round(cardRect?.height ?? 0),
-        cardWidth: Math.round(cardRect?.width ?? 0),
-        clipsRows:
-          Boolean(cardRect && lastRowRect) &&
-          Math.ceil(lastRowRect!.bottom) > Math.floor(cardRect!.bottom),
-      };
-    });
-
-    expect(mockWidgetFit.cardWidth).toBeGreaterThanOrEqual(250);
-    expect(mockWidgetFit.cardHeight).toBeGreaterThanOrEqual(96);
-    expect(mockWidgetFit.clipsRows).toBeFalsy();
-
-    const contactButton = page.locator('[data-rda-contact-us="true"]:visible').first();
-    await expect(contactButton).toBeVisible();
-
-    const hitTestTargetsContactButton = await contactButton.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      return hit === element || element.contains(hit);
-    });
-
-    expect(hitTestTargetsContactButton).toBeTruthy();
-
-    await page.locator("elevenlabs-convai").evaluate((element) => {
-      element.shadowRoot?.querySelector<HTMLButtonElement>("button")?.click();
-    });
-    await expect(page.locator('[data-elevenlabs-widget-expanded="true"]')).toBeVisible();
-    await page.waitForTimeout(250);
-
-    const expandedWidgetBounds = await page.locator("[data-elevenlabs-widget-slot]").evaluate(
-      (element) => {
-        const rect = element.getBoundingClientRect();
         return {
-          bottom: Math.round(window.innerHeight - rect.bottom),
-          height: Math.round(rect.height),
-          right: Math.round(window.innerWidth - rect.right),
-          width: Math.round(rect.width),
+          bottomGap: fabRect ? Math.round(window.innerHeight - fabRect.bottom) : -1,
+          clickable: Boolean(fabElement && hit && (hit === fabElement || fabElement.contains(hit))),
+          headerOverlap: Boolean(
+            headerRect &&
+              fabRect &&
+              fabRect.top < headerRect.bottom &&
+              fabRect.bottom > headerRect.top &&
+              fabRect.left < headerRect.right &&
+              fabRect.right > headerRect.left,
+          ),
+          height: fabRect ? Math.round(fabRect.height) : 0,
+          left: fabRect ? Math.round(fabRect.left) : 0,
+          rightGap: fabRect ? Math.round(window.innerWidth - fabRect.right) : -1,
+          width: fabRect ? Math.round(fabRect.width) : 0,
         };
-      },
-    );
+      });
 
-    expect(expandedWidgetBounds.width).toBeGreaterThanOrEqual(400);
-    expect(expandedWidgetBounds.width).toBeLessThanOrEqual(430);
-    expect(expandedWidgetBounds.height).toBeGreaterThanOrEqual(560);
-    expect(expandedWidgetBounds.height).toBeLessThanOrEqual(630);
-    expect(expandedWidgetBounds.bottom).toBe(24);
-    expect(expandedWidgetBounds.right).toBe(24);
+      expect(placement.clickable, viewport.name).toBe(true);
+      expect(placement.headerOverlap, viewport.name).toBe(false);
+      expect(placement.rightGap, viewport.name).toBeGreaterThanOrEqual(12);
+      expect(placement.rightGap, viewport.name).toBeLessThanOrEqual(32);
+      expect(placement.bottomGap, viewport.name).toBeGreaterThanOrEqual(12);
+      expect(placement.bottomGap, viewport.name).toBeLessThanOrEqual(40);
+      expect(placement.left, viewport.name).toBeGreaterThan(viewport.width / 2);
+      expect(placement.width, viewport.name).toBeGreaterThanOrEqual(56);
+      expect(placement.height, viewport.name).toBeGreaterThanOrEqual(40);
 
-    const expandedWidgetFit = await page.locator("elevenlabs-convai").evaluate((element) => {
-      const root = element.shadowRoot;
-      const sheet = root?.querySelector<HTMLElement>(".sheet");
-      const textarea = root?.querySelector<HTMLElement>("textarea");
-      const collapseButton = root?.querySelector<HTMLElement>(".mock-elevenlabs-collapse");
-      const powered = root?.querySelector<HTMLElement>(".mock-elevenlabs-powered");
-      const sheetRect = sheet?.getBoundingClientRect();
-      const textareaRect = textarea?.getBoundingClientRect();
-      const collapseRect = collapseButton?.getBoundingClientRect();
-      const poweredRect = powered?.getBoundingClientRect();
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const footerClearance = await page.evaluate(() => {
+        const fabElement = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
+        const policy = document.querySelector<HTMLElement>(".rda-footer-policy");
+        const copy = document.querySelector<HTMLElement>(".rda-footer-copy");
+        const fabRect = fabElement?.getBoundingClientRect();
 
-      return {
-        collapseInViewport:
-          Boolean(collapseRect) &&
-          collapseRect!.bottom <= window.innerHeight &&
-          collapseRect!.right <= window.innerWidth,
-        poweredInViewport:
-          Boolean(poweredRect) &&
-          poweredRect!.bottom <= window.innerHeight &&
-          poweredRect!.right <= window.innerWidth,
-        sheetHeight: Math.round(sheetRect?.height ?? 0),
-        textareaInsideSheet:
-          Boolean(sheetRect && textareaRect) &&
-          textareaRect!.bottom <= sheetRect!.bottom &&
-          textareaRect!.right <= sheetRect!.right,
-      };
+        function overlaps(element: HTMLElement | null) {
+          if (!element || !fabRect) {
+            return false;
+          }
+
+          const rect = element.getBoundingClientRect();
+          return (
+            rect.left < fabRect.right &&
+            rect.right > fabRect.left &&
+            rect.top < fabRect.bottom &&
+            rect.bottom > fabRect.top
+          );
+        }
+
+        return {
+          copyOverlap: overlaps(copy),
+          policyOverlap: overlaps(policy),
+        };
+      });
+      expect(footerClearance.policyOverlap, viewport.name).toBe(false);
+      expect(footerClearance.copyOverlap, viewport.name).toBe(false);
+
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(400);
+      const mainTopAfter = await page.locator("#rda-main-content").evaluate((element) => {
+        return Math.round(element.getBoundingClientRect().top);
+      });
+      expect(mainTopAfter, viewport.name).toBe(mainTop);
+    }
+
+    await page.setViewportSize({ height: 844, width: 390 });
+    await gotoSettled(page, "/contact");
+    await page.locator("[data-rda-contact-form-toggle='true']").click();
+    const sendButton = page.locator("form").getByRole("button", { name: "Send" });
+    await expect(sendButton).toBeVisible();
+    await sendButton.evaluate((button) => button.scrollIntoView({ block: "center", inline: "nearest" }));
+    const formClear = await sendButton.evaluate((button) => {
+      const fabElement = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
+      const fabRect = fabElement?.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+
+      if (!fabRect) {
+        return false;
+      }
+
+      return !(
+        buttonRect.left < fabRect.right &&
+        buttonRect.right > fabRect.left &&
+        buttonRect.top < fabRect.bottom &&
+        buttonRect.bottom > fabRect.top
+      );
     });
+    expect(formClear).toBe(true);
 
-    expect(expandedWidgetFit.sheetHeight).toBeGreaterThanOrEqual(360);
-    expect(expandedWidgetFit.textareaInsideSheet).toBeTruthy();
-    expect(expandedWidgetFit.collapseInViewport).toBeTruthy();
-    expect(expandedWidgetFit.poweredInViewport).toBeTruthy();
+    await page.setViewportSize({ height: 900, width: 1280 });
+    await gotoSettled(page, "/dental-assisting-program");
+    await expect(page.locator("elevenlabs-convai")).toHaveCount(0);
+    await expect(page.locator(".rda-whatsapp-fab")).toBeVisible();
+    const courseRightGap = await page.locator(".rda-whatsapp-fab").evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return Math.round(window.innerWidth - rect.right);
+    });
+    expect(courseRightGap).toBeGreaterThanOrEqual(12);
+    expect(courseRightGap).toBeLessThanOrEqual(32);
 
-    await page.setViewportSize({ height: 667, width: 390 });
+    await page.setViewportSize({ height: 844, width: 390 });
     await gotoSettled(page, "/");
-    await expect(
-      page.locator('[data-elevenlabs-widget-slot][data-elevenlabs-mobile-minimized="true"]'),
-    ).toBeVisible();
+    await page.getByRole("button", { name: "Hamburger Site Navigation Icon" }).click();
+    await expect(page.locator(".rda-whatsapp-fab")).toBeHidden();
+    await expect(page.getByRole("link", { name: "Home", exact: true }).first()).toBeVisible();
 
-    const mobileDefaultFit = await page.evaluate(() => {
-      const slot = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
-      const widget = document.querySelector<HTMLElement>("elevenlabs-convai");
-      const openButton =
-        widget?.shadowRoot?.querySelector<HTMLElement>('[aria-label="Open chat"]');
-      const startButton =
-        widget?.shadowRoot?.querySelector<HTMLElement>('[aria-label="Start a call"]');
-      const slotRect = slot?.getBoundingClientRect();
-      const openRect = openButton?.getBoundingClientRect();
-
-      return {
-        openButtonHeight: Math.round(openRect?.height ?? 0),
-        openButtonInViewport:
-          Boolean(openRect) &&
-          openRect!.bottom <= window.innerHeight &&
-          openRect!.right <= window.innerWidth,
-        slotHeight: Math.round(slotRect?.height ?? 0),
-        slotWidth: Math.round(slotRect?.width ?? 0),
-        startButtonVisible: Boolean(startButton && startButton.getBoundingClientRect().width > 1),
-      };
-    });
-
-    expect(mobileDefaultFit.slotWidth).toBeLessThanOrEqual(72);
-    expect(mobileDefaultFit.slotHeight).toBeLessThanOrEqual(72);
-    expect(mobileDefaultFit.openButtonHeight).toBe(48);
-    expect(mobileDefaultFit.openButtonInViewport).toBeTruthy();
-    expect(mobileDefaultFit.startButtonVisible).toBe(false);
-
-    await page.locator('elevenlabs-convai button[aria-label="Open chat"]').click();
-    await expect(
-      page.locator('[data-elevenlabs-widget-slot][data-elevenlabs-mobile-minimized="false"]'),
-    ).toBeVisible();
-    await expect(
-      page.locator('[data-elevenlabs-widget-slot][data-elevenlabs-open="true"]'),
-    ).toBeVisible();
-    // Allow the slot width transition (180ms) to finish before measuring.
-    await page.waitForTimeout(250);
-    await expect
-      .poll(async () => {
-        return page.locator("[data-elevenlabs-widget-slot]").evaluate((el) => {
-          return Math.round(el.getBoundingClientRect().width);
-        });
-      })
-      .toBeGreaterThanOrEqual(250);
-
-    // Open control bar must get a wide slot — never stay orb-sized (the mobile
-    // regression that crushed the horizontal pill on compact routes).
-    const mobileOpenBarFit = await page.evaluate(() => {
-      const slot = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
-      const widget = document.querySelector<HTMLElement>("elevenlabs-convai");
-      const startButton =
-        widget?.shadowRoot?.querySelector<HTMLElement>('[aria-label="Start a call"]');
-      const dismissButton =
-        widget?.shadowRoot?.querySelector<HTMLElement>('[aria-label="Dismiss"]');
-      const slotRect = slot?.getBoundingClientRect();
-      const startRect = startButton?.getBoundingClientRect();
-      const dismissRect = dismissButton?.getBoundingClientRect();
-
-      return {
-        dismissInViewport:
-          Boolean(dismissRect) &&
-          dismissRect!.bottom <= window.innerHeight &&
-          dismissRect!.right <= window.innerWidth &&
-          dismissRect!.left >= 0,
-        slotHeight: Math.round(slotRect?.height ?? 0),
-        slotWidth: Math.round(slotRect?.width ?? 0),
-        startInViewport:
-          Boolean(startRect) &&
-          startRect!.bottom <= window.innerHeight &&
-          startRect!.right <= window.innerWidth &&
-          startRect!.left >= 0,
-        startVisible: Boolean(startButton && (startRect?.width ?? 0) > 1),
-      };
-    });
-
-    // Wide enough for the control pill, but leaves left gutter for WhatsApp FAB.
-    expect(mobileOpenBarFit.slotWidth).toBeGreaterThanOrEqual(250);
-    expect(mobileOpenBarFit.slotWidth).toBeLessThanOrEqual(310);
-    expect(mobileOpenBarFit.slotHeight).toBeGreaterThanOrEqual(100);
-    expect(mobileOpenBarFit.startVisible).toBe(true);
-    expect(mobileOpenBarFit.startInViewport).toBeTruthy();
-    expect(mobileOpenBarFit.dismissInViewport).toBeTruthy();
-
-    await page.locator('elevenlabs-convai button[aria-label="Start a call"]').click();
-    await expect(page.locator('[data-elevenlabs-widget-expanded="true"]')).toBeVisible();
-    await page.waitForTimeout(250);
-
-    const mobileExpandedFit = await page.evaluate(() => {
-      const slot = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
-      const widget = document.querySelector<HTMLElement>("elevenlabs-convai");
-      const sheet = widget?.shadowRoot?.querySelector<HTMLElement>(".sheet");
-      const collapseButton =
-        widget?.shadowRoot?.querySelector<HTMLElement>(".mock-elevenlabs-collapse");
-      const cookieBanner = document.querySelector<HTMLElement>(".rda-cookie-banner");
-      const slotRect = slot?.getBoundingClientRect();
-      const sheetRect = sheet?.getBoundingClientRect();
-      const collapseRect = collapseButton?.getBoundingClientRect();
-
-      return {
-        collapseInViewport:
-          Boolean(collapseRect) &&
-          collapseRect!.bottom <= window.innerHeight &&
-          collapseRect!.right <= window.innerWidth,
-        cookiePresent: Boolean(cookieBanner),
-        sheetBottom: Math.round(window.innerHeight - (sheetRect?.bottom ?? 0)),
-        sheetHeight: Math.round(sheetRect?.height ?? 0),
-        slotHeight: Math.round(slotRect?.height ?? 0),
-        slotRight: Math.round(window.innerWidth - (slotRect?.right ?? 0)),
-        slotWidth: Math.round(slotRect?.width ?? 0),
-      };
-    });
-
-    expect(mobileExpandedFit.slotWidth).toBe(390);
-    expect(mobileExpandedFit.slotHeight).toBe(555);
-    expect(mobileExpandedFit.slotRight).toBe(0);
-    expect(mobileExpandedFit.sheetHeight).toBeGreaterThanOrEqual(360);
-    expect(mobileExpandedFit.sheetBottom).toBeGreaterThanOrEqual(79);
-    expect(mobileExpandedFit.collapseInViewport).toBeTruthy();
-    expect(mobileExpandedFit.cookiePresent).toBe(false);
+    await page.setViewportSize({ height: 900, width: 390 });
+    await gotoSettled(page, "/lp/dental-assisting-enroll");
+    await expect(page.locator("elevenlabs-convai")).toHaveCount(0);
+    await expect(page.locator(".live-elevenlabs-widget")).toHaveCount(0);
+    await expect(page.locator(".rda-whatsapp-fab")).toHaveCount(0);
+    await expect(page.locator('form[data-rda-landing-form="true"]')).toBeVisible();
   });
 
   test.describe("without third-party widget noise", () => {
     test.beforeEach(async ({ context }) => {
-      await blockElevenLabsWidgetScript(context);
       await blockOpenAIAdsPixelNetwork(context);
       await suppressSitePromo(context);
     });
@@ -1024,8 +779,7 @@ test.describe("live-style interaction flows", () => {
       const mobileHero = page.locator('[data-rda-home-hero="true"]');
       const mobileHeroNext = page.locator("[data-rda-home-hero-next]");
       const cookie = page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]');
-      const widget = page.locator("[data-elevenlabs-widget-slot]");
-      const widgetElement = page.locator("elevenlabs-convai");
+      const whatsapp = page.locator(".rda-whatsapp-fab");
 
       await expect(heroCta).toBeVisible();
       await expect(mobileHero).toHaveClass(/is-interactive/);
@@ -1034,23 +788,23 @@ test.describe("live-style interaction flows", () => {
       await mobileHeroNext.click();
       await expect(mobileHero).toHaveAttribute("data-rda-active-slide", "2");
       await expect(cookie).toHaveCount(0);
-      await expect(widget).toBeVisible();
-      await expect(widget).toHaveCSS("pointer-events", "none");
-      await expect(widgetElement).toHaveCSS("pointer-events", "auto");
+      await expect(page.locator("elevenlabs-convai")).toHaveCount(0);
+      await expect(whatsapp).toBeVisible();
+      await expect(whatsapp).toHaveCSS("pointer-events", "auto");
 
       const overlap = await page.evaluate(() => {
         const cta = document.querySelector<HTMLElement>("[data-rda-home-hero-signup='true']");
-        const widget = document.querySelector<HTMLElement>("[data-elevenlabs-widget-slot]");
+        const fab = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
         const ctaRect = cta?.getBoundingClientRect();
-        const widgetRect = widget?.getBoundingClientRect();
+        const fabRect = fab?.getBoundingClientRect();
 
         return Boolean(
           ctaRect &&
-            widgetRect &&
-            ctaRect.left < widgetRect.right &&
-            ctaRect.right > widgetRect.left &&
-            ctaRect.top < widgetRect.bottom &&
-            ctaRect.bottom > widgetRect.top,
+            fabRect &&
+            ctaRect.left < fabRect.right &&
+            ctaRect.right > fabRect.left &&
+            ctaRect.top < fabRect.bottom &&
+            ctaRect.bottom > fabRect.top,
         );
       });
       expect(overlap).toBe(false);
@@ -2617,10 +2371,6 @@ test.describe("live-style interaction flows", () => {
   });
 
   test.describe("Saturday Academy promo", () => {
-    test.beforeEach(async ({ context }) => {
-      await blockElevenLabsWidgetScript(context);
-    });
-
     test("banner promotes the next upcoming DA start", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
@@ -2698,10 +2448,6 @@ test.describe("live-style interaction flows", () => {
   });
 
   test.describe("paid Meta landers", () => {
-    test.beforeEach(async ({ context }) => {
-      await blockElevenLabsWidgetScript(context);
-    });
-
     for (const slug of PAID_TRAFFIC_LANDER_SLUGS) {
       test(`${slug} uses stripped chrome and a first-viewport form`, async ({ page }) => {
         await page.setViewportSize({ height: 900, width: 390 });

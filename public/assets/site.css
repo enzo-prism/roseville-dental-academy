@@ -1514,16 +1514,6 @@ main {
   background: rgba(125, 39, 49, 0.08);
 }
 
-body.page-registration elevenlabs-convai {
-  display: none;
-}
-
-body.is-assistant-suppressed elevenlabs-convai,
-body.is-mobile-nav-open elevenlabs-convai {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(1rem);
-}
 
 .form-error {
   margin: 0;

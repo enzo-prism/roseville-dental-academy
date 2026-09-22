@@ -8,12 +8,9 @@ import { socialChannelPages } from "@/lib/social-channel-data";
 import {
   aliasMappings,
   baselineDir,
-  blockElevenLabsWidgetScript,
   blockOpenAIAdsPixelNetwork,
   captureSnapshot,
   coreWarmRoutes,
-  elevenLabsAgentId,
-  elevenLabsScriptSrc,
   localOrigin,
   routeMappings,
   sanitizeLabel,
@@ -28,7 +25,6 @@ const smokeSummary: Array<Record<string, unknown>> = [];
 test.describe.configure({ mode: "serial" });
 
 test.beforeEach(async ({ context }) => {
-  await blockElevenLabsWidgetScript(context);
   await blockOpenAIAdsPixelNetwork(context);
   await suppressSitePromo(context);
 });
@@ -703,7 +699,7 @@ for (const landingPage of adLandingPages) {
 
     if (isPaidTrafficLanderSlug(landingPage.slug)) {
       if (html.includes("<elevenlabs-convai") || html.includes("@elevenlabs/convai-widget-embed")) {
-        mismatches.push(`${landingPage.path} should not preload ElevenLabs`);
+        mismatches.push(`${landingPage.path} still includes the removed ElevenLabs widget`);
       }
 
       if (html.includes("data-rda-promo-banner") || html.includes("data-rda-contact-us")) {
@@ -1844,7 +1840,9 @@ test("key public pages render full-page image slots after lazy promotion", async
   expect(mismatches).toEqual([]);
 });
 
-test("elevenlabs widget is embedded on every page shell", async ({ request }, testInfo) => {
+test("ElevenLabs is absent and the WhatsApp button is in the page shell", async ({
+  request,
+}, testInfo) => {
   const checkedRoutes = ["/", "/contact", "/m/login"];
   const results: Array<Record<string, unknown>> = [];
   const mismatches: string[] = [];
@@ -1857,58 +1855,23 @@ test("elevenlabs widget is embedded on every page shell", async ({ request }, te
       timeout: 120_000,
     });
     const html = await response.text();
-    const hasWidget = html.includes("<elevenlabs-convai");
-    const hasAgentId = html.includes(`agent-id="${elevenLabsAgentId}"`);
-    const hasBrandOrbColors =
-      html.includes('avatar-orb-color-1="#2472A9"') &&
-      html.includes('avatar-orb-color-2="#8EC5E8"');
-    const hasDisplayText =
-      html.includes('action-text="Questions about classes?"') &&
-      html.includes('start-call-text="Start a call"') &&
-      html.includes('expand-text="Ask Roseville Dental Academy"');
-    const hasMarkdownSafety =
-      html.includes(
-        'markdown-link-allowed-hosts="rosevilledentalacademy.com,www.rosevilledentalacademy.com"',
-      ) && html.includes('markdown-link-allow-http="false"');
-    const isDismissible = html.includes('dismissible="true"');
-    const hasScript = html.includes(elevenLabsScriptSrc);
+    const hasElevenLabs =
+      html.includes("<elevenlabs-convai") ||
+      html.includes("@elevenlabs/convai-widget-embed") ||
+      html.includes("live-elevenlabs-widget");
+    const hasWhatsApp = html.includes('class="rda-whatsapp-fab"') && html.includes("wa.me/19165075157");
 
-    if (!hasWidget) {
-      mismatches.push(`${routePath} missing ElevenLabs widget element`);
+    if (hasElevenLabs) {
+      mismatches.push(`${routePath} still includes the ElevenLabs widget`);
     }
 
-    if (!hasAgentId) {
-      mismatches.push(`${routePath} missing ElevenLabs agent id`);
-    }
-
-    if (!hasBrandOrbColors) {
-      mismatches.push(`${routePath} missing branded ElevenLabs orb colors`);
-    }
-
-    if (!hasDisplayText) {
-      mismatches.push(`${routePath} missing ElevenLabs display text customization`);
-    }
-
-    if (!hasMarkdownSafety) {
-      mismatches.push(`${routePath} missing ElevenLabs markdown link safety attributes`);
-    }
-
-    if (!isDismissible) {
-      mismatches.push(`${routePath} ElevenLabs widget should be dismissible`);
-    }
-
-    if (!hasScript) {
-      mismatches.push(`${routePath} missing ElevenLabs widget script`);
+    if (!hasWhatsApp) {
+      mismatches.push(`${routePath} missing the WhatsApp floating button`);
     }
 
     results.push({
-      hasAgentId,
-      hasBrandOrbColors,
-      hasDisplayText,
-      hasMarkdownSafety,
-      hasScript,
-      hasWidget,
-      isDismissible,
+      hasElevenLabs,
+      hasWhatsApp,
       route: routePath,
       status: response.status(),
     });
@@ -1917,11 +1880,11 @@ test("elevenlabs widget is embedded on every page shell", async ({ request }, te
   smokeSummary.push({
     mismatches,
     status: mismatches.length === 0 ? "passed" : "failed",
-    type: "elevenlabs-widget",
+    type: "whatsapp-fab",
   });
 
   if (mismatches.length > 0) {
-    writeJsonArtifact(testInfo, "elevenlabs-widget-summary.json", {
+    writeJsonArtifact(testInfo, "whatsapp-fab-summary.json", {
       mismatches,
       results,
     });
@@ -2039,8 +2002,8 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
     "Does this request reserve a seat?",
     "Do students need to provide patients?",
     "Roseville Dental Academy does not provide patients",
-    "June 19, 2026 (full)",
-    "July 13, 2026",
+    "October 12, 2026",
+    "November 20, 2026",
     "December 12, 2026",
   ]) {
     if (!faqSnapshot.bodyText.includes(phrase)) {

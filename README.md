@@ -4,11 +4,10 @@ This repo is a production-ready, live-faithful Next.js rebuild of [rosevilledent
 
 The current runtime is a shell-first hybrid:
 
-- React owns the shared shell: header, navigation, mobile menu, footer, contact blocks, the WhatsApp click-to-chat button, and ElevenLabs placement. There is no cookie banner (consent state lives in pixel/consent modules, and the interaction suite asserts the banner is absent).
+- React owns the shared shell: header, navigation, mobile menu, footer, contact blocks, and the WhatsApp click-to-chat button. There is no cookie banner (consent state lives in pixel/consent modules, and the interaction suite asserts the banner is absent) and no ElevenLabs chat widget.
 - Sanitized frozen snapshots provide page-specific content and imagery.
 - Stable React replacements handle widgets that were unstable in the original GoDaddy runtime.
 - Snapshot files remain the visual/content reference and QA baseline, not the long-term source for shared shell behavior.
-- ElevenLabs lives in `components/site/elevenlabs-agent-widget.tsx` with host sizing in `app/globals.css` (`.live-elevenlabs-widget`). The host grows for the open horizontal control bar and only shrinks to the orb FAB when the widget is truly minimized — see `AGENTS.md` / `DESIGN.md`.
 
 ## How It Works
 
@@ -16,7 +15,7 @@ The current runtime is a shell-first hybrid:
 - `lib/live-route-data.ts` decorates `snapshot/live/manifest.json` into the typed route registry.
 - `components/site/live-*.tsx` contains the reusable live-faithful shell and stable widget replacements.
 - `app/globals.css` contains shell CSS variables and scoped snapshot compatibility styles.
-- `components/site/whatsapp-fab.tsx` renders the global WhatsApp click-to-chat floating button (mounted once in `app/layout.tsx`); `components/site/whatsapp-icon.tsx` holds the official WhatsApp logo glyph (sourced via svgl). The number, prefilled message, label, and pre-built `wa.me` link live in `siteContact` / `whatsAppUrl` in `lib/site-data.ts`. Inline "Message Us on WhatsApp" CTAs appear in the footer, contact section, and ad landing hero.
+- `components/site/whatsapp-fab.tsx` renders the global WhatsApp click-to-chat floating button (mounted once in `app/layout.tsx`, pinned bottom-right); `components/site/whatsapp-icon.tsx` holds the official WhatsApp logo glyph (sourced via svgl). The number, prefilled message, label, and pre-built `wa.me` link live in `siteContact` / `whatsAppUrl` in `lib/site-data.ts`. Inline "Message Us on WhatsApp" CTAs appear in the footer, contact section, and non-paid ad landing heroes. Paid Meta landers omit the floating button.
 - `snapshot/live/html/*.html` contains frozen source pages used for sanitized page bodies.
 - `public/__live/` and `public/assets/live/` contain mirrored live assets.
 - `tests/baselines/live/` contains committed content and visual baselines.
@@ -142,7 +141,7 @@ WhatsApp click-to-chat clicks are tracked through the document-level delegation 
 `components/site/interaction-analytics.tsx` (keyed on `data-rda-whatsapp`): they fire a
 Vercel `contact_action`, a GA `whatsapp_click`, and a Meta Pixel `Contact` event, mirroring
 the existing `tel:`/`mailto:` contact actions. The WhatsApp UI is icon-only/label-stripped and
-excluded from the content and visual QA baselines the same way the ElevenLabs widget is;
+excluded from the content and visual QA baselines;
 course-review sections and the promo dialog/overlay are excluded as well
 (see `tests/support/qa-helpers.ts` and `scripts/refresh-live-baselines.mjs`), so adding to
 those surfaces does not require a baseline refresh.
@@ -192,7 +191,6 @@ Important env vars:
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional override for the GA4 measurement ID.
 - `NEXT_PUBLIC_HOTJAR_SITE_ID`: optional override for the Hotjar site ID.
 - `NEXT_PUBLIC_HOTJAR_VERSION`: optional override for the Hotjar snippet version.
-- `NEXT_PUBLIC_ELEVENLABS_AGENT_ID`: override for the ElevenLabs conversational agent.
 - `LIVE_ORIGIN`: production origin used by snapshot/baseline capture; defaults to the live site.
 - `VISUAL_DIFF_TOLERANCE`: differing-pixel budget for visual parity (defaults: 50000 local, 80000 in CI).
 - `NEXT_PUBLIC_FORMSPREE_INFECTION_CONTROL_AD_ENDPOINT`: optional dedicated endpoint for the Infection Control office-compliance landing page; otherwise it uses the shared inbox.
