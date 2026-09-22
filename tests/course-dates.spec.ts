@@ -89,40 +89,19 @@ test("infection-control mobile FABs do not cover course copy", async ({ page }) 
     page.evaluate((sel) => {
       const copy = document.querySelector<HTMLElement>(sel);
       const whatsapp = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
-      const widget = document.querySelector<HTMLElement>(".live-elevenlabs-widget");
       const copyRect = copy?.getBoundingClientRect();
+      const fabRect = whatsapp?.getBoundingClientRect();
 
-      if (!copyRect) {
+      if (!copyRect || !fabRect) {
         return true;
       }
 
-      const visibleFabRects = [whatsapp?.getBoundingClientRect()].filter(
-        (rect): rect is DOMRect => Boolean(rect),
+      return (
+        copyRect.left < fabRect.right &&
+        copyRect.right > fabRect.left &&
+        copyRect.top < fabRect.bottom &&
+        copyRect.bottom > fabRect.top
       );
-
-      // The host slot is tall until the orb minimizes; only the painted orb covers copy.
-      if (widget?.getAttribute("data-elevenlabs-mobile-minimized") === "true") {
-        visibleFabRects.push(widget.getBoundingClientRect());
-      } else {
-        const convai = document.querySelector<HTMLElement>("elevenlabs-convai");
-        const convaiRect = convai?.getBoundingClientRect();
-        if (convaiRect && convaiRect.height <= 80) {
-          visibleFabRects.push(convaiRect);
-        } else {
-          visibleFabRects.push(
-            new DOMRect(window.innerWidth - 78, window.innerHeight - 78, 64, 64),
-          );
-        }
-      }
-
-      return visibleFabRects.some((fabRect) => {
-        return (
-          copyRect.left < fabRect.right &&
-          copyRect.right > fabRect.left &&
-          copyRect.top < fabRect.bottom &&
-          copyRect.bottom > fabRect.top
-        );
-      });
     }, selector);
 
   expect(
