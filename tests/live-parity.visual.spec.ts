@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 import {
-  blockElevenLabsWidgetScript,
   captureVisual,
   countDifferingPixels,
   getVisualBaseline,
@@ -21,7 +20,6 @@ const visualParitySummary: Array<Record<string, unknown>> = [];
 const VISUAL_DIFF_TOLERANCE = Number(process.env.VISUAL_DIFF_TOLERANCE ?? (process.env.CI ? "80000" : "50000"));
 
 test.beforeEach(async ({ context }) => {
-  await blockElevenLabsWidgetScript(context);
   await suppressSitePromo(context);
 });
 

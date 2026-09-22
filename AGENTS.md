@@ -18,12 +18,7 @@ Keep these contracts separate:
 - Use the shadcn/ui Sera direction from `/DESIGN.md`: taupe neutral foundation, Roseville logo-blue primary token, Noto Sans body/nav/forms, Playfair Display headings, Lucide icons, Radix behavior, low-radius surfaces, and restrained borders/elevation.
 - Keep `snapshot/live/` as the migration/text/reference source, not the shared shell runtime or the long-term visual target.
 - Keep React shell behavior in stable components instead of injected repair scripts or third-party GoDaddy runtime code.
-- Two persistent floating widgets share the viewport corners: the ElevenLabs agent owns bottom-right, and the WhatsApp click-to-chat button (`components/site/whatsapp-fab.tsx`, mounted in `app/layout.tsx`) owns bottom-left at a lower z-index. Keep them in opposite corners and **below** dialogs/mobile menus. Stack order: page < FABs (`--rda-shell-z-fab` / `--rda-shell-z-widget`) < sheet **overlay** (`--rda-shell-z-dialog-overlay`) < sheet/menu **content** (`--rda-shell-z-dialog` / `--rda-shell-z-mobile-menu`). Never put the overlay above the panel — that blurs the nav and blocks taps. Hide both FABs when `body.rda-mobile-menu-open` or `body.is-mobile-nav-open`. Both are hidden from QA visual/content baselines in `tests/support/qa-helpers.ts`.
-- ElevenLabs host sizing (`.live-elevenlabs-widget` in `app/globals.css`, state in `components/site/elevenlabs-agent-widget.tsx`):
-  - **Orb FAB only** when `data-elevenlabs-mobile-minimized="true"` (true open-chat FAB, no control chrome) → ~64–72px slot.
-  - **Open control bar** when `data-elevenlabs-open="true"` (orb + call + message + dismiss / expand) → wide short slot (~250–320×120) that leaves a left gutter for WhatsApp. Never force orb size from `compactDefault` alone.
-  - **Expanded conversation** when `is-expanded` / `data-elevenlabs-widget-expanded="true"` (sheet, textarea composer, or expand-widget chrome) → large / full-width mobile slot.
-  - Detect real shadow-DOM chrome (control labels + conversation UI), not only `.sheet`. Mobile/compact routes may auto-dismiss to the orb; do not claim minimized while the horizontal bar is still visible.
+- The WhatsApp click-to-chat button (`components/site/whatsapp-fab.tsx`, mounted in `app/layout.tsx`) is the only persistent floating control. It owns the bottom-right corner on desktop, tablet, and mobile, with safe-area insets, and stays **below** dialogs/mobile menus. Stack order: page < FAB (`--rda-shell-z-fab`) < sheet **overlay** (`--rda-shell-z-dialog-overlay`) < sheet/menu **content** (`--rda-shell-z-dialog` / `--rda-shell-z-mobile-menu`). Never put the overlay above the panel — that blurs the nav and blocks taps. Hide the FAB when `body.rda-mobile-menu-open` or `body.is-mobile-nav-open`. It is hidden from QA visual/content baselines in `tests/support/qa-helpers.ts`. Do not remount an ElevenLabs (or other) chat widget.
 - Prefer shadcn primitives and existing shell components before creating new patterns.
 - Do not introduce raw hex colors, typography families, radii, or spacing scales casually. If a new visual token is truly needed, update `/DESIGN.md` in the same change.
 - Use `.agents/skills/ui-design-system/SKILL.md` for recurring frontend/design tasks.
@@ -46,7 +41,7 @@ For UI or design-system changes, run the smallest meaningful set first, then bro
 - Flag raw visual values not backed by `/DESIGN.md`.
 - Flag new shell behavior implemented through DOM mutation loops when React components can own it.
 - Flag widget changes that are not tested against cookie/banner collision and mobile viewport safety.
-- Flag ElevenLabs slot CSS that shrinks to orb size without `data-elevenlabs-mobile-minimized="true"`, or open-bar states measured before the width transition settles.
+- Flag a WhatsApp FAB that is not bottom-right, that ignores the safe area, or that stays visible over the mobile menu or promo dialog.
 - Flag docs that still describe the old frozen route-handler runtime instead of the current shell-first hybrid.
 
 ## Cursor Cloud specific instructions

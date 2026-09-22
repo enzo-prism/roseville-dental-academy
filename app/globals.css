@@ -455,13 +455,10 @@ textarea {
   z-index: var(--rda-shell-z-mobile-menu) !important;
 }
 
-/* Keep floating agents under open mobile nav / dialogs (AGENTS contract). */
+/* Keep the WhatsApp button under open mobile nav / dialogs (AGENTS contract). */
 body:has([data-rda-ad-lander="true"]) .rda-whatsapp-fab,
-body.rda-mobile-menu-open .live-elevenlabs-widget,
 body.rda-mobile-menu-open .rda-whatsapp-fab,
-body.is-mobile-nav-open .live-elevenlabs-widget,
 body.is-mobile-nav-open .rda-whatsapp-fab,
-body.rda-promo-dialog-open .live-elevenlabs-widget,
 body.rda-promo-dialog-open .rda-whatsapp-fab {
   opacity: 0;
   pointer-events: none;
@@ -3755,73 +3752,9 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 }
 
 /*
- * ElevenLabs host slot.
- *
- * The embed paints a wide horizontal control bar (orb + call + message +
- * dismiss) when open, and only collapses to a ~48px orb FAB after dismiss.
- * Never size this slot down to the orb unless `data-elevenlabs-mobile-minimized`
- * is true — compact routes used to force 64×64 on any non-sheet state, which
- * crushed the open bar and made it look partially blocked on mobile.
- */
-.live-elevenlabs-widget {
-  bottom: max(24px, env(safe-area-inset-bottom));
-  height: 160px;
-  overflow: visible;
-  pointer-events: none;
-  position: fixed;
-  right: max(24px, env(safe-area-inset-right));
-  transition:
-    height 180ms ease,
-    width 180ms ease,
-    right 180ms ease,
-    bottom 180ms ease;
-  width: min(360px, calc(100vw - 48px - 72px));
-  z-index: var(--rda-shell-z-widget);
-}
-
-/* Open call/message pill — room for the horizontal chrome + Powered-by row. */
-.live-elevenlabs-widget[data-elevenlabs-open="true"]:not(.is-expanded) {
-  height: 120px;
-  width: min(320px, calc(100vw - 48px - 72px));
-}
-
-.live-elevenlabs-widget.is-expanded {
-  height: min(620px, calc(100vh - 48px));
-  height: min(620px, calc(100svh - 48px));
-  width: min(420px, calc(100vw - 48px));
-}
-
-/* Orb-only FAB. Requires real minimize success — not compactDefault alone. */
-.live-elevenlabs-widget[data-elevenlabs-mobile-minimized="true"]:not(.is-expanded) {
-  height: 72px;
-  width: 72px;
-}
-
-.live-elevenlabs-widget elevenlabs-convai {
-  display: block;
-  height: 100% !important;
-  inset: auto !important;
-  max-height: none !important;
-  max-width: none !important;
-  overflow: visible !important;
-  /*
-   * Host fills only the sized slot (wrapper is pe:none), so pe:auto here makes
-   * the orb/bar clickable without a full-viewport event shield. Do not set the
-   * host to pe:none while using the bounded-slot model — clicks fall through
-   * to page content behind the chrome.
-   */
-  pointer-events: auto;
-  position: static !important;
-  width: 100% !important;
-  z-index: auto !important;
-}
-
-/*
- * WhatsApp click-to-chat floating action button. Pinned bottom-LEFT so it never
- * collides with the ElevenLabs agent (bottom-right); its z-index sits just below
- * the agent so the mobile full-screen chat covers it cleanly while it still
- * floats above all page chrome. Hidden from QA visual/content parity capture
- * (see tests/support/qa-helpers.ts) the same way the ElevenLabs widget is.
+ * WhatsApp click-to-chat floating action button. Pinned bottom-right, clear of
+ * the safe area, and below open menus and dialogs. Hidden from QA visual and
+ * content parity capture (see tests/support/qa-helpers.ts).
  */
 .rda-whatsapp-fab {
   align-items: center;
@@ -3831,12 +3764,12 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.35);
   color: var(--whatsapp-foreground);
   display: inline-flex;
-  left: max(24px, env(safe-area-inset-left));
   min-height: 56px;
   min-width: 56px;
   overflow: hidden;
   padding: 14px;
   position: fixed;
+  right: max(24px, env(safe-area-inset-right));
   text-decoration: none;
   transition:
     background-color 180ms ease,
@@ -3864,8 +3797,8 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 
 @media (max-width: 760px) {
   .rda-whatsapp-fab {
-    bottom: max(14px, env(safe-area-inset-bottom));
-    left: max(14px, env(safe-area-inset-left));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    right: max(16px, env(safe-area-inset-right));
   }
 }
 
@@ -4464,55 +4397,6 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 
   .rda-live-footer {
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
-  }
-
-  .live-elevenlabs-widget {
-    bottom: max(14px, env(safe-area-inset-bottom));
-    height: 160px;
-    right: max(14px, env(safe-area-inset-right));
-    /* Leave room for the bottom-left WhatsApp FAB (~56px + gutters). */
-    width: min(300px, calc(100vw - 28px - 72px));
-  }
-
-  .live-elevenlabs-widget[data-elevenlabs-open="true"]:not(.is-expanded) {
-    height: 120px;
-    width: min(300px, calc(100vw - 28px - 72px));
-  }
-
-  .live-elevenlabs-widget[data-elevenlabs-mobile-minimized="true"]:not(.is-expanded) {
-    height: 64px;
-    width: 64px;
-  }
-
-  .rda-live-shell[data-rda-current-route="/journey"]
-    .live-elevenlabs-widget[data-elevenlabs-compact-default="true"]:not(.is-expanded):not(
-      [data-elevenlabs-open="true"]
-    ) {
-    display: none;
-  }
-
-  .live-elevenlabs-widget.is-expanded {
-    bottom: 0;
-    height: min(620px, calc(100vh - 112px));
-    height: min(620px, calc(100svh - 112px));
-    right: 0;
-    width: 100vw;
-  }
-
-  .live-elevenlabs-widget elevenlabs-convai {
-    height: 100% !important;
-    max-height: none !important;
-    max-width: none !important;
-    width: 100% !important;
-  }
-
-  .live-elevenlabs-widget[data-elevenlabs-mobile-minimized="true"]:not(.is-expanded)
-    elevenlabs-convai {
-    --el-overlay-padding: 8px;
-  }
-
-  .live-elevenlabs-widget[data-elevenlabs-open="true"]:not(.is-expanded) elevenlabs-convai {
-    --el-overlay-padding: 8px;
   }
 }
 

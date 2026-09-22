@@ -21,7 +21,7 @@ Use this skill whenever a task changes the website UI, layout, shell behavior, s
 3. Preserve visible written text, labels, placeholders, route titles, status codes, route aliases, endpoints, and real academy imagery unless the user explicitly asks for content changes.
 4. Prefer shadcn/ui primitives, semantic tokens, and existing shell components over raw one-off styling.
 5. Keep `snapshot/live/` as the text/content reference while React-owned components provide the modern Sera UI.
-6. Keep ElevenLabs, cookie, nav, contact, signup, and directions behavior stable and tested.
+6. Keep the bottom-right WhatsApp button, cookie absence, nav, contact, signup, and directions behavior stable and tested. Do not remount an ElevenLabs widget.
 
 ## Visual Rules
 

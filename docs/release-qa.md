@@ -94,7 +94,7 @@ Usually fix code instead of accepting the screenshot when:
 - the drift is caused by missing assets, lazy image placeholders, widget collision, broken nav, or layout overflow,
 - only a third-party script, telemetry request, or transient masked widget moved.
 
-ElevenLabs is masked in content/visual baselines (`tests/support/qa-helpers.ts`). Behavior is covered by `pnpm test:interactions` (mock embed). When changing widget CSS/TS, assert: orb-minimized slot ≤72px, open control bar slot 250–310px wide with call/dismiss in viewport, expanded sheet fills safely on mobile — never shrink the host to orb size for `compactDefault` alone.
+The WhatsApp floating button is hidden in content/visual baselines (`tests/support/qa-helpers.ts`). Placement is covered by `pnpm test:interactions`: bottom-right on desktop, tablet, and mobile, clear of the header and footer copy, hidden while the mobile menu is open, and absent on paid landers. Do not remount an ElevenLabs chat widget.
 
 Do not raise `VISUAL_DIFF_TOLERANCE` as the fix for an intentional page redesign. Refresh the affected baseline PNGs instead.
 
@@ -142,7 +142,7 @@ A visual diff is only meaningful if the capture is reproducible. Two timing haza
 
 **Web fonts.** `next/font` self-hosts Noto Sans and Playfair Display. Until those faces apply, the metric-fallback face is in use, and it is wider than Noto Sans — wide enough to overflow the desktop nav onto a second row and push every section below it down ~57px. A capture taken during that window differs from a correctly-fonted one by six figures of pixels. It reproduces on cold caches and not on warm ones, so it fails in CI and passes locally. `waitForFontsReady()` blocks on `document.fonts.status === "loaded"` before capture.
 
-**The homepage hero carousel.** It auto-advances every 7s, and `prepareFullPageForVisual` routinely takes longer than one tick, so `/` can be photographed on any slide. The `visualMasks` in `snapshot/live/manifest.json` do not cover it — they mask the retired GoDaddy review carousel on `/` plus TrustedSite and ElevenLabs widgets on every route. The controller stops auto-advancing under `prefers-reduced-motion: reduce`, so `captureVisual` and `captureVisualBaseline` call `page.emulateMedia({ reducedMotion: "reduce" })` for the homepage only, pinning both home baselines to slide 1. Keep that pin when refreshing `home-desktop.png` / `home-mobile.png`.
+**The homepage hero carousel.** It auto-advances every 7s, and `prepareFullPageForVisual` routinely takes longer than one tick, so `/` can be photographed on any slide. The `visualMasks` in `snapshot/live/manifest.json` do not cover it — they mask the retired GoDaddy review carousel on `/` plus TrustedSite and the retired ElevenLabs host selector on captured routes. The controller stops auto-advancing under `prefers-reduced-motion: reduce`, so `captureVisual` and `captureVisualBaseline` call `page.emulateMedia({ reducedMotion: "reduce" })` for the homepage only, pinning both home baselines to slide 1. Keep that pin when refreshing `home-desktop.png` / `home-mobile.png`.
 
 **Systematic exclusions.** Course-review sections, the promo dialog, and the promo overlay are stripped from content captures and hidden from visual captures in both pipelines (see the additive selectors in `tests/support/qa-helpers.ts` and `scripts/refresh-live-baselines.mjs`). A refresh script that omits any of them bakes promo copy into baselines that the suites can never match.
 

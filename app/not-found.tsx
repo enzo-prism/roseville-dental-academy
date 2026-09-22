@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { ElevenLabsAgentWidget } from "@/components/site/elevenlabs-agent-widget";
 import { fetchLiveMirrorDocument } from "@/lib/live-route-data";
 import { buildPageMetadata } from "@/lib/site-metadata";
 
@@ -23,7 +22,6 @@ export default async function NotFound() {
         className="rda-snapshot-content rda-not-found-content"
         dangerouslySetInnerHTML={{ __html: document.bodyHtml }}
       />
-      <ElevenLabsAgentWidget />
     </div>
   );
 }

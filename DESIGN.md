@@ -162,7 +162,7 @@ Use shadcn semantic tokens first: `bg-background`, `bg-card`, `text-foreground`,
 
 Do not introduce raw visual values inside components. If a new durable color, type, radius, or spacing decision is needed, add it here and map it through `app/globals.css`.
 
-`whatsapp` (`#25D366`, the official WhatsApp brand green) with `whatsapp-foreground` (white) is a reserved brand token. It maps to the `bg-whatsapp` / `text-whatsapp-foreground` utilities and the Button `whatsapp` variant, and is used only for the WhatsApp click-to-chat controls: the global floating button (`.rda-whatsapp-fab`, pinned bottom-left so it never collides with the bottom-right ElevenLabs agent) and the inline "Message Us on WhatsApp" CTAs in the footer, contact section, and non-paid ad landing heroes. Paid Meta landers omit WhatsApp and keep a single phone CTA. Do not reuse the WhatsApp green for non-WhatsApp UI, and keep the official logo glyph unaltered (sourced via svgl in `components/site/whatsapp-icon.tsx`).
+`whatsapp` (`#25D366`, the official WhatsApp brand green) with `whatsapp-foreground` (white) is a reserved brand token. It maps to the `bg-whatsapp` / `text-whatsapp-foreground` utilities and the Button `whatsapp` variant, and is used only for the WhatsApp click-to-chat controls: the global floating button (`.rda-whatsapp-fab`, pinned bottom-right with safe-area insets, below menus and dialogs) and the inline "Message Us on WhatsApp" CTAs in the footer, contact section, and non-paid ad landing heroes. Paid Meta landers omit WhatsApp and keep a single phone CTA. Do not reuse the WhatsApp green for non-WhatsApp UI, and keep the official logo glyph unaltered (sourced via svgl in `components/site/whatsapp-icon.tsx`). On small screens the public footer keeps extra bottom padding so the button does not cover the policy line or copyright.
 
 ## Typography
 
@@ -174,17 +174,11 @@ Snapshot HTML may still contain Adamina, Fjalla One, or GoDaddy-generated font r
 
 Public pages should feel calm, editorial, and academy-specific rather than like a generic SaaS landing page. Keep real course imagery and academy logo assets. Use full-width sections with constrained inner content; use cards for repeated items, forms, menus, modals, reviews, gallery items, and true framed tools.
 
-Keep the header, footer, ElevenLabs wrapper, forms, and stable widgets responsive across desktop, tablet, and mobile. The design must avoid horizontal overflow, header overlap, broken above-fold imagery, and widget collisions.
+Keep the header, footer, forms, and stable widgets responsive across desktop, tablet, and mobile. The design must avoid horizontal overflow, header overlap, broken above-fold imagery, and widget collisions.
 
-ElevenLabs (bottom-right) has three visual states that must not share one fixed host size:
+The WhatsApp floating button is the only persistent corner control. Keep it bottom-right on every viewport, inset by the safe area, and hidden while the mobile menu or promo dialog is open. It must not cover the header, footer policy/copyright, or a paid-lander form.
 
-1. **Minimized orb** — circular FAB only.
-2. **Open control bar** — horizontal pill (avatar orb + call + message + dismiss/expand) plus “Powered by ElevenAgents”; needs a wide short slot so chrome is not crushed or clipped on mobile.
-3. **Expanded conversation** — sheet / composer; use the large expanded slot (full-width on small viewports).
-
-Size the `.live-elevenlabs-widget` host from real widget state attributes (`data-elevenlabs-mobile-minimized`, `data-elevenlabs-open`, `is-expanded`), never from route compact flags alone.
-
-Paid Meta landers (`/lp/dental-assisting-enroll`, `/lp/coronal-sealants-renewal`, `/lp/infection-control-office-compliance`) use stripped chrome: compact logo + one phone CTA, no promo banner, no main nav, no ElevenLabs, and no WhatsApp FAB. The lead form sits in the first viewport beside a single hero image.
+Paid Meta landers (`/lp/dental-assisting-enroll`, `/lp/coronal-sealants-renewal`, `/lp/infection-control-office-compliance`) use stripped chrome: compact logo + one phone CTA, no promo banner, no main nav, and no WhatsApp FAB. The lead form sits in the first viewport beside a single hero image.
 
 ## Components
 
