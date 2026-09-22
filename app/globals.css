@@ -537,6 +537,22 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   .rda-live-main {
     padding-bottom: calc(var(--rda-shell-fab-clearance) + env(safe-area-inset-bottom));
   }
+
+  /*
+   * /infection-control stacks a 4:3 hero under the logo masthead, so the intro
+   * lands in the FAB band at ~390px. Shorten the hero and pad the first column
+   * so body copy finishes above the WhatsApp + chat orbs.
+   */
+  [data-rda-live-course="infection-control"] > div:first-child {
+    padding-top: 16px;
+  }
+
+  [data-rda-live-course="infection-control"] [data-rda-course-hero],
+  [data-rda-live-course="infection-control"] [data-rda-course-hero] [data-slot="aspect-ratio"] {
+    aspect-ratio: 16 / 10;
+    height: auto;
+    padding-bottom: 0 !important;
+  }
 }
 
 .rda-snapshot-content {

@@ -85,36 +85,56 @@ test("infection-control mobile FABs do not cover course copy", async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/infection-control");
 
+  const copyOverlapsFabs = async (selector: string) =>
+    page.evaluate((sel) => {
+      const copy = document.querySelector<HTMLElement>(sel);
+      const whatsapp = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
+      const widget = document.querySelector<HTMLElement>(".live-elevenlabs-widget");
+      const copyRect = copy?.getBoundingClientRect();
+
+      if (!copyRect) {
+        return true;
+      }
+
+      const visibleFabRects = [whatsapp?.getBoundingClientRect()].filter(
+        (rect): rect is DOMRect => Boolean(rect),
+      );
+
+      // The host slot is tall until the orb minimizes; only the painted orb covers copy.
+      if (widget?.getAttribute("data-elevenlabs-mobile-minimized") === "true") {
+        visibleFabRects.push(widget.getBoundingClientRect());
+      } else {
+        const convai = document.querySelector<HTMLElement>("elevenlabs-convai");
+        const convaiRect = convai?.getBoundingClientRect();
+        if (convaiRect && convaiRect.height <= 80) {
+          visibleFabRects.push(convaiRect);
+        } else {
+          visibleFabRects.push(
+            new DOMRect(window.innerWidth - 78, window.innerHeight - 78, 64, 64),
+          );
+        }
+      }
+
+      return visibleFabRects.some((fabRect) => {
+        return (
+          copyRect.left < fabRect.right &&
+          copyRect.right > fabRect.left &&
+          copyRect.top < fabRect.bottom &&
+          copyRect.bottom > fabRect.top
+        );
+      });
+    }, selector);
+
+  expect(
+    await copyOverlapsFabs('[data-rda-live-course="infection-control"] h1 + .rounded-lg p'),
+  ).toBe(false);
+
   const policyNote = page.locator('[data-rda-live-course="infection-control"] .rda-course-policy-note');
   await policyNote.scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
-
-  const overlap = await page.evaluate(() => {
-    const copy = document.querySelector<HTMLElement>(
-      '[data-rda-live-course="infection-control"] .rda-course-policy-note',
-    );
-    const fabs = [
-      document.querySelector<HTMLElement>(".rda-whatsapp-fab"),
-      document.querySelector<HTMLElement>(".live-elevenlabs-widget"),
-    ].filter((node): node is HTMLElement => Boolean(node));
-    const copyRect = copy?.getBoundingClientRect();
-
-    if (!copyRect) {
-      return true;
-    }
-
-    return fabs.some((fab) => {
-      const fabRect = fab.getBoundingClientRect();
-      return (
-        copyRect.left < fabRect.right &&
-        copyRect.right > fabRect.left &&
-        copyRect.top < fabRect.bottom &&
-        copyRect.bottom > fabRect.top
-      );
-    });
-  });
-
-  expect(overlap).toBe(false);
+  expect(
+    await copyOverlapsFabs('[data-rda-live-course="infection-control"] .rda-course-policy-note'),
+  ).toBe(false);
 
   const mainClearance = await page.locator(".rda-live-main").evaluate((element) => {
     return Number.parseFloat(getComputedStyle(element).paddingBottom);
