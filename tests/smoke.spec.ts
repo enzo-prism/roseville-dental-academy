@@ -2002,8 +2002,8 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
     "Does this request reserve a seat?",
     "Do students need to provide patients?",
     "Roseville Dental Academy does not provide patients",
-    "June 19, 2026 (full)",
-    "July 13, 2026",
+    "October 12, 2026",
+    "November 20, 2026",
     "December 12, 2026",
   ]) {
     if (!faqSnapshot.bodyText.includes(phrase)) {
