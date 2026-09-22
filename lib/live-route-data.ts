@@ -219,6 +219,10 @@ const RETIRED_PROGRAM_COPY_REPLACEMENTS: Array<{
     replacement:
       "Choose one class schedule — Monday, Friday, or Saturday. Those options are separate; you attend one schedule, not all three, plus one assigned externship day.",
   },
+  {
+    pattern: /our office at Waikiki Dental/g,
+    replacement: "our office at Roseville Dental Academy",
+  },
 ];
 
 const HOMEPAGE_HERO_WIDGET_REGEX =
@@ -233,7 +237,7 @@ const HOMEPAGE_LEGACY_COURSE_WIDGET_REGEX =
 
 const HOMEPAGE_HERO_SLIDES = [
   {
-    alt: "Roseville Dental Academy students celebrating in scrubs inside Waikiki Dental.",
+    alt: "Roseville Dental Academy students celebrating in scrubs at the academy.",
     caption: "Hands-on dental assisting training",
     src: "/__live/img1.wsimg.com/isteam/ip/f45bc53a-68c0-4338-bd3f-fe6fbc400a09/IMG_9043__788d74ec51.jpg",
   },

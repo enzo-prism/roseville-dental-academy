@@ -1155,7 +1155,7 @@ export const homeHero: HeroContent = {
       imageAlt: "Students practicing chairside dental assisting skills at Roseville Dental Academy",
     },
   ],
-  pills: ["9-week program", "Waikiki Dental training site", "Small class sizes"],
+  pills: ["9-week program", "Roseville training site", "Small class sizes"],
   actions: [
     {
       label: "Explore the program",
@@ -1194,7 +1194,7 @@ export const homePrimarySplit: SplitSectionContent = {
     "Students complete a 64-hour internship component and receive resume and job assistance as part of the training path.",
   ],
   image: siteImages.programHero,
-  imageAlt: "Students practicing chairside dental assisting skills inside Waikiki Dental",
+  imageAlt: "Students practicing chairside dental assisting skills at Roseville Dental Academy",
   supporting: {
     title: "Dental assisting start dates",
     copy: [`Upcoming starts: ${getAvailableCourseDateList("dental-assisting-program")}.`],
