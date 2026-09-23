@@ -1333,9 +1333,9 @@ export const sitePages: SitePageDefinition[] = [
   },
   {
     slug: "infection-control",
-    title: "Infection Control Certification | Roseville Dental Academy",
+    title: "8-Hour Infection Control Course (IC189) | Roseville Dental Academy",
     description:
-      "Complete your Infection Control certification with practical training that helps California dental professionals meet state requirements.",
+      "California Dental Board approved 8-hour Infection Control course (provider IC189) for unlicensed dental assistants and dental offices documenting compliance.",
     kind: "course",
     contactMode: "none",
   },
@@ -1764,14 +1764,14 @@ export const coursePages: Record<string, CoursePageData> = {
   },
   "infection-control": {
     slug: "infection-control",
-    title: "Infection Control Certification | Roseville Dental Academy",
+    title: "8-Hour Infection Control Course (IC189) | Roseville Dental Academy",
     description:
-      "Complete your Infection Control certification with practical training that helps California dental professionals meet state requirements.",
+      "California Dental Board approved 8-hour Infection Control course (provider IC189) for unlicensed dental assistants and dental offices documenting compliance.",
     hero: {
       eyebrow: "Stand-alone course",
       title: "8-Hour Infection Control Course",
       intro:
-        "Complete your Infection Control certification with a course built to support California dental professionals and students who need current compliance training.",
+        "Board-approved 8-hour Infection Control training (provider IC189) for unlicensed dental assistants and California dental offices documenting compliance before exposure to potentially infectious materials.",
       image: siteImages.infection,
       imageAlt: "Infection control training at Roseville Dental Academy",
       pills: ["$395", "Provider number IC189", "8 hours"],
@@ -1805,6 +1805,7 @@ export const coursePages: Record<string, CoursePageData> = {
       eyebrow: "Additional information",
       copy: [
         "The California Dental Board requires an 8-hour infection control course for those seeking qualifying certifications, effective January 1, 2025.",
+        "Dentists, practice owners, and office managers can use this course to help unlicensed dental assistants complete the board-approved 8-hour Infection Control requirement before duties involving potential exposure to infectious materials.",
         "Students should arrive prepared for both didactic and practical work and review prerequisite documents before contacting the office to register.",
       ],
       image: siteImages.infection,

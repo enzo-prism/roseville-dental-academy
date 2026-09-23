@@ -136,6 +136,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
     markers: [
       "8-HOUR INFECTION CONTROL COURSE",
       "Who is it for?",
+      "California office compliance",
       "Prerequisites",
       "What students get at the end",
       "Price",
@@ -145,10 +146,11 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Best next step",
     ],
     bodyText: [
-      "8-HOUR INFECTION CONTROL COURSE Unlicensed dental assistants who need the required board-approved infection control course before exposure to potentially infectious materials.",
-      "Who is it for? Unlicensed dental assistants who need the required board-approved infection control course before exposure to potentially infectious materials.",
+      "8-HOUR INFECTION CONTROL COURSE Board-approved 8-hour Infection Control training (provider IC189) for unlicensed dental assistants and California dental offices documenting compliance before exposure to potentially infectious materials.",
+      "Who is it for? New unlicensed dental assistants who need the required 8-hour board-approved Infection Control course, and dentists, practice owners, or office managers registering a new hire before duties involving potential exposure to infectious materials.",
+      "California office compliance California Dental Board guidance says unlicensed dental assistants must complete a board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials. The academy lists this course as provider IC189 and positions it as a California Dental Board requirement effective January 1, 2025. Dentists and office managers reviewing personnel records can use this course to help new dental assistants complete that 8-hour requirement. Offices should verify current approved-provider lists with the Dental Board of California before enrolling.",
       "Prerequisites Current BLS certification through AHA or ARC, plus a 2-hour Dental Practice Act certification.",
-      "What students get at the end Completion certificate for the board-approved 8-hour Infection Control course.",
+      "What students get at the end Completion certificate for the board-approved 8-hour Infection Control course, which offices can keep with personnel training records.",
       "Price $395.",
       "Duration 8 hours.",
       "Format Didactic, laboratory, and clinical instruction, with precourse work, competencies, and a written exam.",

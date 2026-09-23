@@ -50,7 +50,7 @@ const COURSE_SCHEMA_BY_PATH: Record<
   "/infection-control": {
     name: "Dental Infection Control Course",
     description:
-      "California Dental Board approved 8-hour infection control course (provider IC189) for unlicensed dental assistants. Required by the Dental Board of California.",
+      "California Dental Board approved 8-hour infection control course (provider IC189) for unlicensed dental assistants and California dental offices documenting the 8-hour IC requirement.",
     courseCode: "IC189",
     courseMode: "Onsite",
     price: 395,

@@ -1,15 +1,16 @@
-export const SATURDAY_ACADEMY_PROMO_ID = "rda-promo-da-next-start-2026-10-12";
+export const SATURDAY_ACADEMY_PROMO_ID = "rda-promo-da-monday-2026-10-12";
+export const NEXT_DA_START_PROMO_ID = SATURDAY_ACADEMY_PROMO_ID;
 
-export const saturdayAcademyPromo = {
-  id: SATURDAY_ACADEMY_PROMO_ID,
-  storageKey: SATURDAY_ACADEMY_PROMO_ID,
-  eyebrow: "Upcoming Dental Assisting classes",
-  headline: "Next Dental Assisting start is October 12, 2026",
-  body: "Monday, Friday, and Saturday are separate class schedules. Ask admissions which upcoming start fits your preferred class day.",
-  ctaLabel: "Ask about October 12",
+export const nextDaStartPromo = {
+  id: NEXT_DA_START_PROMO_ID,
+  storageKey: NEXT_DA_START_PROMO_ID,
+  eyebrow: "Next open Dental Assisting start",
+  headline: "Monday class starts October 12, 2026",
+  body: "The Saturday Dental Assisting cohort is full. The next available start is Monday, October 12, 2026. Monday, Friday, and Saturday remain separate schedule options — ask admissions which upcoming start fits your preferred class day.",
+  ctaLabel: "Ask about Monday, October 12",
   ctaHref: "/lp/dental-assisting-enroll",
   bannerText:
-    "Next Dental Assisting start: October 12, 2026. Ask about seats →",
+    "Monday Dental Assisting class: October 12, 2026. Ask about seats →",
   // Keep the campaign through the next open start so remaining seats can convert.
   endsAt: "2026-10-12",
 } as const;
@@ -26,7 +27,8 @@ export type SitePromo = {
   storageKey: string;
 };
 
-export const activeSitePromo: SitePromo = saturdayAcademyPromo;
+export const activeSitePromo: SitePromo = nextDaStartPromo;
+export const saturdayAcademyPromo = nextDaStartPromo;
 
 export const fallbackAnnouncement =
   "Now accepting registration for 2026 Dental Assisting Training programs.";

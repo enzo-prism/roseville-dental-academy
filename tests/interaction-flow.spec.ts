@@ -2150,6 +2150,14 @@ test.describe("live-style interaction flows", () => {
 
       await gotoSettled(page, "/infection-control");
       const coursePage = page.locator('[data-rda-live-course="infection-control"]');
+      await expect(coursePage.getByRole("heading", { name: "California office compliance" })).toBeVisible();
+      await expect(
+        coursePage.getByText(
+          "California Dental Board guidance says unlicensed dental assistants must complete a board-approved 8-hour Infection Control course",
+          { exact: false },
+        ),
+      ).toBeVisible();
+      await expect(coursePage.getByText("dentists, practice owners, or office managers", { exact: false })).toBeVisible();
       await expect(coursePage.getByText("$395*.", { exact: true })).toBeVisible();
       await expect(coursePage.locator(".rda-course-policy-note")).toHaveText(
         "* All Roseville Dental Academy courses are nonrefundable.",
@@ -2370,16 +2378,18 @@ test.describe("live-style interaction flows", () => {
     });
   });
 
-  test.describe("Saturday Academy promo", () => {
-    test("banner promotes the next upcoming DA start", async ({ page }) => {
+  test.describe("Monday Dental Assisting promo", () => {
+    test("banner promotes the next upcoming Monday DA start", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
       const banner = page.locator("[data-rda-promo-banner='true']");
 
       await expect(banner).toBeVisible();
-      await expect(banner).toContainText("Next Dental Assisting start:");
+      await expect(banner).toContainText("Monday Dental Assisting class:");
       await expect(banner).toContainText("October 12, 2026");
+      await expect(banner).not.toContainText("September 12");
+      await expect(banner).not.toContainText("Saturday Academy");
       await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
       expect(activeSitePromo.ctaHref).toBe("/lp/dental-assisting-enroll");
     });
@@ -2391,16 +2401,17 @@ test.describe("live-style interaction flows", () => {
       const dialog = page.locator("[data-rda-promo-dialog='true']");
 
       await expect(dialog).toBeVisible({ timeout: 8_000 });
-      await expect(dialog.getByText("Upcoming Dental Assisting classes", { exact: true })).toBeVisible();
+      await expect(dialog.getByText("Next open Dental Assisting start", { exact: true })).toBeVisible();
       await expect(
-        dialog.getByRole("heading", { name: "Next Dental Assisting start is October 12, 2026" }),
+        dialog.getByRole("heading", { name: "Monday class starts October 12, 2026" }),
       ).toBeVisible();
-      await expect(dialog.getByText("Ask admissions which upcoming start fits your preferred class day.", { exact: false })).toBeVisible();
+      await expect(dialog.getByText("The Saturday Dental Assisting cohort is full.", { exact: false })).toBeVisible();
+      await expect(dialog.getByText("September 12")).toHaveCount(0);
 
       const cta = dialog.locator("[data-rda-promo-cta='true']");
 
       await expect(cta).toHaveAttribute("href", "/lp/dental-assisting-enroll");
-      await expect(cta).toHaveText("Ask about October 12");
+      await expect(cta).toHaveText("Ask about Monday, October 12");
 
       await dialog.getByRole("button", { name: "Dismiss class announcement" }).click();
       await expect(dialog).toHaveCount(0);

@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import type { BrowserContext, Page, TestInfo } from "@playwright/test";
 
 import frozenManifest from "@/snapshot/live/manifest.json";
-import { SATURDAY_ACADEMY_PROMO_ID } from "@/lib/site-promo";
+import { NEXT_DA_START_PROMO_ID } from "@/lib/site-promo";
 
 import fixtures from "./qa-routes.json";
 
@@ -87,7 +87,7 @@ export async function suppressSitePromo(context: BrowserContext) {
     } catch {
       // Ignore blocked storage; the dialog still has a close control.
     }
-  }, SATURDAY_ACADEMY_PROMO_ID);
+  }, NEXT_DA_START_PROMO_ID);
 }
 
 function normalizeTextValue(value: string) {

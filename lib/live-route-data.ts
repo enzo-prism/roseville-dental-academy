@@ -71,7 +71,7 @@ const ROUTE_TITLE_OVERRIDES: Record<string, string> = {
   "/bls%2Fcpr-1":
     "BLS/CPR Certification for Healthcare Providers | Roseville Dental Academy",
   "/infection-control":
-    "Dental Infection Control Course (IC189) | Roseville Dental Academy",
+    "8-Hour Infection Control Course (IC189) | Roseville Dental Academy",
   "/radiation-safety":
     "Dental Radiation Safety & X-Ray Course (X1036) | Roseville Dental Academy",
   "/coronal-polish":
@@ -94,7 +94,7 @@ const ROUTE_DESCRIPTION_OVERRIDES: Record<string, string> = {
   "/bls%2Fcpr-1":
     "Initial and renewal BLS/CPR certification for healthcare providers at Roseville Dental Academy — a 3-hour, $85 course. See the course schedule for upcoming dates.",
   "/infection-control":
-    "California Dental Board approved 8-hour Infection Control course (provider IC189) for unlicensed dental assistants at Roseville Dental Academy.",
+    "California Dental Board approved 8-hour Infection Control course (provider IC189) for unlicensed dental assistants and dental offices documenting compliance. Helps new DAs complete the required board-approved IC training before exposure to infectious materials.",
   "/radiation-safety":
     "California Dental Board approved 32-hour Radiation Safety and dental X-ray course (provider X1036) at Roseville Dental Academy. Prepare for chairside imaging in California dental offices.",
   "/coronal-polish":

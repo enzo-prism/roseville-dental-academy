@@ -27,7 +27,7 @@ const LLMS_BODY = `# Roseville Dental Academy
 - [Dental Assisting Program](${SITE_URL}/dental-assisting-program): Nine-week, 210-hour training with online lectures, chairside instruction, resume and job assistance, and a 64-hour internship for students 16 and older. Monday, Friday, and Saturday class schedules are separate options (pick one). Upcoming starts: ${getAvailableCourseDateList("dental-assisting-program")}.
 - [DA to RDA Career Journey](${SITE_URL}/journey): Guided California DA to RDA roadmap covering training, work experience, required course certificates, application, exam, and license next steps.
 - [BLS/CPR Certification](${SITE_URL}/bls-cpr-1): Three-hour Basic Life Support and CPR training for healthcare providers, $85, upcoming dates: ${getAvailableCourseDateList("bls-cpr-1")}.
-- [Infection Control (IC189)](${SITE_URL}/infection-control): California Dental Board approved 8-hour course for unlicensed dental assistants.
+- [Infection Control (IC189)](${SITE_URL}/infection-control): California Dental Board approved 8-hour course for unlicensed dental assistants and dental offices documenting IC compliance. The academy positions IC189 as a California Dental Board requirement effective January 1, 2025. Upcoming dates: ${getAvailableCourseDateList("infection-control")}.
 - [Radiation Safety / Dental X-Ray (X1036)](${SITE_URL}/radiation-safety): California Dental Board approved 32-hour course for dental personnel and dentists.
 - [Coronal Polish (CP148)](${SITE_URL}/coronal-polish): California Dental Board approved 12-hour course for eligible dental assistants.
 - [Pit & Fissure Sealants (PF186)](${SITE_URL}/sealants): California Dental Board approved 16-hour course for eligible dental assistants and RDAs.
