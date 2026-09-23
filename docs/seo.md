@@ -28,7 +28,8 @@ shared `StructuredDataScript` helper (escapes `<` as `\\u003c`).
 - **Course list** (`CourseListStructuredData`) — homepage `ItemList` linking the six course
   detail pages with unique canonical URLs.
 - **Course** (`CourseStructuredData`) — one per course path in `COURSE_SCHEMA_BY_PATH`, with
-  `hasCourseInstance` schedule dates, `offers`, and provider codes.
+  `hasCourseInstance` for upcoming *open* dates only (sold-out/`full` instances are omitted),
+  `offers`, and provider codes.
 - **FAQPage** (`FaqStructuredData` for `/faqs-1`, built from `studentFaqHighlights` so the markup mirrors the visible FAQ cards; `ResourceArticleStructuredData` for guide FAQs). Do not point it at `faqItems`, whose questions are not rendered on the live page.
 - **BreadcrumbList** (`BreadcrumbStructuredData`).
 - **Article** (`ResourceArticleStructuredData`) — one per `/resources/*` guide.

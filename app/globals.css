@@ -42,6 +42,8 @@
   /* Floating agents sit above page chrome but below menus/dialogs. */
   --rda-shell-z-fab: 900;
   --rda-shell-z-widget: 950;
+  /* Reserved band so the fixed WhatsApp FAB does not cover body copy. */
+  --rda-shell-fab-clearance: 120px;
   /* Overlay must stay UNDER sheet/menu content or the panel is blurred + untappable. */
   --rda-shell-z-dialog-overlay: 1100;
   --rda-shell-z-mobile-menu: 1200;
@@ -525,6 +527,32 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 
 .rda-live-main {
   min-height: 40vh;
+}
+
+@media (max-width: 760px) {
+  html {
+    scroll-padding-bottom: calc(var(--rda-shell-fab-clearance) + env(safe-area-inset-bottom));
+  }
+
+  /*
+   * /infection-control stacks a 4:3 hero under the logo masthead, so the intro
+   * lands in the FAB band at ~390px. Shorten the hero and pad the first column
+   * so body copy finishes above the WhatsApp button.
+   */
+  .rda-live-main[data-rda-route="infection-control"] {
+    padding-bottom: calc(var(--rda-shell-fab-clearance) + env(safe-area-inset-bottom));
+  }
+
+  [data-rda-live-course="infection-control"] > div:first-child {
+    padding-top: 16px;
+  }
+
+  [data-rda-live-course="infection-control"] [data-rda-course-hero],
+  [data-rda-live-course="infection-control"] [data-rda-course-hero] [data-slot="aspect-ratio"] {
+    aspect-ratio: 16 / 10;
+    height: auto;
+    padding-bottom: 0 !important;
+  }
 }
 
 .rda-snapshot-content {
@@ -4396,7 +4424,7 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   }
 
   .rda-live-footer {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--rda-shell-fab-clearance) + env(safe-area-inset-bottom));
   }
 }
 
