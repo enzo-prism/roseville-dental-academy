@@ -11,7 +11,7 @@ Upcoming dates:
 
 - Dental Assisting: October 12 (Monday class); November 20, 2026.
 - BLS: October 17; November 7; December 5, 2026.
-- Infection Control: October 17; November 7; November 14; December 5, 2026.
+- Infection Control: October 17; November 14; December 5, 2026.
 - Radiation Safety: November 7; December 5, 2026 (October 17, 2026 is full).
 - Coronal Polish: October 24; November 14; December 12, 2026.
 - Sealants: November 14; December 12, 2026 (October 24, 2026 is full).
@@ -27,8 +27,9 @@ September 23 sync (Dr. Narodovich, Jessica, Enzo): the October Infection
 Control class is still running and has no enrollments yet, and filling it is
 the top priority. The September 21 change that moved Infection Control off
 October 17 was reversed: October 17 is listed again, and the added November 14
-class stays, so Infection Control lists October 17, November 7, November 14,
-and December 5. The Saturday Dental Assisting class is full; the Monday
+class stays. Enzo later asked to drop Infection Control from November 7
+(that date still lists BLS and Radiation Safety), so Infection Control lists
+October 17, November 14, and December 5. The Saturday Dental Assisting class is full; the Monday
 October 12 class had 8 of 12 seats filled (4 open), so the site banner and
 popup now promote the Monday October 12 start. Seat counts are not published
 because they change daily. Jessica will share the Dental Assisting start

@@ -18,15 +18,18 @@ test("reviewed schedule excludes elapsed dates without inventing sold-out histor
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-12-06")).toBeUndefined();
   expect(getAvailableCourseDates("infection-control")).toEqual([
     "October 17, 2026",
-    "November 7, 2026",
     "November 14, 2026",
     "December 5, 2026",
   ]);
   expect(getNextAvailableCourseDate("infection-control")).toBe("October 17, 2026");
-  expect(getNextAvailableCourseDate("infection-control", "2026-10-18")).toBe("November 7, 2026");
+  expect(getNextAvailableCourseDate("infection-control", "2026-10-18")).toBe("November 14, 2026");
   expect(getNextAvailableCourseDate("infection-control", "2026-12-06")).toBeUndefined();
   expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-10-17")?.status).toBe("available");
+  expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-11-07")).toBeUndefined();
   expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-11-14")?.status).toBe("available");
+  expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-12-05")?.status).toBe("available");
+  expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-11-07")?.status).toBe("available");
+  expect(getCourseSchedule("radiation-safety").find((entry) => entry.isoDate === "2026-11-07")?.status).toBe("available");
   expect(getAvailableCourseDates("radiation-safety")).toEqual(["November 7, 2026", "December 5, 2026"]);
   expect(getNextAvailableCourseDate("radiation-safety", "2026-10-18")).toBe("November 7, 2026");
   expect(getNextAvailableCourseDate("radiation-safety", "2026-12-06")).toBeUndefined();
@@ -61,6 +64,20 @@ for (const width of [390, 1280]) {
     await expect(page.getByText("Next open date: October 24, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: November 14, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: October 12, 2026", { exact: true })).toHaveCount(1);
+    const novemberSeven = schedule.locator(".rda-home-schedule-date-row").filter({
+      has: page.locator('time[datetime="2026-11-07"]'),
+    });
+    await expect(novemberSeven.getByRole("link", { name: "BLS / CPR" })).toBeVisible();
+    await expect(novemberSeven.getByRole("link", { name: "X-rays / Radiation Safety" })).toBeVisible();
+    await expect(novemberSeven.getByRole("link", { name: "Infection Control" })).toHaveCount(0);
+    const novemberFourteen = schedule.locator(".rda-home-schedule-date-row").filter({
+      has: page.locator('time[datetime="2026-11-14"]'),
+    });
+    await expect(novemberFourteen.getByRole("link", { name: "Infection Control" })).toBeVisible();
+    const decemberFive = schedule.locator(".rda-home-schedule-date-row").filter({
+      has: page.locator('time[datetime="2026-12-05"]'),
+    });
+    await expect(decemberFive.getByRole("link", { name: "Infection Control" })).toBeVisible();
     expect(await page.locator("body").innerText()).not.toMatch(/(?:June|July|August|September) \d/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   });
@@ -148,10 +165,24 @@ test("course JSON-LD omits sold-out October instances", async ({ page }) => {
   ) as { hasCourseInstance?: Array<{ startDate?: string }> };
   expect((infectionSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).toEqual([
     "2026-10-17",
-    "2026-11-07",
     "2026-11-14",
     "2026-12-05",
   ]);
+  expect((infectionSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).not.toContain("2026-11-07");
+});
+
+test("infection-control page and FAQs omit November 7 while keeping later dates", async ({ page }) => {
+  await page.goto("/infection-control");
+  const upcomingDates = page.locator('[data-rda-live-course="infection-control"] .rda-course-date');
+  await expect(upcomingDates.getByText("October 17, 2026")).toHaveCount(1);
+  await expect(upcomingDates.getByText("November 7, 2026")).toHaveCount(0);
+  await expect(upcomingDates.getByText("November 14, 2026")).toHaveCount(1);
+  await expect(upcomingDates.getByText("December 5, 2026")).toHaveCount(1);
+
+  await page.goto("/faqs-1");
+  const faqBody = await page.locator("body").innerText();
+  expect(faqBody).toContain("Infection Control: October 17, 2026; November 14, 2026; December 5, 2026");
+  expect(faqBody).not.toContain("Infection Control: October 17, 2026; November 7, 2026");
 });
 
 test("AI discovery dates match the reviewed course schedule", async ({ request }) => {

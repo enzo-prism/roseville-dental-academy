@@ -123,7 +123,7 @@ const augustOneCourses = [
 
 // September 5, 2026: BLS, X-rays / Radiation Safety, and Infection Control
 // are all fully booked. This date keeps its own list instead of the shared
-// `blsXrayInfectionCourses` reference used by Nov 7 and Dec 5.
+// `blsXrayInfectionCourses` reference used by December 5.
 const septemberFiveCourses = [
   course("bls-cpr-1", "full"),
   course("radiation-safety", "full"),
@@ -134,7 +134,7 @@ const septemberFiveCourses = [
 // Infection Control still have seats (September 23 sync: the October
 // Infection Control class is open and the top enrollment priority), so this
 // date needs its own list instead of the shared `blsXrayInfectionCourses`
-// reference used by Nov 7 and Dec 5.
+// reference used by December 5.
 const octoberSeventeenCourses = [
   course("bls-cpr-1"),
   course("radiation-safety", "full"),
@@ -165,9 +165,17 @@ const octoberTwentyFourCourses = [
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
+// November 7, 2026: BLS and X-rays / Radiation Safety only. Infection Control
+// is not offered on this date, so it cannot reuse `blsXrayInfectionCourses`
+// (still used by December 5).
+const novemberSevenCourses = [
+  course("bls-cpr-1"),
+  course("radiation-safety"),
+] satisfies CourseScheduleCourse[];
+
 // November 14, 2026: Coronal Polish and Pit and Fissure Sealants plus an
-// added Infection Control class (alongside October 17, November 7, and
-// December 5), so this date cannot reuse `coronalSealantsCourses`.
+// added Infection Control class (alongside October 17 and December 5), so
+// this date cannot reuse `coronalSealantsCourses`.
 const novemberFourteenCourses = [
   course("coronal-polish"),
   course("sealants"),
@@ -300,7 +308,7 @@ export const courseScheduleMonths = [
         date: "November 7, 2026",
         day: "November 7",
         isoDate: "2026-11-07",
-        courses: blsXrayInfectionCourses,
+        courses: novemberSevenCourses,
       },
       {
         date: "November 14, 2026",
