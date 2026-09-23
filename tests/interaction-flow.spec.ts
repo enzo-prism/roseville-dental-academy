@@ -2123,8 +2123,8 @@ test.describe("live-style interaction flows", () => {
       await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: September 5, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: October 17, 2026")).toHaveCount(1);
-      await expect(form.getByText("Next open date: November 7, 2026")).toHaveCount(2);
+      await expect(form.getByText("Next open date: October 17, 2026")).toHaveCount(2);
+      await expect(form.getByText("Next open date: November 7, 2026")).toHaveCount(1);
       await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(0);
       await expect(form.getByText("Next open date: October 24, 2026")).toHaveCount(1);
       await expect(form.getByText("Next open date: November 14, 2026")).toHaveCount(1);
@@ -2370,7 +2370,7 @@ test.describe("live-style interaction flows", () => {
     });
   });
 
-  test.describe("Saturday Academy promo", () => {
+  test.describe("Dental Assisting promo", () => {
     test("banner promotes the next upcoming DA start", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
@@ -2379,7 +2379,7 @@ test.describe("live-style interaction flows", () => {
 
       await expect(banner).toBeVisible();
       await expect(banner).toContainText("Next Dental Assisting start:");
-      await expect(banner).toContainText("October 12, 2026");
+      await expect(banner).toContainText("Monday, October 12.");
       await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
       expect(activeSitePromo.ctaHref).toBe("/lp/dental-assisting-enroll");
     });
@@ -2391,11 +2391,11 @@ test.describe("live-style interaction flows", () => {
       const dialog = page.locator("[data-rda-promo-dialog='true']");
 
       await expect(dialog).toBeVisible({ timeout: 8_000 });
-      await expect(dialog.getByText("Upcoming Dental Assisting classes", { exact: true })).toBeVisible();
+      await expect(dialog.getByText("Monday Dental Assisting class", { exact: true })).toBeVisible();
       await expect(
-        dialog.getByRole("heading", { name: "Next Dental Assisting start is October 12, 2026" }),
+        dialog.getByRole("heading", { name: "Next Dental Assisting start is Monday, October 12, 2026" }),
       ).toBeVisible();
-      await expect(dialog.getByText("Ask admissions which upcoming start fits your preferred class day.", { exact: false })).toBeVisible();
+      await expect(dialog.getByText("Seats are still open in the Monday class.", { exact: false })).toBeVisible();
 
       const cta = dialog.locator("[data-rda-promo-cta='true']");
 

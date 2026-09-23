@@ -32,7 +32,7 @@ export const courseScheduleNote =
 // One reviewed cutoff for static HTML, metadata, and client hydration. Advance
 // this during each schedule review and rebuild; do not use separate wall clocks
 // in client/server modules. Elapsed dates are not evidence a class sold out.
-export const COURSE_SCHEDULE_REVIEWED_ON = "2026-09-13";
+export const COURSE_SCHEDULE_REVIEWED_ON = "2026-09-23";
 
 export const courseScheduleCourseDetails: Record<
   CourseScheduleId,
@@ -130,12 +130,15 @@ const septemberFiveCourses = [
   course("infection-control", "full"),
 ] satisfies CourseScheduleCourse[];
 
-// October 17, 2026: X-rays / Radiation Safety is fully booked; BLS still
-// has seats. Infection Control uses November 14 instead of this shared
-// BLS / X-ray date, so this list cannot reuse `blsXrayInfectionCourses`.
+// October 17, 2026: X-rays / Radiation Safety is fully booked; BLS and
+// Infection Control still have seats (September 23 sync: the October
+// Infection Control class is open and the top enrollment priority), so this
+// date needs its own list instead of the shared `blsXrayInfectionCourses`
+// reference used by Nov 7 and Dec 5.
 const octoberSeventeenCourses = [
   course("bls-cpr-1"),
   course("radiation-safety", "full"),
+  course("infection-control"),
 ] satisfies CourseScheduleCourse[];
 
 // August 8, 2026: Coronal Polish and Pit and Fissure Sealants are both fully booked.
@@ -162,9 +165,9 @@ const octoberTwentyFourCourses = [
   course("sealants", "full"),
 ] satisfies CourseScheduleCourse[];
 
-// November 14, 2026: Coronal Polish and Pit and Fissure Sealants plus
-// Infection Control. Infection Control moved here from October 17, so this
-// date cannot reuse `coronalSealantsCourses`.
+// November 14, 2026: Coronal Polish and Pit and Fissure Sealants plus an
+// added Infection Control class (alongside October 17, November 7, and
+// December 5), so this date cannot reuse `coronalSealantsCourses`.
 const novemberFourteenCourses = [
   course("coronal-polish"),
   course("sealants"),
