@@ -1,8 +1,8 @@
 import { getUpcomingCourseSchedule, type CourseScheduleId } from "@/lib/course-schedule";
 import {
-  faqItems,
   siteContact,
   socialLinks,
+  studentFaqHighlights,
 } from "@/lib/site-data";
 import { getSiteUrl } from "@/lib/site-config";
 import type { ResourceArticle } from "@/lib/resource-articles";
@@ -279,7 +279,8 @@ export function FaqStructuredData() {
   const data = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faqItems.map((item) => ({
+    // Mirror the FAQ cards visible on /faqs-1 so the markup matches the page.
+    mainEntity: studentFaqHighlights.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {

@@ -2,6 +2,11 @@ import {
   CERTIFICATE_EXPIRATION_FAQ_QUESTION,
   getCertificateExpirationAnswer,
 } from "@/lib/certificate-expiration";
+import { courseScheduleNote, getAvailableCourseDateList } from "@/lib/course-schedule";
+import {
+  INFECTION_CONTROL_EMPLOYER_FAQ_ANSWER,
+  INFECTION_CONTROL_EMPLOYER_FAQ_QUESTION,
+} from "@/lib/infection-control-requirement";
 import type { LiveRoute } from "@/lib/live-route-data";
 import { SITE_NAME } from "@/lib/site-metadata";
 
@@ -116,7 +121,7 @@ export const resourceArticles: ResourceArticle[] = [
     intro:
       "California is one of the few states that regulates dental assisting in detail, so knowing the difference between an unlicensed dental assistant, a Registered Dental Assistant (RDA), and the certificates each role needs saves you time and money. This guide walks through how most people start a dental assisting career in California and where hands-on training fits in.",
     keyTakeaways: [
-      "You can start working as an unlicensed dental assistant in California without a state license, but you must complete a Dental Board approved 8-hour Infection Control course and a Dental Practice Act course before or shortly after you begin patient care.",
+      "You can start working as an unlicensed dental assistant in California without a state license, but you must complete a Dental Board approved 8-hour Infection Control course before any duties that could expose you to blood, saliva, or other potentially infectious materials, and you also need a Dental Practice Act course.",
       "A career-focused training program shortens the learning curve by teaching chairside skills, x-ray safety, and workflow before you ever apply for a job.",
       "Becoming a Registered Dental Assistant (RDA) is a separate, later step that requires qualifying work experience, specific course certificates, and a state exam.",
     ],
@@ -550,6 +555,117 @@ export const resourceArticles: ResourceArticle[] = [
       "how-to-become-a-dental-assistant-in-california",
       "rda-vs-dental-assistant-california",
       "dental-assisting-school-cost-california",
+    ],
+  },
+  {
+    slug: "california-8-hour-infection-control-requirement",
+    title:
+      "California's 8-Hour Infection Control Requirement for Dental Assistants (2026 Office Guide)",
+    h1: "California's 8-Hour Infection Control Requirement for Dental Assistants",
+    description:
+      "What dentists and office managers need to know about California's 8-hour Infection Control requirement for unlicensed dental assistants: who it covers, when it applies, and how to check your team.",
+    category: "Compliance Guide",
+    readMinutes: 5,
+    datePublished: "2026-09-23",
+    dateModified: "2026-09-23",
+    heroImage: {
+      src: "/assets/live/courses/rda-june-2026/infection-control-operatory.jpg",
+      alt: "Roseville Dental Academy student practicing infection control in a dental operatory.",
+    },
+    intro:
+      "Since January 1, 2025, California has required every unlicensed dental assistant to complete a Dental Board approved 8-hour Infection Control course before doing any work that could expose them to blood, saliva, or other potentially infectious materials. The rule changed an older one-year grace period, and it puts responsibility on the employer. This guide explains what changed and how a dental office can check that its team is compliant.",
+    keyTakeaways: [
+      "Since January 1, 2025, unlicensed dental assistants must complete a Board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials.",
+      "The requirement applies regardless of hire date. It replaced the earlier rule that allowed the course to be completed within the first year of employment.",
+      "The employer is responsible for making sure each applicable dental assistant has completed the course.",
+      "The 2-hour Dental Practice Act course is a separate requirement and does not replace the 8-hour Infection Control course.",
+    ],
+    sections: [
+      {
+        id: "what-changed",
+        heading: "What changed on January 1, 2025",
+        paragraphs: [
+          "The Dental Board of California's sunset bill, SB 1453 (Chapter 483, Statutes of 2024), updated Business and Professions Code section 1750(c). Before 2025, an unlicensed dental assistant could complete the Board-approved 8-hour Infection Control course within one year of starting employment.",
+          "Under the current law, the course has to come first: an unlicensed dental assistant must complete it before performing any basic supportive dental procedure that involves potential exposure to blood, saliva, or other potentially infectious materials.",
+        ],
+      },
+      {
+        id: "who-it-applies-to",
+        heading: "Who the requirement applies to",
+        paragraphs: [
+          "The requirement covers every unlicensed dental assistant, whether they were hired this week or years ago. A long-time assistant who never completed a Board-approved Infection Control course is not grandfathered in.",
+          "Dental assistants who already have proof of completing a Board-approved Infection Control course do not need to retake it.",
+        ],
+      },
+      {
+        id: "employer-responsibility",
+        heading: "The employer is responsible",
+        paragraphs: [
+          "California law places responsibility on the employer to make sure each applicable dental assistant has completed the course. For most offices, that means the dentist-owner and the office manager.",
+          "A quick personnel-file review is the simplest way to confirm compliance:",
+        ],
+        bullets: [
+          "List every unlicensed dental assistant on the team, including recent hires and part-time staff.",
+          "Look for a completion certificate from a Dental Board approved 8-hour Infection Control course in each file.",
+          "Make sure the certificate is for the 8-hour Infection Control course, not the 2-hour Dental Practice Act course.",
+          "Schedule the course for anyone without proof of completion before they perform duties with potential exposure to blood, saliva, or other potentially infectious materials.",
+          "Keep a copy of each certificate on file so it is easy to show later.",
+        ],
+      },
+      {
+        id: "infection-control-vs-dental-practice-act",
+        heading: "8-hour Infection Control vs. the 2-hour Dental Practice Act course",
+        paragraphs: [
+          "Offices sometimes confuse the two courses because both are required for unlicensed dental assistants. The 2-hour Dental Practice Act course covers California dental law. The 8-hour Infection Control course covers infection prevention and is the one required before exposure to potentially infectious materials. One does not satisfy the other.",
+        ],
+      },
+      {
+        id: "taking-the-course",
+        heading: `Taking the 8-hour course at ${SITE_NAME}`,
+        paragraphs: [
+          `${SITE_NAME}'s Infection Control course is listed by the Dental Board under provider number IC189. It runs 8 hours in Roseville and combines didactic, laboratory, and clinical instruction with precourse work, competencies, and a written exam. Students need current BLS certification through AHA or ARC plus a 2-hour Dental Practice Act certification before class.`,
+          `Upcoming Infection Control dates: ${getAvailableCourseDateList("infection-control")}. ${courseScheduleNote} Offices can register one new hire or a whole team by calling 916-888-9821.`,
+        ],
+      },
+      {
+        id: "verify-with-the-board",
+        heading: "Verify current requirements with the Dental Board",
+        paragraphs: [
+          "Requirements can change. Confirm the current rules and the list of approved Infection Control courses directly with the Dental Board of California at dbc.ca.gov before relying on this guide for a compliance decision.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "Do dental assistants hired before 2025 need the 8-hour Infection Control course?",
+        answer:
+          "Yes, unless they already have proof of completing a Board-approved Infection Control course. Since January 1, 2025, the requirement applies to every unlicensed dental assistant regardless of hire date.",
+      },
+      {
+        question: "Can a new dental assistant start work before finishing the Infection Control course?",
+        answer:
+          "Not in duties that involve potential exposure to blood, saliva, or other potentially infectious materials. Since January 1, 2025, the Board-approved 8-hour course must be completed before an unlicensed dental assistant performs those basic supportive procedures.",
+      },
+      {
+        question: INFECTION_CONTROL_EMPLOYER_FAQ_QUESTION,
+        answer: INFECTION_CONTROL_EMPLOYER_FAQ_ANSWER,
+      },
+      {
+        question: "Does the 2-hour Dental Practice Act course count toward the Infection Control requirement?",
+        answer:
+          "No. The 2-hour Dental Practice Act course is a separate requirement. Unlicensed dental assistants need the Board-approved 8-hour Infection Control course as well.",
+      },
+      {
+        question: "Where can dental assistants near Sacramento take the 8-hour Infection Control course?",
+        answer:
+          "Roseville Dental Academy offers the Dental Board approved 8-hour Infection Control course (provider IC189) in Roseville, serving offices across the Sacramento region. Call 916-888-9821 to confirm the next open date and register.",
+      },
+    ],
+    relatedCourses: [INFECTION_CONTROL_COURSE, BLS_COURSE, DA_PROGRAM_COURSE],
+    relatedSlugs: [
+      "how-to-become-a-dental-assistant-in-california",
+      "rda-vs-dental-assistant-california",
+      "how-long-does-it-take-to-become-a-dental-assistant",
     ],
   },
 ];

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { CalendarDays } from "lucide-react";
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
+import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -475,6 +476,9 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               />
             ))}
           </div>
+          {course.id === "infection-control" ? (
+            <InfectionControlRequirementNotice className="mt-6" headingLevel="h2" />
+          ) : null}
           {showsCertificateExpiration(course.id) ? (
             <CertificateExpirationNotice className="mt-6" headingLevel="h2" />
           ) : null}
