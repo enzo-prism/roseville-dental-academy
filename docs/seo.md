@@ -29,7 +29,7 @@ shared `StructuredDataScript` helper (escapes `<` as `\\u003c`).
   detail pages with unique canonical URLs.
 - **Course** (`CourseStructuredData`) — one per course path in `COURSE_SCHEMA_BY_PATH`, with
   `hasCourseInstance` schedule dates, `offers`, and provider codes.
-- **FAQPage** (`FaqStructuredData` for `/faqs-1`; `ResourceArticleStructuredData` for guide FAQs).
+- **FAQPage** (`FaqStructuredData` for `/faqs-1`, built from `studentFaqHighlights` so the markup mirrors the visible FAQ cards; `ResourceArticleStructuredData` for guide FAQs). Do not point it at `faqItems`, whose questions are not rendered on the live page.
 - **BreadcrumbList** (`BreadcrumbStructuredData`).
 - **Article** (`ResourceArticleStructuredData`) — one per `/resources/*` guide.
 
@@ -65,7 +65,8 @@ Encoded-slash routes (e.g. `/bls%2Fcpr-1`) emit their clean alias (`/bls-cpr-1`)
 ## Content hub (`/resources`)
 
 The content hub targets top-of-funnel informational and local intent (how to become a dental
-assistant in California, cost, timeline, RDA vs DA, Sacramento-area pay) and links down to the
+assistant in California, cost, timeline, RDA vs DA, Sacramento-area pay, and the 8-hour Infection
+Control requirement for dental offices) and links down to the
 commercial course pages. It is a data-driven engine modeled on `lib/journey-roadmap-data.ts`.
 
 **Files:**

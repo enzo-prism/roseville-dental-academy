@@ -2119,6 +2119,78 @@ test("Dental Board certificate expiration copy is visible to students and applic
   expect(mismatches).toEqual([]);
 });
 
+test("8-hour Infection Control requirement copy renders where offices search for it", async ({ page, request }) => {
+  const guidePath = "/resources/california-8-hour-infection-control-requirement";
+  const expectations: Array<{ phrases: string[]; route: string }> = [
+    {
+      route: "/infection-control",
+      phrases: [
+        "California's 8-Hour Infection Control Requirement",
+        "Since January 1, 2025, California law (Business and Professions Code section 1750(c))",
+        "regardless of hire date",
+        "The employer is responsible for making sure each applicable dental assistant has completed the course.",
+        "does not replace the 8-hour Infection Control course",
+      ],
+    },
+    {
+      route: "/faqs-1",
+      phrases: [
+        "Who is responsible for making sure dental assistants complete the 8-hour Infection Control course?",
+      ],
+    },
+    {
+      route: guidePath,
+      phrases: [
+        "California's 8-Hour Infection Control Requirement for Dental Assistants",
+        "SB 1453",
+        "Upcoming Infection Control dates:",
+      ],
+    },
+  ];
+  const mismatches: string[] = [];
+
+  for (const { phrases, route } of expectations) {
+    const snapshot = await captureSnapshot(page, `${localOrigin}${route}`, {
+      viewport: { width: 1280, height: 900 },
+    });
+
+    if (snapshot.status !== 200) {
+      mismatches.push(`${route} returned ${snapshot.status}`);
+    }
+
+    for (const phrase of phrases) {
+      if (!snapshot.bodyText.includes(phrase)) {
+        mismatches.push(`${route} missing Infection Control requirement phrase: ${phrase}`);
+      }
+    }
+  }
+
+  // FAQPage markup on /faqs-1 must mirror the visible FAQ cards.
+  await page.goto(`${localOrigin}/faqs-1`);
+  const faqSchema = JSON.parse(
+    (await page.locator("script#rda-ld-faq").textContent()) ?? "{}",
+  ) as { mainEntity?: Array<{ name: string }> };
+  const visibleQuestions = await page
+    .locator(".rda-student-faq-card [data-slot='card-title']")
+    .allTextContents();
+
+  expect(visibleQuestions.length).toBeGreaterThan(0);
+  expect((faqSchema.mainEntity ?? []).map((item) => item.name)).toEqual(visibleQuestions);
+
+  const sitemap = await (await request.get(`${localOrigin}/sitemap.website.xml`)).text();
+  const llms = await (await request.get(`${localOrigin}/llms.txt`)).text();
+
+  if (!sitemap.includes(guidePath)) {
+    mismatches.push(`sitemap missing ${guidePath}`);
+  }
+
+  if (!llms.includes(guidePath)) {
+    mismatches.push(`llms.txt missing ${guidePath}`);
+  }
+
+  expect(mismatches).toEqual([]);
+});
+
 test("photos page renders the full live-site gallery inventory", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${localOrigin}/photos`, { waitUntil: "domcontentloaded", timeout: 120_000 });

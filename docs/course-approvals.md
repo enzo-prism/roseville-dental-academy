@@ -26,6 +26,19 @@ Applicant-facing certificate timing copy lives in `lib/certificate-expiration.ts
 - Pit and Fissure Sealants: use provider number `PF186`.
 - BLS/CPR should be described through the current course data in `lib/site-data.ts`, not by inventing a Dental Board provider number.
 
+## 8-Hour Infection Control Requirement
+
+Requirement copy lives in `lib/infection-control-requirement.ts`. It renders as the notice on `/infection-control`, the employer FAQ on `/faqs-1`, the `/resources/california-8-hour-infection-control-requirement` guide, and the Infection Control line in `llms.txt`.
+
+Sources: SB 1453 (Ashby, Chapter 483, Statutes of 2024) amended Business and Professions Code section 1750(c) effective January 1, 2025. The Dental Board of California and the CDA ([new timeline for the eight-hour infection control course](https://www.cda.org/newsroom/dental-practice-licensing/new-timeline-for-completing-required-eight-hour-infection-control-course-effective-jan-1-2/)) summarize it this way:
+
+- Every unlicensed dental assistant, regardless of hire date, must complete a Board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials.
+- This replaced the earlier allowance to complete the course within one year of employment.
+- The employer is responsible for ensuring completion.
+- Assistants with proof of a completed Board-approved Infection Control course do not retake it.
+
+Do not describe the course as something to finish "shortly after" starting patient care, and do not present the 2-hour Dental Practice Act course as satisfying this requirement.
+
 ## Prerequisite Copy Rules
 
 - Infection Control may be positioned for new hires and dental offices, but copy should avoid promising employment eligibility by itself.

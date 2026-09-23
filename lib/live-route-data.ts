@@ -94,7 +94,7 @@ const ROUTE_DESCRIPTION_OVERRIDES: Record<string, string> = {
   "/bls%2Fcpr-1":
     "Initial and renewal BLS/CPR certification for healthcare providers at Roseville Dental Academy — a 3-hour, $85 course. See the course schedule for upcoming dates.",
   "/infection-control":
-    "California Dental Board approved 8-hour Infection Control course (provider IC189) for unlicensed dental assistants at Roseville Dental Academy.",
+    "Board-approved 8-hour Infection Control course (provider IC189) in Roseville, CA, required for unlicensed dental assistants since January 1, 2025.",
   "/radiation-safety":
     "California Dental Board approved 32-hour Radiation Safety and dental X-ray course (provider X1036) at Roseville Dental Academy. Prepare for chairside imaging in California dental offices.",
   "/coronal-polish":
