@@ -139,6 +139,19 @@ test("course JSON-LD omits sold-out October instances", async ({ page }) => {
 
   expect(sealantsDates).toEqual(["2026-11-14", "2026-12-12"]);
   expect(sealantsDates).not.toContain("2026-10-24");
+
+  // Open dates on a shared day stay listed: Infection Control keeps October 17
+  // even though X-rays / Radiation Safety is full that day.
+  await page.goto("/infection-control");
+  const infectionSchema = JSON.parse(
+    (await page.locator("#rda-ld-course-infection-control").textContent()) ?? "{}",
+  ) as { hasCourseInstance?: Array<{ startDate?: string }> };
+  expect((infectionSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).toEqual([
+    "2026-10-17",
+    "2026-11-07",
+    "2026-11-14",
+    "2026-12-05",
+  ]);
 });
 
 test("AI discovery dates match the reviewed course schedule", async ({ request }) => {
