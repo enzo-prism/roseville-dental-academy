@@ -279,12 +279,19 @@ export function CourseStructuredData({ path }: { path: string }) {
   return <StructuredDataScript id={`rda-ld-course-${path.slice(1)}`} data={data} />;
 }
 
-export function FaqStructuredData() {
+export function FaqStructuredData({
+  id = "rda-ld-faq",
+  items = studentFaqHighlights,
+}: {
+  id?: string;
+  items?: readonly { answer: string; question: string }[];
+} = {}) {
   const data = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    // Mirror the FAQ cards visible on /faqs-1 so the markup matches the page.
-    mainEntity: studentFaqHighlights.map((item) => ({
+    // Mirror the FAQ items visible on the page (the /faqs-1 cards by default)
+    // so the markup always matches what visitors can read.
+    mainEntity: items.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {
@@ -294,7 +301,7 @@ export function FaqStructuredData() {
     })),
   } satisfies JsonLdValue;
 
-  return <StructuredDataScript id="rda-ld-faq" data={data} />;
+  return <StructuredDataScript id={id} data={data} />;
 }
 
 export function BreadcrumbStructuredData({

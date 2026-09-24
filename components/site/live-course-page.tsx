@@ -1,14 +1,17 @@
 import type { ReactNode } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Phone } from "lucide-react";
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
+import { CourseFactStrip } from "@/components/site/course-fact-strip";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
+import { MobileCourseActionBar } from "@/components/site/mobile-course-action-bar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { showsCertificateExpiration } from "@/lib/certificate-expiration";
+import { getCertificationCourseFacts } from "@/lib/course-facts";
 import { courseScheduleNote, formatCourseDateLabel, getUpcomingCourseSchedule } from "@/lib/course-schedule";
 import type {
   LiveCourseContent,
@@ -18,6 +21,7 @@ import type {
 import {
   courseReviewHighlights,
   googleReviewsUrl,
+  siteContact,
   type CourseReviewGroup,
 } from "@/lib/site-data";
 
@@ -26,7 +30,7 @@ type LiveCourseSection = {
   heading: string;
 };
 
-const COURSE_NONREFUNDABLE_NOTE =
+export const COURSE_NONREFUNDABLE_NOTE =
   "All Roseville Dental Academy courses are nonrefundable.";
 
 function addPricePolicyMarker(body: string) {
@@ -287,7 +291,7 @@ function CourseSectionCard({
   );
 }
 
-function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
+export function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
   const scheduleEntries = getUpcomingCourseSchedule(course.id);
 
   if (!scheduleEntries.length) {
@@ -340,7 +344,7 @@ function CourseReviewRating({ rating }: { rating: number }) {
   );
 }
 
-function CourseReviews({
+export function CourseReviews({
   course,
   group,
 }: {
@@ -396,44 +400,78 @@ function CourseReviews({
   );
 }
 
+export function CourseHeroMosaic({
+  className = "",
+  course,
+}: {
+  className?: string;
+  course: LiveCourseContent;
+}) {
+  const supportingMedia = (course.supportingMedia ?? course.supportingImages ?? []).slice(0, 2);
+
+  return (
+    <div
+      className={`overflow-hidden rounded-lg bg-card shadow-sm ring-1 ring-foreground/10 ${className}`}
+      data-rda-course-hero="true"
+    >
+      {supportingMedia.length ? (
+        <div className="grid gap-1 bg-muted max-lg:grid-cols-2 lg:aspect-[4/3] lg:grid-cols-[minmax(0,1.42fr)_minmax(0,0.82fr)]">
+          <div className="relative min-w-0 max-lg:col-span-2 max-lg:aspect-[16/10] lg:min-h-0">
+            <CourseHeroMedia loading="eager" media={course.image} />
+          </div>
+          <div className="grid min-h-0 min-w-0 gap-1 max-lg:col-span-2 max-lg:grid-cols-2 lg:grid-cols-1 lg:grid-rows-[repeat(auto-fit,minmax(0,1fr))]">
+            {supportingMedia.map((media) => (
+              <div
+                className="relative min-h-0 min-w-0 max-lg:aspect-[4/3]"
+                key={media.src}
+              >
+                <CourseHeroMedia media={media} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <AspectRatio ratio={4 / 3}>
+          <CourseHeroMedia loading="eager" media={course.image} />
+        </AspectRatio>
+      )}
+    </div>
+  );
+}
+
+export function CourseHeroActions({
+  primaryLabel = "Request a seat",
+}: {
+  primaryLabel?: string;
+}) {
+  return (
+    <div className="rda-course-hero-actions" data-rda-hero-actions="true">
+      <Button asChild size="lg">
+        <a data-rda-course-cta="request" href="#quick-sign-up">
+          {primaryLabel}
+        </a>
+      </Button>
+      <Button asChild size="lg" variant="outline">
+        <a data-rda-course-cta="call" href={`tel:${siteContact.phone.replace(/-/g, "")}`}>
+          <Phone aria-hidden="true" />
+          Call {siteContact.phone}
+        </a>
+      </Button>
+    </div>
+  );
+}
+
 export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   const [hero, ...sections] = splitCourseSections(course);
   const featureCount = course.variant === "program" ? 2 : 1;
   const featureSections = sections.slice(0, featureCount);
   const detailSections = sections.slice(featureCount);
-  const supportingMedia = (course.supportingMedia ?? course.supportingImages ?? []).slice(0, 2);
   const reviewGroup = courseReviewHighlights[course.id];
+  const facts = getCertificationCourseFacts(course.id);
 
   return (
     <section className="bg-background" data-rda-live-course={course.id}>
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.78fr)] lg:items-start lg:px-8 lg:py-16">
-        <div
-          className="overflow-hidden rounded-lg bg-card shadow-sm ring-1 ring-foreground/10 lg:order-2"
-          data-rda-course-hero="true"
-        >
-          {supportingMedia.length ? (
-            <div className="grid gap-1 bg-muted max-lg:grid-cols-2 lg:aspect-[4/3] lg:grid-cols-[minmax(0,1.42fr)_minmax(0,0.82fr)]">
-              <div className="relative min-w-0 max-lg:col-span-2 max-lg:aspect-[16/10] lg:min-h-0">
-                <CourseHeroMedia loading="eager" media={course.image} />
-              </div>
-              <div className="grid min-h-0 min-w-0 gap-1 max-lg:col-span-2 max-lg:grid-cols-2 lg:grid-cols-1 lg:grid-rows-[repeat(auto-fit,minmax(0,1fr))]">
-                {supportingMedia.map((media) => (
-                  <div
-                    className="relative min-h-0 min-w-0 max-lg:aspect-[4/3]"
-                    key={media.src}
-                  >
-                    <CourseHeroMedia media={media} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <AspectRatio ratio={4 / 3}>
-              <CourseHeroMedia loading="eager" media={course.image} />
-            </AspectRatio>
-          )}
-        </div>
-
         <div className="space-y-6 lg:order-1">
           {hero ? (
             <div className="space-y-5">
@@ -447,8 +485,17 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
                   </CardContent>
                 </Card>
               ) : null}
+              {facts ? (
+                <CourseFactStrip facts={facts} label={`${hero.heading} at a glance`} />
+              ) : null}
+              <CourseHeroActions />
             </div>
           ) : null}
+        </div>
+
+        <CourseHeroMosaic className="lg:order-2 lg:row-span-2" course={course} />
+
+        <div className="space-y-6 lg:order-3">
           <CourseSchedulePanel course={course} />
           <div className="grid gap-4">
             {featureSections.map((section) => (
@@ -488,6 +535,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
         </div>
       ) : null}
       {reviewGroup ? <CourseReviews course={course} group={reviewGroup} /> : null}
+      <MobileCourseActionBar courseLabel={hero?.heading ?? course.id} />
     </section>
   );
 }

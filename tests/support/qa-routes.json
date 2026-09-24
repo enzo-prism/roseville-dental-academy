@@ -30,7 +30,7 @@
       "localPath": "/dental-assisting-program",
       "expectedStatus": 200,
       "expectedTitle": "Dental Assisting Program | Roseville Dental Academy",
-      "smokeText": "DENTAL ASSISTING TRAINING COURSE"
+      "smokeText": "Tuition and payment plan"
     },
     {
       "label": "journey",

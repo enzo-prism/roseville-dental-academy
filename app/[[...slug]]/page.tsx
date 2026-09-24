@@ -8,10 +8,12 @@ import {
   CourseStructuredData,
   FaqStructuredData,
 } from "@/components/site/structured-data";
+import { DentalAssistingProgramPage } from "@/components/site/dental-assisting-program-page";
 import { HomepageSignupPortal } from "@/components/site/homepage-signup-portal";
 import { LiveCoursePage } from "@/components/site/live-course-page";
 import { LiveShell } from "@/components/site/live-shell";
 import { LiveStableWidgets } from "@/components/site/live-stable-widgets";
+import { dentalAssistingFaqs } from "@/lib/dental-assisting-program";
 import { getLiveCourseContent } from "@/lib/live-course-content";
 import {
   HOMEPAGE_HERO_LCP_IMAGE,
@@ -84,8 +86,15 @@ export default async function LiveRoutePage({ params }: PageProps) {
       <LiveShell route={route}>
         <CourseStructuredData path={canonicalPath} />
         <BreadcrumbStructuredData items={breadcrumbItems} />
+        {course.id === "dental-assisting-program" ? (
+          <FaqStructuredData id="rda-ld-faq-dental-assisting" items={dentalAssistingFaqs} />
+        ) : null}
         <main className="rda-live-main" data-rda-route={route.id} id="rda-main-content">
-          <LiveCoursePage course={course} />
+          {course.id === "dental-assisting-program" ? (
+            <DentalAssistingProgramPage course={course} />
+          ) : (
+            <LiveCoursePage course={course} />
+          )}
           <LiveStableWidgets route={route} />
         </main>
       </LiveShell>

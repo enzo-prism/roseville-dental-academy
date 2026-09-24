@@ -19,9 +19,11 @@ import { Separator } from "@/components/ui/separator";
 import type { LiveRoute } from "@/lib/live-route-data";
 import {
   boardApprovalHighlights,
+  googleReviewSummary,
   homeGalleryHighlight,
   instructorBios,
   photoGroups,
+  signupInterestOptions,
   socialLinks,
   studentFaqHighlights,
   testimonials,
@@ -36,6 +38,14 @@ const TIKTOK_FOLLOW_VIDEO_POSTER = "/assets/social/tiktok/homepage-follow-1000-p
 const TIKTOK_FOLLOW_VIDEO_SRC = "/assets/social/tiktok/homepage-follow-1000.mp4";
 const TIKTOK_LOGO_DARK = "/assets/brand/tiktok-dark.svg";
 const TIKTOK_LOGO_LIGHT = "/assets/brand/tiktok-light.svg";
+
+// Course pages pre-check their own course in the request form so visitors do
+// not have to find and re-select it among every option.
+function getRouteSignupInterests(route: LiveRoute) {
+  const option = signupInterestOptions.find((item) => item.scheduleId === route.id);
+
+  return option ? [option.value] : undefined;
+}
 
 export function LiveStableWidgets({ route }: { route: LiveRoute }) {
   const slots = new Set(route.widgetSlots);
@@ -53,6 +63,7 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {slots.has("signup") && route.route !== "/" ? (
         <LiveSignupSection
           compact={route.route !== "/"}
+          defaultInterests={getRouteSignupInterests(route)}
           pagePath={route.route}
           sourceLabel={route.title}
         />
@@ -295,7 +306,7 @@ function StableReviews() {
         <h2>Reviews</h2>
         <span aria-hidden="true" />
       </div>
-      <p className="rda-review-score">5.0 Roseville Dental Academy 77 Reviews</p>
+      <p className="rda-review-score">{googleReviewSummary.rating} Roseville Dental Academy {googleReviewSummary.count} Reviews</p>
       <div className="rda-review-grid">
         {testimonials.slice(0, 3).map((review) => (
           <Card className="rda-review-card border-border bg-card" key={review.name}>

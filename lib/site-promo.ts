@@ -30,6 +30,19 @@ export type SitePromo = {
 
 export const activeSitePromo: SitePromo = dentalAssistingMondayPromo;
 
+// The Dental Assisting start-date popup only interrupts visitors who are
+// already looking at Dental Assisting. Certification-course, contact, FAQ, and
+// guide pages keep the banner but skip the modal.
+export const SITE_PROMO_DIALOG_ROUTES: readonly string[] = [
+  "/",
+  "/dental-assisting-program",
+  "/journey",
+];
+
+export function showsSitePromoDialog(route: string) {
+  return SITE_PROMO_DIALOG_ROUTES.includes(route);
+}
+
 export const fallbackAnnouncement =
   "Now accepting registration for 2026 Dental Assisting Training programs.";
 

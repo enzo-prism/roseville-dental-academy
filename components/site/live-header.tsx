@@ -65,8 +65,16 @@ type NavLinkItem = {
   label: string;
 };
 
+// The flagship Dental Assisting Program leads the menu; the stand-alone
+// certification courses follow it.
 const primaryLinks: NavLinkItem[] = [
   { href: "/", Icon: Home, iconKey: "home", label: "Home" },
+  {
+    href: "/dental-assisting-program",
+    Icon: GraduationCap,
+    iconKey: "graduation-cap",
+    label: "Dental Assisting Program",
+  },
   { href: "/bls-cpr-1", Icon: HeartPulse, iconKey: "heart-pulse", label: "BLS/CPR" },
   { href: "/infection-control", Icon: ShieldCheck, iconKey: "shield-check", label: "Infection Control" },
   { href: "/coronal-polish", Icon: Sparkles, iconKey: "sparkles", label: "Coronal Polish" },
@@ -75,12 +83,6 @@ const primaryLinks: NavLinkItem[] = [
 ];
 
 const moreLinks: NavLinkItem[] = [
-  {
-    href: "/dental-assisting-program",
-    Icon: GraduationCap,
-    iconKey: "graduation-cap",
-    label: "Dental Assisting Program",
-  },
   {
     href: "/journey",
     Icon: Route,
@@ -369,7 +371,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
       <nav aria-label="Primary" className="rda-desktop-nav bg-background">
         <NavigationMenu className="mx-auto max-w-6xl" viewport={false}>
           <NavigationMenuList className="rda-nav-row">
-            {primaryLinks.slice(0, 5).map(desktopLink)}
+            {primaryLinks.map(desktopLink)}
             <NavigationMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -400,7 +402,6 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </NavigationMenuItem>
-            {primaryLinks.slice(5).map(desktopLink)}
             <NavigationMenuItem>
               <Button
                 asChild

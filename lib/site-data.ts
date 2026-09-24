@@ -591,6 +591,13 @@ export const googleReviews: TestimonialData[] = googleReviewRows.map(
 
 export const googleReviewsUrl = "https://maps.google.com/maps?cid=11613766695697697595";
 
+// The Google Business Profile summary shown in visible copy (rating and total
+// review count on Google). Visible only; never emitted as review schema.
+export const googleReviewSummary = {
+  count: 77,
+  rating: "5.0",
+} as const;
+
 // Truthful aggregate derived from the genuine Google reviews above for the
 // visible homepage rating summary. Review schema intentionally omits this
 // cross-site aggregate. ratingValue is rounded to one decimal to mirror Google.
