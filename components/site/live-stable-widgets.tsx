@@ -5,6 +5,7 @@ import { Award, BadgeCheck, CheckCircle2, ClipboardCheck, ListChecks } from "luc
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { HomepageCourseSections } from "@/components/site/homepage-course-sections";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
+import { TikTokFollowVideo } from "@/components/site/tiktok-follow-video";
 import {
   Accordion,
   AccordionContent,
@@ -74,18 +75,13 @@ function HomepageTikTokFollow() {
     >
       <div className="rda-tiktok-follow-inner">
         <figure className="rda-tiktok-video-frame">
-          <video
-            aria-label="Roseville Dental Academy TikTok preview"
-            autoPlay
-            className="rda-tiktok-follow-video"
-            loop
-            muted
-            playsInline
+          <TikTokFollowVideo
+            label="Roseville Dental Academy TikTok preview"
             poster={TIKTOK_FOLLOW_VIDEO_POSTER}
-            preload="metadata"
-          >
-            <source src={TIKTOK_FOLLOW_VIDEO_SRC} type="video/mp4" />
-          </video>
+            posterHeight={1024}
+            posterWidth={576}
+            src={TIKTOK_FOLLOW_VIDEO_SRC}
+          />
         </figure>
         <div className="rda-tiktok-follow-copy">
           <Image
@@ -345,7 +341,6 @@ function StableGallery({ full = false }: { full?: boolean }) {
                       fill
                       sizes="(max-width: 760px) 100vw, 33vw"
                       src={item.src}
-                      unoptimized
                     />
                   </AspectRatio>
                 </Card>

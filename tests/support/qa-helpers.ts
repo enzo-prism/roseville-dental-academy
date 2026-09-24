@@ -166,6 +166,30 @@ function normalizeAssetHref(rawHref: string, baseUrl: string) {
   }
 }
 
+/**
+ * Collapse a Next.js image-optimizer URL (`/_next/image?url=<encoded>&w=..&q=..`)
+ * to the original asset path in its `url` param. Width/quality/format are
+ * delivery details chosen per viewport and DPR, so parity checks compare the
+ * underlying photo rather than the optimizer variant. Other URLs pass through.
+ */
+export function normalizeOptimizedImageUrl(value: string) {
+  if (!value) {
+    return value;
+  }
+
+  try {
+    const resolved = new URL(value, localUrl.origin);
+
+    if (resolved.pathname !== "/_next/image") {
+      return value;
+    }
+
+    return resolved.searchParams.get("url") || value;
+  } catch {
+    return value;
+  }
+}
+
 function normalizeManifestRouteKey(pathname: string) {
   const trimmed = pathname.replace(/^\/+|\/+$/g, "");
 

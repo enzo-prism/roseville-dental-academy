@@ -964,6 +964,58 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   width: 100%;
 }
 
+.rda-tiktok-video-play {
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: block;
+  padding: 0;
+  position: relative;
+  width: 100%;
+}
+
+.rda-tiktok-video-play:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.rda-tiktok-video-play-icon {
+  align-items: center;
+  background: var(--primary);
+  border-radius: 6px;
+  box-shadow: var(--rda-shadow-menu);
+  color: var(--primary-foreground);
+  display: inline-flex;
+  height: 56px;
+  justify-content: center;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+  width: 56px;
+}
+
+.rda-tiktok-video-play-icon svg {
+  height: 24px;
+  width: 24px;
+}
+
+.rda-tiktok-video-play:hover .rda-tiktok-video-play-icon,
+.rda-tiktok-video-play:focus-visible .rda-tiktok-video-play-icon {
+  background: var(--rda-color-primary-deep);
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rda-tiktok-video-play-icon {
+    transition: none;
+  }
+}
+
 .rda-tiktok-follow-copy {
   display: grid;
   gap: 18px;
