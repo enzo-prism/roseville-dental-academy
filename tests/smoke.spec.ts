@@ -2327,3 +2327,91 @@ test.afterAll(async () => {
     results: smokeSummary,
   });
 });
+
+test("local SEO landing pages serve indexable metadata, schema, and sitemap entries", async ({
+  page,
+  request,
+}) => {
+  const landingPages: Array<{ path: string; title: string; h1: string }> = [
+    {
+      path: "/dental-assisting-school",
+      title: "Dental Assisting School near Sacramento | Roseville Dental Academy",
+      h1: "Dental Assisting School near Sacramento",
+    },
+    ...[
+      ["sacramento", "Sacramento", "Sacramento"],
+      ["rocklin", "Rocklin", "Rocklin"],
+      ["lincoln", "Lincoln, CA", "Lincoln"],
+      ["folsom", "Folsom", "Folsom"],
+      ["citrus-heights", "Citrus Heights", "Citrus Heights"],
+      ["auburn", "Auburn, CA", "Auburn"],
+    ].map(([slug, titleCity, h1City]) => ({
+      path: `/dental-assisting-school/${slug}`,
+      title: `Dental Assisting near ${titleCity} | Roseville Dental Academy`,
+      h1: `Dental Assisting Program for ${h1City} Students`,
+    })),
+    {
+      path: "/for-dental-offices",
+      title: "Courses for Dental Offices | Roseville Dental Academy",
+      h1: "Infection Control and Certification Courses for Dental Offices",
+    },
+    {
+      path: "/rda-certification-courses",
+      title: "RDA Certification Courses | Roseville Dental Academy",
+      h1: "RDA Certification Courses in Roseville",
+    },
+    {
+      path: "/es/programa-de-asistente-dental",
+      title: "Programa de Asistente Dental | Roseville Dental Academy",
+      h1: "Programa de Asistente Dental",
+    },
+  ];
+  const sitemap = await (await request.get(`${localOrigin}/sitemap.website.xml`)).text();
+  const llms = await (await request.get(`${localOrigin}/llms.txt`)).text();
+  const mismatches: string[] = [];
+
+  for (const landing of landingPages) {
+    const response = await page.goto(`${localOrigin}${landing.path}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 120_000,
+    });
+
+    expect(response?.status(), landing.path).toBe(200);
+    await expect(page, landing.path).toHaveTitle(landing.title);
+    await expect(page.locator("h1"), landing.path).toHaveCount(1);
+    await expect(page.locator("h1"), landing.path).toHaveText(landing.h1);
+
+    const seo = await page.evaluate(() => ({
+      canonical: document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href ?? "",
+      jsonLd: [...document.querySelectorAll('script[type="application/ld+json"]')].map(
+        (node) => JSON.parse(node.textContent ?? "null") as Record<string, unknown>,
+      ),
+    }));
+
+    expect(new URL(seo.canonical).pathname, landing.path).toBe(landing.path);
+    const types = seo.jsonLd.map((entry) => entry?.["@type"]);
+    expect(types, landing.path).toContain("BreadcrumbList");
+    expect(types, landing.path).toContain("FAQPage");
+    for (const entry of seo.jsonLd) {
+      expect(entry, landing.path).not.toHaveProperty("aggregateRating");
+    }
+
+    if (!sitemap.includes(`${landing.path}<`)) {
+      mismatches.push(`sitemap missing ${landing.path}`);
+    }
+    if (!llms.includes(`${landing.path})`)) {
+      mismatches.push(`llms.txt missing ${landing.path}`);
+    }
+  }
+
+  await page.goto(`${localOrigin}/es/programa-de-asistente-dental`, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("main#rda-main-content")).toHaveAttribute("lang", "es");
+  await expect(page.locator('link[rel="alternate"][hreflang="en-US"]')).toHaveAttribute(
+    "href",
+    /\/dental-assisting-program$/,
+  );
+
+  const missingCity = await request.get(`${localOrigin}/dental-assisting-school/not-a-city`);
+  expect(missingCity.status()).toBe(404);
+  expect(mismatches).toEqual([]);
+});

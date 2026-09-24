@@ -376,3 +376,34 @@ export function ResourceArticleStructuredData({
     </>
   );
 }
+
+/**
+ * FAQPage markup for a visible FAQ block. Pass the exact question/answer pairs
+ * the page renders so the markup mirrors the page.
+ */
+export function FaqListStructuredData({
+  id,
+  faqs,
+}: {
+  id: string;
+  faqs: { question: string; answer: string }[];
+}) {
+  if (faqs.length === 0) {
+    return null;
+  }
+
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  } satisfies JsonLdValue;
+
+  return <StructuredDataScript id={id} data={data} />;
+}
