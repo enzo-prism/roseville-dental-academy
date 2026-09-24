@@ -4,7 +4,11 @@ import {
   getUpcomingCourseSchedule,
   SATURDAY_ACADEMY_START_DATE,
 } from "@/lib/course-schedule";
-import { googleReviewsAggregate, siteContact } from "@/lib/site-data";
+import {
+  DENTAL_ASSISTING_DOWN_PAYMENT,
+  DENTAL_ASSISTING_TUITION,
+} from "@/lib/dental-assisting-program";
+import { googleReviewSummary, siteContact } from "@/lib/site-data";
 
 // Core Dental Assisting Program facts shared by the local SEO pages and the
 // Spanish page. Wording mirrors lib/site-data.ts (dentalProgramPage) and
@@ -14,9 +18,9 @@ export const DA_PROGRAM_PATH = "/dental-assisting-program";
 
 export const daProgramFacts = {
   tuition: 2500,
-  tuitionLabel: "$2,500",
-  // Registration form option: "I need the $1000 down payment plan".
-  minimumDownPaymentLabel: "$1,000",
+  tuitionLabel: DENTAL_ASSISTING_TUITION,
+  // Registration / payment form: $1,000 minimum down, balance weekly for nine weeks.
+  minimumDownPaymentLabel: DENTAL_ASSISTING_DOWN_PAYMENT,
   paymentPlan:
     "$1,000 minimum down payment, with the balance paid weekly over the nine weeks",
   weeks: 9,
@@ -49,9 +53,7 @@ export function getOpenDaStartEntries() {
 
 /** e.g. "5.0 rating from 77 Google reviews" — derived from the review rows. */
 export function getGoogleReviewSummary(): string {
-  const { ratingValue, reviewCount } = googleReviewsAggregate;
-
-  return `${ratingValue.toFixed(1)} rating from ${reviewCount} Google reviews`;
+  return `${googleReviewSummary.rating} rating from ${googleReviewSummary.count} Google reviews`;
 }
 
 export const ACADEMY_MAPS_DESTINATION = siteContact.mapsAddress;

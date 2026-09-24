@@ -114,6 +114,14 @@ export function DentalAssistingProgramPage({ course }: { course: LiveCourseConte
               <FileDown aria-hidden="true" />
               {dentalAssistingHero.formCta.label}
             </a>
+            <Link
+              className="rda-program-trust-link"
+              href="/es/programa-de-asistente-dental"
+              hrefLang="es"
+              lang="es"
+            >
+              Información en español
+            </Link>
           </p>
         </div>
 

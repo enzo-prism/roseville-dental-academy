@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
+  BookOpen,
   BookOpenCheck,
+  Building2,
   ChevronDown,
   CircleHelp,
   FileUser,
@@ -13,6 +15,8 @@ import {
   HeartPulse,
   Home,
   Images,
+  ListChecks,
+  MapPin,
   Menu,
   Phone,
   Radiation,
@@ -88,6 +92,30 @@ const moreLinks: NavLinkItem[] = [
     Icon: Route,
     iconKey: "route",
     label: "Career Journey",
+  },
+  {
+    href: "/rda-certification-courses",
+    Icon: ListChecks,
+    iconKey: "list-checks",
+    label: "RDA Course Path",
+  },
+  {
+    href: "/for-dental-offices",
+    Icon: Building2,
+    iconKey: "building-2",
+    label: "For Dental Offices",
+  },
+  {
+    href: "/resources",
+    Icon: BookOpen,
+    iconKey: "book-open",
+    label: "Career Guides",
+  },
+  {
+    href: "/dental-assisting-school",
+    Icon: MapPin,
+    iconKey: "map-pin",
+    label: "Areas We Serve",
   },
   {
     href: "/meet-the-instructors",

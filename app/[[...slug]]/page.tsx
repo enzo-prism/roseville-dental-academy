@@ -6,6 +6,7 @@ import {
   BreadcrumbStructuredData,
   CourseListStructuredData,
   CourseStructuredData,
+  FaqListStructuredData,
   FaqStructuredData,
 } from "@/components/site/structured-data";
 import { DentalAssistingProgramPage } from "@/components/site/dental-assisting-program-page";
@@ -87,7 +88,7 @@ export default async function LiveRoutePage({ params }: PageProps) {
         <CourseStructuredData path={canonicalPath} />
         <BreadcrumbStructuredData items={breadcrumbItems} />
         {course.id === "dental-assisting-program" ? (
-          <FaqStructuredData id="rda-ld-faq-dental-assisting" items={dentalAssistingFaqs} />
+          <FaqListStructuredData faqs={dentalAssistingFaqs} id="rda-ld-faq-dental-assisting" />
         ) : null}
         <main className="rda-live-main" data-rda-route={route.id} id="rda-main-content">
           {course.id === "dental-assisting-program" ? (
