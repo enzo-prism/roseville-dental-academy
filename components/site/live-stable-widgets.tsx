@@ -4,6 +4,7 @@ import { Award, BadgeCheck, CheckCircle2, ClipboardCheck, ListChecks } from "luc
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { HomepageCourseSections } from "@/components/site/homepage-course-sections";
+import { ResourceGuidesStrip } from "@/components/site/resource-guides-strip";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import { TikTokFollowVideo } from "@/components/site/tiktok-follow-video";
 import {
@@ -46,6 +47,7 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {slots.has("reviews") ? <StableReviews /> : null}
       {slots.has("home") ? <HomepageTikTokFollow /> : null}
       {slots.has("home") ? <HomepageCourseSections /> : null}
+      {slots.has("home") ? <ResourceGuidesStrip /> : null}
       {slots.has("board") ? <StableBoardApproval /> : null}
       {slots.has("instructors") ? <StableInstructorBios /> : null}
       {slots.has("faqs") ? <StableStudentFaqs /> : null}

@@ -908,7 +908,8 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 }
 
 .rda-section-heading h1,
-.rda-section-heading h2 {
+.rda-section-heading h2,
+.rda-section-heading .rda-section-title {
   color: var(--rda-color-heading);
   font-family: var(--rda-font-heading);
   font-size: clamp(28px, 4vw, 42px);
