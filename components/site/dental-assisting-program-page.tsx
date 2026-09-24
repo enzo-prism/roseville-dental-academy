@@ -25,12 +25,14 @@ import {
   CourseSchedulePanel,
 } from "@/components/site/live-course-page";
 import { MobileCourseActionBar } from "@/components/site/mobile-course-action-bar";
+import { ResourceGuidesStrip } from "@/components/site/resource-guides-strip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   dentalAssistingFaqs,
   dentalAssistingGraduateStories,
+  dentalAssistingGuideSlugs,
   dentalAssistingHero,
   dentalAssistingInstructors,
   dentalAssistingOutcomes,
@@ -336,6 +338,14 @@ export function DentalAssistingProgramPage({ course }: { course: LiveCourseConte
       </section>
 
       {reviewGroup ? <CourseReviews course={course} group={reviewGroup} /> : null}
+
+      <div className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 sm:pt-16 lg:px-8">
+        <ResourceGuidesStrip
+          intro="Free guides for career changers comparing dental assisting programs."
+          slugs={dentalAssistingGuideSlugs}
+          title="Planning your move into dental assisting"
+        />
+      </div>
 
       <section aria-labelledby="rda-program-faq-title">
         <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">

@@ -91,7 +91,9 @@ test.describe("live-style interaction flows", () => {
       expect(placement.width, viewport.name).toBeGreaterThanOrEqual(56);
       expect(placement.height, viewport.name).toBeGreaterThanOrEqual(40);
 
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.evaluate(() =>
+        window.scrollTo({ behavior: "instant", left: 0, top: document.documentElement.scrollHeight }),
+      );
       const footerClearance = await page.evaluate(() => {
         const fabElement = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
         const policy = document.querySelector<HTMLElement>(".rda-footer-policy");
@@ -120,8 +122,11 @@ test.describe("live-style interaction flows", () => {
       expect(footerClearance.policyOverlap, viewport.name).toBe(false);
       expect(footerClearance.copyOverlap, viewport.name).toBe(false);
 
-      await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(400);
+      // The site uses smooth scrolling, so wait until the page actually reaches
+      // the top instead of sampling mid-animation after a fixed delay.
+      await page.evaluate(() => window.scrollTo({ behavior: "instant", left: 0, top: 0 }));
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+      await page.waitForTimeout(200);
       const mainTopAfter = await page.locator("#rda-main-content").evaluate((element) => {
         return Math.round(element.getBoundingClientRect().top);
       });

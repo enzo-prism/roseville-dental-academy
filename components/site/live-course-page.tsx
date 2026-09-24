@@ -5,6 +5,7 @@ import { CertificateExpirationNotice } from "@/components/site/certificate-expir
 import { CourseFactStrip } from "@/components/site/course-fact-strip";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
 import { MobileCourseActionBar } from "@/components/site/mobile-course-action-bar";
+import { ResourceGuidesStrip } from "@/components/site/resource-guides-strip";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { showsCertificateExpiration } from "@/lib/certificate-expiration";
 import { getCertificationCourseFacts } from "@/lib/course-facts";
+import {
+  isOptimizableLocalImage,
+  OPTIMIZED_CARD_IMAGE_WIDTHS,
+  optimizedImageFallbackSrc,
+  optimizedImageSrcSet,
+} from "@/lib/optimized-image";
 import { courseScheduleNote, formatCourseDateLabel, getUpcomingCourseSchedule } from "@/lib/course-schedule";
 import type {
   LiveCourseContent,
@@ -28,6 +35,18 @@ import {
 type LiveCourseSection = {
   body: string;
   heading: string;
+};
+
+// Guides from lib/resource-articles.ts most relevant to each certification course.
+const courseGuideSlugs: Partial<Record<LiveCourseContent["id"], readonly string[]>> = {
+  "bls-cpr-1": ["how-to-become-a-dental-assistant-in-california", "rda-vs-dental-assistant-california"],
+  "coronal-polish": ["rda-vs-dental-assistant-california", "dental-assistant-salary-sacramento"],
+  "infection-control": [
+    "california-8-hour-infection-control-requirement",
+    "how-to-become-a-dental-assistant-in-california",
+  ],
+  "radiation-safety": ["rda-vs-dental-assistant-california", "dental-assistant-salary-sacramento"],
+  sealants: ["rda-vs-dental-assistant-california", "dental-assistant-salary-sacramento"],
 };
 
 export const COURSE_NONREFUNDABLE_NOTE =
@@ -190,33 +209,45 @@ function CourseBody({ body, links }: { body: string; links?: LiveCourseLink[] })
 function CourseHeroMedia({
   loading = "lazy",
   media,
+  sizes,
 }: {
   loading?: "eager" | "lazy";
   media: LiveCourseMedia;
+  sizes: string;
 }) {
   if (media.type === "video") {
     return (
+      // Poster first; the demo clip only downloads when the visitor presses play.
       <video
         aria-label={media.alt}
-        autoPlay
         className="size-full object-cover"
+        controls
         loop
         muted
         playsInline
         poster={media.poster}
-        preload="metadata"
+        preload="none"
         src={media.src}
       />
     );
   }
 
+  // Route course photos through the Next image optimizer (AVIF/WebP at a
+  // layout-sized width) while keeping a plain <img>, so parity checks can still
+  // decode the original asset path from the `url` parameter.
+  const optimizable = isOptimizableLocalImage(media.src);
+
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- Keep literal live asset URLs for parity checks.
+    // eslint-disable-next-line @next/next/no-img-element -- Optimizer URLs keep the original asset path for parity checks.
     <img
       alt={media.alt}
       className="size-full object-cover"
+      decoding="async"
+      fetchPriority={loading === "eager" ? "high" : undefined}
       loading={loading}
-      src={media.src}
+      sizes={optimizable ? sizes : undefined}
+      src={optimizable ? optimizedImageFallbackSrc(media.src, OPTIMIZED_CARD_IMAGE_WIDTHS) : media.src}
+      srcSet={optimizable ? optimizedImageSrcSet(media.src, OPTIMIZED_CARD_IMAGE_WIDTHS) : undefined}
     />
   );
 }
@@ -417,7 +448,11 @@ export function CourseHeroMosaic({
       {supportingMedia.length ? (
         <div className="grid gap-1 bg-muted max-lg:grid-cols-2 lg:aspect-[4/3] lg:grid-cols-[minmax(0,1.42fr)_minmax(0,0.82fr)]">
           <div className="relative min-w-0 max-lg:col-span-2 max-lg:aspect-[16/10] lg:min-h-0">
-            <CourseHeroMedia loading="eager" media={course.image} />
+            <CourseHeroMedia
+              loading="eager"
+              media={course.image}
+              sizes="(max-width: 1023px) 100vw, 400px"
+            />
           </div>
           <div className="grid min-h-0 min-w-0 gap-1 max-lg:col-span-2 max-lg:grid-cols-2 lg:grid-cols-1 lg:grid-rows-[repeat(auto-fit,minmax(0,1fr))]">
             {supportingMedia.map((media) => (
@@ -425,14 +460,18 @@ export function CourseHeroMosaic({
                 className="relative min-h-0 min-w-0 max-lg:aspect-[4/3]"
                 key={media.src}
               >
-                <CourseHeroMedia media={media} />
+                <CourseHeroMedia media={media} sizes="(max-width: 1023px) 50vw, 240px" />
               </div>
             ))}
           </div>
         </div>
       ) : (
         <AspectRatio ratio={4 / 3}>
-          <CourseHeroMedia loading="eager" media={course.image} />
+          <CourseHeroMedia
+            loading="eager"
+            media={course.image}
+            sizes="(max-width: 1023px) 100vw, 520px"
+          />
         </AspectRatio>
       )}
     </div>
@@ -532,6 +571,15 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
           <p className="rda-course-policy-note mt-5 border-t border-border pt-4 text-sm leading-6 text-muted-foreground">
             * {COURSE_NONREFUNDABLE_NOTE}
           </p>
+        </div>
+      ) : null}
+      {courseGuideSlugs[course.id] ? (
+        <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
+          <ResourceGuidesStrip
+            intro="Free guides on California certification requirements and the RDA path."
+            slugs={courseGuideSlugs[course.id]}
+            title="Related guides"
+          />
         </div>
       ) : null}
       {reviewGroup ? <CourseReviews course={course} group={reviewGroup} /> : null}

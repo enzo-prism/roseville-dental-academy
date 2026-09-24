@@ -1160,7 +1160,7 @@ test("public pages render exactly one meaningful h1", async ({ page }, testInfo)
     "/faqs-1": "Dental Assisting Program FAQs",
     "/meet-the-instructors": "Instructor Bios",
     "/photos": "Photo Gallery",
-    "/dental-assisting-program": "DENTAL ASSISTING TRAINING COURSE",
+    "/dental-assisting-program": "Dental Assisting Program",
     "/journey": "DA to RDA Career Journey",
     "/resources": "Dental Assisting Career Guides & Resources",
   };

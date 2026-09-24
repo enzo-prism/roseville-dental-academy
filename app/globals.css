@@ -5431,3 +5431,11 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
     transition: none;
   }
 }
+
+/* Tablet widths keep the same footer clearance as phones so the floating
+   WhatsApp button never sits over the policy or copyright line. */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .rda-live-footer {
+    padding-bottom: calc(var(--rda-shell-fab-clearance) + env(safe-area-inset-bottom));
+  }
+}
