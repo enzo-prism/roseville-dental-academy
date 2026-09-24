@@ -1079,20 +1079,52 @@ test("official social channel pages render follow paths", async ({ page }, testI
 
 test("front office program is retired from public access and entry points", async ({ page, request }, testInfo) => {
   const retiredPath = "/front-office-program";
-  const retiredResponse = await request.get(`${localOrigin}${retiredPath}`, {
-    headers: {
-      accept: "text/html,application/xhtml+xml",
-    },
-    timeout: 120_000,
-  });
+  const redirectTarget = "/dental-assisting-program";
+  const mismatches: string[] = [];
+  const redirectStatuses: Record<string, number> = {};
+
+  // The retired route permanently redirects (301/308) to the Dental Assisting
+  // Program so lingering search results and old links land on a live page.
+  for (const path of [retiredPath, `${retiredPath}/`]) {
+    let currentPath = path;
+    let finalStatus = 0;
+    const hops: string[] = [];
+
+    for (let hop = 0; hop < 3; hop += 1) {
+      const response = await request.get(`${localOrigin}${currentPath}`, {
+        headers: {
+          accept: "text/html,application/xhtml+xml",
+        },
+        maxRedirects: 0,
+        timeout: 120_000,
+      });
+      finalStatus = response.status();
+
+      if (![301, 308].includes(finalStatus)) {
+        break;
+      }
+
+      const location = new URL(response.headers().location ?? "", localOrigin);
+      hops.push(`${finalStatus} ${location.pathname}`);
+      currentPath = `${location.pathname}${location.search}`;
+
+      if (location.pathname === redirectTarget) {
+        break;
+      }
+    }
+
+    redirectStatuses[path] = finalStatus;
+
+    if (hops.length === 0) {
+      mismatches.push(`${path} returned ${finalStatus} instead of a permanent redirect`);
+    } else if (currentPath !== redirectTarget) {
+      mismatches.push(`${path} redirected via [${hops.join(" -> ")}] instead of to ${redirectTarget}`);
+    }
+  }
+
   const homeSnapshot = await captureSnapshot(page, `${localOrigin}/`, {
     viewport: { width: 1280, height: 900 },
   });
-  const mismatches: string[] = [];
-
-  if (retiredResponse.status() !== 404) {
-    mismatches.push(`${retiredPath} returned ${retiredResponse.status()} instead of 404`);
-  }
 
   if (homeSnapshot.bodyText.includes("Front Office Program")) {
     mismatches.push("homepage still shows Front Office Program copy");
@@ -1106,8 +1138,8 @@ test("front office program is retired from public access and entry points", asyn
     writeJsonArtifact(testInfo, "front-office-retirement-summary.json", {
       homeSnapshot,
       mismatches,
+      redirectStatuses,
       retiredPath,
-      retiredStatus: retiredResponse.status(),
     });
   }
 

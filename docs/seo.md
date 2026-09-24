@@ -122,6 +122,12 @@ the original asset path (`normalizeOptimizedImageUrl` in `tests/support/qa-helpe
 The homepage TikTok follow section renders a poster image with a play button
 (`components/site/tiktok-follow-video.tsx`); the mp4 loads only after a click.
 
+## Redirects
+
+Permanent redirects for retired routes live in `next.config.ts` `redirects()` (e.g.
+`/front-office-program` → `/dental-assisting-program`, retired in f19780c). Legacy encoded-slash
+aliases stay in `vercel.json`.
+
 ## Known follow-up
 
 A header/footer navigation link to `/resources` is **not** yet added. Because content parity
