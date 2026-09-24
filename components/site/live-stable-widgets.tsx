@@ -4,7 +4,9 @@ import { Award, BadgeCheck, CheckCircle2, ClipboardCheck, ListChecks } from "luc
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { HomepageCourseSections } from "@/components/site/homepage-course-sections";
+import { ResourceGuidesStrip } from "@/components/site/resource-guides-strip";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
+import { TikTokFollowVideo } from "@/components/site/tiktok-follow-video";
 import {
   Accordion,
   AccordionContent,
@@ -55,6 +57,7 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {slots.has("reviews") ? <StableReviews /> : null}
       {slots.has("home") ? <HomepageTikTokFollow /> : null}
       {slots.has("home") ? <HomepageCourseSections /> : null}
+      {slots.has("home") ? <ResourceGuidesStrip /> : null}
       {slots.has("board") ? <StableBoardApproval /> : null}
       {slots.has("instructors") ? <StableInstructorBios /> : null}
       {slots.has("faqs") ? <StableStudentFaqs /> : null}
@@ -85,18 +88,13 @@ function HomepageTikTokFollow() {
     >
       <div className="rda-tiktok-follow-inner">
         <figure className="rda-tiktok-video-frame">
-          <video
-            aria-label="Roseville Dental Academy TikTok preview"
-            autoPlay
-            className="rda-tiktok-follow-video"
-            loop
-            muted
-            playsInline
+          <TikTokFollowVideo
+            label="Roseville Dental Academy TikTok preview"
             poster={TIKTOK_FOLLOW_VIDEO_POSTER}
-            preload="metadata"
-          >
-            <source src={TIKTOK_FOLLOW_VIDEO_SRC} type="video/mp4" />
-          </video>
+            posterHeight={1024}
+            posterWidth={576}
+            src={TIKTOK_FOLLOW_VIDEO_SRC}
+          />
         </figure>
         <div className="rda-tiktok-follow-copy">
           <Image
@@ -222,7 +220,8 @@ function StableInstructorBios() {
     >
       <div className="rda-instructors-header">
         <div className="rda-section-heading rda-instructors-heading">
-          <h2>Instructor Bios</h2>
+          {/* Only rendered on /meet-the-instructors, where it is the page H1. */}
+          <h1>Instructor Bios</h1>
           <span aria-hidden="true" />
         </div>
         <p className="rda-section-intro rda-instructors-intro">
@@ -275,7 +274,8 @@ function StableStudentFaqs() {
   return (
     <section className="rda-stable-section rda-student-faq-section" data-rda-stable-widget="faqs">
       <div className="rda-section-heading">
-        <h2>Dental Assisting Program FAQs</h2>
+        {/* Only rendered on /faqs-1, where it is the page H1. */}
+        <h1>Dental Assisting Program FAQs</h1>
         <span aria-hidden="true" />
       </div>
       <p className="rda-section-intro">
@@ -334,7 +334,8 @@ function StableGallery({ full = false }: { full?: boolean }) {
       data-rda-stable-widget="gallery"
     >
       <div className="rda-section-heading">
-        <h2>{full ? "Photo Gallery" : homeGalleryHighlight.title}</h2>
+        {/* The full gallery is the /photos page body, so its heading is the page H1. */}
+        {full ? <h1>Photo Gallery</h1> : <h2>{homeGalleryHighlight.title}</h2>}
         <span aria-hidden="true" />
       </div>
       {!full ? <p className="rda-gallery-intro">{homeGalleryHighlight.copy}</p> : null}
@@ -356,7 +357,6 @@ function StableGallery({ full = false }: { full?: boolean }) {
                       fill
                       sizes="(max-width: 760px) 100vw, 33vw"
                       src={item.src}
-                      unoptimized
                     />
                   </AspectRatio>
                 </Card>

@@ -17,7 +17,7 @@ import { LiveStableWidgets } from "@/components/site/live-stable-widgets";
 import { dentalAssistingFaqs } from "@/lib/dental-assisting-program";
 import { getLiveCourseContent } from "@/lib/live-course-content";
 import {
-  HOMEPAGE_HERO_LCP_IMAGE,
+  HOMEPAGE_HERO_LCP_PRELOAD,
   fetchLiveMirrorDocument,
   getLiveRouteForSlug,
   getStaticRouteParams,
@@ -67,7 +67,12 @@ export default async function LiveRoutePage({ params }: PageProps) {
   }
 
   if (route.route === "/") {
-    preload(HOMEPAGE_HERO_LCP_IMAGE, { as: "image", fetchPriority: "high" });
+    preload(HOMEPAGE_HERO_LCP_PRELOAD.href, {
+      as: "image",
+      fetchPriority: "high",
+      imageSizes: HOMEPAGE_HERO_LCP_PRELOAD.imageSizes,
+      imageSrcSet: HOMEPAGE_HERO_LCP_PRELOAD.imageSrcSet,
+    });
   }
 
   const canonicalPath =

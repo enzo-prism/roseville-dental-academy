@@ -563,14 +563,16 @@ test.describe("live-style interaction flows", () => {
       );
       await expect(tiktokButton).toHaveAttribute("target", "_blank");
       await expect(tiktokButton).toHaveAttribute("rel", "noreferrer");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("autoplay", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("loop", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("muted", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("playsinline", "");
-      await expect(tiktokFollow.locator("video")).toHaveJSProperty("muted", true);
-      await expect(tiktokFollow.locator("video source")).toHaveAttribute(
+      // Click-to-play: only the optimized poster loads until the visitor asks
+      // for playback, so the mp4 never downloads on page view.
+      const tiktokPlayButton = tiktokFollow.getByRole("button", {
+        name: "Play video: Roseville Dental Academy TikTok preview",
+      });
+      await expect(tiktokPlayButton).toBeVisible();
+      await expect(tiktokFollow.locator("video")).toHaveCount(0);
+      await expect(tiktokPlayButton.locator("img")).toHaveAttribute(
         "src",
-        "/assets/social/tiktok/homepage-follow-1000.mp4",
+        /^\/_next\/image\?url=%2Fassets%2Fsocial%2Ftiktok%2Fhomepage-follow-1000-poster\.jpg&/,
       );
       await expect(
         tiktokFollow.locator('img[src^="/assets/brand/tiktok-dark.svg"]'),
@@ -581,7 +583,7 @@ test.describe("live-style interaction flows", () => {
 
       const desktopTiktokDesign = await tiktokFollow.evaluate((element) => {
         const inner = element.querySelector<HTMLElement>(".rda-tiktok-follow-inner");
-        const video = element.querySelector<HTMLVideoElement>("video");
+        const video = element.querySelector<HTMLElement>(".rda-tiktok-follow-video");
         const button = element.querySelector<HTMLElement>('[data-rda-social-button="tiktok"]');
         const sectionRect = element.getBoundingClientRect();
         const videoRect = video?.getBoundingClientRect();
@@ -608,6 +610,18 @@ test.describe("live-style interaction flows", () => {
         overflowX: 0,
       });
       expect(desktopTiktokDesign.videoHeight).toBeGreaterThan(desktopTiktokDesign.videoWidth);
+
+      await tiktokPlayButton.click();
+      const tiktokVideo = tiktokFollow.locator("video");
+      await expect(tiktokVideo).toHaveCount(1);
+      await expect(tiktokPlayButton).toHaveCount(0);
+      await expect(tiktokVideo).toHaveAttribute("controls", "");
+      await expect(tiktokVideo).toHaveAttribute("autoplay", "");
+      await expect(tiktokVideo).toHaveAttribute("playsinline", "");
+      await expect(tiktokFollow.locator("video source")).toHaveAttribute(
+        "src",
+        "/assets/social/tiktok/homepage-follow-1000.mp4",
+      );
 
       await expect(courseSystem.getByText("Now offering blended learning BLS", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("HEARTCODE BLS $85", { exact: true })).toBeVisible();
@@ -847,7 +861,7 @@ test.describe("live-style interaction flows", () => {
       const mobileTiktokDesign = await mobileTiktok.evaluate((element) => {
         const inner = element.querySelector<HTMLElement>(".rda-tiktok-follow-inner");
         const button = element.querySelector<HTMLElement>('[data-rda-social-button="tiktok"]');
-        const video = element.querySelector<HTMLElement>("video");
+        const video = element.querySelector<HTMLElement>(".rda-tiktok-follow-video");
         const sectionRect = element.getBoundingClientRect();
         const buttonRect = button?.getBoundingClientRect();
         const videoRect = video?.getBoundingClientRect();

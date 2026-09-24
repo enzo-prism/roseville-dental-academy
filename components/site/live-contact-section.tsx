@@ -36,7 +36,8 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
   return (
     <section className={compact ? "rda-contact-section rda-contact-section-compact" : "rda-contact-section"}>
       <div className="rda-section-heading">
-        <h2>Contact Us</h2>
+        {/* The full section is the /contact page body, so its heading is the page H1. */}
+        {compact ? <h2>Contact Us</h2> : <h1>Contact Us</h1>}
         <span aria-hidden="true" />
       </div>
       <div className="rda-contact-grid">
