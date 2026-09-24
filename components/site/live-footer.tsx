@@ -6,12 +6,17 @@ import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
-const footerLinks = [
+const footerLinks: { href: string; label: string; lang?: string }[] = [
   { href: "/dental-assisting-program", label: "Dental Assisting Program" },
+  { href: "/rda-certification-courses", label: "RDA Course Path" },
+  { href: "/for-dental-offices", label: "For Dental Offices" },
   { href: "/journey", label: "Career Journey" },
+  { href: "/resources", label: "Career Guides" },
+  { href: "/dental-assisting-school", label: "Areas We Serve" },
   { href: "/faqs-1", label: "FAQs" },
   { href: "/photos", label: "Photos" },
   { href: "/contact", label: "Contact Us" },
+  { href: "/es/programa-de-asistente-dental", label: "Español", lang: "es" },
 ];
 
 export function LiveFooter() {
@@ -63,7 +68,7 @@ export function LiveFooter() {
         <Separator className="rda-footer-separator bg-primary-foreground/20" />
         <nav aria-label="Footer" className="rda-footer-links">
           {footerLinks.map((link) => (
-            <Link href={link.href} key={link.href}>
+            <Link href={link.href} hrefLang={link.lang} key={link.href} lang={link.lang}>
               {link.label}
             </Link>
           ))}

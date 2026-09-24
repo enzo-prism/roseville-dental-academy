@@ -1,5 +1,17 @@
 import { getAvailableCourseDateList } from "@/lib/course-schedule";
+import {
+  LOCAL_HUB_DESCRIPTION,
+  LOCAL_HUB_H1,
+  LOCAL_SEO_BASE_PATH,
+  localCities,
+  localCityPath,
+} from "@/lib/local-seo-pages";
 import { resourceArticlePath, resourceArticles } from "@/lib/resource-articles";
+import {
+  dentalOfficesRoute,
+  rdaCoursesRoute,
+  spanishDaRoute,
+} from "@/lib/seo-landing-pages";
 import { SITE_URL } from "@/lib/site-config";
 
 export const dynamic = "force-static";
@@ -10,6 +22,14 @@ const guidesSection = resourceArticles
       `- [${article.h1}](${SITE_URL}${resourceArticlePath(article.slug)}): ${article.description}`,
   )
   .join("\n");
+
+const areasSection = [
+  `- [${LOCAL_HUB_H1}](${SITE_URL}${LOCAL_SEO_BASE_PATH}): ${LOCAL_HUB_DESCRIPTION}`,
+  ...localCities.map(
+    (city) =>
+      `- [${city.h1}](${SITE_URL}${localCityPath(city.slug)}): About ${city.drive.miles} miles / ${city.drive.minutes} minutes from ${city.measuredFrom} without traffic, via ${city.drive.route}.`,
+  ),
+].join("\n");
 
 const LLMS_BODY = `# Roseville Dental Academy
 
@@ -31,6 +51,13 @@ const LLMS_BODY = `# Roseville Dental Academy
 - [Radiation Safety / Dental X-Ray (X1036)](${SITE_URL}/radiation-safety): California Dental Board approved 32-hour course for dental personnel and dentists.
 - [Coronal Polish (CP148)](${SITE_URL}/coronal-polish): California Dental Board approved 12-hour course for eligible dental assistants.
 - [Pit & Fissure Sealants (PF186)](${SITE_URL}/sealants): California Dental Board approved 16-hour course for eligible dental assistants and RDAs.
+- [RDA Certification Courses](${SITE_URL}${rdaCoursesRoute.route}): ${rdaCoursesRoute.description}
+- [For Dental Offices](${SITE_URL}${dentalOfficesRoute.route}): ${dentalOfficesRoute.description}
+- [Programa de Asistente Dental (Spanish)](${SITE_URL}${spanishDaRoute.route}): ${spanishDaRoute.description}
+
+## Areas Served
+
+${areasSection}
 
 ## Guides & Resources
 

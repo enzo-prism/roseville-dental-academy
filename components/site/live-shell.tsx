@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { LiveRoute } from "@/lib/live-route-data";
+import { showsSitePromoDialog } from "@/lib/site-promo";
 
 import { HomeHeroCarouselController } from "./home-hero-carousel-controller";
 import { LiveFooter } from "./live-footer";
@@ -24,7 +25,9 @@ export function LiveShell({ children, route }: LiveShellProps) {
         Skip to main content
       </a>
       <LiveHeader currentRoute={route.route} />
-      {route.shellVariant === "public" ? <SitePromoDialog /> : null}
+      {route.shellVariant === "public" && showsSitePromoDialog(route.route) ? (
+        <SitePromoDialog />
+      ) : null}
       {children}
       <HomeHeroCarouselController enabled={route.route === "/"} />
       <LiveFooter />

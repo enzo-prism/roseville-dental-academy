@@ -49,6 +49,8 @@ import type { SignupInterestOption } from "@/lib/site-types";
 type LiveSignupSectionProps = {
   className?: string;
   compact?: boolean;
+  /** Interests to pre-check, e.g. the course of the page the form sits on. */
+  defaultInterests?: readonly string[];
   pagePath?: string;
   sourceLabel: string;
 };
@@ -97,6 +99,7 @@ function SignupIcon({
 export function LiveSignupSection({
   className,
   compact = false,
+  defaultInterests,
   pagePath,
   sourceLabel,
 }: LiveSignupSectionProps) {
@@ -104,7 +107,9 @@ export function LiveSignupSection({
   const titleId = `${formId}-title`;
   const interestHelpId = `${formId}-interest-help`;
   const errorId = `${formId}-interest-error`;
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(() => [
+    ...(defaultInterests ?? []),
+  ]);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const attribution = useLeadAttribution();
   const { status, submitLeadForm } = useLeadFormSubmit();

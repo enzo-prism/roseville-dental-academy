@@ -386,8 +386,14 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
           leadForm
         ) : (
           <figure className="rda-ad-hero-media">
-            {/* eslint-disable-next-line @next/next/no-img-element -- Existing live assets are literal paths. */}
-            <img alt={page.hero.imageAlt} src={page.hero.imageSrc} />
+            <Image
+              alt={page.hero.imageAlt}
+              height={720}
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              src={page.hero.imageSrc}
+              width={1080}
+            />
           </figure>
         )}
       </section>
@@ -440,11 +446,17 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
                     }
                     key={`${image.src}-${image.caption}`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- Existing live assets are literal paths. */}
-                    <img
+                    <Image
                       alt={image.alt}
                       data-rda-course-gallery-image="true"
+                      height={810}
+                      sizes={
+                        index === 0
+                          ? "(max-width: 760px) 100vw, 50vw"
+                          : "(max-width: 760px) 50vw, 25vw"
+                      }
                       src={image.src}
+                      width={1080}
                     />
                     <figcaption>{image.caption}</figcaption>
                   </figure>

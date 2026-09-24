@@ -591,6 +591,7 @@ export const googleReviews: TestimonialData[] = googleReviewRows.map(
 
 export const googleReviewsUrl = "https://maps.google.com/maps?cid=11613766695697697595";
 
+
 // Truthful aggregate derived from the genuine Google reviews above for the
 // visible homepage rating summary. Review schema intentionally omits this
 // cross-site aggregate. ratingValue is rounded to one decimal to mirror Google.
@@ -616,6 +617,13 @@ function computeReviewAggregate(reviews: readonly TestimonialData[]): ReviewAggr
 }
 
 export const googleReviewsAggregate = computeReviewAggregate(googleReviews);
+
+// Visible rating line ("5.0 … 77 reviews"), derived from the same review rows.
+// Visible only; never emitted as review schema.
+export const googleReviewSummary = {
+  count: googleReviewsAggregate.reviewCount,
+  rating: googleReviewsAggregate.ratingValue.toFixed(1),
+} as const;
 
 export type CourseReviewId =
   | "bls-cpr-1"

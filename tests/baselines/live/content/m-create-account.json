@@ -2,7 +2,7 @@
   "aboveFoldImages": [
     "/_next/image?url=%2Fassets%2Flive%2Fhome%2Flogo-academy.png&w=640&q=75"
   ],
-  "bodyText": "Skip to main content Next Dental Assisting start: Monday, October 12. Seats open → Home BLS/CPR Infection Control Coronal Polish Radiation Safety Sealants Contact Us Facebook Instagram TikTok Create Account By creating an account, you may receive newsletters or promotions. Create Account Already have an account? Sign in This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply. Roseville Dental Academy 1271 Pleasant Grove Boulevard, Ste. 100, Roseville, California 95747 916-888-9821 rosevilledentalacademy@gmail.com Office hours Monday 9AM-5PM Tuesday 9AM-6PM Wednesday 8AM-5PM Thursday 9AM-6PM Friday 9AM-3PM Saturday Office closed; scheduled classes only Sunday Closed Front-desk hours only. Monday, Friday, and Saturday are separate class schedules; admissions will confirm dates for your chosen schedule. Dental Assisting Program Career Journey FAQs Photos Contact Us Facebook Instagram TikTok All Roseville Dental Academy courses are nonrefundable. Copyright © 2026 rosevilledental - All Rights Reserved.",
+  "bodyText": "Skip to main content Next Dental Assisting start: Monday, October 12. Seats open → Home Dental Assisting Program BLS/CPR Infection Control Coronal Polish Radiation Safety Sealants Contact Us Facebook Instagram TikTok Create Account By creating an account, you may receive newsletters or promotions. Create Account Already have an account? Sign in This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply. Roseville Dental Academy 1271 Pleasant Grove Boulevard, Ste. 100, Roseville, California 95747 916-888-9821 rosevilledentalacademy@gmail.com Office hours Monday 9AM-5PM Tuesday 9AM-6PM Wednesday 8AM-5PM Thursday 9AM-6PM Friday 9AM-3PM Saturday Office closed; scheduled classes only Sunday Closed Front-desk hours only. Monday, Friday, and Saturday are separate class schedules; admissions will confirm dates for your chosen schedule. Dental Assisting Program RDA Course Path For Dental Offices Career Journey Career Guides Areas We Serve FAQs Photos Contact Us Español Facebook Instagram TikTok All Roseville Dental Academy courses are nonrefundable. Copyright © 2026 rosevilledental - All Rights Reserved.",
   "buttons": [
     "More Information",
     "Create Account"
@@ -28,6 +28,10 @@
     {
       "href": "/",
       "text": "Home"
+    },
+    {
+      "href": "/dental-assisting-program",
+      "text": "Dental Assisting Program"
     },
     {
       "href": "/bls-cpr-1",
@@ -94,8 +98,24 @@
       "text": "Dental Assisting Program"
     },
     {
+      "href": "/rda-certification-courses",
+      "text": "RDA Course Path"
+    },
+    {
+      "href": "/for-dental-offices",
+      "text": "For Dental Offices"
+    },
+    {
       "href": "/journey",
       "text": "Career Journey"
+    },
+    {
+      "href": "/resources",
+      "text": "Career Guides"
+    },
+    {
+      "href": "/dental-assisting-school",
+      "text": "Areas We Serve"
     },
     {
       "href": "/faqs-1",
@@ -108,6 +128,10 @@
     {
       "href": "/contact",
       "text": "Contact Us"
+    },
+    {
+      "href": "/es/programa-de-asistente-dental",
+      "text": "Español"
     },
     {
       "href": "https://www.facebook.com/557019148138561",

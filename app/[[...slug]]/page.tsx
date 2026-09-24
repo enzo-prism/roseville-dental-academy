@@ -6,15 +6,18 @@ import {
   BreadcrumbStructuredData,
   CourseListStructuredData,
   CourseStructuredData,
+  FaqListStructuredData,
   FaqStructuredData,
 } from "@/components/site/structured-data";
+import { DentalAssistingProgramPage } from "@/components/site/dental-assisting-program-page";
 import { HomepageSignupPortal } from "@/components/site/homepage-signup-portal";
 import { LiveCoursePage } from "@/components/site/live-course-page";
 import { LiveShell } from "@/components/site/live-shell";
 import { LiveStableWidgets } from "@/components/site/live-stable-widgets";
+import { dentalAssistingFaqs } from "@/lib/dental-assisting-program";
 import { getLiveCourseContent } from "@/lib/live-course-content";
 import {
-  HOMEPAGE_HERO_LCP_IMAGE,
+  HOMEPAGE_HERO_LCP_PRELOAD,
   fetchLiveMirrorDocument,
   getLiveRouteForSlug,
   getStaticRouteParams,
@@ -64,7 +67,12 @@ export default async function LiveRoutePage({ params }: PageProps) {
   }
 
   if (route.route === "/") {
-    preload(HOMEPAGE_HERO_LCP_IMAGE, { as: "image", fetchPriority: "high" });
+    preload(HOMEPAGE_HERO_LCP_PRELOAD.href, {
+      as: "image",
+      fetchPriority: "high",
+      imageSizes: HOMEPAGE_HERO_LCP_PRELOAD.imageSizes,
+      imageSrcSet: HOMEPAGE_HERO_LCP_PRELOAD.imageSrcSet,
+    });
   }
 
   const canonicalPath =
@@ -84,8 +92,15 @@ export default async function LiveRoutePage({ params }: PageProps) {
       <LiveShell route={route}>
         <CourseStructuredData path={canonicalPath} />
         <BreadcrumbStructuredData items={breadcrumbItems} />
+        {course.id === "dental-assisting-program" ? (
+          <FaqListStructuredData faqs={dentalAssistingFaqs} id="rda-ld-faq-dental-assisting" />
+        ) : null}
         <main className="rda-live-main" data-rda-route={route.id} id="rda-main-content">
-          <LiveCoursePage course={course} />
+          {course.id === "dental-assisting-program" ? (
+            <DentalAssistingProgramPage course={course} />
+          ) : (
+            <LiveCoursePage course={course} />
+          )}
           <LiveStableWidgets route={route} />
         </main>
       </LiveShell>

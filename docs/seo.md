@@ -106,6 +106,28 @@ The frozen GoDaddy snapshots ship images without native loading hints. `promoteL
 These are invisible attribute-only changes, so they do not affect content or visual parity — the
 visual suite scrolls the full page before capturing, so lazy images still load for the comparison.
 
+**Modern formats and responsive sizes.** `next.config.ts` enables `images.formats`
+(`image/avif`, `image/webp`). Raw `<img>` markup that cannot use `next/image` (snapshot HTML, the
+injected homepage hero slides, and the homepage review photo cards) is routed through the optimizer
+by `optimizeLocalImages` in `lib/live-route-data.ts`, using the helpers in `lib/optimized-image.ts`:
+same-origin `/__live/…` and `/assets/…` JPEG/PNG/WebP sources become
+`/_next/image?url=<encoded>&w=<w>&q=75` with a `srcset` (640/828/1200/1920, or 384–1200 for cards)
+and `sizes`. SVG, GIF, data URIs, external URLs, and tags that already carry a `srcset` are left
+alone. The homepage LCP preload in `app/[[...slug]]/page.tsx` uses `HOMEPAGE_HERO_LCP_PRELOAD`, which
+shares the hero `<img>`'s exact `srcset`/`sizes` so the browser reuses the preloaded response. Widths
+and quality must stay within `images.deviceSizes`/`imageSizes`/`qualities`, or the optimizer
+returns 400. Content-parity compares above-the-fold images after collapsing optimizer URLs back to
+the original asset path (`normalizeOptimizedImageUrl` in `tests/support/qa-helpers.ts`).
+
+The homepage TikTok follow section renders a poster image with a play button
+(`components/site/tiktok-follow-video.tsx`); the mp4 loads only after a click.
+
+## Redirects
+
+Permanent redirects for retired routes live in `next.config.ts` `redirects()` (e.g.
+`/front-office-program` → `/dental-assisting-program`, retired in f19780c). Legacy encoded-slash
+aliases stay in `vercel.json`.
+
 ## Known follow-up
 
 A header/footer navigation link to `/resources` is **not** yet added. Because content parity

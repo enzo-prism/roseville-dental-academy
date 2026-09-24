@@ -5,6 +5,7 @@ import {
   captureSnapshot,
   getContentBaseline,
   localOrigin,
+  normalizeOptimizedImageUrl,
   routeMappings,
   sanitizeLabel,
   suppressSitePromo,
@@ -57,8 +58,8 @@ for (const route of routeMappings) {
     }
 
     if (
-      JSON.stringify(baseline.snapshot.aboveFoldImages) !==
-      JSON.stringify(localSnapshot.visibleAboveFoldImages)
+      JSON.stringify(baseline.snapshot.aboveFoldImages.map(normalizeOptimizedImageUrl)) !==
+      JSON.stringify(localSnapshot.visibleAboveFoldImages.map(normalizeOptimizedImageUrl))
     ) {
       mismatches.push("above-the-fold image URLs drifted from baseline");
     }

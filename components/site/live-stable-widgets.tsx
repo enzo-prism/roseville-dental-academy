@@ -4,7 +4,9 @@ import { Award, BadgeCheck, CheckCircle2, ClipboardCheck, ListChecks } from "luc
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { HomepageCourseSections } from "@/components/site/homepage-course-sections";
+import { ResourceGuidesStrip } from "@/components/site/resource-guides-strip";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
+import { TikTokFollowVideo } from "@/components/site/tiktok-follow-video";
 import {
   Accordion,
   AccordionContent,
@@ -19,9 +21,11 @@ import { Separator } from "@/components/ui/separator";
 import type { LiveRoute } from "@/lib/live-route-data";
 import {
   boardApprovalHighlights,
+  googleReviewSummary,
   homeGalleryHighlight,
   instructorBios,
   photoGroups,
+  signupInterestOptions,
   socialLinks,
   studentFaqHighlights,
   testimonials,
@@ -37,6 +41,14 @@ const TIKTOK_FOLLOW_VIDEO_SRC = "/assets/social/tiktok/homepage-follow-1000.mp4"
 const TIKTOK_LOGO_DARK = "/assets/brand/tiktok-dark.svg";
 const TIKTOK_LOGO_LIGHT = "/assets/brand/tiktok-light.svg";
 
+// Course pages pre-check their own course in the request form so visitors do
+// not have to find and re-select it among every option.
+function getRouteSignupInterests(route: LiveRoute) {
+  const option = signupInterestOptions.find((item) => item.scheduleId === route.id);
+
+  return option ? [option.value] : undefined;
+}
+
 export function LiveStableWidgets({ route }: { route: LiveRoute }) {
   const slots = new Set(route.widgetSlots);
 
@@ -45,6 +57,7 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {slots.has("reviews") ? <StableReviews /> : null}
       {slots.has("home") ? <HomepageTikTokFollow /> : null}
       {slots.has("home") ? <HomepageCourseSections /> : null}
+      {slots.has("home") ? <ResourceGuidesStrip /> : null}
       {slots.has("board") ? <StableBoardApproval /> : null}
       {slots.has("instructors") ? <StableInstructorBios /> : null}
       {slots.has("faqs") ? <StableStudentFaqs /> : null}
@@ -53,6 +66,7 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {slots.has("signup") && route.route !== "/" ? (
         <LiveSignupSection
           compact={route.route !== "/"}
+          defaultInterests={getRouteSignupInterests(route)}
           pagePath={route.route}
           sourceLabel={route.title}
         />
@@ -74,18 +88,13 @@ function HomepageTikTokFollow() {
     >
       <div className="rda-tiktok-follow-inner">
         <figure className="rda-tiktok-video-frame">
-          <video
-            aria-label="Roseville Dental Academy TikTok preview"
-            autoPlay
-            className="rda-tiktok-follow-video"
-            loop
-            muted
-            playsInline
+          <TikTokFollowVideo
+            label="Roseville Dental Academy TikTok preview"
             poster={TIKTOK_FOLLOW_VIDEO_POSTER}
-            preload="metadata"
-          >
-            <source src={TIKTOK_FOLLOW_VIDEO_SRC} type="video/mp4" />
-          </video>
+            posterHeight={1024}
+            posterWidth={576}
+            src={TIKTOK_FOLLOW_VIDEO_SRC}
+          />
         </figure>
         <div className="rda-tiktok-follow-copy">
           <Image
@@ -211,7 +220,8 @@ function StableInstructorBios() {
     >
       <div className="rda-instructors-header">
         <div className="rda-section-heading rda-instructors-heading">
-          <h2>Instructor Bios</h2>
+          {/* Only rendered on /meet-the-instructors, where it is the page H1. */}
+          <h1>Instructor Bios</h1>
           <span aria-hidden="true" />
         </div>
         <p className="rda-section-intro rda-instructors-intro">
@@ -264,7 +274,8 @@ function StableStudentFaqs() {
   return (
     <section className="rda-stable-section rda-student-faq-section" data-rda-stable-widget="faqs">
       <div className="rda-section-heading">
-        <h2>Dental Assisting Program FAQs</h2>
+        {/* Only rendered on /faqs-1, where it is the page H1. */}
+        <h1>Dental Assisting Program FAQs</h1>
         <span aria-hidden="true" />
       </div>
       <p className="rda-section-intro">
@@ -295,7 +306,7 @@ function StableReviews() {
         <h2>Reviews</h2>
         <span aria-hidden="true" />
       </div>
-      <p className="rda-review-score">5.0 Roseville Dental Academy 77 Reviews</p>
+      <p className="rda-review-score">{googleReviewSummary.rating} Roseville Dental Academy {googleReviewSummary.count} Reviews</p>
       <div className="rda-review-grid">
         {testimonials.slice(0, 3).map((review) => (
           <Card className="rda-review-card border-border bg-card" key={review.name}>
@@ -323,7 +334,8 @@ function StableGallery({ full = false }: { full?: boolean }) {
       data-rda-stable-widget="gallery"
     >
       <div className="rda-section-heading">
-        <h2>{full ? "Photo Gallery" : homeGalleryHighlight.title}</h2>
+        {/* The full gallery is the /photos page body, so its heading is the page H1. */}
+        {full ? <h1>Photo Gallery</h1> : <h2>{homeGalleryHighlight.title}</h2>}
         <span aria-hidden="true" />
       </div>
       {!full ? <p className="rda-gallery-intro">{homeGalleryHighlight.copy}</p> : null}
@@ -345,7 +357,6 @@ function StableGallery({ full = false }: { full?: boolean }) {
                       fill
                       sizes="(max-width: 760px) 100vw, 33vw"
                       src={item.src}
-                      unoptimized
                     />
                   </AspectRatio>
                 </Card>

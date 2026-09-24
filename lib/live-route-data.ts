@@ -3,6 +3,13 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import manifestData from "@/snapshot/live/manifest.json";
+import {
+  OPTIMIZED_CARD_IMAGE_WIDTHS,
+  OPTIMIZED_IMAGE_WIDTHS,
+  isOptimizableLocalImage,
+  optimizedImageFallbackSrc,
+  optimizedImageSrcSet,
+} from "@/lib/optimized-image";
 import { LIVE_SOURCE_ORIGIN } from "@/lib/site-config";
 import {
   googleReviewsAggregate,
@@ -250,6 +257,26 @@ const HOMEPAGE_HERO_SLIDES = [
 ] as const;
 
 export const HOMEPAGE_HERO_LCP_IMAGE = HOMEPAGE_HERO_SLIDES[0].src;
+
+// Hero media spans the full width below 1024px and ~54% of the viewport beside
+// the copy column on desktop (see `.rda-home-hero` in app/globals.css).
+const HOMEPAGE_HERO_IMAGE_SIZES = "(max-width: 1024px) 100vw, 54vw";
+// Review photo cards: one column on phones, three columns capped by the 1240px
+// section width on larger screens.
+const HOMEPAGE_REVIEW_IMAGE_SIZES = "(max-width: 760px) 100vw, (max-width: 1240px) 33vw, 400px";
+// Generic snapshot images have no reliable layout hint, so assume full width.
+const SNAPSHOT_IMAGE_SIZES = "100vw";
+
+/**
+ * Preload descriptor for the homepage LCP hero image. It must use the exact
+ * same srcset/sizes as the rendered <img> so the browser reuses the preloaded
+ * optimizer response instead of fetching a second candidate.
+ */
+export const HOMEPAGE_HERO_LCP_PRELOAD = {
+  href: optimizedImageFallbackSrc(HOMEPAGE_HERO_LCP_IMAGE, OPTIMIZED_IMAGE_WIDTHS),
+  imageSizes: HOMEPAGE_HERO_IMAGE_SIZES,
+  imageSrcSet: optimizedImageSrcSet(HOMEPAGE_HERO_LCP_IMAGE, OPTIMIZED_IMAGE_WIDTHS),
+} as const;
 
 function routeDescription(route: ManifestRoute) {
   const override = ROUTE_DESCRIPTION_OVERRIDES[route.route];
@@ -652,6 +679,33 @@ function promoteLazyImages(html: string) {
     .replace(/\sdata-lazyimg="true"/gi, "");
 }
 
+// Route same-origin raster images through the Next.js image optimizer (AVIF/WebP
+// at layout-appropriate widths). Runs last, after hero/review injection, so every
+// raw <img> in the snapshot body is covered. Tags that already point at the
+// optimizer, carry their own srcset, or reference SVG/GIF/external/data URLs are
+// left untouched. alt, dimensions, and loading/decoding/fetchpriority hints are
+// preserved because only src/srcset/sizes are rewritten.
+function optimizeLocalImageTag(tag: string) {
+  const src = getHtmlAttribute(tag, "src");
+
+  if (!src || !isOptimizableLocalImage(src) || getHtmlAttribute(tag, "srcset").trim()) {
+    return tag;
+  }
+
+  let output = setHtmlAttribute(tag, "src", optimizedImageFallbackSrc(src));
+  output = setHtmlAttribute(output, "srcset", optimizedImageSrcSet(src));
+
+  if (!getHtmlAttribute(output, "sizes")) {
+    output = setHtmlAttribute(output, "sizes", SNAPSHOT_IMAGE_SIZES);
+  }
+
+  return output;
+}
+
+function optimizeLocalImages(html: string) {
+  return html.replace(/<img\b[^>]*>/gi, optimizeLocalImageTag);
+}
+
 function applyGeneratedImageReplacements(html: string) {
   return GENERATED_IMAGE_REPLACEMENTS.reduce(
     (output, { pattern, replacement }) => output.replace(pattern, replacement),
@@ -726,7 +780,7 @@ function renderHomepageReviewHighlightsHtml() {
   const renderReviewCard = (review: (typeof homepageReviewHighlights)[number]) => `
     <article class="rda-review-photo-card">
       <figure class="rda-review-photo-media">
-        <img src="${escapeHtml(review.image.src)}" alt="${escapeHtml(review.image.alt)}" loading="lazy" decoding="async" width="640" height="853" />
+        <img src="${escapeHtml(optimizedImageFallbackSrc(review.image.src, OPTIMIZED_CARD_IMAGE_WIDTHS))}" srcset="${escapeHtml(optimizedImageSrcSet(review.image.src, OPTIMIZED_CARD_IMAGE_WIDTHS))}" sizes="${HOMEPAGE_REVIEW_IMAGE_SIZES}" alt="${escapeHtml(review.image.alt)}" loading="lazy" decoding="async" width="640" height="853" />
       </figure>
       <div class="rda-review-photo-body">
         <p class="rda-review-photo-feature">${escapeHtml(review.feature)}</p>
@@ -818,7 +872,7 @@ function renderHomepageHeroHtml() {
   const slides = HOMEPAGE_HERO_SLIDES.map(
     (slide, index) => `
       <figure class="rda-home-hero-slide" data-rda-home-hero-slide="${index + 1}" aria-hidden="${index === 0 ? "false" : "true"}">
-        <img src="${escapeHtml(slide.src)}" alt="${escapeHtml(slide.alt)}" loading="${index === 0 ? "eager" : "lazy"}"${index === 0 ? ' fetchpriority="high"' : ""} decoding="async" />
+        <img src="${escapeHtml(optimizedImageFallbackSrc(slide.src, OPTIMIZED_IMAGE_WIDTHS))}" srcset="${escapeHtml(optimizedImageSrcSet(slide.src, OPTIMIZED_IMAGE_WIDTHS))}" sizes="${HOMEPAGE_HERO_IMAGE_SIZES}" alt="${escapeHtml(slide.alt)}" loading="${index === 0 ? "eager" : "lazy"}"${index === 0 ? ' fetchpriority="high"' : ""} decoding="async" />
         <figcaption>${escapeHtml(slide.caption)}</figcaption>
       </figure>`,
   ).join("");
@@ -897,20 +951,22 @@ export async function fetchLiveMirrorDocument(livePath: string): Promise<LiveMir
     applyCoursePriceReplacements(applyCourseDateReplacements(sanitizeSnapshotBody(bodyHtml))),
   );
 
-  return {
-    bodyClass,
-    bodyHtml:
-      route.route === "/"
-        ? removeHomepageLegacyCourseWidgets(
-            insertHomepageReviewHighlights(
-              replaceHomepageHero(applyHomepageCourseCopyReplacements(sanitizedBodyHtml)),
-            ),
-          )
-        : route.route === "/faqs-1"
-          ? ""
+  const routeBodyHtml =
+    route.route === "/"
+      ? removeHomepageLegacyCourseWidgets(
+          insertHomepageReviewHighlights(
+            replaceHomepageHero(applyHomepageCourseCopyReplacements(sanitizedBodyHtml)),
+          ),
+        )
+      : route.route === "/faqs-1"
+        ? ""
         : route.route === "/meet-the-instructors"
           ? removeMeetInstructorsIntro(sanitizedBodyHtml)
-        : sanitizedBodyHtml,
+          : sanitizedBodyHtml;
+
+  return {
+    bodyClass,
+    bodyHtml: optimizeLocalImages(routeBodyHtml),
     bodyScripts: [],
     description,
     headScripts: [],

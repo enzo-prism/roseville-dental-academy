@@ -91,7 +91,9 @@ test.describe("live-style interaction flows", () => {
       expect(placement.width, viewport.name).toBeGreaterThanOrEqual(56);
       expect(placement.height, viewport.name).toBeGreaterThanOrEqual(40);
 
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.evaluate(() =>
+        window.scrollTo({ behavior: "instant", left: 0, top: document.documentElement.scrollHeight }),
+      );
       const footerClearance = await page.evaluate(() => {
         const fabElement = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
         const policy = document.querySelector<HTMLElement>(".rda-footer-policy");
@@ -120,8 +122,11 @@ test.describe("live-style interaction flows", () => {
       expect(footerClearance.policyOverlap, viewport.name).toBe(false);
       expect(footerClearance.copyOverlap, viewport.name).toBe(false);
 
-      await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(400);
+      // The site uses smooth scrolling, so wait until the page actually reaches
+      // the top instead of sampling mid-animation after a fixed delay.
+      await page.evaluate(() => window.scrollTo({ behavior: "instant", left: 0, top: 0 }));
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+      await page.waitForTimeout(200);
       const mainTopAfter = await page.locator("#rda-main-content").evaluate((element) => {
         return Math.round(element.getBoundingClientRect().top);
       });
@@ -563,14 +568,16 @@ test.describe("live-style interaction flows", () => {
       );
       await expect(tiktokButton).toHaveAttribute("target", "_blank");
       await expect(tiktokButton).toHaveAttribute("rel", "noreferrer");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("autoplay", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("loop", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("muted", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("playsinline", "");
-      await expect(tiktokFollow.locator("video")).toHaveJSProperty("muted", true);
-      await expect(tiktokFollow.locator("video source")).toHaveAttribute(
+      // Click-to-play: only the optimized poster loads until the visitor asks
+      // for playback, so the mp4 never downloads on page view.
+      const tiktokPlayButton = tiktokFollow.getByRole("button", {
+        name: "Play video: Roseville Dental Academy TikTok preview",
+      });
+      await expect(tiktokPlayButton).toBeVisible();
+      await expect(tiktokFollow.locator("video")).toHaveCount(0);
+      await expect(tiktokPlayButton.locator("img")).toHaveAttribute(
         "src",
-        "/assets/social/tiktok/homepage-follow-1000.mp4",
+        /^\/_next\/image\?url=%2Fassets%2Fsocial%2Ftiktok%2Fhomepage-follow-1000-poster\.jpg&/,
       );
       await expect(
         tiktokFollow.locator('img[src^="/assets/brand/tiktok-dark.svg"]'),
@@ -581,7 +588,7 @@ test.describe("live-style interaction flows", () => {
 
       const desktopTiktokDesign = await tiktokFollow.evaluate((element) => {
         const inner = element.querySelector<HTMLElement>(".rda-tiktok-follow-inner");
-        const video = element.querySelector<HTMLVideoElement>("video");
+        const video = element.querySelector<HTMLElement>(".rda-tiktok-follow-video");
         const button = element.querySelector<HTMLElement>('[data-rda-social-button="tiktok"]');
         const sectionRect = element.getBoundingClientRect();
         const videoRect = video?.getBoundingClientRect();
@@ -608,6 +615,18 @@ test.describe("live-style interaction flows", () => {
         overflowX: 0,
       });
       expect(desktopTiktokDesign.videoHeight).toBeGreaterThan(desktopTiktokDesign.videoWidth);
+
+      await tiktokPlayButton.click();
+      const tiktokVideo = tiktokFollow.locator("video");
+      await expect(tiktokVideo).toHaveCount(1);
+      await expect(tiktokPlayButton).toHaveCount(0);
+      await expect(tiktokVideo).toHaveAttribute("controls", "");
+      await expect(tiktokVideo).toHaveAttribute("autoplay", "");
+      await expect(tiktokVideo).toHaveAttribute("playsinline", "");
+      await expect(tiktokFollow.locator("video source")).toHaveAttribute(
+        "src",
+        "/assets/social/tiktok/homepage-follow-1000.mp4",
+      );
 
       await expect(courseSystem.getByText("Now offering blended learning BLS", { exact: true })).toBeVisible();
       await expect(courseSystem.getByText("HEARTCODE BLS $85", { exact: true })).toBeVisible();
@@ -847,7 +866,7 @@ test.describe("live-style interaction flows", () => {
       const mobileTiktokDesign = await mobileTiktok.evaluate((element) => {
         const inner = element.querySelector<HTMLElement>(".rda-tiktok-follow-inner");
         const button = element.querySelector<HTMLElement>('[data-rda-social-button="tiktok"]');
-        const video = element.querySelector<HTMLElement>("video");
+        const video = element.querySelector<HTMLElement>(".rda-tiktok-follow-video");
         const sectionRect = element.getBoundingClientRect();
         const buttonRect = button?.getBoundingClientRect();
         const videoRect = video?.getBoundingClientRect();
@@ -2512,5 +2531,123 @@ test.describe("live-style interaction flows", () => {
       expect(analytics.pagePath).toContain("utm_content=test123");
       expect(analytics.pageLocation).toContain("fbclid=meta_preview_click");
     });
+  });
+});
+
+test.describe("course page conversion flow", () => {
+  test("Dental Assisting Program leads the desktop and mobile menus", async ({ page }) => {
+    await page.setViewportSize({ height: 900, width: 1280 });
+    await gotoSettled(page, "/infection-control");
+
+    const desktopLinks = page.locator('nav[aria-label="Primary"] .rda-nav-row > li');
+    await expect(desktopLinks.nth(1)).toContainText("Dental Assisting Program");
+    await expect(
+      page.locator(".rda-more-menu .rda-more-link", { hasText: "Dental Assisting Program" }),
+    ).toHaveCount(0);
+
+    await page.setViewportSize({ height: 844, width: 390 });
+    await gotoSettled(page, "/infection-control");
+    await page.getByRole("button", { name: "Hamburger Site Navigation Icon" }).click();
+    const mobileLinks = page.locator('[data-rda-mobile-menu="true"] nav > .rda-mobile-link');
+    await expect(mobileLinks.nth(1)).toHaveText("Dental Assisting Program");
+  });
+
+  test("DA program page answers price, payment plan, length, and next start up front", async ({ page }) => {
+    await page.setViewportSize({ height: 844, width: 390 });
+    await gotoSettled(page, "/dental-assisting-program");
+
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("h1")).toHaveText("Dental Assisting Program");
+
+    const strip = page.locator('[data-rda-program-page="true"] [data-rda-fact-strip="true"]');
+    await expect(strip.locator('[data-rda-fact="tuition"]')).toContainText("$2,500");
+    await expect(strip.locator('[data-rda-fact="payment-plan"]')).toContainText("$1,000 down");
+    await expect(strip.locator('[data-rda-fact="length"]')).toContainText("9 weeks");
+    await expect(strip.locator('[data-rda-fact="next-start"]')).toContainText("Oct 12");
+
+    // Price, payment plan, and the next start land in the first mobile screen.
+    const stripTop = await strip.locator('[data-rda-fact="next-start"]').evaluate(
+      (element) => element.getBoundingClientRect().bottom,
+    );
+    expect(stripTop).toBeLessThanOrEqual(844);
+
+    await expect(page.locator('[data-rda-program-payment="true"]')).toContainText(
+      "remaining balance is paid weekly over the nine weeks",
+    );
+    await expect(page.locator('[data-rda-program-timeline="true"] > li')).toHaveCount(5);
+    await expect(page.locator('[data-rda-graduate-stories="true"] > *')).toHaveCount(3);
+    await expect(page.locator('script#rda-ld-faq-dental-assisting')).toHaveCount(1);
+
+    const form = page.locator('form[data-rda-signup-form="true"]').first();
+    await expect(form.getByRole("checkbox", { name: "Dental Assisting Program" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await expect(form.locator('input[name="Interested classes[]"]')).toHaveValue(
+      "Dental Assisting Program",
+    );
+  });
+
+  test("certification course forms pre-select the page's course", async ({ page }) => {
+    await page.setViewportSize({ height: 900, width: 1280 });
+
+    for (const [path, interest] of [
+      ["/infection-control", "Infection Control"],
+      ["/bls-cpr-1", "BLS / CPR"],
+      ["/sealants", "Pit and Fissure Sealants"],
+    ] as const) {
+      await gotoSettled(page, path);
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(form.locator('input[name="Interested classes[]"]')).toHaveCount(1);
+      await expect(form.locator('input[name="Interested classes[]"]')).toHaveValue(interest);
+      await expect(page.locator('[data-rda-fact-strip="true"]').first()).toBeVisible();
+    }
+  });
+
+  test("promo popup only interrupts Dental Assisting pages", async ({ page }) => {
+    await page.setViewportSize({ height: 900, width: 1280 });
+
+    for (const path of ["/infection-control", "/coronal-polish", "/contact", "/faqs-1", "/resources"]) {
+      await gotoSettled(page, path, { allowPromo: true });
+      await expect(page.locator("[data-rda-promo-banner='true']")).toBeVisible();
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+    }
+
+    await gotoSettled(page, "/dental-assisting-program", { allowPromo: true });
+    await expect(page.locator("[data-rda-promo-dialog='true']")).toBeVisible({ timeout: 8_000 });
+  });
+
+  test("mobile action bar appears after the hero, replaces the WhatsApp FAB, and clears the form", async ({ page }) => {
+    await page.setViewportSize({ height: 844, width: 390 });
+    await gotoSettled(page, "/dental-assisting-program");
+
+    const bar = page.locator('[data-rda-action-bar="true"]');
+    const fab = page.locator(".rda-whatsapp-fab");
+
+    await expect(bar).toHaveAttribute("data-visible", "false");
+    await expect(fab).toBeVisible();
+
+    await page.locator('[data-rda-program-timeline="true"]').scrollIntoViewIfNeeded();
+    await expect(bar).toHaveAttribute("data-visible", "true");
+    await expect(bar).toBeVisible();
+    await expect(fab).toBeHidden();
+    await expect(bar.locator('[data-rda-action-bar-cta="request"]')).toHaveAttribute("href", "#quick-sign-up");
+    await expect(bar.locator('[data-rda-action-bar-cta="call"]')).toHaveAttribute("href", "tel:9168889821");
+    await expect(bar.locator("[data-rda-whatsapp='true']")).toBeVisible();
+
+    // Wait out the slide-in transition, then the bar sits flush with the bottom edge.
+    await expect
+      .poll(async () => {
+        const box = await bar.boundingBox();
+        return box ? Math.round(box.y + box.height) : -1;
+      })
+      .toBe(844);
+
+    await page.locator("#quick-sign-up").scrollIntoViewIfNeeded();
+    await expect(bar).toHaveAttribute("data-visible", "false");
+    await expect(fab).toBeVisible();
+
+    await page.setViewportSize({ height: 900, width: 1280 });
+    await expect(bar).toBeHidden();
   });
 });
