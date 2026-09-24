@@ -1121,6 +1121,48 @@ test("front office program is retired from public access and entry points", asyn
   expect(mismatches).toEqual([]);
 });
 
+test("public pages render exactly one meaningful h1", async ({ page }, testInfo) => {
+  const expectedH1ByPath: Record<string, string> = {
+    "/": "Begin Your Career in Dental Assisting",
+    "/contact": "Contact Us",
+    "/faqs-1": "Dental Assisting Program FAQs",
+    "/meet-the-instructors": "Instructor Bios",
+    "/photos": "Photo Gallery",
+    "/dental-assisting-program": "DENTAL ASSISTING TRAINING COURSE",
+    "/journey": "DA to RDA Career Journey",
+    "/resources": "Dental Assisting Career Guides & Resources",
+  };
+  const mismatches: string[] = [];
+  const results: Array<{ h1s: string[]; path: string }> = [];
+
+  for (const [path, expectedH1] of Object.entries(expectedH1ByPath)) {
+    await page.goto(`${localOrigin}${path}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    const h1s = (await page.locator("h1").allTextContents()).map((text) =>
+      text.replace(/\s+/g, " ").trim(),
+    );
+    results.push({ h1s, path });
+
+    if (h1s.length !== 1) {
+      mismatches.push(`${path} rendered ${h1s.length} h1 elements: ${JSON.stringify(h1s)}`);
+    } else if (h1s[0] !== expectedH1) {
+      mismatches.push(`${path} h1 "${h1s[0]}" !== "${expectedH1}"`);
+    }
+  }
+
+  if (mismatches.length > 0) {
+    writeJsonArtifact(testInfo, "h1-summary.json", { mismatches, results });
+  }
+
+  smokeSummary.push({
+    mismatches,
+    route: "public-h1",
+    status: mismatches.length === 0 ? "passed" : "failed",
+    type: "h1",
+  });
+
+  expect(mismatches).toEqual([]);
+});
+
 test("mobile homepage menu opens and reveals live information links", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });

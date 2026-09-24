@@ -207,7 +207,8 @@ function StableInstructorBios() {
     >
       <div className="rda-instructors-header">
         <div className="rda-section-heading rda-instructors-heading">
-          <h2>Instructor Bios</h2>
+          {/* Only rendered on /meet-the-instructors, where it is the page H1. */}
+          <h1>Instructor Bios</h1>
           <span aria-hidden="true" />
         </div>
         <p className="rda-section-intro rda-instructors-intro">
@@ -260,7 +261,8 @@ function StableStudentFaqs() {
   return (
     <section className="rda-stable-section rda-student-faq-section" data-rda-stable-widget="faqs">
       <div className="rda-section-heading">
-        <h2>Dental Assisting Program FAQs</h2>
+        {/* Only rendered on /faqs-1, where it is the page H1. */}
+        <h1>Dental Assisting Program FAQs</h1>
         <span aria-hidden="true" />
       </div>
       <p className="rda-section-intro">
@@ -319,7 +321,8 @@ function StableGallery({ full = false }: { full?: boolean }) {
       data-rda-stable-widget="gallery"
     >
       <div className="rda-section-heading">
-        <h2>{full ? "Photo Gallery" : homeGalleryHighlight.title}</h2>
+        {/* The full gallery is the /photos page body, so its heading is the page H1. */}
+        {full ? <h1>Photo Gallery</h1> : <h2>{homeGalleryHighlight.title}</h2>}
         <span aria-hidden="true" />
       </div>
       {!full ? <p className="rda-gallery-intro">{homeGalleryHighlight.copy}</p> : null}

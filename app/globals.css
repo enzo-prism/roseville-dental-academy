@@ -907,6 +907,7 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   text-align: center;
 }
 
+.rda-section-heading h1,
 .rda-section-heading h2 {
   color: var(--rda-color-heading);
   font-family: var(--rda-font-heading);
