@@ -9,7 +9,7 @@ to clients; adding a browser clock alone would leave static copy stale.
 
 Upcoming dates:
 
-- Dental Assisting: October 12 (Monday class); November 20, 2026.
+- Dental Assisting: October 12 (Monday class); November 20; December 5, 2026.
 - BLS: October 17; November 7; December 5, 2026.
 - Infection Control: October 17; November 14; December 5, 2026.
 - Radiation Safety: November 7; December 5, 2026 (October 17, 2026 is full).

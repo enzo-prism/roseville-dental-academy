@@ -12,7 +12,7 @@ import { suppressSitePromo } from "./support/qa-helpers";
 test("reviewed schedule excludes elapsed dates without inventing sold-out history", () => {
   expect(COURSE_SCHEDULE_REVIEWED_ON).toBe("2026-09-23");
   expect(getUpcomingScheduleMonths().map((month) => month.month)).toEqual(["October", "November", "December"]);
-  expect(getAvailableCourseDates("dental-assisting-program")).toEqual(["October 12, 2026", "November 20, 2026"]);
+  expect(getAvailableCourseDates("dental-assisting-program")).toEqual(["October 12, 2026", "November 20, 2026", "December 5, 2026"]);
   expect(getAvailableCourseDates("bls-cpr-1")).toEqual(["October 17, 2026", "November 7, 2026", "December 5, 2026"]);
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-18")).toBe("November 7, 2026");
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-12-06")).toBeUndefined();
