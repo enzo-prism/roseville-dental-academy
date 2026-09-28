@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "source": "committed",
+  "generatedAt": null,
+  "reviewedOn": "2026-09-23",
+  "entries": [
+    {
+      "courseId": "bls-cpr-1",
+      "isoDate": "2026-06-06",
+      "status": "full"
+    },
+    {
+      "courseId": "radiation-safety",
+      "isoDate": "2026-06-06",
+      "status": "full"
+    },
+    {
+      "courseId": "infection-control",
+      "isoDate": "2026-06-06",
+      "status": "full"
+    },
+    {
+      "courseId": "dental-assisting-program",
+      "isoDate": "2026-06-19",
+      "status": "full"
+    },
+    {
+      "courseId": "coronal-polish",
+      "isoDate": "2026-06-20",
+      "status": "full"
+    },
+    {
+      "courseId": "sealants",
+      "isoDate": "2026-06-20",
+      "status": "full"
+    },
+    {
+      "courseId": "dental-assisting-program",
+      "isoDate": "2026-07-13",
+      "status": "full"
+    },
+    {
+      "courseId": "bls-cpr-1",
+      "isoDate": "2026-07-18",
+      "status": "full"
+    },
+    {
+      "courseId": "radiation-safety",
+      "isoDate": "2026-07-18",
+      "status": "full"
+    },
+    {
+      "courseId": "infection-control",
+      "isoDate": "2026-07-18",
+      "status": "full"
+    },
+    {
+      "courseId": "coronal-polish",
+      "isoDate": "2026-07-25",
+      "status": "full"
+    },
+    {
+      "courseId": "sealants",
+      "isoDate": "2026-07-25",
+      "status": "full"
+    },
+    {
+      "courseId": "bls-cpr-1",
+      "isoDate": "2026-08-01",
+      "status": "open"
+    },
+    {
+      "courseId": "radiation-safety",
+      "isoDate": "2026-08-01",
+      "status": "full"
+    },
+    {
+      "courseId": "infection-control",
+      "isoDate": "2026-08-01",
+      "status": "open"
+    },
+    {
+      "courseId": "coronal-polish",
+      "isoDate": "2026-08-08",
+      "status": "full"
+    },
+    {
+      "courseId": "sealants",
+      "isoDate": "2026-08-08",
+      "status": "full"
+    },
+    {
+      "courseId": "dental-assisting-program",
+      "isoDate": "2026-09-04",
+      "status": "full"
+    },
+    {
+      "courseId": "bls-cpr-1",
+      "isoDate": "2026-09-05",
+      "status": "full"
+    },
+    {
+      "courseId": "radiation-safety",
+      "isoDate": "2026-09-05",
+      "status": "full"
+    },
+    {
+      "courseId": "infection-control",
+      "isoDate": "2026-09-05",
+      "status": "full"
+    },
+    {
+      "courseId": "coronal-polish",
+      "isoDate": "2026-09-12",
+      "status": "full"
+    },
+    {
+      "courseId": "sealants",
+      "isoDate": "2026-09-12",
+      "status": "full"
+    },
+    {
+      "courseId": "dental-assisting-program",
+      "isoDate": "2026-09-12",
+      "status": "full"
+    },
+    {
+      "courseId": "dental-assisting-program",
+      "isoDate": "2026-10-12",
+      "status": "open"
+    },
+    {
+      "courseId": "bls-cpr-1",
+      "isoDate": "2026-10-17",
+      "status": "open"
+    },
+    {
+      "courseId": "radiation-safety",
+      "isoDate": "2026-10-17",
+      "status": "full"
+    },
+    {
+      "courseId": "infection-control",
+      "isoDate": "2026-10-17",
+      "status": "open"
+    },
+    {
+      "courseId": "coronal-polish",
+      "isoDate": "2026-10-24",
+      "status": "open"
+    },
+    {
+      "courseId": "sealants",
+      "isoDate": "2026-10-24",
+      "status": "full"
+    },
+    {
+      "courseId": "bls-cpr-1",
+      "isoDate": "2026-11-07",
+      "status": "open"
+    },
+    {
+      "courseId": "radiation-safety",
+      "isoDate": "2026-11-07",
+      "status": "open"
+    },
+    {
+      "courseId": "coronal-polish",
+      "isoDate": "2026-11-14",
+      "status": "open"
+    },
+    {
+      "courseId": "sealants",
+      "isoDate": "2026-11-14",
+      "status": "open"
+    },
+    {
+      "courseId": "infection-control",
+      "isoDate": "2026-11-14",
+      "status": "open"
+    },
+    {
+      "courseId": "dental-assisting-program",
+      "isoDate": "2026-11-20",
+      "status": "open"
+    },
+    {
+      "courseId": "bls-cpr-1",
+      "isoDate": "2026-12-05",
+      "status": "open"
+    },
+    {
+      "courseId": "radiation-safety",
+      "isoDate": "2026-12-05",
+      "status": "open"
+    },
+    {
+      "courseId": "infection-control",
+      "isoDate": "2026-12-05",
+      "status": "open"
+    },
+    {
+      "courseId": "dental-assisting-program",
+      "isoDate": "2026-12-05",
+      "status": "open"
+    },
+    {
+      "courseId": "coronal-polish",
+      "isoDate": "2026-12-12",
+      "status": "open"
+    },
+    {
+      "courseId": "sealants",
+      "isoDate": "2026-12-12",
+      "status": "open"
+    }
+  ]
+}

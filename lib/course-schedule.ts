@@ -1,3 +1,5 @@
+import courseScheduleData from "@/data/course-schedule.json";
+
 export type CourseScheduleId =
   | "bls-cpr-1"
   | "coronal-polish"
@@ -29,10 +31,11 @@ export type CourseScheduleMonth = {
 export const courseScheduleNote =
   "Dates are penciled in and may change; admissions will confirm current availability.";
 
-// One reviewed cutoff for static HTML, metadata, and client hydration. Advance
-// this during each schedule review and rebuild; do not use separate wall clocks
-// in client/server modules. Elapsed dates are not evidence a class sold out.
-export const COURSE_SCHEDULE_REVIEWED_ON = "2026-09-23";
+// One reviewed cutoff for static HTML, metadata, and client hydration. It comes
+// from the schedule data: the committed copy's review date, or the academy-local
+// build date when production pulls from the dashboard. Do not use separate wall
+// clocks in client/server modules. Elapsed dates are not evidence a class sold out.
+export const COURSE_SCHEDULE_REVIEWED_ON = courseScheduleData.reviewedOn;
 
 export const courseScheduleCourseDetails: Record<
   CourseScheduleId,
@@ -82,266 +85,83 @@ function course(id: CourseScheduleId, status?: CourseScheduleStatus): CourseSche
   };
 }
 
-const blsXrayInfectionCourses = [
-  course("bls-cpr-1"),
-  course("radiation-safety"),
-  course("infection-control"),
-] satisfies CourseScheduleCourse[];
+// Dates and open/full status live in data/course-schedule.json. Production
+// builds refresh that file from the RDA dashboard's Class dates editor
+// (scripts/pull-course-schedule.mjs); every other build, CI, and local run uses
+// the committed copy. Course order within a date follows this list.
+const courseDisplayOrder: CourseScheduleId[] = [
+  "bls-cpr-1",
+  "radiation-safety",
+  "coronal-polish",
+  "sealants",
+  "infection-control",
+  "dental-assisting-program",
+];
 
-// June 6, 2026: BLS, X-rays, and Infection Control are all fully booked.
-const juneSixFullCourses = [
-  course("bls-cpr-1", "full"),
-  course("radiation-safety", "full"),
-  course("infection-control", "full"),
-] satisfies CourseScheduleCourse[];
+type CourseScheduleDataEntry = {
+  courseId: string;
+  isoDate: string;
+  status: string;
+};
 
-const coronalSealantsCourses = [
-  course("coronal-polish"),
-  course("sealants"),
-] satisfies CourseScheduleCourse[];
+function isCourseScheduleId(value: string): value is CourseScheduleId {
+  return (courseDisplayOrder as string[]).includes(value);
+}
 
-// June 20, 2026: Coronal Polish and Pit and Fissure Sealants are fully booked.
-const juneTwentyCourses = [
-  course("coronal-polish", "full"),
-  course("sealants", "full"),
-] satisfies CourseScheduleCourse[];
+function isoDateParts(isoDate: string) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
 
-// July 25, 2026: Coronal Polish and Pit and Fissure Sealants are fully booked.
-const julyTwentyFiveCourses = [
-  course("coronal-polish", "full"),
-  course("sealants", "full"),
-] satisfies CourseScheduleCourse[];
+function formatIsoDate(isoDate: string, options: Intl.DateTimeFormatOptions) {
+  return isoDateParts(isoDate).toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
+}
 
-// August 1, 2026: X-rays / Radiation Safety is fully booked; BLS and Infection
-// Control still have seats, so this date needs its own list instead of the
-// shared `blsXrayInfectionCourses` reference used by the later 2026 dates.
-const augustOneCourses = [
-  course("bls-cpr-1"),
-  course("radiation-safety", "full"),
-  course("infection-control"),
-] satisfies CourseScheduleCourse[];
+export function buildCourseScheduleMonths(
+  entries: CourseScheduleDataEntry[],
+  reviewedOn: string,
+): CourseScheduleMonth[] {
+  const byDate = new Map<string, CourseScheduleCourse[]>();
 
-// September 5, 2026: BLS, X-rays / Radiation Safety, and Infection Control
-// are all fully booked. This date keeps its own list instead of the shared
-// `blsXrayInfectionCourses` reference used by December 5.
-const septemberFiveCourses = [
-  course("bls-cpr-1", "full"),
-  course("radiation-safety", "full"),
-  course("infection-control", "full"),
-] satisfies CourseScheduleCourse[];
+  for (const entry of entries) {
+    if (!isCourseScheduleId(entry.courseId) || !/^\d{4}-\d{2}-\d{2}$/.test(entry.isoDate)) {
+      continue;
+    }
+    const courses = byDate.get(entry.isoDate) ?? [];
+    courses.push(course(entry.courseId, entry.status === "full" ? "full" : undefined));
+    byDate.set(entry.isoDate, courses);
+  }
 
-// October 17, 2026: X-rays / Radiation Safety is fully booked; BLS and
-// Infection Control still have seats (September 23 sync: the October
-// Infection Control class is open and the top enrollment priority), so this
-// date needs its own list instead of the shared `blsXrayInfectionCourses`
-// reference used by December 5.
-const octoberSeventeenCourses = [
-  course("bls-cpr-1"),
-  course("radiation-safety", "full"),
-  course("infection-control"),
-] satisfies CourseScheduleCourse[];
+  const reviewedYear = reviewedOn.slice(0, 4);
+  const months = new Map<string, CourseScheduleMonth>();
 
-// August 8, 2026: Coronal Polish and Pit and Fissure Sealants are both fully booked.
-const augustEightCourses = [
-  course("coronal-polish", "full"),
-  course("sealants", "full"),
-] satisfies CourseScheduleCourse[];
+  for (const isoDate of [...byDate.keys()].sort()) {
+    const monthKey = isoDate.slice(0, 7);
+    const monthName = formatIsoDate(isoDate, { month: "long" });
+    const month = months.get(monthKey) ?? {
+      month: isoDate.startsWith(reviewedYear) ? monthName : `${monthName} ${isoDate.slice(0, 4)}`,
+      entries: [],
+    };
+    const courses = (byDate.get(isoDate) ?? []).sort(
+      (a, b) => courseDisplayOrder.indexOf(a.id) - courseDisplayOrder.indexOf(b.id),
+    );
 
-// September 12, 2026: Dental Assisting (Saturday Academy), Coronal Polish, and
-// Pit and Fissure Sealants are all fully booked. This date keeps its own list
-// instead of spreading the shared `coronalSealantsCourses` reference used by
-// Dec 12.
-const septemberTwelveCourses = [
-  course("dental-assisting-program", "full"),
-  course("coronal-polish", "full"),
-  course("sealants", "full"),
-] satisfies CourseScheduleCourse[];
+    month.entries.push({
+      date: formatIsoDate(isoDate, { month: "long", day: "numeric", year: "numeric" }),
+      day: formatIsoDate(isoDate, { month: "long", day: "numeric" }),
+      isoDate,
+      courses,
+    });
+    months.set(monthKey, month);
+  }
 
-// October 24, 2026: Pit and Fissure Sealants is fully booked; Coronal Polish
-// still has seats, so this date needs its own list instead of the shared
-// `coronalSealantsCourses` reference used by Dec 12.
-const octoberTwentyFourCourses = [
-  course("coronal-polish"),
-  course("sealants", "full"),
-] satisfies CourseScheduleCourse[];
+  return [...months.values()];
+}
 
-// November 7, 2026: BLS and X-rays / Radiation Safety only. Infection Control
-// is not offered on this date, so it cannot reuse `blsXrayInfectionCourses`
-// (still used by December 5).
-const novemberSevenCourses = [
-  course("bls-cpr-1"),
-  course("radiation-safety"),
-] satisfies CourseScheduleCourse[];
-
-// November 14, 2026: Coronal Polish and Pit and Fissure Sealants plus an
-// added Infection Control class (alongside October 17 and December 5), so
-// this date cannot reuse `coronalSealantsCourses`.
-const novemberFourteenCourses = [
-  course("coronal-polish"),
-  course("sealants"),
-  course("infection-control"),
-] satisfies CourseScheduleCourse[];
-
-// July 18, 2026: the class date has passed — BLS, X-rays, and Infection Control are closed.
-const julyEighteenCourses = [
-  course("bls-cpr-1", "full"),
-  course("radiation-safety", "full"),
-  course("infection-control", "full"),
-] satisfies CourseScheduleCourse[];
-
-export const courseScheduleMonths = [
-  {
-    month: "June",
-    entries: [
-      {
-        date: "June 6, 2026",
-        day: "June 6",
-        isoDate: "2026-06-06",
-        courses: juneSixFullCourses,
-      },
-      {
-        date: "June 19, 2026",
-        day: "June 19",
-        isoDate: "2026-06-19",
-        courses: [course("dental-assisting-program", "full")],
-      },
-      {
-        date: "June 20, 2026",
-        day: "June 20",
-        isoDate: "2026-06-20",
-        courses: juneTwentyCourses,
-      },
-    ],
-  },
-  {
-    month: "July",
-    entries: [
-      {
-        date: "July 13, 2026",
-        day: "July 13",
-        isoDate: "2026-07-13",
-        courses: [course("dental-assisting-program", "full")],
-      },
-      {
-        date: "July 18, 2026",
-        day: "July 18",
-        isoDate: "2026-07-18",
-        courses: julyEighteenCourses,
-      },
-      {
-        date: "July 25, 2026",
-        day: "July 25",
-        isoDate: "2026-07-25",
-        courses: julyTwentyFiveCourses,
-      },
-    ],
-  },
-  {
-    month: "August",
-    entries: [
-      {
-        date: "August 1, 2026",
-        day: "August 1",
-        isoDate: "2026-08-01",
-        courses: augustOneCourses,
-      },
-      {
-        date: "August 8, 2026",
-        day: "August 8",
-        isoDate: "2026-08-08",
-        courses: augustEightCourses,
-      },
-    ],
-  },
-  {
-    month: "September",
-    entries: [
-      {
-        date: "September 4, 2026",
-        day: "September 4",
-        isoDate: "2026-09-04",
-        courses: [course("dental-assisting-program", "full")],
-      },
-      {
-        date: "September 5, 2026",
-        day: "September 5",
-        isoDate: "2026-09-05",
-        courses: septemberFiveCourses,
-      },
-      {
-        date: "September 12, 2026",
-        day: "September 12",
-        isoDate: "2026-09-12",
-        // Saturday Academy DA cohort plus existing coronal/sealants courses
-        // on the same date (separate programs, not a combined attendance day).
-        courses: septemberTwelveCourses,
-      },
-    ],
-  },
-  {
-    month: "October",
-    entries: [
-      {
-        date: "October 12, 2026",
-        day: "October 12",
-        isoDate: "2026-10-12",
-        courses: [course("dental-assisting-program")],
-      },
-      {
-        date: "October 17, 2026",
-        day: "October 17",
-        isoDate: "2026-10-17",
-        courses: octoberSeventeenCourses,
-      },
-      {
-        date: "October 24, 2026",
-        day: "October 24",
-        isoDate: "2026-10-24",
-        courses: octoberTwentyFourCourses,
-      },
-    ],
-  },
-  {
-    month: "November",
-    entries: [
-      {
-        date: "November 7, 2026",
-        day: "November 7",
-        isoDate: "2026-11-07",
-        courses: novemberSevenCourses,
-      },
-      {
-        date: "November 14, 2026",
-        day: "November 14",
-        isoDate: "2026-11-14",
-        courses: novemberFourteenCourses,
-      },
-      {
-        date: "November 20, 2026",
-        day: "November 20",
-        isoDate: "2026-11-20",
-        courses: [course("dental-assisting-program")],
-      },
-    ],
-  },
-  {
-    month: "December",
-    entries: [
-      {
-        date: "December 5, 2026",
-        day: "December 5",
-        isoDate: "2026-12-05",
-        courses: [...blsXrayInfectionCourses, course("dental-assisting-program")],
-      },
-      {
-        date: "December 12, 2026",
-        day: "December 12",
-        isoDate: "2026-12-12",
-        courses: coronalSealantsCourses,
-      },
-    ],
-  },
-] satisfies CourseScheduleMonth[];
+export const courseScheduleMonths = buildCourseScheduleMonths(
+  courseScheduleData.entries,
+  COURSE_SCHEDULE_REVIEWED_ON,
+);
 
 export const courseScheduleEntries = courseScheduleMonths.flatMap((month) =>
   month.entries.map((entry) => ({

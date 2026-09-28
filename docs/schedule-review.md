@@ -1,11 +1,21 @@
 # Course schedule review: September 23, 2026
 
-`lib/course-schedule.ts` owns dates and availability. `COURSE_SCHEDULE_REVIEWED_ON`
-is the reviewed cutoff for this static release. It deliberately uses the same
-date in server-rendered HTML and client forms. This is not automatic daily rollover:
-advance the cutoff and rebuild when reviewing the schedule, including after each
-class date. A future automated rollover needs server-generated date data passed
-to clients; adding a browser clock alone would leave static copy stale.
+**Source of truth (from September 28, 2026):** the RDA dashboard's Class dates
+page. Production builds run `scripts/pull-course-schedule.mjs`, which pulls the
+dashboard feed (`RDA_SCHEDULE_FEED_URL` + `RDA_SCHEDULE_FEED_TOKEN`, Production
+env only) into `data/course-schedule.json` and sets the cutoff to the
+academy-local build date. Saving in the dashboard rebuilds the site through a
+deploy hook, and a daily dashboard cron rebuilds it just after midnight Pacific
+so elapsed dates drop off. Preview, CI, and local builds use the committed
+`data/course-schedule.json`, whose `reviewedOn` is the cutoff below. On any feed
+failure the build keeps the committed copy. Refresh the committed copy with
+`RDA_SCHEDULE_FEED_URL=... RDA_SCHEDULE_FEED_TOKEN=... pnpm schedule:pull` when
+tests and baselines should follow the dashboard.
+
+`lib/course-schedule.ts` derives months, labels, and availability from that
+data. `COURSE_SCHEDULE_REVIEWED_ON` deliberately uses the same date in
+server-rendered HTML and client forms; adding a browser clock alone would leave
+static copy stale.
 
 Upcoming dates:
 

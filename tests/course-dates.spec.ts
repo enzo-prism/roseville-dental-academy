@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   COURSE_SCHEDULE_REVIEWED_ON,
+  buildCourseScheduleMonths,
   getAvailableCourseDates,
   getCourseSchedule,
   getNextAvailableCourseDate,
@@ -8,6 +9,13 @@ import {
 } from "../lib/course-schedule";
 import { adLandingPages } from "../lib/ad-landing-pages";
 import { suppressSitePromo } from "./support/qa-helpers";
+import { execFile } from "node:child_process";
+import { copyFileSync, mkdtempSync, readFileSync } from "node:fs";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 
 test("reviewed schedule excludes elapsed dates without inventing sold-out history", () => {
   expect(COURSE_SCHEDULE_REVIEWED_ON).toBe("2026-09-23");
@@ -42,6 +50,80 @@ test("reviewed schedule excludes elapsed dates without inventing sold-out histor
   expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-08-01")?.status).toBe("available");
   expect(getCourseSchedule("sealants").find((entry) => entry.isoDate === "2026-10-24")?.status).toBe("full");
   expect(getCourseSchedule("coronal-polish").find((entry) => entry.isoDate === "2026-10-24")?.status).toBe("available");
+});
+
+test("dashboard schedule data builds months, labels, and course order", () => {
+  const months = buildCourseScheduleMonths(
+    [
+      { courseId: "dental-assisting-program", isoDate: "2026-12-05", status: "open" },
+      { courseId: "bls-cpr-1", isoDate: "2026-12-05", status: "full" },
+      { courseId: "sealants", isoDate: "2027-01-09", status: "open" },
+      { courseId: "front-office-program", isoDate: "2026-12-05", status: "open" },
+    ],
+    "2026-11-30",
+  );
+
+  expect(months.map((month) => month.month)).toEqual(["December", "January 2027"]);
+  expect(months[0].entries[0]).toMatchObject({ date: "December 5, 2026", day: "December 5", isoDate: "2026-12-05" });
+  expect(months[0].entries[0].courses.map((course) => [course.id, course.status])).toEqual([
+    ["bls-cpr-1", "full"],
+    ["dental-assisting-program", undefined],
+  ]);
+});
+
+test("build pulls a valid dashboard feed and keeps the committed copy otherwise", async () => {
+  const good = {
+    version: 1,
+    generatedAt: "2026-09-28T20:00:00Z",
+    reviewedOn: "2026-09-28",
+    entries: [{ courseId: "sealants", isoDate: "2026-11-14", status: "full" }],
+  };
+  const feeds: Record<string, unknown> = {
+    "/good": good,
+    "/version": { ...good, version: 2 },
+    "/empty": { ...good, entries: [] },
+    "/bad-date": { ...good, entries: [{ courseId: "sealants", isoDate: "2026-02-30", status: "open" }] },
+    "/bad-status": { ...good, entries: [{ courseId: "sealants", isoDate: "2026-11-14", status: "Full" }] },
+    "/bad-course": { ...good, entries: [{ courseId: "front-office-program", isoDate: "2026-11-14", status: "open" }] },
+    "/duplicate": { ...good, entries: [...good.entries, ...good.entries] },
+  };
+  const server = createServer((request, response) => {
+    if (request.headers.authorization !== "Bearer test-token") {
+      response.statusCode = 401;
+      response.end("{}");
+      return;
+    }
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify(feeds[request.url ?? ""] ?? {}));
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const committed = readFileSync("data/course-schedule.json", "utf8");
+
+  const pull = async (path: string, token = "test-token") => {
+    const dataPath = join(mkdtempSync(join(tmpdir(), "rda-schedule-")), "course-schedule.json");
+    copyFileSync("data/course-schedule.json", dataPath);
+    // Async: a synchronous child would block this process's mock feed server.
+    await promisify(execFile)(process.execPath, ["scripts/pull-course-schedule.mjs"], {
+      env: {
+        ...process.env,
+        RDA_SCHEDULE_DATA_PATH: dataPath,
+        RDA_SCHEDULE_FEED_TOKEN: token,
+        RDA_SCHEDULE_FEED_URL: `${origin}${path}`,
+      },
+    });
+    return readFileSync(dataPath, "utf8");
+  };
+
+  try {
+    expect(JSON.parse(await pull("/good"))).toMatchObject({ source: "dashboard", reviewedOn: "2026-09-28", entries: good.entries });
+    for (const path of ["/version", "/empty", "/bad-date", "/bad-status", "/bad-course", "/duplicate"]) {
+      expect(await pull(path), path).toBe(committed);
+    }
+    expect(await pull("/good", "wrong-token")).toBe(committed);
+  } finally {
+    server.close();
+  }
 });
 
 test.beforeEach(async ({ context }) => {
