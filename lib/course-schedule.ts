@@ -331,7 +331,7 @@ export const courseScheduleMonths = [
         date: "December 5, 2026",
         day: "December 5",
         isoDate: "2026-12-05",
-        courses: blsXrayInfectionCourses,
+        courses: [...blsXrayInfectionCourses, course("dental-assisting-program")],
       },
       {
         date: "December 12, 2026",

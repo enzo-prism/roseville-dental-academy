@@ -649,7 +649,7 @@ test.describe("live-style interaction flows", () => {
         ),
       ).toBeVisible();
       await expect(
-        courseSystem.getByText("October 12, 2026; November 20, 2026"),
+        courseSystem.getByText("October 12, 2026; November 20, 2026; December 5, 2026"),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",
@@ -2435,6 +2435,7 @@ test.describe("live-style interaction flows", () => {
       await expect(dates.getByText("September 12, 2026 (Saturday Academy)")).toHaveCount(0);
       await expect(dates.getByText("October 12, 2026")).toBeVisible();
       await expect(dates.getByText("November 20, 2026")).toBeVisible();
+      await expect(dates.getByText("December 5, 2026")).toBeVisible();
       await expect(
         page.getByText("Monday, Friday, and Saturday class schedules are separate options; students attend one, not all three."),
       ).toBeVisible();
