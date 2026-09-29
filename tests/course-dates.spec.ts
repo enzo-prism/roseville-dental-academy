@@ -10,12 +10,14 @@ import {
 import { adLandingPages } from "../lib/ad-landing-pages";
 import { suppressSitePromo } from "./support/qa-helpers";
 import { execFile } from "node:child_process";
-import { copyFileSync, mkdtempSync, readFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { scheduleRevision } from "../lib/course-schedule-revision.mjs";
+import courseScheduleData from "../data/course-schedule.json";
 
 test("reviewed schedule excludes elapsed dates without inventing sold-out history", () => {
   expect(COURSE_SCHEDULE_REVIEWED_ON).toBe("2026-09-23");
@@ -71,7 +73,7 @@ test("dashboard schedule data builds months, labels, and course order", () => {
   ]);
 });
 
-test("build pulls a valid dashboard feed and keeps the committed copy otherwise", async () => {
+test("build accepts intentional empty feeds and refuses stale fallback on feed errors", async () => {
   const good = {
     version: 1,
     generatedAt: "2026-09-28T20:00:00Z",
@@ -80,6 +82,8 @@ test("build pulls a valid dashboard feed and keeps the committed copy otherwise"
   };
   const feeds: Record<string, unknown> = {
     "/good": good,
+    "/revision": { ...good, revision: scheduleRevision(good.entries) },
+    "/wrong-revision": { ...good, revision: "0".repeat(64) },
     "/version": { ...good, version: 2 },
     "/empty": { ...good, entries: [] },
     "/bad-date": { ...good, entries: [{ courseId: "sealants", isoDate: "2026-02-30", status: "open" }] },
@@ -93,6 +97,7 @@ test("build pulls a valid dashboard feed and keeps the committed copy otherwise"
       response.end("{}");
       return;
     }
+    if (request.url === "/outage") response.statusCode = 503;
     response.setHeader("content-type", "application/json");
     response.end(JSON.stringify(feeds[request.url ?? ""] ?? {}));
   });
@@ -100,30 +105,73 @@ test("build pulls a valid dashboard feed and keeps the committed copy otherwise"
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const committed = readFileSync("data/course-schedule.json", "utf8");
 
-  const pull = async (path: string, token = "test-token") => {
-    const dataPath = join(mkdtempSync(join(tmpdir(), "rda-schedule-")), "course-schedule.json");
+  const temporaryDirectories: string[] = [];
+  const pull = async (path: string, token = "test-token", environment: Record<string, string> = {}) => {
+    const directory = mkdtempSync(join(tmpdir(), "rda-schedule-"));
+    temporaryDirectories.push(directory);
+    const dataPath = join(directory, "course-schedule.json");
     copyFileSync("data/course-schedule.json", dataPath);
     // Async: a synchronous child would block this process's mock feed server.
-    await promisify(execFile)(process.execPath, ["scripts/pull-course-schedule.mjs"], {
-      env: {
-        ...process.env,
-        RDA_SCHEDULE_DATA_PATH: dataPath,
-        RDA_SCHEDULE_FEED_TOKEN: token,
-        RDA_SCHEDULE_FEED_URL: `${origin}${path}`,
-      },
-    });
+    try {
+      await promisify(execFile)(process.execPath, ["scripts/pull-course-schedule.mjs"], {
+        env: {
+          ...process.env,
+          VERCEL_ENV: "preview",
+          VERCEL_TARGET_ENV: "preview",
+          RDA_SCHEDULE_DATA_PATH: dataPath,
+          RDA_SCHEDULE_FEED_TOKEN: token,
+          RDA_SCHEDULE_FEED_URL: `${origin}${path}`,
+          ...environment,
+        },
+      });
+    } catch (error) {
+      expect(readFileSync(dataPath, "utf8")).toBe(committed);
+      throw error;
+    }
     return readFileSync(dataPath, "utf8");
   };
 
   try {
     expect(JSON.parse(await pull("/good"))).toMatchObject({ source: "dashboard", reviewedOn: "2026-09-28", entries: good.entries });
-    for (const path of ["/version", "/empty", "/bad-date", "/bad-status", "/bad-course", "/duplicate"]) {
-      expect(await pull(path), path).toBe(committed);
+    expect(JSON.parse(await pull("/revision"))).toMatchObject({ revision: scheduleRevision(good.entries) });
+    expect(JSON.parse(await pull("/empty"))).toMatchObject({ source: "dashboard", entries: [], revision: scheduleRevision([]) });
+    for (const path of ["/version", "/bad-date", "/bad-status", "/bad-course", "/duplicate", "/wrong-revision", "/outage"]) {
+      await expect(pull(path), path).rejects.toThrow("refusing to publish stale availability");
     }
-    expect(await pull("/good", "wrong-token")).toBe(committed);
+    await expect(pull("/good", "wrong-token")).rejects.toThrow("HTTP 401");
+    const unconfigured = { RDA_SCHEDULE_FEED_URL: "", RDA_SCHEDULE_FEED_TOKEN: "" };
+    expect(await pull("/good", "", unconfigured)).toBe(committed);
+    await expect(pull("/good", "", { ...unconfigured, VERCEL_ENV: "production" })).rejects.toThrow("are required");
+    await expect(pull("/good", "", { ...unconfigured, VERCEL_TARGET_ENV: "production" })).rejects.toThrow("are required");
+    await expect(pull("/good", "")).rejects.toThrow("are required");
   } finally {
     server.close();
+    for (const directory of temporaryDirectories) rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("schedule revisions identify content independently of ordering and timestamps", () => {
+  const entries = [
+    { courseId: "sealants", isoDate: "2026-12-12", status: "open" },
+    { courseId: "bls-cpr-1", isoDate: "2026-10-17", status: "full" },
+  ];
+  expect(scheduleRevision(entries)).toBe("51adeb1ccd357461fdc5240a06e9563baf2e12d18176ca501159503431371d61");
+  expect(scheduleRevision(entries)).toBe(scheduleRevision([...entries].reverse()));
+  expect(scheduleRevision(entries)).not.toBe(scheduleRevision([{ ...entries[0], status: "full" }, entries[1]]));
+  expect(scheduleRevision([])).toBe("4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945");
+  expect(buildCourseScheduleMonths([], "2026-09-28")).toEqual([]);
+});
+
+test("publication status describes bundled schedule without caching or credentials", async ({ request }) => {
+  const response = await request.get("/api/course-schedule-status");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  expect(await response.json()).toEqual({
+    version: 1,
+    revision: scheduleRevision(courseScheduleData.entries),
+    reviewedOn: courseScheduleData.reviewedOn,
+    source: courseScheduleData.source,
+  });
 });
 
 test.beforeEach(async ({ context }) => {

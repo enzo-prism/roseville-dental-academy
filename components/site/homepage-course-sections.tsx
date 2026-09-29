@@ -110,6 +110,8 @@ function IconShell({
 }
 
 function HomepageScheduleSection() {
+  const months = getUpcomingScheduleMonths();
+
   return (
     <div className="rda-home-schedule-section" data-rda-home-course-block="schedule">
       <div className="rda-home-course-heading rda-home-schedule-heading">
@@ -118,7 +120,8 @@ function HomepageScheduleSection() {
         <p>{courseScheduleNote}</p>
       </div>
       <div className="rda-home-schedule-grid">
-        {getUpcomingScheduleMonths().map((month) => (
+        {months.length === 0 ? <p>Ask admissions for upcoming dates.</p> : null}
+        {months.map((month) => (
           <Card className="rda-home-schedule-month-card border-border bg-card" key={month.month}>
             <CardHeader className="rda-home-schedule-month-header">
               <IconShell icon="calendar" marker="schedule" />

@@ -87,8 +87,8 @@ function course(id: CourseScheduleId, status?: CourseScheduleStatus): CourseSche
 
 // Dates and open/full status live in data/course-schedule.json. Production
 // builds refresh that file from the RDA dashboard's Class dates editor
-// (scripts/pull-course-schedule.mjs); every other build, CI, and local run uses
-// the committed copy. Course order within a date follows this list.
+// (scripts/pull-course-schedule.mjs). Unconfigured nonproduction builds use
+// the committed copy; configured feed failures abort the build. Course order within a date follows this list.
 const courseDisplayOrder: CourseScheduleId[] = [
   "bls-cpr-1",
   "radiation-safety",
