@@ -18,7 +18,7 @@
     "attribution:migrate": "node scripts/migrate-attribution.mjs",
     "test:attribution-db": "node scripts/verify-attribution-migration.mjs",
     "snapshot:refresh": "node scripts/capture-live-snapshot.mjs && node scripts/refresh-live-baselines.mjs",
-    "test:course-dates": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/course-dates.spec.ts",
+    "test:course-dates": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/course-dates.spec.ts tests/course-schedule-empty.spec.ts",
     "test:smoke": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/smoke.spec.ts",
     "test:interactions": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/interaction-flow.spec.ts",
     "test:attribution": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/attribution-api.spec.ts",
