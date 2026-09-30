@@ -104,7 +104,10 @@ export function LiveSignupSection({
   const titleId = `${formId}-title`;
   const interestHelpId = `${formId}-interest-help`;
   const errorId = `${formId}-interest-error`;
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(() =>
+    signupInterestOptions.filter((option) => option.scheduleId && pagePath === `/${option.scheduleId}`)
+      .map((option) => option.value),
+  );
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const attribution = useLeadAttribution();
   const { status, submitLeadForm } = useLeadFormSubmit();

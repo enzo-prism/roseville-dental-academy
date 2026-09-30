@@ -32,6 +32,19 @@ When analytics consent is false, the parser strips UTMs, referrer, GA IDs, anony
 ID; when marketing consent is false, it strips click IDs and ad dimensions. The query-free landing
 path and event-local touch ID remain as essential reconciliation metadata.
 
+For Meta website CAPI events, receipt ingestion records a server-derived request User-Agent only
+on the conversion touch when its parsed marketing consent is true. It is bounded to 512 characters,
+never taken from receipt JSON, protected by the touchpoint consent and verified-identity constraints,
+and removed with the existing 180-day touchpoint retention. Verified receipt retries preserve the
+original header even if the transport header changes or is omitted; verified legacy NULL evidence
+cannot be filled later. No raw IP is collected. The worker
+shares it only through the existing enabled/live-send/approved-policy gates. Legacy records with no
+consented User-Agent are disabled with `client_user_agent_unavailable`; no browser identity is invented.
+The source URL is built from the configured canonical site origin and captured path, excluding queries,
+fragments, credentials, and foreign origins. Browser Pixel and CAPI dataset IDs must match.
+These fields follow [Meta's official website event sample](https://github.com/fbsamples/lead-ads-webhook-sample/blob/main/postman/FB%20Conversions%20API%20%28Part%201%20-%20online%29.postman_collection.json).
+
+
 Postbacks have three independent launch gates: `RDA_PLATFORM_POSTBACKS_ENABLED=true`,
 `RDA_POSTBACK_VALIDATE_ONLY=false` for real sends, and an explicit reviewed policy version in
 `RDA_POSTBACK_CONSENT_POLICY_VERSIONS`. No policy version is approved by default. Provider milestone
@@ -55,3 +68,5 @@ Vercel cron invokes the disabled-by-default postback worker at 16:15 UTC and ret
 Retention is anchored to each accepted/captured timestamp (180 days), not import time; contact hashes
 extend from the latest linked lead/conversion timestamp (730 days). Health output reports the
 canonical source window separately from the retained-evidence window and coverage.
+
+Migration `002_attribution_integrity.sql` upgrades existing ledgers with canonical receipt/event identity enforcement and conservative exact-ad delivery enrichment. Apply before the updated application; it does not repair historical mismatches automatically. See `docs/meta-ads-readiness.md` for the aggregate preflight and rollout order.

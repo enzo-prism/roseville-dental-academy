@@ -1,7 +1,7 @@
 "use client";
 
 import { track as trackVercelEvent } from "@vercel/analytics";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { trackGaEvent } from "@/components/site/google-analytics";
 import { trackMetaPixelEvent } from "@/components/site/meta-pixel";
@@ -636,18 +636,20 @@ function trackSubmitEvent(event: SubmitEvent) {
   }
 }
 
-function trackLeadSuccessEvent(event: Event) {
+function trackLeadSuccessEvent(event: Event, processedLeadEventIds: Set<string>) {
   if (!(event instanceof CustomEvent) || !(event.target instanceof HTMLFormElement)) {
     return;
   }
 
   const form = event.target;
   const detail = event.detail as LeadFormSuccessDetail | undefined;
-  const formData = new FormData(form);
-
-  if (detail?.leadEventId) {
-    formData.set("lead_event_id", detail.leadEventId);
+  if (!detail?.leadEventId || !detail.acceptedFields || processedLeadEventIds.has(detail.leadEventId)) {
+    return;
   }
+  const formData = new FormData();
+  detail.acceptedFields.forEach(([name, value]) => formData.append(name, value));
+  formData.set("lead_event_id", detail.leadEventId);
+  processedLeadEventIds.add(detail.leadEventId);
 
   if (form.matches("[data-rda-signup-form='true']")) {
     const formId = form.getAttribute("data-rda-form-id") || "quick_sign_up";
@@ -678,6 +680,7 @@ function trackLeadSuccessEvent(event: Event) {
 }
 
 export function InteractionAnalytics() {
+  const processedLeadEventIds = useRef(new Set<string>());
   useEffect(() => {
     function onClick(event: MouseEvent) {
       if (event.target instanceof Element) {
@@ -690,7 +693,7 @@ export function InteractionAnalytics() {
     }
 
     function onLeadSuccess(event: Event) {
-      trackLeadSuccessEvent(event);
+      trackLeadSuccessEvent(event, processedLeadEventIds.current);
     }
 
     document.addEventListener("click", onClick, true);

@@ -6,11 +6,22 @@ dashboard feed (`RDA_SCHEDULE_FEED_URL` + `RDA_SCHEDULE_FEED_TOKEN`, Production
 env only) into `data/course-schedule.json` and sets the cutoff to the
 academy-local build date. Saving in the dashboard rebuilds the site through a
 deploy hook, and a daily dashboard cron rebuilds it just after midnight Pacific
-so elapsed dates drop off. Preview, CI, and local builds use the committed
-`data/course-schedule.json`, whose `reviewedOn` is the cutoff below. On any feed
-failure the build keeps the committed copy. Refresh the committed copy with
+so elapsed dates drop off. Unconfigured preview, CI, and local builds use the
+committed `data/course-schedule.json`, whose `reviewedOn` is the cutoff below.
+Production builds require both feed environment variables. Any configured feed
+failure or invalid response fails the build, preserving the current deployment
+instead of publishing stale committed availability. An empty entries array is
+valid and intentionally removes all class dates. Refresh the committed copy with
 `RDA_SCHEDULE_FEED_URL=... RDA_SCHEDULE_FEED_TOKEN=... pnpm schedule:pull` when
 tests and baselines should follow the dashboard.
+
+`/api/course-schedule-status` reports only the schedule bundled in that deployed
+build: `{version: 1, revision, reviewedOn, source}`. It never reads the current
+Redis feed. Its revision is the SHA-256 of JSON-serialized `[courseId, isoDate,
+status]` rows sorted lexicographically by those three fields. Response caching
+is disabled so the dashboard can verify the currently promoted deployment.
+The importer verifies a feed revision when supplied; older version-1 feeds
+without one are still supported. This endpoint exposes no credentials.
 
 `lib/course-schedule.ts` derives months, labels, and availability from that
 data. `COURSE_SCHEDULE_REVIEWED_ON` deliberately uses the same date in
@@ -57,3 +68,7 @@ Verification: `pnpm exec playwright test tests/course-dates.spec.ts` checks sour
 dates, future cutoff behavior, full-course exclusion, desktop/mobile cards and
 form choices, six course pages, FAQs/contact, all nine landing pages and llms.txt.
 Formspree is blocked in this suite; it never submits production leads.
+
+Validation: `pnpm test:course-dates` includes feed failure and revision checks,
+public status verification, and an isolated empty-schedule Next app that checks
+the homepage and all six course pages without changing the checkout data.

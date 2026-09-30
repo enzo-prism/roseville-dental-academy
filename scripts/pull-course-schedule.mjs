@@ -1,13 +1,12 @@
-// Refresh data/course-schedule.json from the RDA dashboard's Class dates feed.
-//
-// Runs before `next build`. It only pulls when RDA_SCHEDULE_FEED_URL and
-// RDA_SCHEDULE_FEED_TOKEN are set (Vercel Production). Everywhere else, and on
-// any fetch or validation failure, the committed file is used unchanged, so a
-// dashboard outage can never break a deploy; it just ships the last good copy.
+// Refresh the bundled schedule before next build. A configured feed is authoritative:
+// never publish committed availability when the feed cannot be read or validated.
+// Only unconfigured nonproduction builds may use the committed development fixture.
 
-import { readFile, rename, writeFile } from "node:fs/promises";
+import { rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { scheduleRevision } from "../lib/course-schedule-revision.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA_PATH = process.env.RDA_SCHEDULE_DATA_PATH
@@ -33,7 +32,7 @@ function validateFeed(feed) {
   if (!feed || typeof feed !== "object") throw new Error("feed is not an object");
   if (feed.version !== 1) throw new Error(`unsupported feed version ${feed.version}`);
   if (!isIsoDate(feed.reviewedOn)) throw new Error("feed reviewedOn is not a date");
-  if (!Array.isArray(feed.entries) || feed.entries.length === 0) throw new Error("feed has no entries");
+  if (!Array.isArray(feed.entries)) throw new Error("feed entries is not an array");
 
   const seen = new Set();
   const entries = feed.entries.map((entry, index) => {
@@ -46,13 +45,21 @@ function validateFeed(feed) {
     return { courseId: entry.courseId, isoDate: entry.isoDate, status: entry.status };
   });
 
-  return { entries, reviewedOn: feed.reviewedOn, generatedAt: typeof feed.generatedAt === "string" ? feed.generatedAt : null };
+  const revision = scheduleRevision(entries);
+  if (feed.revision !== undefined && feed.revision !== revision) {
+    throw new Error("feed revision does not match its entries");
+  }
+  return { entries, revision, reviewedOn: feed.reviewedOn, generatedAt: typeof feed.generatedAt === "string" ? feed.generatedAt : null };
 }
 
 async function main() {
   const url = process.env.RDA_SCHEDULE_FEED_URL?.trim();
   const token = process.env.RDA_SCHEDULE_FEED_TOKEN?.trim();
+  const production = process.env.VERCEL_ENV === "production" || process.env.VERCEL_TARGET_ENV === "production";
   if (!url || !token) {
+    if (production || url || token) {
+      throw new Error("both RDA_SCHEDULE_FEED_URL and RDA_SCHEDULE_FEED_TOKEN are required for production or a configured feed");
+    }
     console.log("[course-schedule] Feed not configured; using committed data/course-schedule.json.");
     return;
   }
@@ -63,21 +70,21 @@ async function main() {
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const { entries, reviewedOn, generatedAt } = validateFeed(await response.json());
+    const { entries, revision, reviewedOn, generatedAt } = validateFeed(await response.json());
 
-    const committed = JSON.parse(await readFile(DATA_PATH, "utf8"));
-    const next = { version: 1, source: "dashboard", generatedAt, reviewedOn, entries };
+    const next = { version: 1, source: "dashboard", revision, generatedAt, reviewedOn, entries };
     const tempPath = `${DATA_PATH}.tmp`;
     await writeFile(tempPath, `${JSON.stringify(next, null, 2)}\n`);
     await rename(tempPath, DATA_PATH);
     console.log(
-      `[course-schedule] Pulled ${entries.length} class dates from the dashboard (reviewed ${reviewedOn}; committed copy had ${committed.entries?.length ?? 0}).`,
+      `[course-schedule] Pulled ${entries.length} class dates from the dashboard (reviewed ${reviewedOn}).`,
     );
   } catch (error) {
-    console.warn(
-      `[course-schedule] WARNING: dashboard feed unavailable (${error instanceof Error ? error.message : error}); using committed data/course-schedule.json.`,
-    );
+    throw new Error(`dashboard feed unavailable or invalid (${error instanceof Error ? error.message : "unknown error"}); refusing to publish stale availability`);
   }
 }
 
-main();
+main().catch((error) => {
+  console.error(`[course-schedule] ${error.message}`);
+  process.exitCode = 1;
+});

@@ -38,7 +38,7 @@ Run visual parity when layout, imagery, page structure, or visual baselines chan
 PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:parity-visual
 ```
 
-Or run the whole gate at once with `pnpm test:release` (lint + build + all six suites). The attribution suites stay manual — run `pnpm test:attribution` and `pnpm test:attribution-db` (see `db/README.md`) before release when lead or ledger code changes; neither runs in CI.
+Or run the whole gate at once with `pnpm test:release` (lint + build + all six suites). Run `pnpm test:attribution` and `pnpm test:attribution-db` (see `db/README.md`) before release when lead or ledger code changes. Release Gate CI now runs both separately after the presentation gate.
 
 ## Post-Deploy Checks
 
@@ -138,3 +138,5 @@ Before any production push, check these docs when their contracts are touched:
 - `docs/production-runbook.md`: production deploy and live verification steps.
 
 Pushing `main` is the production deploy (Vercel production project tracks `main`). After push, verify `https://rosevilledentalacademy.com`, not only the Vercel deployment URL.
+
+For the database-first Meta measurement release and remaining Ads Manager checks, see `docs/meta-ads-readiness.md`.

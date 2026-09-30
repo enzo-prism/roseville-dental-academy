@@ -58,7 +58,10 @@ function toggleCourseSelection(current: string[], courseKey: string) {
 export function RegistrationForm() {
   const searchParams = useSearchParams();
   const courseParamKey = searchParams.getAll("course").join("|");
-  const [selectedCourses, setSelectedCourses] = React.useState<string[]>([]);
+  const requestedCourses = searchParams.getAll("course").filter((course) =>
+    registrationCourseOptions.some((option) => option.key === course));
+  const [selectedCourses, setSelectedCourses] = React.useState<string[]>(requestedCourses);
+  const [appliedCourseParam, setAppliedCourseParam] = React.useState(courseParamKey);
   const [contactMethod, setContactMethod] = React.useState("");
   const [paymentPreference, setPaymentPreference] = React.useState("");
   const [paymentDay, setPaymentDay] = React.useState("");
@@ -68,29 +71,12 @@ export function RegistrationForm() {
   const { status, submitLeadForm } = useLeadFormSubmit();
   const environment = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "production";
 
-  const appliedCourseParamRef = React.useRef<string | null>(null);
-
-  React.useEffect(() => {
-    // Apply each ?course= prefill once. Re-running on selection changes would
-    // re-check a course the user deliberately unchecked.
-    if (appliedCourseParamRef.current === courseParamKey) {
-      return;
-    }
-
-    appliedCourseParamRef.current = courseParamKey;
-
-    const requestedCourses = searchParams
-      .getAll("course")
-      .filter((course) =>
-        registrationCourseOptions.some((option) => option.key === course),
-      );
-
-    if (!requestedCourses.length) {
-      return;
-    }
-
-    setSelectedCourses((current) => (current.length ? current : requestedCourses));
-  }, [courseParamKey, searchParams]);
+  // Reconcile a changed query during rendering, preserving deliberate choices.
+  // An effect would render stale prefill first and trigger a cascading update.
+  if (appliedCourseParam !== courseParamKey) {
+    setAppliedCourseParam(courseParamKey);
+    if (!selectedCourses.length && requestedCourses.length) setSelectedCourses(requestedCourses);
+  }
 
   if (status === "success") {
     return (

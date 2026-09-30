@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const payloadSha256 = createHash("sha256").update(JSON.stringify(receipt)).digest("hex");
     if (!await consumeReceiptNonce({ formId: receipt.formId, leadEventId: receipt.leadEventId,
       nonce: claims.nonce, payloadSha256 })) return privateJson({ error: "Receipt token rejected" }, 401);
-    await upsertAttributionReceipt(receipt);
+    await upsertAttributionReceipt(receipt, request.headers.get("user-agent") ?? undefined);
     const response = privateJson({ accepted: true, verificationStatus: "pending" }, 202);
     response.headers.set("Access-Control-Allow-Origin", request.headers.get("origin") ?? "");
     response.headers.set("Vary", "Origin");

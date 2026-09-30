@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -68,15 +68,23 @@ export function splitSqlStatements(source) {
   return statements;
 }
 
+export async function readAttributionMigrations(root) {
+  const directory = join(root, "db/migrations");
+  const names = (await readdir(directory)).filter((name) => /^\d+_.+\.sql$/u.test(name)).sort();
+  return Promise.all(names.map(async (name) => ({
+    name, statements: splitSqlStatements(await readFile(join(directory, name), "utf8")),
+  })));
+}
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) throw new Error("DATABASE_URL is required; use the verified RDA database only");
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-  const migration = await readFile(join(root, "db/migrations/001_attribution_ledger.sql"), "utf8");
-  const statements = splitSqlStatements(migration);
+  const migrations = await readAttributionMigrations(root);
+  const statements = migrations.flatMap((migration) => migration.statements);
   const sql = neon(databaseUrl);
   await sql.transaction((transaction) => statements.map((statement) => transaction.query(statement)));
-  console.log(JSON.stringify({ applied: statements.length, migration: "001_attribution_ledger.sql" }));
+  console.log(JSON.stringify({ applied: statements.length, migrations: migrations.map((migration) => migration.name) }));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

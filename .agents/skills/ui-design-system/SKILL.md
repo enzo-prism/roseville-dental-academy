@@ -51,7 +51,7 @@ pnpm test:parity-content
 pnpm test:parity-visual
 ```
 
-For schedule-date changes, `pnpm test:course-dates` is the authoritative gate. For lead/attribution changes, add `pnpm test:attribution` and `pnpm test:attribution-db` (manual gates, not in CI). The full production gate is `pnpm test:release`, which runs lint, build, and the six Playwright suites against `pnpm start` (port 3100 by default).
+For schedule-date changes, `pnpm test:course-dates` is the authoritative gate. For lead/attribution changes, add `pnpm test:attribution` and `pnpm test:attribution-db` (also included in Release Gate CI). The full production gate is `pnpm test:release`, which runs lint, build, and the six Playwright suites against `pnpm start` (port 3100 by default).
 
 When `/DESIGN.md` changes, run:
 

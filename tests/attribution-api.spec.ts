@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { DEFAULT_META_PIXEL_ID } from "@/lib/meta-pixel-config";
+import { getSiteOrigin } from "@/lib/site-config";
 import { ATTRIBUTION_SCHEMA_VERSION } from "@/lib/attribution-contract";
 import {
   parseAttributionReceipt,
@@ -189,48 +191,96 @@ test("Google postbacks reject static-token-only configuration", async () => {
 
 test("provider acknowledgement and validate-only states stay distinct", async () => {
   const originalFetch = globalThis.fetch;
-  process.env.RDA_PLATFORM_POSTBACKS_ENABLED = "true";
-  process.env.RDA_POSTBACK_CONSENT_POLICY_VERSIONS = "2026-08-23";
-  process.env.META_CAPI_ACCESS_TOKEN = "token";
-  process.env.META_CAPI_PIXEL_ID = "123456789";
-  process.env.META_GRAPH_API_VERSION = "v24.0";
-  globalThis.fetch = async () => new Response(JSON.stringify({ events_received: 1, fbtrace_id: "trace_01" }),
-    { headers: { "Content-Type": "application/json" }, status: 200 });
-  const baseJob = { attemptCount: 0, conversionEventId: "conversion_01", emailSha256: "a".repeat(64),
-    eventType: "qualified_lead", leadEventId: id, leaseToken: "lease_01", occurredAt: capturedAt, phoneSha256: "",
-    touch: { captured_at: capturedAt, click_ids: { fbclid: "click" }, landing_page: "/",
-      consent_policy_version: "2026-08-23", marketing_consent: true } };
-  let fetchCalls = 0;
-  globalThis.fetch = async () => { fetchCalls += 1; return new Response("{}"); };
-  const blockedMeta = await sendPlatformPostback({ ...baseJob, platform: "meta" });
-  expect(blockedMeta.errorCode).toBe("validate_only_no_safe_provider_call");
-  expect(fetchCalls).toBe(0);
-  process.env.RDA_POSTBACK_VALIDATE_ONLY = "false";
-  globalThis.fetch = async () => new Response(JSON.stringify({ events_received: 1, fbtrace_id: "trace_01" }),
-    { headers: { "Content-Type": "application/json" }, status: 200 });
-  const meta = await sendPlatformPostback({ ...baseJob, platform: "meta" });
-  expect(meta).toMatchObject({ providerReceiptId: "trace_01", status: "accepted" });
-
-  process.env.GOOGLE_OAUTH_CLIENT_ID = "client";
-  process.env.GOOGLE_OAUTH_CLIENT_SECRET = "secret";
-  process.env.GOOGLE_OAUTH_REFRESH_TOKEN = "refresh";
-  process.env.GOOGLE_ADS_OPERATING_ACCOUNT_ID = "1234567890";
-  process.env.GOOGLE_ADS_LOGIN_ACCOUNT_ID = "1234567890";
-  process.env.GOOGLE_ADS_CONVERSION_ACTION_ID = "123456789";
-  process.env.RDA_GOOGLE_MILESTONE_MAP_JSON = '{"enrolled":"rda_enrolled"}';
-  process.env.RDA_POSTBACK_VALIDATE_ONLY = "true";
-  globalThis.fetch = async (input) => String(input).includes("oauth2.googleapis.com")
-    ? new Response(JSON.stringify({ access_token: "short-lived", expires_in: 3_600 }), { status: 200 })
-    : new Response(JSON.stringify({ requestId: "google_request_01" }), { status: 200 });
-  const google = await sendPlatformPostback({ ...baseJob, eventType: "enrolled", platform: "google" });
-  expect(google).toMatchObject({ providerReceiptId: "google_request_01", status: "validated" });
-
-  globalThis.fetch = originalFetch;
-  for (const name of ["RDA_PLATFORM_POSTBACKS_ENABLED", "META_CAPI_ACCESS_TOKEN", "META_CAPI_PIXEL_ID",
-    "META_GRAPH_API_VERSION", "GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET",
+  const environmentNames = ["RDA_PLATFORM_POSTBACKS_ENABLED", "META_CAPI_ACCESS_TOKEN", "META_CAPI_PIXEL_ID",
+    "NEXT_PUBLIC_META_PIXEL_ID", "META_GRAPH_API_VERSION", "GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET",
     "GOOGLE_OAUTH_REFRESH_TOKEN", "GOOGLE_ADS_OPERATING_ACCOUNT_ID", "GOOGLE_ADS_LOGIN_ACCOUNT_ID",
     "GOOGLE_ADS_CONVERSION_ACTION_ID", "RDA_POSTBACK_CONSENT_POLICY_VERSIONS",
-    "RDA_GOOGLE_MILESTONE_MAP_JSON", "RDA_POSTBACK_VALIDATE_ONLY"]) delete process.env[name];
+    "RDA_GOOGLE_MILESTONE_MAP_JSON", "RDA_META_MILESTONE_MAP_JSON", "RDA_POSTBACK_VALIDATE_ONLY"];
+  const originalEnvironment = new Map(environmentNames.map((name) => [name, process.env[name]]));
+  try {
+    process.env.RDA_PLATFORM_POSTBACKS_ENABLED = "true";
+    process.env.RDA_POSTBACK_CONSENT_POLICY_VERSIONS = "2026-08-23";
+    process.env.META_CAPI_ACCESS_TOKEN = "synthetic-token";
+    process.env.META_CAPI_PIXEL_ID = DEFAULT_META_PIXEL_ID;
+    process.env.META_GRAPH_API_VERSION = "v24.0";
+    delete process.env.NEXT_PUBLIC_META_PIXEL_ID;
+    delete process.env.RDA_POSTBACK_VALIDATE_ONLY;
+    delete process.env.RDA_META_MILESTONE_MAP_JSON;
+    const baseJob = { attemptCount: 0, conversionEventId: "conversion_01", emailSha256: "a".repeat(64),
+      eventType: "qualified_lead", leadEventId: id, leaseToken: "lease_01", occurredAt: capturedAt, phoneSha256: "",
+      touch: { captured_at: capturedAt, client_user_agent: "SyntheticBrowser/1.0", click_ids: { fbclid: "click" }, landing_page: "/sealants",
+        consent_policy_version: "2026-08-23", marketing_consent: true } };
+    const requests: string[] = [];
+    const payloads: Array<{ data: Array<{ event_source_url: string; event_id: string; user_data: Record<string, unknown> }> }> = [];
+    globalThis.fetch = async (input, init) => {
+      requests.push(String(input));
+      payloads.push(JSON.parse(String(init?.body)));
+      return new Response(JSON.stringify({ events_received: 1, fbtrace_id: "trace_01" }),
+        { headers: { "Content-Type": "application/json" }, status: 200 });
+    };
+    const blockedMeta = await sendPlatformPostback({ ...baseJob, platform: "meta" });
+    expect(blockedMeta.errorCode).toBe("validate_only_no_safe_provider_call");
+    expect(requests).toHaveLength(0);
+
+    process.env.RDA_POSTBACK_VALIDATE_ONLY = "false";
+    process.env.META_CAPI_PIXEL_ID = "123456789";
+    const mismatchedMeta = await sendPlatformPostback({ ...baseJob, platform: "meta" });
+    expect(mismatchedMeta).toMatchObject({ status: "retry", retryable: true, errorCode: "pixel_mismatch" });
+    expect(requests).toHaveLength(0);
+
+    process.env.META_CAPI_PIXEL_ID = DEFAULT_META_PIXEL_ID;
+    const legacyMeta = await sendPlatformPostback({ ...baseJob, platform: "meta",
+      touch: { ...baseJob.touch, client_user_agent: "" } });
+    expect(legacyMeta).toMatchObject({ status: "disabled", errorCode: "client_user_agent_unavailable" });
+    expect(requests).toHaveLength(0);
+    const meta = await sendPlatformPostback({ ...baseJob, platform: "meta" });
+    expect(meta).toMatchObject({ providerReceiptId: "trace_01", status: "accepted" });
+    expect(requests).toEqual([`https://graph.facebook.com/v24.0/${DEFAULT_META_PIXEL_ID}/events`]);
+    expect(payloads[0].data[0]).toMatchObject({
+      event_id: id, event_source_url: `${getSiteOrigin()}/sealants`,
+      user_data: { client_user_agent: "SyntheticBrowser/1.0" },
+    });
+    expect(new URL(payloads[0].data[0].event_source_url).protocol).toBe("https:");
+    expect(await sendPlatformPostback({ ...baseJob, platform: "meta",
+      touch: { ...baseJob.touch, landing_page: "/sealants?private=synthetic#fragment" } }))
+      .toMatchObject({ status: "accepted" });
+    expect(payloads[1].data[0].event_source_url).toBe(`${getSiteOrigin()}/sealants`);
+    for (const page of ["https://foreign.example/sealants", "//foreign.example/sealants", ""]) {
+      expect(await sendPlatformPostback({ ...baseJob, platform: "meta",
+        touch: { ...baseJob.touch, landing_page: page } }))
+        .toMatchObject({ status: "retry", retryable: true, errorCode: "event_source_url_invalid" });
+    }
+    expect(requests).toHaveLength(2);
+
+    // Explicit browser/CAPI overrides must align too; default identity is not hardcoded into the guard.
+    process.env.NEXT_PUBLIC_META_PIXEL_ID = "9876543210123";
+    expect(await sendPlatformPostback({ ...baseJob, platform: "meta" }))
+      .toMatchObject({ status: "retry", retryable: true, errorCode: "pixel_mismatch" });
+    expect(requests).toHaveLength(2);
+    process.env.META_CAPI_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+    expect(await sendPlatformPostback({ ...baseJob, platform: "meta" })).toMatchObject({ status: "accepted" });
+    expect(requests[2]).toBe("https://graph.facebook.com/v24.0/9876543210123/events");
+
+    process.env.GOOGLE_OAUTH_CLIENT_ID = "client";
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = "secret";
+    process.env.GOOGLE_OAUTH_REFRESH_TOKEN = "refresh";
+    process.env.GOOGLE_ADS_OPERATING_ACCOUNT_ID = "1234567890";
+    process.env.GOOGLE_ADS_LOGIN_ACCOUNT_ID = "1234567890";
+    process.env.GOOGLE_ADS_CONVERSION_ACTION_ID = "123456789";
+    process.env.RDA_GOOGLE_MILESTONE_MAP_JSON = '{"enrolled":"rda_enrolled"}';
+    process.env.RDA_POSTBACK_VALIDATE_ONLY = "true";
+    globalThis.fetch = async (input) => String(input).includes("oauth2.googleapis.com")
+      ? new Response(JSON.stringify({ access_token: "short-lived", expires_in: 3_600 }), { status: 200 })
+      : new Response(JSON.stringify({ requestId: "google_request_01" }), { status: 200 });
+    const google = await sendPlatformPostback({ ...baseJob, eventType: "enrolled", platform: "google" });
+    expect(google).toMatchObject({ providerReceiptId: "google_request_01", status: "validated" });
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [name, value] of originalEnvironment) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
 });
 
 test("private sync routes fail closed without the sync secret", async ({ request }) => {

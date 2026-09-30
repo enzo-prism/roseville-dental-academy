@@ -119,8 +119,8 @@ pnpm exec playwright install chromium
 - `pnpm test:parity-visual`: visual regression checks against committed screenshots.
 - `pnpm test:parity`: content plus visual parity in one command.
 - `pnpm test:design`: UX stability plus visual parity.
-- `pnpm test:attribution`: attribution API flow against localhost (manual gate, not in CI).
-- `pnpm test:attribution-db`: ledger migrations and triggers in an isolated in-memory Postgres (manual pre-release gate, not in CI; see `db/README.md`).
+- `pnpm test:attribution`: attribution API, browser, Meta form flow, and database integrity regressions against localhost (also in Release Gate CI).
+- `pnpm test:attribution-db`: ledger migrations and triggers in an isolated in-memory Postgres (also in Release Gate CI; see `db/README.md`).
 - `pnpm test:release`: `lint` + `build`, then smoke, course-dates, interactions, parity-content, UX, and parity-visual against a local production server (`pnpm start` on port 3100 by default).
 - `pnpm test:preview`: the same six suites against a Vercel preview (`PREVIEW_URL` is required, no webserver is started, no lint/build).
 
@@ -213,3 +213,5 @@ Visual parity failures should be triaged from the uploaded artifacts before chan
 - `vercel.json` keeps encoded-path redirects for source-compatible entry points.
 - GoDaddy commerce/member backends are not rebuilt here; member/auth pages stay static/noindex utility screens unless a real backend is chosen later.
 - Production deployment and post-deploy verification steps live in [docs/production-runbook.md](docs/production-runbook.md).
+
+Meta launch tracking parameters, privacy limits, migration order and live checks: [docs/meta-ads-readiness.md](docs/meta-ads-readiness.md).

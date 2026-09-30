@@ -7,6 +7,8 @@ import {
 import { privateJson, unavailable } from "@/lib/server/attribution-http";
 import { sendPlatformPostback } from "@/lib/server/platform-postbacks";
 import { approvedConsentPolicyVersions } from "@/lib/server/postback-config";
+import { processPostbackBatch } from "@/lib/server/postback-worker";
+import type { PostbackOutcome } from "@/lib/server/attribution-db";
 
 export const maxDuration = 300;
 export const runtime = "nodejs";
@@ -25,11 +27,13 @@ export async function GET(request: Request) {
 
   const summary = { accepted: 0, disabled: 0, failed: 0, retry: 0, validated: 0 };
   try {
-    for (const job of await claimPendingPostbacks()) {
-      const result = await sendPlatformPostback(job);
-      await updatePostbackStatus(job, result);
-      summary[result.status] += 1;
-    }
+    await processPostbackBatch({
+      claim: async (excludedKeys) => (await claimPendingPostbacks(1, excludedKeys))[0],
+      key: (job) => `${job.platform}:${job.conversionEventId}`,
+      send: sendPlatformPostback,
+      acknowledge: (job, result) => updatePostbackStatus(job, result as PostbackOutcome),
+      summary,
+    });
     return privateJson(summary);
   } catch {
     return privateJson({ ...summary, error: "Postback processing stopped" }, 503);

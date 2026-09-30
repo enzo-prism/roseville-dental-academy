@@ -63,7 +63,9 @@ function asJson(value: unknown) {
   ));
 }
 
-export async function upsertAttributionReceipt(receipt: AttributionReceipt) {
+export async function upsertAttributionReceipt(receipt: AttributionReceipt, requestUserAgent?: string) {
+  // This is request metadata supplied by the server route, never a browser JSON field.
+  const userAgent = requestUserAgent?.replace(/[\u0000-\u001f\u007f]/gu, " ").trim().slice(0, 512) || null;
   const sql = getDatabase();
   await sql.transaction((tx) => [
     tx`
@@ -102,14 +104,15 @@ export async function upsertAttributionReceipt(receipt: AttributionReceipt) {
         touch_id, lead_event_id, touch_type, captured_at, anonymous_id, session_id,
         landing_page, referrer, utm, click_ids, ad_dimensions, ga_client_id,
         ga_session_id, analytics_consent, marketing_consent, consent_policy_version,
-        consent_recorded_at, retention_expires_at
+        consent_recorded_at, retention_expires_at, client_user_agent
       ) SELECT
         ${touch.touchId}, ${receipt.leadEventId}, ${touch.type}, ${touch.capturedAt},
         ${touch.anonymousId}, ${touch.sessionId}, ${touch.landingPage}, ${touch.referrer || null},
         ${asJson(touch.utm)}, ${asJson(touch.clickIds)}, ${asJson(touch.dimensions)},
         ${touch.gaClientId || null}, ${touch.gaSessionId || null}, ${touch.consent.analytics},
         ${touch.consent.marketing}, ${touch.consent.policyVersion}, ${touch.consent.recordedAt},
-        ${touch.capturedAt}::timestamptz + interval '180 days'
+        ${touch.capturedAt}::timestamptz + interval '180 days',
+        ${touch.type === 'conversion' && touch.consent.marketing ? userAgent : null}
       WHERE EXISTS (
         SELECT 1 FROM attribution_receipts r
         WHERE r.lead_event_id = ${receipt.leadEventId} AND r.form_id = ${receipt.formId}
@@ -129,7 +132,14 @@ export async function upsertAttributionReceipt(receipt: AttributionReceipt) {
         analytics_consent = EXCLUDED.analytics_consent,
         marketing_consent = EXCLUDED.marketing_consent,
         consent_policy_version = EXCLUDED.consent_policy_version,
-        consent_recorded_at = EXCLUDED.consent_recorded_at
+        consent_recorded_at = EXCLUDED.consent_recorded_at,
+        client_user_agent = CASE
+          WHEN NOT EXCLUDED.marketing_consent THEN NULL
+          WHEN EXISTS (SELECT 1 FROM attribution_receipts r
+            WHERE r.lead_event_id = EXCLUDED.lead_event_id AND r.verification_status = 'verified')
+            THEN ad_touchpoints.client_user_agent
+          ELSE COALESCE(ad_touchpoints.client_user_agent, EXCLUDED.client_user_agent)
+        END
       WHERE EXISTS (
         SELECT 1 FROM attribution_receipts r
         WHERE r.lead_event_id = EXCLUDED.lead_event_id AND r.verification_status = 'verified'
@@ -171,7 +181,7 @@ export async function upsertCanonicalLeads(leads: CanonicalLeadInput[]) {
         ${lead.sourcePage || null}
       )
       ON CONFLICT (lead_id) DO UPDATE SET
-        lead_event_id = COALESCE(lead_inquiries.lead_event_id, EXCLUDED.lead_event_id),
+        lead_event_id = COALESCE(EXCLUDED.lead_event_id, lead_inquiries.lead_event_id),
         contact_key = EXCLUDED.contact_key,
         submitted_at = EXCLUDED.submitted_at,
         program_interest = EXCLUDED.program_interest,
@@ -184,6 +194,11 @@ export async function upsertCanonicalLeads(leads: CanonicalLeadInput[]) {
       WHERE lead_event_id = ${lead.leadEventId || null}
         AND form_id = ${lead.formId}
         AND verification_status = 'pending'
+        AND EXISTS (
+          SELECT 1 FROM lead_inquiries l WHERE l.lead_id = ${lead.leadId}
+            AND l.form_id = attribution_receipts.form_id
+            AND l.lead_event_id = attribution_receipts.lead_event_id
+        )
     `,
   ]));
 }
@@ -197,14 +212,11 @@ export async function upsertCanonicalConversions(conversions: CanonicalConversio
       WHERE contact_key = ${conversion.contactKey}
     `, tx`
       INSERT INTO conversion_events (event_id, event_type, occurred_at, source_record_id, contact_key)
-      SELECT ${conversion.eventId}, ${conversion.eventType}, ${conversion.occurredAt},
-        ${conversion.sourceRecordId}, ${conversion.contactKey}
-      WHERE EXISTS (
-        SELECT 1 FROM lead_inquiries
-        WHERE lead_id = ${conversion.leadId} AND contact_key = ${conversion.contactKey}
-          AND submitted_at <= ${conversion.occurredAt}
-      )
-      ON CONFLICT (event_id) DO NOTHING
+      VALUES (${conversion.eventId}, ${conversion.eventType}, ${conversion.occurredAt},
+        ${conversion.sourceRecordId}, ${conversion.contactKey})
+      ON CONFLICT (event_id) DO UPDATE SET
+        event_type = EXCLUDED.event_type, occurred_at = EXCLUDED.occurred_at,
+        source_record_id = EXCLUDED.source_record_id, contact_key = EXCLUDED.contact_key
     `, tx`
       INSERT INTO lead_conversion_links (
         conversion_event_id, lead_id, contact_key, match_method, match_confidence
@@ -334,7 +346,10 @@ export type PendingPostback = {
   touch: Record<string, unknown>;
 };
 
-export async function claimPendingPostbacks(limit = 50): Promise<PendingPostback[]> {
+export async function claimPendingPostbacks(
+  limit = 50,
+  excludedJobKeys: readonly string[] = [],
+): Promise<PendingPostback[]> {
   const sql = getDatabase();
   const leaseToken = randomUUID();
   const includeValidated = !validateOnlyMode();
@@ -355,6 +370,7 @@ export async function claimPendingPostbacks(limit = 50): Promise<PendingPostback
         OR (p.status = 'processing' AND p.lease_expires_at < now())
         OR (${includeValidated} AND p.status = 'validated' AND p.attempt_count < 8))
         AND (NOT ${googleOnly} OR p.platform = 'google')
+        AND NOT ((p.platform || ':' || p.conversion_event_id) = ANY(${excludedJobKeys}::text[]))
       ORDER BY p.created_at
       LIMIT ${Math.max(1, Math.min(limit, 100))}
       FOR UPDATE OF p SKIP LOCKED
@@ -371,7 +387,8 @@ export async function claimPendingPostbacks(limit = 50): Promise<PendingPostback
       jsonb_build_object('click_ids', COALESCE(t.click_ids, '{}'::jsonb),
         'ad_dimensions', COALESCE(t.ad_dimensions, '{}'::jsonb), 'landing_page', COALESCE(t.landing_page, ''),
         'captured_at', t.captured_at, 'marketing_consent', COALESCE(t.marketing_consent, false),
-        'consent_policy_version', COALESCE(t.consent_policy_version, '')) AS touch
+        'consent_policy_version', COALESCE(t.consent_policy_version, ''),
+        'client_user_agent', COALESCE(t.client_user_agent, '')) AS touch
     FROM claimed c
     JOIN conversion_events e ON e.event_id = c.conversion_event_id
     JOIN lead_conversion_links lcl ON lcl.conversion_event_id = e.event_id
