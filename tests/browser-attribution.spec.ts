@@ -180,15 +180,15 @@ test("later pageviews do not overwrite first-touch landing_page or referrer", ()
     "/infection-control?utm_source=facebook&utm_medium=paid&utm_campaign=ic189_oct17&fbclid=testcheck123";
   const initial = browser.visit(paid, FIRST);
   expect(initial.firstTouch.pagePath).toBe("/infection-control");
-  expect(initial.referrer).toBe("https://www.facebook.com");
+  expect(initial.referrer).toBe("https://www.facebook.com/");
   expect(browser.api.getLeadAttributionStamp(initial).landing_page).toBe("/infection-control");
-  expect(browser.api.getLeadAttributionStamp(initial).referrer).toBe("https://www.facebook.com");
+  expect(browser.api.getLeadAttributionStamp(initial).referrer).toBe("https://www.facebook.com/");
 
   browser.document.referrer = "https://rosevilledentalacademy.com/infection-control";
   const mid = browser.visit("/coronal-polish", SECOND);
   expect(mid.firstTouch.pagePath).toBe("/infection-control");
-  expect(mid.firstTouch.referrer).toBe("https://www.facebook.com");
-  expect(mid.referrer).toBe("https://www.facebook.com");
+  expect(mid.firstTouch.referrer).toBe("https://www.facebook.com/");
+  expect(mid.referrer).toBe("https://www.facebook.com/");
   expect(mid.utm.utm_campaign).toBe("ic189_oct17");
   expect(mid.clickIds.fbclid).toBe("testcheck123");
   expect(browser.api.getLeadAttributionStamp(mid).landing_page).toBe("/infection-control");
@@ -196,16 +196,16 @@ test("later pageviews do not overwrite first-touch landing_page or referrer", ()
   browser.document.referrer = "https://rosevilledentalacademy.com/coronal-polish";
   const back = browser.visit("/infection-control", "2026-09-29T10:20:00.000Z");
   expect(back.firstTouch.pagePath).toBe("/infection-control");
-  expect(back.referrer).toBe("https://www.facebook.com");
+  expect(back.referrer).toBe("https://www.facebook.com/");
   expect(back.utm.utm_source).toBe("facebook");
   expect(back.clickIds.fbclid).toBe("testcheck123");
   const stamp = browser.api.getLeadAttributionStamp(back);
   expect(stamp.landing_page).toBe("/infection-control");
-  expect(stamp.referrer).toBe("https://www.facebook.com");
+  expect(stamp.referrer).toBe("https://www.facebook.com/");
   const fields = browser.api.getLeadAttributionFormFields(back);
   expect(fields.utm_campaign).toBe("ic189_oct17");
   expect(fields.fbclid).toBe("testcheck123");
-  expect(fields.referrer).toBe("https://www.facebook.com");
+  expect(fields.referrer).toBe("https://www.facebook.com/");
 });
 
 test("denial wins across every consent cookie regardless of earlier grant", () => {

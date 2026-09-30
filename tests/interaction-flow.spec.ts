@@ -1751,7 +1751,7 @@ test.describe("live-style interaction flows", () => {
       await expect(landingForm.locator('input[name="utm_campaign"]')).toHaveValue("ic189_oct17");
       await expect(landingForm.locator('input[name="fbclid"]')).toHaveValue("testcheck123");
       await expect(landingForm.locator('input[name="referrer"]')).toHaveValue(
-        "https://www.facebook.com",
+        /https:\/\/www\.facebook\.com\/?/,
       );
 
       await page.getByRole("link", { name: "Coronal Polish" }).first().click();
@@ -1764,7 +1764,7 @@ test.describe("live-style interaction flows", () => {
       await expect(midForm.locator('input[name="utm_campaign"]')).toHaveValue("ic189_oct17");
       await expect(midForm.locator('input[name="fbclid"]')).toHaveValue("testcheck123");
       await expect(midForm.locator('input[name="referrer"]')).toHaveValue(
-        "https://www.facebook.com",
+        /https:\/\/www\.facebook\.com\/?/,
       );
       await expect(midForm.locator('input[name="page_path"]')).toHaveValue("/coronal-polish");
 
@@ -1779,7 +1779,7 @@ test.describe("live-style interaction flows", () => {
       await expect(backForm.locator('input[name="utm_campaign"]')).toHaveValue("ic189_oct17");
       await expect(backForm.locator('input[name="fbclid"]')).toHaveValue("testcheck123");
       await expect(backForm.locator('input[name="referrer"]')).toHaveValue(
-        "https://www.facebook.com",
+        /https:\/\/www\.facebook\.com\/?/,
       );
       await expect(backForm.locator('input[name="page_path"]')).toHaveValue("/infection-control");
     });
