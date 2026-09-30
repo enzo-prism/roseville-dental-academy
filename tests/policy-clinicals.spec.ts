@@ -39,13 +39,22 @@ for (const course of ["radiation-safety", "coronal-polish", "sealants"]) {
   });
 }
 
+const APPROVED_CANCELLATION_POLICY_PARAGRAPHS = [
+  "All course fees are non-refundable once payment has been made, except if Roseville Dental Academy cancels the course as described below.",
+  "No refunds will be issued for cancellations, withdrawals, missed classes, failure to attend, scheduling conflicts, or failure to complete course requirements. If the student is unable to attend, their seat goes unused and their enrollment cannot be moved to another course date.",
+  "Course fees may not be transferred to another individual without prior written approval from Roseville Dental Academy.",
+  "If Roseville Dental Academy cancels a course, students will be offered the option to transfer to another available course date or receive a refund of the course fees paid.",
+  "By submitting payment, the student confirms that they have read, understood, and accepted this Cancellation and Refund Policy.",
+] as const;
+
 test("FAQ visible answers and structured data include the approved cancellation and clinical rules", async ({ page }) => {
   await page.goto("/faqs-1");
   const faqs = page.locator('[data-rda-stable-widget="faqs"]');
   const cancellation = faqs.locator(".rda-student-faq-card").filter({ hasText: "What is the cancellation and refund policy?" });
-  await expect(cancellation).toContainText("their enrollment cannot be moved to another course date");
-  await expect(cancellation).toContainText("prior written approval from Roseville Dental Academy");
-  await expect(cancellation).toContainText("receive a refund of the course fees paid");
+  const visibleParagraphs = (await cancellation.locator("p").allInnerTexts()).map((text) => text.trim());
+  expect(visibleParagraphs).toEqual([...APPROVED_CANCELLATION_POLICY_PARAGRAPHS]);
+  await expect(cancellation).not.toContainText("reschedule at our discretion");
+  await expect(cancellation).not.toContainText("at its discretion");
   await expect(faqs).toContainText("prior written approval from Roseville Dental Academy and the Dental Board");
   await expect(faqs).toContainText("not before the didactic and laboratory portion has been completed");
   const structured = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
@@ -54,5 +63,5 @@ test("FAQ visible answers and structured data include the approved cancellation 
   const faqSchema = structured.find((item) => item["@type"] === "FAQPage");
   expect(faqSchema).toBeTruthy();
   const schemaAnswer = faqSchema.mainEntity.find((item: { name: string }) => item.name === "What is the cancellation and refund policy?").acceptedAnswer.text;
-  expect(schemaAnswer).toBe((await cancellation.locator("p").innerText()).trim());
+  expect(schemaAnswer).toBe(APPROVED_CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"));
 });
