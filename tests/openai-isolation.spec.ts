@@ -257,3 +257,26 @@ test("queued requests are discarded when a cross-tab denial is already followed 
   await expect(page.locator('[data-rda-openai-measurement="true"]')).toHaveCount(1);
   expect(payloads.map(p => JSON.parse(p)).flatMap(p => p.events || []).filter(e => e.type === "lead_created")).toEqual([]);
 });
+
+
+test("retired frame error cannot recreate a withdrawn reference after regrant", async ({ page }) => {
+  await mockVendor(page, []);
+  await page.goto(`/?oppref=${CLICK}`);
+  await page.getByRole("button", { name: "Allow", exact: true }).click();
+  await expect(page.locator('[data-rda-openai-measurement="true"]')).toHaveCount(1);
+  await page.evaluate(() => {
+    Object.assign(window, { retiredMeasurementFrame: document.querySelector('[data-rda-openai-measurement="true"]') });
+  });
+  await page.getByRole("button", { name: "Advertising measurement settings" }).click();
+  await page.getByRole("button", { name: "Decline", exact: true }).click();
+  await page.getByRole("button", { name: "Advertising measurement settings" }).click();
+  await page.getByRole("button", { name: "Allow", exact: true }).click();
+  await page.evaluate(() => {
+    const retired = (window as unknown as Window & { retiredMeasurementFrame: HTMLIFrameElement }).retiredMeasurementFrame;
+    retired.dispatchEvent(new Event("error"));
+  });
+  await page.waitForTimeout(1800);
+  const frames = page.locator('[data-rda-openai-measurement="true"]');
+  await expect(frames).toHaveCount(1);
+  expect(await frames.getAttribute("src")).not.toContain("oppref");
+});

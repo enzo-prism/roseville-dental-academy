@@ -66,7 +66,8 @@ export function OpenAIAdsPixel() {
       }
     }
     function initialize(bucket: Bucket) {
-      if (!allowed() || bucket.frame || bucket.attempts >= MAX_ATTEMPTS) return;
+      if (!allowed() || buckets.get(bucket.reference) !== bucket
+        || bucket.frame || bucket.attempts >= MAX_ATTEMPTS) return;
       bucket.attempts++;
       bucket.channel = crypto.randomUUID();
       const url = new URL("/measurement/openai.html", window.location.origin);
