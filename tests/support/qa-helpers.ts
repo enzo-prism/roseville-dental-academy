@@ -570,22 +570,113 @@ export async function settleMirrorPage(page: Page) {
   await page.waitForTimeout(3_000);
 }
 
-/**
- * Block until the self-hosted `next/font` faces are applied.
- *
- * Without this the screenshot can land while the metric-fallback face is still
- * in use. Fallback metrics are wider than Noto Sans, which overflows the
- * desktop nav row onto a second line and shifts every section below it — a
- * ~57px offset that reads as a six-figure pixel diff. It reproduces on cold
- * caches (CI) and not on warm ones (local), so the gate fails in exactly one
- * environment. `document.fonts.ready` is the deterministic barrier.
- */
+/** Load the actual required webfont faces before capturing geometry. */
 export async function waitForFontsReady(page: Page) {
-  await page
-    .waitForFunction(() => document.fonts.status === "loaded", undefined, {
-      timeout: 15_000,
-    })
-    .catch(() => undefined);
+  await page.evaluate(async () => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        (async () => {
+          await document.fonts.ready;
+          const rootStyle = getComputedStyle(document.documentElement);
+          const bodyFamily = rootStyle.getPropertyValue("--font-noto-sans").split(",")[0].trim();
+          const headingFamily = rootStyle.getPropertyValue("--font-playfair-display").split(",")[0].trim();
+          if (!bodyFamily || !headingFamily) {
+            throw new Error("Required Next font variables are missing");
+          }
+          const requiredFaces = [
+            { font: `600 14px ${bodyFamily}`, text: "Home BLS/CPR Infection Control More Information" },
+            { font: `400 40px ${headingFamily}`, text: "Photo Gallery Begin Your Career" },
+            { font: `600 40px ${headingFamily}`, text: "Photo Gallery Begin Your Career" },
+          ];
+          for (const { font, text } of requiredFaces) {
+            const faces = await document.fonts.load(font, text);
+            if (faces.length === 0 || faces.some((face) => face.status !== "loaded") ||
+              !document.fonts.check(font, text)) {
+              throw new Error(`Required webfont did not load: ${font}`);
+            }
+          }
+          await document.fonts.ready;
+          await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
+        })(),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error("Required webfonts did not settle within 15 seconds")), 15_000);
+        }),
+      ]);
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+  });
+}
+
+export type VisualFontDiagnostics = {
+  platformFonts: Array<{ familyName: string; postScriptName: string; isCustomFont: boolean; glyphCount: number }>;
+  usesExpectedNavFont: boolean;
+  browserState: {
+    userAgent: string;
+    fontsStatus: string;
+    scrollY: number;
+    activeElement: string;
+    nav: null | {
+      fontFamily: string;
+      fontSize: string;
+      fontWeight: string;
+      letterSpacing: string;
+      homeBounds: { x: number; y: number; width: number; height: number };
+      rowBounds: { x: number; y: number; width: number; height: number } | null;
+      socialsBounds: { x: number; y: number; width: number; height: number } | null;
+    };
+  };
+};
+
+async function captureVisualFontDiagnostics(page: Page): Promise<VisualFontDiagnostics> {
+  const selector = 'nav[aria-label="Primary"] a[href="/"]';
+  const browserState = await page.evaluate((homeSelector) => {
+    const home = document.querySelector<HTMLElement>(homeSelector);
+    const visible = home && home.getBoundingClientRect().width > 0 && home.getBoundingClientRect().height > 0;
+    function bounds(element: Element | null) {
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }
+    const style = visible ? getComputedStyle(home) : null;
+    return {
+      userAgent: navigator.userAgent,
+      fontsStatus: document.fonts.status,
+      scrollY: window.scrollY,
+      activeElement: document.activeElement?.tagName ?? "",
+      nav: visible && style ? {
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        letterSpacing: style.letterSpacing,
+        homeBounds: bounds(home)!,
+        rowBounds: bounds(home.closest(".rda-nav-row")),
+        socialsBounds: bounds(document.querySelector('nav[aria-label="Primary"] .rda-social-buttons-nav')),
+      } : null,
+    };
+  }, selector);
+  const platformFonts: VisualFontDiagnostics["platformFonts"] = [];
+  if (browserState.nav) {
+    const session = await page.context().newCDPSession(page);
+    try {
+      await session.send("DOM.enable");
+      await session.send("CSS.enable");
+      const { root } = await session.send("DOM.getDocument");
+      const { nodeId } = await session.send("DOM.querySelector", { nodeId: root.nodeId, selector });
+      const { fonts } = await session.send("CSS.getPlatformFontsForNode", { nodeId });
+      platformFonts.push(...fonts);
+    } finally {
+      await session.detach();
+    }
+  }
+  return {
+    browserState,
+    platformFonts,
+    usesExpectedNavFont: !browserState.nav || platformFonts.some((font) =>
+      font.isCustomFont && /Noto Sans/iu.test(font.familyName) && font.glyphCount > 0,
+    ),
+  };
 }
 
 async function prepareFullPageForVisual(page: Page) {
@@ -597,7 +688,7 @@ async function prepareFullPageForVisual(page: Page) {
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
 
     for (let y = 0; y <= height; y += step) {
-      await page.evaluate((scrollY) => window.scrollTo(0, scrollY), y);
+      await page.evaluate((scrollY) => window.scrollTo({ top: scrollY, behavior: "instant" }), y);
       await page.waitForTimeout(175);
       await page
         .waitForFunction(
@@ -623,7 +714,7 @@ async function prepareFullPageForVisual(page: Page) {
         .catch(() => undefined);
     }
 
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
     await page.waitForTimeout(350);
 
     const nextHeight = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -635,8 +726,12 @@ async function prepareFullPageForVisual(page: Page) {
     previousHeight = nextHeight;
   }
 
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(1_000);
+  await page.evaluate(async () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.scrollTo({ top: 0, behavior: "instant" });
+    await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
+  });
+  await page.waitForFunction(() => window.scrollY === 0);
 }
 
 async function hideFloatingThirdPartyWidgets(page: Page) {
@@ -1010,6 +1105,7 @@ export async function captureVisual(
   await prepareFullPageForVisual(page);
   await hideFloatingThirdPartyWidgets(page);
   const ui = await scanUi(page);
+  const fontDiagnostics = await captureVisualFontDiagnostics(page);
   const mask = [];
 
   for (const selector of maskSelectors) {
@@ -1030,6 +1126,7 @@ export async function captureVisual(
 
   return {
     diagnostics: runtime.state,
+    fontDiagnostics,
     screenshot,
     ui,
   };

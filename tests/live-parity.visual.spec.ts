@@ -11,6 +11,7 @@ import {
   visualMappings,
   visualPixelDiffThreshold,
   visualViewports,
+  waitForFontsReady,
   writeBinaryArtifact,
   writeJsonArtifact,
   writeSuiteSummary,
@@ -21,6 +22,14 @@ const VISUAL_DIFF_TOLERANCE = Number(process.env.VISUAL_DIFF_TOLERANCE ?? (proce
 
 test.beforeEach(async ({ context }) => {
   await suppressSitePromo(context);
+});
+
+test("font readiness rejects a loaded font set that lacks required webfont faces", async ({ page }) => {
+  await page.setContent(`<!doctype html><style>
+    :root { --font-noto-sans: "Missing QA Body Font"; --font-playfair-display: "Missing QA Heading Font"; }
+  </style><p>Home</p>`);
+  expect(await page.evaluate(() => document.fonts.status)).toBe("loaded");
+  await expect(waitForFontsReady(page)).rejects.toThrow("Required webfont did not load");
 });
 
 for (const route of visualMappings) {
@@ -41,6 +50,7 @@ for (const route of visualMappings) {
       const result = {
         baselinePath: baseline.baselinePath,
         differingPixels,
+        fontDiagnostics: localVisual.fontDiagnostics,
         label: route.label,
         localPath: route.localPath,
         status: differingPixels <= VISUAL_DIFF_TOLERANCE ? "passed" : "failed",
@@ -48,6 +58,10 @@ for (const route of visualMappings) {
       };
 
       visualParitySummary.push(result);
+      writeJsonArtifact(testInfo, `${sanitizeLabel(route.label)}-${viewportLabel}-font-diagnostics.json`, localVisual.fontDiagnostics);
+      expect(localVisual.fontDiagnostics.usesExpectedNavFont,
+        "Visible desktop navigation must render with the custom Noto Sans webfont",
+      ).toBe(true);
 
       if (differingPixels > VISUAL_DIFF_TOLERANCE) {
         writeBinaryArtifact(
@@ -67,6 +81,7 @@ for (const route of visualMappings) {
             baselinePath: baseline.baselinePath,
             differingPixels,
             localDiagnostics: localVisual.diagnostics,
+            fontDiagnostics: localVisual.fontDiagnostics,
             localUi: localVisual.ui,
             route,
             viewport,
