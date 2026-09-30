@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { getSiteOrigin } from "./site-config";
 
 export const STUDENT_JOBS_COOKIE = "__Host-rda-student-jobs";
 export const STUDENT_JOBS_SESSION_SECONDS = 8 * 60 * 60;
@@ -56,11 +57,39 @@ export function studentJobsCookieOptions(maxAge = STUDENT_JOBS_SESSION_SECONDS) 
 
 export function studentJobsSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  const host = request.headers.get("host");
-  if (!origin || !host) return false;
+  if (!origin) return false;
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite === "cross-site") return false;
   try {
-    const originUrl = new URL(origin);
     const requestUrl = new URL(request.url);
-    return originUrl.origin === origin && originUrl.host === host && originUrl.protocol === requestUrl.protocol;
+    const host = request.headers.get("host");
+    const trustedOrigin = getSiteOrigin();
+    const trustedUrl = new URL(trustedOrigin);
+    const loopback = (hostname: string) => ["localhost", "127.0.0.1", "[::1]"].includes(hostname);
+    const localTarget = !process.env.VERCEL && Boolean(host) && loopback(requestUrl.hostname)
+      && loopback(new URL(`${requestUrl.protocol}//${host}`).hostname)
+      && new URL(`${requestUrl.protocol}//${host}`).port === requestUrl.port;
+    // Referrer-Policy:no-referrer makes native form POSTs send Origin:null.
+    // Modern browser Fetch Metadata can prove these are same-origin document
+    // navigations. Every header must match, and the destination must be the
+    // configured canonical host (or a tightly scoped non-Vercel loopback test).
+    if (origin === "null") {
+      return request.method === "POST" && fetchSite === "same-origin"
+        && request.headers.get("sec-fetch-mode") === "navigate"
+        && request.headers.get("sec-fetch-dest") === "document"
+        && ((trustedUrl.protocol === "https:" && host === trustedUrl.host) || localTarget);
+    }
+    const originUrl = new URL(origin);
+    if (originUrl.origin !== origin) return false;
+    // The canonical site configuration is trusted. The internal request URL may
+    // use HTTP or an infrastructure host after Vercel terminates public HTTPS.
+    // Caller-supplied forwarded host/protocol headers never expand this allowlist.
+    if (originUrl.protocol === "https:" && origin === trustedOrigin) return true;
+    // Local production builds must remain testable without trusting arbitrary
+    // origins. This exception is impossible on Vercel and bounded to loopback.
+    if (process.env.VERCEL) return false;
+    return localTarget && loopback(originUrl.hostname)
+      && originUrl.host === host && originUrl.port === requestUrl.port
+      && originUrl.protocol === requestUrl.protocol;
   } catch { return false; }
 }

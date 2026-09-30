@@ -1,9 +1,15 @@
 import { test, expect } from "@playwright/test";
 import { PGlite } from "@electric-sql/pglite";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { createServer } from "node:https";
+import type { AddressInfo } from "node:net";
+import { join } from "node:path";
 import { createStudentJobsSession, STUDENT_JOBS_COOKIE, STUDENT_JOBS_SESSION_SECONDS,
   studentJobsPasswordMatches, studentJobsAuthConfig, studentJobsSameOrigin, validStudentJobsSession } from "../lib/student-jobs-auth";
 import { parseStudentJobs, safeStudentJobApplyUrl } from "../lib/student-jobs-data";
 import { STUDENT_JOBS_RATE_LIMIT_SQL } from "../lib/student-jobs-rate-limit";
+import { getSiteOrigin } from "../lib/site-config";
 
 const config = { password: "test-only-strong-password-123456", secret: "test-only-independent-session-secret-123456" };
 const fixture = { id: "fixture-only", title: "Fixture opportunity", employer: "Fixture", location: "Roseville",
@@ -27,11 +33,117 @@ test("missing or weak configuration fails closed and origin checks reject cross-
     if (password === undefined) delete process.env.RDA_STUDENT_JOBS_PASSWORD; else process.env.RDA_STUDENT_JOBS_PASSWORD = password;
     if (secret === undefined) delete process.env.RDA_STUDENT_JOBS_SESSION_SECRET; else process.env.RDA_STUDENT_JOBS_SESSION_SECRET = secret;
   }
-  const request = (origin: string) => new Request("https://localhost/student-jobs", { headers: { Host: "academy.example", Origin: origin } });
-  expect(studentJobsSameOrigin(request("https://academy.example"))).toBe(true);
+  const request = (origin: string) => new Request("http://internal-host/student-jobs", { headers: { Host: "internal-host", Origin: origin } });
+  expect(studentJobsSameOrigin(request(getSiteOrigin()))).toBe(true);
   expect(studentJobsSameOrigin(request("https://other.example"))).toBe(false);
-  expect(studentJobsSameOrigin(request("http://academy.example"))).toBe(false);
+  expect(studentJobsSameOrigin(request(getSiteOrigin().replace("https:", "http:")))).toBe(false);
   expect(studentJobsSameOrigin(request("null"))).toBe(false);
+});
+
+test("Vercel public HTTPS origin remains valid behind internal HTTP without trusting proxy headers", () => {
+  const vercel = process.env.VERCEL;
+  try {
+    process.env.VERCEL = "1";
+    const trustedOrigin = getSiteOrigin();
+    expect(studentJobsSameOrigin(new Request("http://internal-function:3000/api/student-jobs/login", {
+      headers: { Origin: trustedOrigin, Host: "internal-function:3000" },
+    }))).toBe(true);
+    expect(studentJobsSameOrigin(new Request("http://internal-function:3000/api/student-jobs/login", {
+      headers: { Origin: "https://attacker.example", Host: "attacker.example",
+        "x-forwarded-host": "attacker.example", "x-forwarded-proto": "https" },
+    }))).toBe(false);
+    expect(studentJobsSameOrigin(new Request("http://localhost:3114/api/student-jobs/login", {
+      headers: { Origin: "http://localhost:3114", Host: "localhost:3114" },
+    }))).toBe(false);
+    expect(studentJobsSameOrigin(new Request("http://internal-function:3000/api/student-jobs/login", {
+      headers: { Origin: `${trustedOrigin}/`, Host: new URL(trustedOrigin).host },
+    }))).toBe(false);
+  } finally {
+    if (vercel === undefined) delete process.env.VERCEL; else process.env.VERCEL = vercel;
+  }
+  expect(studentJobsSameOrigin(new Request("http://localhost:3114/api/student-jobs/login", {
+    headers: { Origin: "http://127.0.0.1:3114", Host: "127.0.0.1:3114" },
+  }))).toBe(!vercel);
+});
+
+test("null Origin is allowed only for same-origin native form navigation to a trusted target", () => {
+  const vercel = process.env.VERCEL;
+  try {
+    process.env.VERCEL = "1";
+    const canonicalHost = new URL(getSiteOrigin()).host;
+    const headers = { Origin: "null", Host: canonicalHost, "sec-fetch-site": "same-origin",
+      "sec-fetch-mode": "navigate", "sec-fetch-dest": "document" };
+    const request = (changes: Record<string, string> = {}, method = "POST") => new Request("http://internal-function/login", {
+      method, headers: { ...headers, ...changes },
+    });
+    expect(studentJobsSameOrigin(request())).toBe(true);
+    for (const site of ["same-site", "cross-site", "none", ""]) expect(studentJobsSameOrigin(request({ "sec-fetch-site": site }))).toBe(false);
+    for (const mode of ["cors", "no-cors", ""]) expect(studentJobsSameOrigin(request({ "sec-fetch-mode": mode }))).toBe(false);
+    for (const destination of ["empty", "iframe", ""]) expect(studentJobsSameOrigin(request({ "sec-fetch-dest": destination }))).toBe(false);
+    expect(studentJobsSameOrigin(request({ Host: "attacker.example", "x-forwarded-host": canonicalHost }))).toBe(false);
+    expect(studentJobsSameOrigin(request({ Origin: "" }))).toBe(false);
+    expect(studentJobsSameOrigin(request({}, "GET"))).toBe(false);
+    expect(studentJobsSameOrigin(request({ Origin: getSiteOrigin(), "sec-fetch-site": "cross-site" }))).toBe(false);
+  } finally { if (vercel === undefined) delete process.env.VERCEL; else process.env.VERCEL = vercel; }
+});
+
+test("real HTTPS browser native login and logout work with no-referrer and Origin null", async ({ browser }) => {
+  // This fixture uses the production guard/session functions and genuine browser
+  // POST metadata. API requests with a fabricated Origin cannot catch this case.
+  const directory = mkdtempSync(join(process.cwd(), "work/student-jobs-https-"));
+  const observed: { path: string; origin: string | null; allowed: boolean }[] = [];
+  execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", join(directory, "key.pem"),
+    "-out", join(directory, "cert.pem"), "-days", "1", "-subj", "/CN=localhost"], { stdio: "ignore" });
+  const vercel = process.env.VERCEL;
+  delete process.env.VERCEL;
+  const server = createServer({ key: readFileSync(join(directory, "key.pem")), cert: readFileSync(join(directory, "cert.pem")) }, (request, response) => {
+    response.setHeader("Referrer-Policy", "no-referrer");
+    response.setHeader("Cache-Control", "private, no-store");
+    response.setHeader("Content-Type", "text/html");
+    const host = request.headers.host!;
+    if (request.method === "POST") {
+      const headers = new Headers();
+      for (const [key, value] of Object.entries(request.headers)) if (typeof value === "string") headers.set(key, value);
+      const incoming = new Request(`https://${host}${request.url}`, { method: "POST", headers });
+      const allowed = studentJobsSameOrigin(incoming);
+      observed.push({ path: request.url!, origin: incoming.headers.get("origin"), allowed });
+      if (!allowed) { response.writeHead(403); response.end("Denied"); return; }
+      let body = "";
+      request.on("data", (chunk) => { body += String(chunk); });
+      request.on("end", () => {
+        if (request.url === "/login" && !studentJobsPasswordMatches(new URLSearchParams(body).get("password") || "", config)) {
+          response.writeHead(403); response.end("Denied"); return;
+        }
+        const logout = request.url === "/logout";
+        response.setHeader("Set-Cookie", `${STUDENT_JOBS_COOKIE}=${logout ? "" : createStudentJobsSession(config)}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=${logout ? 0 : STUDENT_JOBS_SESSION_SECONDS}`);
+        response.writeHead(303, { Location: "/" }); response.end();
+      });
+      return;
+    }
+    const token = request.headers.cookie?.split("; ").find((cookie) => cookie.startsWith(`${STUDENT_JOBS_COOKIE}=`))?.slice(STUDENT_JOBS_COOKIE.length + 1);
+    response.end(validStudentJobsSession(token, config)
+      ? "<h1>Current opportunities</h1><form action='/logout' method='post'><button>Sign out</button></form>"
+      : "<h1>Access the job board</h1><form action='/login' method='post'><label>Password<input name='password' type='password'></label><button>View job board</button></form>");
+  });
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  try {
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = (server.address() as AddressInfo).port;
+    const page = await context.newPage();
+    await page.goto(`https://127.0.0.1:${port}`);
+    await page.getByLabel("Password").fill(config.password);
+    await page.getByRole("button", { name: "View job board" }).click();
+    await expect(page.getByRole("heading", { name: "Current opportunities" })).toBeVisible();
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("heading", { name: "Access the job board" })).toBeVisible();
+    expect(observed).toEqual([{ path: "/login", origin: "null", allowed: true }, { path: "/logout", origin: "null", allowed: true }]);
+    expect((await context.cookies()).some((cookie) => cookie.name === STUDENT_JOBS_COOKIE)).toBe(false);
+  } finally {
+    await context.close();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    rmSync(directory, { recursive: true, force: true });
+    if (vercel === undefined) delete process.env.VERCEL; else process.env.VERCEL = vercel;
+  }
 });
 
 test("sessions reject missing, forged, expired and revoked tokens", () => {
