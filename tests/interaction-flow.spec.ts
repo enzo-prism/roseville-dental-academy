@@ -1261,17 +1261,7 @@ test.describe("live-style interaction flows", () => {
         utm_source: "fb",
         utm_source_platform: "meta_ads",
       });
-      expect(openAIPageViewEvents).toHaveLength(1);
-      expect(openAIPageViewEvents[0]?.[2]).toEqual({
-        contents: [
-          {
-            content_type: "page",
-            id: landingPage.path,
-            name: expect.any(String),
-          },
-        ],
-        type: "contents",
-      });
+      expect(openAIPageViewEvents).toEqual([]);
 
       await form.locator('input[name="Name"]').fill("Private Test Student");
       await form.locator('input[name="_replyto"]').fill("private-test@example.com");
@@ -1351,7 +1341,6 @@ test.describe("live-style interaction flows", () => {
       const openAILeadEvents = events.openai.filter(
         (event) => event[0] === "measure" && event[1] === "lead_created",
       );
-      const openAILeadEvent = openAILeadEvents[0];
       const contactEvent = metaTrackEvents.find((event) => event[1] === "Contact")?.[2] ?? {};
       const ctaEvent = gaEvents.find((event) => event[1] === "cta_click")?.[2] ?? {};
       const gaLeadEvent = gaEvents.find((event) => event[1] === "generate_lead")?.[2] ?? {};
@@ -1395,7 +1384,7 @@ test.describe("live-style interaction flows", () => {
           gaLeadEvent,
           gaSubmitEvent,
           leadEvent,
-          openAILeadEvent,
+          openAILeadEvents,
           vercelLeadEvent,
           viewContentEvent,
         }),
@@ -1458,20 +1447,11 @@ test.describe("live-style interaction flows", () => {
       expect(leadEventIds[0]).toEqual(expect.any(String));
       expect(leadEventIds.every((leadEventId) => leadEventId === leadEventIds[0])).toBe(true);
       expect(leadEventOptions).toEqual({ eventID: leadEventIds[0] });
-      expect(openAILeadEvents).toHaveLength(1);
-      expect(openAILeadEvent).toEqual([
-        "measure",
-        "lead_created",
-        { type: "customer_action" },
-        { event_id: leadEventIds[0] },
-      ]);
+      expect(openAILeadEvents).toEqual([]);
       await expect.poll(() => attributionReceipt).not.toBeNull();
       const receivedReceipt = attributionReceipt as unknown as Record<string, unknown>;
-
       expect(receivedReceipt).toMatchObject({
-        formId: "xzdkgaeg",
-        leadEventId: leadEventIds[0],
-        schemaVersion: 1,
+        formId: "xzdkgaeg", leadEventId: leadEventIds[0], schemaVersion: 1,
       });
       expect(receivedReceipt.firstTouch).toMatchObject({
         anonymousId: expect.any(String),
@@ -1620,7 +1600,7 @@ test.describe("live-style interaction flows", () => {
       expect(receiptRequests).toBe(0);
     });
 
-    test("ChatGPT Ads deduplicates repeated accepted-lead notifications", async ({ page }) => {
+    test("ChatGPT Ads remains blocked without explicit consent after accepted-lead notifications", async ({ page }) => {
       await page.addInitScript(() => {
         const adsWindow = window as Window & {
           __rdaTestOpenAIEvents?: unknown[][];
@@ -1649,14 +1629,7 @@ test.describe("live-style interaction flows", () => {
           ).filter((event) => event[0] === "measure" && event[1] === "lead_created"),
       );
 
-      expect(leadEvents).toEqual([
-        [
-          "measure",
-          "lead_created",
-          { type: "customer_action" },
-          { event_id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" },
-        ],
-      ]);
+      expect(leadEvents).toEqual([]);
     });
 
     for (const privacyCase of ["global privacy control", "denied consent cookie"] as const) {
@@ -1711,11 +1684,7 @@ test.describe("live-style interaction flows", () => {
               .__rdaTestOpenAIEvents ?? [],
         );
 
-        expect(events[0]).toEqual(["consent", false]);
-        expect(events.find((event) => event[0] === "init")?.[1]).toMatchObject({
-          pixelId: "Ek4Sce2YRxrGHS3oL51Qac",
-        });
-        expect(events.filter((event) => event[0] === "measure")).toEqual([]);
+        expect(events).toEqual([]);
       });
     }
 

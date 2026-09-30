@@ -173,38 +173,45 @@ Snapchat Pixel is no longer mounted. The June 17, 2026 RDA meeting discontinued 
 
 ## ChatGPT Ads Measurement Pixel
 
-The OpenAI browser SDK is installed sitewide with pixel ID
-`Ek4Sce2YRxrGHS3oL51Qac`. `NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID` can override the public ID
-without changing code. SDK debug logging is enabled outside production only.
+OpenAI measurement requires `NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID` (production RDA ID:
+`Ek4Sce2YRxrGHS3oL51Qac`). Unset or invalid configuration disables it. Production
+measurement runs only on `rosevilledentalacademy.com` and `www.rosevilledentalacademy.com`;
+localhost accepts only the designated `playwright-test-pixel` fixture.
 
-The integration sets consent before `init`. Global Privacy Control, Do Not Track, or an
-explicit denied value in `rda_attribution_consent`, `rda_analytics_consent`, or
-`rda_cookie_consent` sets Pixel consent to `false`. Restricted browsers load no
-measurement-event pings. Unknown or explicitly granted consent sets Pixel consent to
-`true`.
+Unknown consent blocks SDK loading and identifier storage. Explicit global RDA consent
+cookies remain compatible; GPC, DNT, global denial and a specific OpenAI decline override
+a grant. The inline footer choice allows opt-in and later withdrawal without a floating
+cookie banner. A stale stored grant is not trusted when consent storage is read-only.
 
-The initial load and each client-side pathname change send one `page_viewed` event with
-the documented `contents` data shape. The payload contains only a query-free, sanitized
-path and sanitized public document title. It never includes UTMs, `oppref`, ad click IDs,
-browser identifiers, or student-entered values. The SDK manages its own privacy-preserving
-`oppref` capture.
+The SDK runs only in `/measurement/openai.html`, a hidden iframe with
+`sandbox="allow-scripts"` and an opaque origin. It cannot read the parent form DOM, even
+when OpenAI remote configuration enables automatic advanced matching. The parent never
+runs `window.oaiq`. Page paths, titles, names, contact details, and form answers are not
+provided to this transport. This integration measures accepted course inquiries only;
+it no longer sends OpenAI page-view events.
 
-After Formspree accepts a lead, the existing `rda:lead-form-success` event sends:
+After consent, the native URL `oppref` is preserved exactly in a separate 30-day browser
+record. Capture consumes only that URL parameter, retaining UTMs and fragments. Refresh
+does not renew the expiry. Expiry, denial, GPC and DNT delete the stored reference.
+Denied browser signals also remove a native reference from the URL. Each submission
+captures its permitted reference and consent epoch before the Formspree request. Only
+an accepted response can become a lead. A reference valid at submission remains tied
+to that request through response or SDK delay; a new submission after expiry has none.
+Withdrawal invalidates in-flight and queued work, even if followed by re-grant. Isolated
+reference buckets stay alive for the document lifetime so SDK batching does not lose
+already queued work or assign a newer click to an older request.
 
-```ts
-oaiq(
-  "measure",
-  "lead_created",
-  { type: "customer_action" },
-  { event_id: leadEventId },
-);
-```
+Only the existing accepted Formspree `rda:lead-form-success` UUID crosses the authenticated
+message channel. The frame calls `lead_created` with `{ type: "customer_action" }`, the
+original `event_id` and `opt_out: true`. `opt_out` limits future personalization; it does
+not disable automatic advanced matching. Opaque isolation is the protection. Failed and
+rejected forms do not dispatch the existing success event. Form behavior and the shared
+other-platform attribution runtime are unchanged.
 
-`leadEventId` is the existing browser-generated non-PII UUID. Reuse it for a future
-server-side OpenAI Conversions API event so browser and server copies can deduplicate.
-Failed and rejected forms never dispatch the success event and are not measured as leads.
-Runtime guards prevent duplicate initial page views and accepted leads under React Strict
-Mode.
+Run `pnpm test:openai` for consent, expiry, navigation, storage failure and real-SDK
+isolation tests with automatic matching enabled. All collector/configuration browser
+requests and third-party form providers are intercepted. The test downloads only the
+public SDK source. Queue acknowledgement is not live ingestion or ad attribution proof.
 
 ## Validation
 
