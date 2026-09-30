@@ -28,14 +28,19 @@ for (const course of ["radiation-safety", "coronal-polish", "sealants"]) {
   test(`${course} explains scheduling, patient responsibilities, site approval, and completion`, async ({ page }) => {
     await page.goto(`/${course}`);
     const clinical = page.locator("[data-rda-clinical-requirements]");
-    await expect(clinical.getByRole("heading", { name: "Clinical Requirements Guidelines" })).toBeVisible();
+    await expect(clinical.getByRole("heading", { name: "Clinical Training", exact: true })).toBeVisible();
+    await expect(clinical.getByRole("heading", { name: "What to Expect During Clinicals" })).toBeVisible();
+    await expect(clinical.getByRole("heading", { name: "Scheduling Your Clinical" })).toBeVisible();
+    await expect(clinical.getByRole("heading", { name: "Clinical Completion" })).toBeVisible();
     await expect(clinical).toContainText("All clinical training must be scheduled and completed at our designated clinical site.");
+    await expect(clinical).toContainText("Students may not complete their clinical requirements at another dental office or clinical location.");
     await expect(clinical).toContainText("not before the didactic and laboratory portion has been completed");
     await expect(clinical).toContainText("student provided patients");
     await expect(clinical).toContainText("supervision of a licensed dentist");
     await expect(clinical).toContainText("prior written approval from Roseville Dental Academy and the Dental Board");
     await expect(clinical).toContainText("successfully complete the required clinical experience and demonstrate the necessary competencies before completing the course");
-    await expect(clinical.getByRole("link", { name: "916-888-9821" })).toHaveAttribute("href", "tel:9168889821");
+    await expect(clinical).toContainText("Clinical training must be completed at our designated clinical site and is not transferable to another location.");
+    await expect(clinical.getByRole("link")).toHaveCount(0);
   });
 }
 
@@ -46,8 +51,16 @@ test("FAQ visible answers and structured data include the approved cancellation 
   await expect(cancellation).toContainText("their enrollment cannot be moved to another course date");
   await expect(cancellation).toContainText("prior written approval from Roseville Dental Academy");
   await expect(cancellation).toContainText("receive a refund of the course fees paid");
+  await expect(faqs.locator(".rda-student-faq-card").filter({ hasText: "Where do I complete my clinical training?" })).toContainText(
+    "Students may not complete their clinical requirements at another dental office or clinical location.",
+  );
+  await expect(faqs.locator(".rda-student-faq-card").filter({ hasText: "Can I complete clinicals at another office?" })).toContainText(
+    "students cannot complete their clinical requirements at an outside dental office or substitute another clinical location without prior written approval from Roseville Dental Academy and the Dental Board.",
+  );
   await expect(faqs).toContainText("prior written approval from Roseville Dental Academy and the Dental Board");
   await expect(faqs).toContainText("not before the didactic and laboratory portion has been completed");
+  await expect(faqs).toContainText("Clinical training must be completed at our designated clinical site and is not transferable to another location.");
+  await expect(faqs).not.toContainText("Contact admissions for access to the academy's scheduling platform.");
   const structured = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
     scripts.map((script) => JSON.parse(script.textContent || "{}")),
   );
@@ -55,4 +68,28 @@ test("FAQ visible answers and structured data include the approved cancellation 
   expect(faqSchema).toBeTruthy();
   const schemaAnswer = faqSchema.mainEntity.find((item: { name: string }) => item.name === "What is the cancellation and refund policy?").acceptedAnswer.text;
   expect(schemaAnswer).toBe((await cancellation.locator("p").innerText()).trim());
+
+  for (const question of [
+    "Where do I complete my clinical training?",
+    "Can I complete clinicals at another office?",
+    "When can I schedule and complete my clinical training?",
+  ]) {
+    const visible = faqs.locator(".rda-student-faq-card").filter({ hasText: question });
+    const schemaItem = faqSchema.mainEntity.find((item: { name: string }) => item.name === question);
+    expect(schemaItem, `${question} must appear in FAQPage JSON-LD`).toBeTruthy();
+    expect(schemaItem.acceptedAnswer.text).toBe((await visible.locator("p").innerText()).trim());
+  }
+});
+
+test("standalone clinical courses share one identical Clinical Training section", async ({ page }) => {
+  const sections: string[] = [];
+
+  for (const course of ["radiation-safety", "coronal-polish", "sealants"]) {
+    await page.goto(`/${course}`);
+    sections.push((await page.locator("[data-rda-clinical-requirements]").innerText()).trim());
+  }
+
+  expect(sections[0]).toContain("Clinical Training");
+  expect(sections[1]).toBe(sections[0]);
+  expect(sections[2]).toBe(sections[0]);
 });
