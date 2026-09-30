@@ -1,55 +1,66 @@
-import {
-  CLINICAL_COMPLETION_REQUIREMENT,
-  CLINICAL_EXPECTATIONS,
-  CLINICAL_OUTSIDE_SITE_REQUIREMENT,
-  CLINICAL_REQUIREMENTS_TITLE,
-  CLINICAL_SCHEDULING_REQUIREMENT,
-  CLINICAL_SITE_REQUIREMENT,
-  CLINICAL_SUPERVISION_REQUIREMENT,
-  CLINICAL_SUPPORT_NOTE,
-  CLINICAL_TRAINING_INTRO,
-} from "@/lib/academy-policies";
+import type { ReactNode } from "react";
+
+import { CLINICAL_TRAINING_CONTENT } from "@/lib/academy-policies";
 import { cn } from "@/lib/utils";
 
+function emphasizePhrase(text: string, emphasis: string): ReactNode {
+  const index = text.indexOf(emphasis);
+
+  if (index < 0) {
+    return text;
+  }
+
+  return (
+    <>
+      {text.slice(0, index)}
+      <strong>{emphasis}</strong>
+      {text.slice(index + emphasis.length)}
+    </>
+  );
+}
+
 export function ClinicalRequirements({ className }: { className?: string }) {
+  const content = CLINICAL_TRAINING_CONTENT;
+
   return (
     <section
-      aria-labelledby="clinical-requirements-heading"
+      aria-labelledby="clinical-training-heading"
       className={cn("rounded-lg border border-border bg-card p-5 sm:p-6", className)}
       data-rda-clinical-requirements="true"
     >
-      <h2 className="font-heading text-2xl font-semibold leading-tight text-foreground sm:text-3xl" id="clinical-requirements-heading">
-        {CLINICAL_REQUIREMENTS_TITLE}
+      <h2 className="font-heading text-2xl font-semibold leading-tight text-foreground sm:text-3xl" id="clinical-training-heading">
+        {content.title}
       </h2>
       <div className="mt-5 space-y-6 text-base leading-7 text-foreground">
         <div className="space-y-3">
-          <h3 className="font-heading text-xl font-semibold">Clinical Training</h3>
-          <p>{CLINICAL_TRAINING_INTRO}</p>
-          <p className="font-semibold">{CLINICAL_SITE_REQUIREMENT}</p>
-          <p>{CLINICAL_SUPERVISION_REQUIREMENT}</p>
+          <p>{content.intro}</p>
+          <p>
+            <strong>{content.siteRequirement}</strong> {content.noOtherLocation}
+          </p>
+          <p>{content.supervision}</p>
         </div>
         <div className="space-y-3">
-          <h3 className="font-heading text-xl font-semibold">What to Expect During Clinicals</h3>
-          <p>Students will:</p>
+          <h3 className="font-heading text-xl font-semibold">{content.expectHeading}</h3>
+          <p>{content.expectLead}</p>
           <ul className="list-disc space-y-2 pl-5 marker:text-primary">
-            {CLINICAL_EXPECTATIONS.map((item) => <li key={item}>{item}</li>)}
+            {content.expectItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
           </ul>
         </div>
         <div className="space-y-3">
-          <h3 className="font-heading text-xl font-semibold">Scheduling Your Clinical</h3>
-          <p>{CLINICAL_SCHEDULING_REQUIREMENT}</p>
-          <p>{CLINICAL_OUTSIDE_SITE_REQUIREMENT}</p>
+          <h3 className="font-heading text-xl font-semibold">{content.schedulingHeading}</h3>
+          <p>{emphasizePhrase(content.scheduling, content.schedulingEmphasis)}</p>
+          <p>{emphasizePhrase(content.outsideSite, content.outsideSiteEmphasis)}</p>
         </div>
         <div className="space-y-3">
-          <h3 className="font-heading text-xl font-semibold">Clinical Completion</h3>
-          <p>{CLINICAL_COMPLETION_REQUIREMENT}</p>
-          <p>{CLINICAL_SUPPORT_NOTE}</p>
+          <h3 className="font-heading text-xl font-semibold">{content.completionHeading}</h3>
+          <p>{content.completion}</p>
+          <p>{content.support}</p>
+          <p>
+            <strong>{content.planAhead}</strong>
+          </p>
         </div>
-        <p>
-          Please plan ahead when scheduling your clinical. Call{" "}
-          <a className="font-medium text-primary underline underline-offset-4" href="tel:9168889821">916-888-9821</a>
-          {" "}to confirm patient requirements and access to the academy&apos;s scheduling platform.
-        </p>
       </div>
     </section>
   );

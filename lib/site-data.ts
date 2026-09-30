@@ -28,7 +28,7 @@ import type {
   TestimonialData,
 } from "@/lib/site-types";
 import { activeSitePromo } from "@/lib/site-promo";
-import { CANCELLATION_POLICY_PARAGRAPHS, CLINICAL_COMPLETION_REQUIREMENT, CLINICAL_OUTSIDE_SITE_REQUIREMENT, CLINICAL_SCHEDULING_REQUIREMENT, CLINICAL_SITE_REQUIREMENT, CLINICAL_SUPERVISION_REQUIREMENT, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
+import { CANCELLATION_POLICY_PARAGRAPHS, CLINICAL_COMPLETION_REQUIREMENT, CLINICAL_NO_OTHER_LOCATION, CLINICAL_OUTSIDE_SITE_REQUIREMENT, CLINICAL_PLAN_AHEAD_NOTE, CLINICAL_SCHEDULING_REQUIREMENT, CLINICAL_SITE_REQUIREMENT, CLINICAL_SUPERVISION_REQUIREMENT, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
 
 export const announcement = activeSitePromo.bannerText;
 
@@ -936,12 +936,16 @@ export const studentFaqHighlights = [
     answer: `${INFECTION_CONTROL_PAYMENT_NOTE} Call admissions to confirm availability and registration for your chosen course date.`,
   },
   {
-    question: "Where do I complete clinical training for X-ray, Coronal Polish, and Sealants?",
-    answer: `${CLINICAL_SITE_REQUIREMENT} ${CLINICAL_OUTSIDE_SITE_REQUIREMENT}`,
+    question: "Where do I complete my clinical training?",
+    answer: `${CLINICAL_SITE_REQUIREMENT} ${CLINICAL_NO_OTHER_LOCATION}`,
+  },
+  {
+    question: "Can I complete clinicals at another office?",
+    answer: CLINICAL_OUTSIDE_SITE_REQUIREMENT,
   },
   {
     question: "When can I schedule and complete my clinical training?",
-    answer: `${CLINICAL_SCHEDULING_REQUIREMENT} ${CLINICAL_COMPLETION_REQUIREMENT} Contact admissions for access to the academy's scheduling platform.`,
+    answer: `${CLINICAL_SCHEDULING_REQUIREMENT} ${CLINICAL_COMPLETION_REQUIREMENT} ${CLINICAL_PLAN_AHEAD_NOTE}`,
   },
   {
     question: "Are the courses Dental Board approved?",
