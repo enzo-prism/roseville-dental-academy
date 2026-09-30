@@ -68,8 +68,9 @@ export function receiptAbuseBucket(request: Request, now = new Date()) {
   const key = secret();
   if (!key) return null;
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const userAgent = (request.headers.get("user-agent") ?? "unknown").slice(0, 256);
   const windowStart = new Date(Math.floor(now.getTime() / TOKEN_TTL_MS) * TOKEN_TTL_MS);
-  return { bucketHash: createHmac("sha256", key).update(`${forwarded}\n${userAgent}`).digest("hex"),
+  // The trusted deployment proxy supplies x-forwarded-for. User-Agent is
+  // caller-controlled and must not allow the same IP to reset its allowance.
+  return { bucketHash: createHmac("sha256", key).update(forwarded).digest("hex"),
     windowStart: windowStart.toISOString() };
 }

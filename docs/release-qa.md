@@ -195,6 +195,8 @@ For the full production push checklist, use [production-runbook.md](production-r
 
 ## Known 2026-07-31 Resolution
 
+September 29 Meta-readiness follow-up: only the home desktop/mobile, infection-control desktop, and photos desktop visual baselines were refreshed after screenshot/trace review. Current self-hosted fonts and navigation metrics differ from the older baselines; course-page preselection is intentional. All images/fonts loaded, with no overflow or header overlap. Geometry checks now use instant scroll and rendered footer text ranges, and the analytics fixture follows the accepted-request snapshot contract. Visual tolerances and masks remain unchanged. Repeated production visual checks and the release suites validate these baselines.
+
 `Release Gate` and `Vercel Preview Verify` were red on `main` across four consecutive pushes, ending at `1afe322` `Mark August 8 sealants course full`. Neither `110891c` nor `1afe322` refreshed the content baselines after changing `lib/course-schedule.ts` and the header BLS link, so `content parity home` failed and the serial suite reported the remaining 19 routes as "did not run."
 
 Two drift classes were involved, both intentional:
@@ -225,3 +227,7 @@ Verification after that fix:
 - production homepage: 200, schedule present, GA4 and Vercel Analytics initialized, no horizontal overflow
 
 CI installs Node.js `24` and pnpm `10.34.5`; `package.json` pins `node: 24.x` plus `pnpm@10.34.5`, and the Vercel project runtime is set to Node `24.x` in the dashboard (`vercel.json` carries no Node pin). Keep those aligned when either workflow is updated.
+
+## Paid-media integrity gate
+
+Release Gate also runs `pnpm test:attribution-db` and `pnpm test:attribution` after the six presentation suites. API-unavailable tests explicitly clear DATABASE_URL and sync/cron credentials. Meta lead flow tests are localhost-only and intercept third-party submissions/collectors; they are not a production Test Events check. See `docs/meta-ads-readiness.md`.

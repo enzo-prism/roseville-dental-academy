@@ -91,7 +91,7 @@ test.describe("live-style interaction flows", () => {
       expect(placement.width, viewport.name).toBeGreaterThanOrEqual(56);
       expect(placement.height, viewport.name).toBeGreaterThanOrEqual(40);
 
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
       const footerClearance = await page.evaluate(() => {
         const fabElement = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
         const policy = document.querySelector<HTMLElement>(".rda-footer-policy");
@@ -103,13 +103,16 @@ test.describe("live-style interaction flows", () => {
             return false;
           }
 
-          const rect = element.getBoundingClientRect();
-          return (
+          // Paragraph boxes span the footer width; only rendered text can be
+          // obscured by the floating button in their otherwise empty gutters.
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          return Array.from(range.getClientRects()).some((rect) => (
             rect.left < fabRect.right &&
             rect.right > fabRect.left &&
             rect.top < fabRect.bottom &&
             rect.bottom > fabRect.top
-          );
+          ));
         }
 
         return {
@@ -120,8 +123,8 @@ test.describe("live-style interaction flows", () => {
       expect(footerClearance.policyOverlap, viewport.name).toBe(false);
       expect(footerClearance.copyOverlap, viewport.name).toBe(false);
 
-      await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(400);
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
       const mainTopAfter = await page.locator("#rda-main-content").evaluate((element) => {
         return Math.round(element.getBoundingClientRect().top);
       });
@@ -1014,7 +1017,15 @@ test.describe("live-style interaction flows", () => {
           signupForm.dispatchEvent(
             new CustomEvent("rda:lead-form-success", {
               bubbles: true,
-              detail: { submissionId: "accepted-analytics-test" },
+              detail: {
+                submissionId: "accepted-analytics-test",
+                leadEventId: "accepted-analytics-test",
+                acceptedFields: Array.from(new FormData(signupForm).entries()).filter(
+                  ([name, value]) =>
+                    ["Source page", "Interested classes[]", "course_interest", "page_path"].includes(name) &&
+                    typeof value === "string",
+                ),
+              },
             }),
           );
           await waitForReactUpdate();
@@ -2487,12 +2498,9 @@ test.describe("live-style interaction flows", () => {
         const pixel = document.querySelector("#rda-meta-pixel");
         const dataLayer = (window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? [];
         const config = dataLayer.find((entry) => {
-          return (
-            entry &&
-            entry[0] === "config" &&
-            typeof entry[2] === "object" &&
-            entry[2] !== null
-          );
+          if (!entry || typeof entry !== "object") return false;
+          const command = entry as ArrayLike<unknown>;
+          return command[0] === "config" && typeof command[2] === "object" && command[2] !== null;
         }) as ["config", string, { page_location?: string; page_path?: string }] | undefined;
 
         return {

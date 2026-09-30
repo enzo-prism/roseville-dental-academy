@@ -39,11 +39,12 @@ export function SitePromoDialog() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!isSitePromoActive(activeSitePromo) || readDismissed(activeSitePromo.storageKey)) {
+    if (!isSitePromoActive(activeSitePromo, Date.now()) || readDismissed(activeSitePromo.storageKey)) {
       return undefined;
     }
 
     const timer = window.setTimeout(() => {
+      if (!isSitePromoActive(activeSitePromo, Date.now())) return;
       setReady(true);
       setOpen(true);
     }, SHOW_DELAY_MS);

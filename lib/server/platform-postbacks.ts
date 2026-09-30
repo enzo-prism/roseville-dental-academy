@@ -1,3 +1,5 @@
+import { getMetaPixelId } from "@/lib/meta-pixel-config";
+import { getSiteOrigin } from "@/lib/site-config";
 import type { PendingPostback, PostbackOutcome } from "@/lib/server/attribution-db";
 import { approvedConsentPolicyVersions, providerEventName, validateOnlyMode } from "@/lib/server/postback-config";
 
@@ -22,6 +24,7 @@ function identifiers(job: PendingPostback) {
   const touch = record(job.touch);
   return {
     capturedAt: stringField(touch.captured_at),
+    userAgent: stringField(touch.client_user_agent).trim().slice(0, 512),
     clickIds: record(touch.click_ids),
     landingPage: stringField(touch.landing_page),
     marketingConsent: touch.marketing_consent === true,
@@ -63,6 +66,20 @@ function transportFailure(error: unknown): PostbackOutcome {
   };
 }
 
+function metaEventSourceUrl(landingPage: string) {
+  if (!landingPage.trim()) return "";
+  try {
+    const origin = getSiteOrigin();
+    const page = new URL(landingPage, origin);
+    if (!["https:", "http:"].includes(page.protocol) || page.origin !== origin) return "";
+    // Only the configured site can supply website event URLs. Never forward
+    // queries, fragments, credentials, or arbitrary captured foreign origins.
+    return `${origin}${page.pathname}`;
+  } catch {
+    return "";
+  }
+}
+
 async function sendMeta(job: PendingPostback): Promise<PostbackOutcome> {
   const token = process.env.META_CAPI_ACCESS_TOKEN?.trim();
   const pixelId = process.env.META_CAPI_PIXEL_ID?.trim();
@@ -70,8 +87,21 @@ async function sendMeta(job: PendingPostback): Promise<PostbackOutcome> {
   if (!token || !pixelId || !version || !/^[0-9]{5,40}$/u.test(pixelId) || !/^v\d{1,2}\.\d{1,2}$/u.test(version)) {
     return { status: "retry", retryable: true, errorCode: "not_configured", errorSummary: "Meta CAPI is not configured with valid identifiers" };
   }
+  if (pixelId !== getMetaPixelId()) {
+    return { status: "retry", retryable: true, errorCode: "pixel_mismatch",
+      errorSummary: "Meta CAPI dataset does not match the browser Pixel" };
+  }
   const attribution = identifiers(job);
-  const userData: Record<string, string | string[]> = {};
+  const eventSourceUrl = metaEventSourceUrl(attribution.landingPage);
+  if (!eventSourceUrl) {
+    return { status: "retry", retryable: true, errorCode: "event_source_url_invalid",
+      errorSummary: "Meta website event requires a valid page on the configured site" };
+  }
+  if (!attribution.userAgent) {
+    return { status: "disabled", errorCode: "client_user_agent_unavailable",
+      errorSummary: "Meta website event requires a consented browser user agent captured with the lead" };
+  }
+  const userData: Record<string, string | string[]> = { client_user_agent: attribution.userAgent };
   if (job.emailSha256) userData.em = [job.emailSha256];
   if (job.phoneSha256) userData.ph = [job.phoneSha256];
   const fbclid = stringField(attribution.clickIds.fbclid);
@@ -85,7 +115,7 @@ async function sendMeta(job: PendingPostback): Promise<PostbackOutcome> {
   try {
     const response = await fetchWithTimeout(`https://graph.facebook.com/${version}/${pixelId}/events`, {
       body: JSON.stringify({ data: [{ action_source: "website", event_id: providerEventId(job),
-        event_name: milestone(job), event_source_url: attribution.landingPage || undefined,
+        event_name: milestone(job), event_source_url: eventSourceUrl,
         event_time: Math.floor(Date.parse(job.occurredAt) / 1_000), user_data: userData }] }),
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       method: "POST",

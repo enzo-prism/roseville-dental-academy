@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { forwardRef, useEffect, useMemo, useState } from "react";
+import { forwardRef, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import { Button } from "@/components/ui/button";
@@ -178,10 +178,20 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(function NavLink(
   return <Link {...sharedProps}>{children}</Link>;
 });
 
+function subscribeToPromoTime(notify: () => void) {
+  const timer = window.setInterval(notify, 60_000);
+  return () => window.clearInterval(timer);
+}
+
 export function LiveHeader({ currentRoute }: { currentRoute: string }) {
   const activePath = useActivePath(currentRoute);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const promoActive = useSyncExternalStore(
+    subscribeToPromoTime,
+    () => isSitePromoActive(activeSitePromo, Date.now()),
+    () => isSitePromoActive(activeSitePromo),
+  );
 
   useEffect(() => {
     document.body.classList.toggle("rda-mobile-menu-open", mobileOpen);
@@ -213,7 +223,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
       data-rda-shell-header="true"
     >
       <div className="rda-promo-banner border-b border-primary/10 bg-primary text-primary-foreground" role="banner">
-        {isSitePromoActive(activeSitePromo) ? (
+        {promoActive ? (
           <Link
             className="rda-promo-banner-link"
             data-rda-promo-banner="true"

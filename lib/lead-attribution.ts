@@ -17,6 +17,8 @@ export const META_UTM_CONTENT_AD_PREFIXES = [
   "office_compliance_ic189_",
   "renewal_ready_original_copy_",
   "student_story_",
+  "video_sept25_clinical_",
+  "photo_sept18_graduation_",
 ] as const;
 
 export const ATTRIBUTION_POLICY_VERSION = "2026-08-23";
@@ -82,6 +84,8 @@ const EMPTY_DIMENSIONS = Object.fromEntries(
 
 let memoryRecord = "";
 let memorySessionId = "";
+let memoryVisitSignature = "";
+let memoryVisitTouchId = "";
 
 function compactAttributionValue(value: string | null | undefined) {
   return value?.trim().slice(0, MAX_ATTRIBUTION_VALUE_LENGTH) ?? "";
@@ -95,19 +99,14 @@ export function parseMetaAdIdFromUtmContent(utmContent: string | null | undefine
   }
 
   const normalized = value.toLowerCase();
-  const hasKnownPrefix = META_UTM_CONTENT_AD_PREFIXES.some((prefix) =>
-    normalized.startsWith(prefix),
-  );
-
-  if (!hasKnownPrefix) {
-    return "";
+  for (const prefix of META_UTM_CONTENT_AD_PREFIXES) {
+    if (normalized.startsWith(prefix)) {
+      const suffix = value.slice(prefix.length);
+      return /^\d{5,40}$/u.test(suffix) ? suffix : "";
+    }
   }
 
-  return value.match(/_(\d{5,40})$/u)?.[1] ?? "";
-}
-
-function firstWins(first: string, conversion: string) {
-  return first || conversion;
+  return "";
 }
 
 function createId() {
@@ -268,8 +267,6 @@ export function parseAttributionTouch(
     clickIds[field] = getQueryValue(params, aliases[field]);
   }
 
-  clickIds.fbc ||= compactAttributionValue(getCookieValue("_fbc"));
-  clickIds.fbp ||= compactAttributionValue(getCookieValue("_fbp"));
   clickIds.ttp ||= compactAttributionValue(getCookieValue("_ttp"));
 
   const dimensionAliases: Record<AttributionAdDimensionField, string[]> = {
@@ -293,6 +290,17 @@ export function parseAttributionTouch(
   dimensions.platform ||= utm.utm_source_platform || utm.utm_source;
   dimensions.campaign_id ||= utm.utm_id;
   dimensions.ad_id ||= parseMetaAdIdFromUtmContent(utm.utm_content);
+
+  const platform = (dimensions.platform || utm.utm_source).toLowerCase();
+  const hasMetaCampaign = /^(facebook|instagram|meta|fb|ig)$/u.test(platform) ||
+    Boolean(clickIds.fbclid);
+  if (hasMetaCampaign && clickIds.fbclid) {
+    const cookieFbc = compactAttributionValue(getCookieValue("_fbc"));
+    if (cookieFbc.endsWith(`.${clickIds.fbclid}`)) {
+      clickIds.fbc ||= cookieFbc;
+    }
+    clickIds.fbp ||= compactAttributionValue(getCookieValue("_fbp"));
+  }
 
   return {
     capturedAt,
@@ -342,7 +350,7 @@ function normalizeTouch(value: Partial<AttributionTouch> | undefined): Attributi
   };
 }
 
-function hasExplicitClickId(touch: AttributionTouch) {
+function hasExplicitClickId(touch: Pick<AttributionTouch, "clickIds">) {
   return AD_CLICK_ID_FIELDS.some(
     (field) => !["fbc", "fbp", "ttp"].includes(field) && Boolean(touch.clickIds[field]),
   );
@@ -383,31 +391,39 @@ export function getAttributionConsentState(): AttributionConsentState {
     getCookieValue("rda_analytics_consent"),
     getCookieValue("rda_cookie_consent"),
   ]
-    .map((value) => value.toLowerCase())
-    .find(Boolean);
+    .map((value) => value.toLowerCase());
 
-  if (cookieConsent && ["denied", "rejected", "false", "0"].includes(cookieConsent)) {
+  if (cookieConsent.some((value) =>
+    ["denied", "rejected", "false", "0"].includes(value),
+  )) {
     return "restricted";
   }
 
-  if (cookieConsent && ["accepted", "granted", "true", "1"].includes(cookieConsent)) {
+  if (cookieConsent.some((value) =>
+    ["accepted", "granted", "true", "1"].includes(value),
+  )) {
     return "granted";
   }
 
   return "unknown";
 }
 
-function readStorage(storage: Storage | undefined, key: string) {
+type BrowserStorage = "localStorage" | "sessionStorage";
+
+function readStorage(storage: BrowserStorage, key: string) {
   try {
-    return storage?.getItem(key) ?? "";
+    return window[storage]?.getItem(key) ?? "";
   } catch {
     return "";
   }
 }
 
-function writeStorage(storage: Storage | undefined, key: string, value: string) {
+function writeStorage(storage: BrowserStorage, key: string, value: string) {
   try {
-    storage?.setItem(key, value);
+    if (!window[storage]) {
+      return false;
+    }
+    window[storage].setItem(key, value);
     return true;
   } catch {
     return false;
@@ -419,7 +435,7 @@ function readStoredRecordRaw(consentState: AttributionConsentState) {
     return { raw: memoryRecord, scope: "memory" as const };
   }
 
-  const sessionRaw = readStorage(window.sessionStorage, ATTRIBUTION_SESSION_KEY);
+  const sessionRaw = readStorage("sessionStorage", ATTRIBUTION_SESSION_KEY);
 
   if (consentState === "restricted") {
     return sessionRaw
@@ -427,9 +443,9 @@ function readStoredRecordRaw(consentState: AttributionConsentState) {
       : { raw: memoryRecord, scope: "memory" as const };
   }
 
-  const localRaw = readStorage(window.localStorage, ATTRIBUTION_STORAGE_KEY);
+  const localRaw = readStorage("localStorage", ATTRIBUTION_STORAGE_KEY);
   const cookieRaw = getCookieValue(ATTRIBUTION_STORAGE_KEY);
-  const legacyRaw = readStorage(window.sessionStorage, LEGACY_ATTRIBUTION_STORAGE_KEY);
+  const legacyRaw = readStorage("sessionStorage", LEGACY_ATTRIBUTION_STORAGE_KEY);
 
   if (localRaw || cookieRaw) {
     return { raw: localRaw || cookieRaw, scope: "persistent" as const };
@@ -497,28 +513,37 @@ function parseStoredRecord(raw: string, now: Date): StoredAttributionRecord | nu
   return null;
 }
 
-function mergeTouch(current: AttributionTouch, stored: AttributionTouch) {
-  if (!hasMeaningfulAttribution(current)) {
-    return stored;
+// Only add evidence to the same visit. A later campaign must keep its own
+// click IDs, dimensions and UTMs rather than filling gaps from an older ad.
+function isSameVisit(stored: AttributionTouch, current: AttributionTouch) {
+  const sameIdentity = stored.touchId === `first:${current.touchId}` ||
+    stored.touchId === `conversion:${current.touchId}`;
+  if (
+    !sameIdentity || !stored.sessionId || stored.sessionId !== current.sessionId ||
+    stored.pagePath !== current.pagePath
+  ) {
+    return false;
   }
 
-  return {
-    ...current,
-    clickIds: Object.fromEntries(
-      AD_CLICK_ID_FIELDS.map((field) => [field, current.clickIds[field] || stored.clickIds[field]]),
-    ) as Record<AdClickIdField, string>,
-  };
-}
+  if (ATTRIBUTION_AD_DIMENSION_FIELDS.some((field) =>
+    stored.dimensions[field] && current.dimensions[field] &&
+    stored.dimensions[field] !== current.dimensions[field],
+  )) {
+    return false;
+  }
 
-function enrichStoredTouch(current: AttributionTouch, stored: AttributionTouch): AttributionTouch {
-  return {
-    ...stored,
-    clickIds: Object.fromEntries(
-      AD_CLICK_ID_FIELDS.map((field) => [field, current.clickIds[field] || stored.clickIds[field]]),
-    ) as Record<AdClickIdField, string>,
-    gaClientId: current.gaClientId || stored.gaClientId,
-    gaSessionId: current.gaSessionId || stored.gaSessionId,
-  };
+  const sameUtm = UTM_FIELDS.every((field) => stored.utm[field] === current.utm[field]);
+  const sameClick = AD_CLICK_ID_FIELDS
+    .filter((field) => !["fbc", "fbp", "ttp"].includes(field))
+    .every((field) => stored.clickIds[field] === current.clickIds[field]);
+  // Query tags and click IDs identify the visit; browser cookies may arrive later.
+  if (
+    !sameUtm || !sameClick ||
+    hasCampaignTouch(stored) !== hasCampaignTouch(current)
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function fillTouchGaps(stored: AttributionTouch, current: AttributionTouch): AttributionTouch {
@@ -562,13 +587,17 @@ function createRecord(
 
   return {
     ...stored,
-    conversionTouch: hasCurrentCampaign
-      ? mergeTouch(currentTouch, stored.conversionTouch)
-      : enrichStoredTouch(currentTouch, stored.conversionTouch),
+    conversionTouch: isSameVisit(stored.conversionTouch, currentTouch)
+      ? fillTouchGaps(stored.conversionTouch, currentTouch)
+      : hasCurrentCampaign
+        ? touchForRole(currentTouch, "conversion")
+        : stored.conversionTouch,
     expiresAt: hasCurrentCampaign
       ? new Date(now.getTime() + MAX_ATTRIBUTION_AGE_MS).toISOString()
       : stored.expiresAt,
-    firstTouch: fillTouchGaps(stored.firstTouch, currentTouch),
+    firstTouch: isSameVisit(stored.firstTouch, currentTouch)
+      ? fillTouchGaps(stored.firstTouch, currentTouch)
+      : stored.firstTouch,
     policyVersion: ATTRIBUTION_POLICY_VERSION,
   };
 }
@@ -582,12 +611,12 @@ function persistRecord(record: StoredAttributionRecord, consentState: Attributio
   }
 
   if (consentState === "restricted") {
-    return writeStorage(window.sessionStorage, ATTRIBUTION_SESSION_KEY, serialized)
+    return writeStorage("sessionStorage", ATTRIBUTION_SESSION_KEY, serialized)
       ? ("session" as const)
       : ("memory" as const);
   }
 
-  const storedLocally = writeStorage(window.localStorage, ATTRIBUTION_STORAGE_KEY, serialized);
+  const storedLocally = writeStorage("localStorage", ATTRIBUTION_STORAGE_KEY, serialized);
   let storedInCookie = false;
   const encoded = encodeURIComponent(serialized);
 
@@ -606,7 +635,7 @@ function persistRecord(record: StoredAttributionRecord, consentState: Attributio
     return "persistent" as const;
   }
 
-  return writeStorage(window.sessionStorage, ATTRIBUTION_SESSION_KEY, serialized)
+  return writeStorage("sessionStorage", ATTRIBUTION_SESSION_KEY, serialized)
     ? ("session" as const)
     : ("memory" as const);
 }
@@ -616,14 +645,14 @@ function getSessionId() {
     return "";
   }
 
-  const stored = readStorage(window.sessionStorage, SESSION_ID_KEY);
+  const stored = readStorage("sessionStorage", SESSION_ID_KEY);
 
   if (stored) {
     return stored;
   }
 
   memorySessionId ||= createId();
-  writeStorage(window.sessionStorage, SESSION_ID_KEY, memorySessionId);
+  writeStorage("sessionStorage", SESSION_ID_KEY, memorySessionId);
   return memorySessionId;
 }
 
@@ -674,14 +703,22 @@ export function resolveLeadAttribution(input?: {
     stored.conversionTouch.sessionId ||= sessionId;
   }
 
+  const search = input?.search ?? window.location.search;
+  const pagePath = input?.pagePath ?? window.location.pathname;
+  const visitSignature = JSON.stringify([sessionId, pagePath, search]);
+  if (visitSignature !== memoryVisitSignature) {
+    memoryVisitSignature = visitSignature;
+    memoryVisitTouchId = createId();
+  }
   const currentTouch = parseAttributionTouch(
-    input?.search ?? window.location.search,
+    search,
     input?.referrer ?? document.referrer,
     input?.currentOrigin ?? window.location.origin,
-    input?.pagePath ?? window.location.pathname,
+    pagePath,
     now.toISOString(),
     sessionId,
   );
+  currentTouch.touchId = memoryVisitTouchId;
   const record = createRecord(
     stored,
     currentTouch,
@@ -727,22 +764,16 @@ export function getLeadAttributionStamp(
 ): LeadAttributionStamp {
   const first = attribution.firstTouch;
   const conversion = attribution.conversionTouch;
-  const utm = Object.fromEntries(
-    UTM_FIELDS.map((field) => [field, firstWins(first.utm[field], conversion.utm[field])]),
-  ) as Record<UtmField, string>;
-  const clickIds = Object.fromEntries(
-    AD_CLICK_ID_FIELDS.map((field) => [
-      field,
-      firstWins(first.clickIds[field], conversion.clickIds[field]),
-    ]),
-  ) as Record<AdClickIdField, string>;
+  // The legacy top-level stamp has one identity. Never combine a first-touch
+  // campaign with a conversion-touch ad or click ID from a different campaign.
+  const touch = hasMeaningfulAttribution(first) || hasCampaignTouch(first)
+    ? first : conversion;
+  const utm = { ...touch.utm };
+  const clickIds = { ...touch.clickIds };
 
   return {
-    ad_id:
-      first.dimensions.ad_id ||
-      conversion.dimensions.ad_id ||
-      parseMetaAdIdFromUtmContent(utm.utm_content),
-    campaign_id: first.dimensions.campaign_id || conversion.dimensions.campaign_id || utm.utm_id,
+    ad_id: touch.dimensions.ad_id || parseMetaAdIdFromUtmContent(utm.utm_content),
+    campaign_id: touch.dimensions.campaign_id || utm.utm_id,
     campaign_intent: utm.utm_campaign,
     clickIds,
     landing_page: first.pagePath || conversion.pagePath,

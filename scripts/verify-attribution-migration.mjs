@@ -1,14 +1,13 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
-import { splitSqlStatements } from "./migrate-attribution.mjs";
+import { readAttributionMigrations } from "./migrate-attribution.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const migration = await readFile(join(root, "db/migrations/001_attribution_ledger.sql"), "utf8");
+const migrations = await readAttributionMigrations(root);
 const db = await PGlite.create({ extensions: { pgcrypto } });
 
 async function mustReject(label, operation) {
@@ -22,7 +21,7 @@ async function mustReject(label, operation) {
 }
 
 try {
-  const statements = splitSqlStatements(migration);
+  const statements = migrations.flatMap((migration) => migration.statements);
   await db.exec("BEGIN");
   try {
     for (const statement of statements) await db.exec(statement);
@@ -238,7 +237,7 @@ try {
 
   console.log(JSON.stringify({
     aggregateRows: funnel.rows.length,
-    migration: "001_attribution_ledger.sql",
+    migrations: migrations.map((migration) => migration.name),
     status: "passed",
     splitStatements: statements.length,
     triggerChecks: 9,

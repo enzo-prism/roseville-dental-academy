@@ -50,6 +50,19 @@ jobs:
           LOCAL_ORIGIN: http://127.0.0.1:3100
         run: pnpm test:release
 
+      - name: Verify attribution database integrity
+        run: pnpm test:attribution-db
+
+      - name: Verify paid-media measurement
+        env:
+          CI: "true"
+          DATABASE_URL: ""
+          RDA_SYNC_SECRET: ""
+          CRON_SECRET: ""
+          PLAYWRIGHT_SERVER_MODE: prod
+          LOCAL_ORIGIN: http://127.0.0.1:3110
+        run: pnpm test:attribution
+
       - name: Upload QA artifacts
         if: always()
         uses: actions/upload-artifact@v4

@@ -3,15 +3,10 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
 
-import { getAnalyticsPagePath } from "@/lib/analytics-page-url";
-
-const DEFAULT_META_PIXEL_ID = "356932321507746";
-
-function getMetaPixelId() {
-  return process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || DEFAULT_META_PIXEL_ID;
-}
+import { getMetaPixelId, metaMeasurementAllowed } from "@/lib/meta-pixel-config";
 
 type FbqCommand =
+  | ["consent", "revoke" | "grant"]
   | ["init", string, Record<string, unknown>?]
   | ["track", string, Record<string, unknown>?, MetaPixelEventOptions?]
   | ["trackCustom", string, Record<string, unknown>?];
@@ -46,8 +41,12 @@ function safeMetaProperties(properties: MetaPixelProperties = {}) {
   }
 
   return {
-    page_path: getAnalyticsPagePath(),
     ...safeProperties,
+    // Attribution stays in explicit campaign fields. Contact events must not
+    // inherit raw URL queries, which may contain click IDs or personal values.
+    page_path: (typeof properties.page_path === "string" && properties.page_path
+      ? properties.page_path
+      : window.location.pathname).split(/[?#]/, 1)[0],
   };
 }
 
@@ -57,6 +56,11 @@ export function trackMetaPixelEvent(
   options: MetaPixelEventOptions = {},
 ) {
   if (typeof window === "undefined" || typeof window.fbq !== "function") {
+    return false;
+  }
+
+  if (!metaMeasurementAllowed()) {
+    window.fbq("consent", "revoke");
     return false;
   }
 

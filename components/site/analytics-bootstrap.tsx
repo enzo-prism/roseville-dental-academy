@@ -1,17 +1,17 @@
+import { getMetaMeasurementAllowedCode, getMetaPixelId } from "@/lib/meta-pixel-config";
+
 const DEFAULT_GA_MEASUREMENT_ID = "G-LKJFEYVM1Q";
-const DEFAULT_META_PIXEL_ID = "356932321507746";
 const META_PIXEL_SCRIPT_SRC = "https://connect.facebook.net/en_US/fbevents.js";
 
 function getMeasurementId() {
   return process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || DEFAULT_GA_MEASUREMENT_ID;
 }
 
-function getMetaPixelId() {
-  return process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || DEFAULT_META_PIXEL_ID;
-}
-
 function getMetaPixelCode(pixelId: string) {
   return `
+    if (!${getMetaMeasurementAllowedCode()}) {
+      if (window.fbq) window.fbq('consent', 'revoke');
+    } else {
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
     n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -23,6 +23,7 @@ function getMetaPixelCode(pixelId: string) {
 
     fbq('init', ${JSON.stringify(pixelId)});
     fbq('track', 'PageView');
+    }
   `.trim();
 }
 

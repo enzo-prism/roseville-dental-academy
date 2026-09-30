@@ -57,7 +57,7 @@ Landing page forms submit the existing Formspree payload plus `landing_page`, `c
 
 Both live Formspree inboxes use this same first-touch stamp: `mpqgyjjg` on `/lp/dental-assisting-enroll`, and `xzdkgaeg` on course-info, contact, program, and other landing pages (including coronal `form_key=mwvdrnrk`). Do not move enroll posts onto `xzdkgaeg`. When the current URL is clean, hidden `utm_*` / click-ID / `ad_id` fields are filled from the stored first touch so a later homepage or `/contact` submit still carries the original paid tags.
 
-Attribution is stored as two independent records: the first meaningful touch is immutable except for filling empty gaps, while a later paid/click-ID touch becomes the conversion touch. A later organic visit or referrer-only page view does not overwrite first-touch UTMs. Both include a capture time, landing path, first-party anonymous/session IDs, available GA client/session IDs, UTMs, exact click IDs, and native ad dimensions when those dimensions are present in the URL. The record lasts for 90 days in first-party local storage with a same-site cookie backup. Global Privacy Control, Do Not Track, or an explicit denied RDA consent cookie restricts storage to the current browser session; unavailable storage falls back to memory without blocking the form.
+Attribution is stored as two independent records: the first meaningful touch is immutable across later visits; empty gaps can only be filled during that same browser visit, while a later paid/click-ID touch becomes the conversion touch. A later organic visit or referrer-only page view does not overwrite first-touch UTMs. Both include a capture time, landing path, first-party anonymous/session IDs, available GA client/session IDs, UTMs, exact click IDs, and native ad dimensions when those dimensions are present in the URL. The record lasts for 90 days in first-party local storage with a same-site cookie backup. Global Privacy Control, Do Not Track, or an explicit denied RDA consent cookie restricts storage to the current browser session; unavailable storage falls back to memory without blocking the form.
 
 Ad click IDs and first-party browser IDs stay out of GA4, Meta, and Vercel custom-event properties except for the accepted `Lead` payload. Click-to-call and WhatsApp `Contact` events do **not** inherit stored UTMs or parsed `ad_id`. Those channels drop query tags the moment the visitor leaves the site, so the site only sends a source mark (`how_heard` / `lead_source` = `phone` or `whatsapp`) so reporting can bucket them as Unattributed-phone / Unattributed-whatsapp instead of pretending they came from an ad. The remaining click IDs are sent only with the accepted Formspree lead and to the private same-origin attribution receipt endpoint.
 
@@ -79,7 +79,7 @@ form and browser event. The private ledger accepts only its durable nonce; an id
 while a changed replay is rejected. Token or ledger downtime never changes an accepted Formspree lead
 into a form error.
 
-After Formspree accepts a request, the browser sends a best-effort `AttributionReceipt` to `/api/attribution/receipt`. The receipt contains no student-entered name, email, phone, notes, or message. It stores first/conversion touch metadata against the same lead event ID for later canonical Formspree verification. A receipt outage never changes an already accepted lead into a visible form error; the daily Formspree reconciliation remains the recovery path.
+After Formspree accepts a request, the browser sends a best-effort `AttributionReceipt` to `/api/attribution/receipt`. The receipt contains no student-entered name, email, phone, notes, or message. It stores first/conversion touch metadata against the same lead event ID for later canonical Formspree verification. A receipt outage never changes an already accepted lead into a visible form error; canonical Formspree reconciliation remains the lead-identity recovery path. It cannot restore campaign/click evidence omitted from a receipt or stripped for missing consent.
 
 Vercel receives `ad_landing_view`, `cta_click`, and accepted `lead_form_submit` custom events with the same non-PII campaign context. This supports a landing view → CTA → accepted lead funnel without sending names, email addresses, phone numbers, notes, or full ad click IDs to Vercel.
 
@@ -151,7 +151,7 @@ For GA4 reporting beyond event counts, register useful event-scoped custom dimen
 
 ## Meta Pixel
 
-The Meta Pixel base code is installed sitewide with pixel ID `356932321507746`. It sends the initial `PageView` during page load, then `components/site/meta-pixel.tsx` sends additional `PageView` events on client-side route changes.
+The Meta Pixel base code uses the shared `lib/meta-pixel-config.ts` default pixel ID `356932321507746` (public override retained). GPC, DNT, or any explicit denied RDA consent cookie blocks/revokes JavaScript Meta measurement. Unknown consent preserves the existing browser behavior without writing a consent grant. It sends the initial `PageView` during page load, then `components/site/meta-pixel.tsx` sends additional `PageView` events on client-side route changes.
 
 Safe Meta standard events:
 
@@ -159,7 +159,7 @@ Safe Meta standard events:
 | --- | --- | --- |
 | `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Lead` | Formspree accepts a valid lead request | `content_name`, `content_category`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
-| `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name` (`call`, `email`, or `whatsapp`), `content_category`, `link_location`, `page_path`; phone/WhatsApp also send `how_heard` and `lead_source` (`phone` or `whatsapp`) and never send stored `utm_content` or `ad_id` |
+| `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name` (`call`, `email`, or `whatsapp`), `content_category`, `link_location`, `page_path` (query-free); phone/WhatsApp also send `how_heard` and `lead_source` (`phone` or `whatsapp`) and never send stored `utm_content` or `ad_id` |
 
 WhatsApp `wa.me` links keep the academy number `19165075157`. The prefilled compose text always includes a source mark (`how-heard: whatsapp` and `lead_source=whatsapp`) and never campaign or `ad_id` tags. If that URL would change the number or fail to parse, the original untagged number-only link is left in place.
 
@@ -211,3 +211,5 @@ Mode.
 Run `pnpm lint`, `pnpm build`, and `pnpm test:interactions` after changing event logic. `pnpm test:smoke` verifies the analytics and pixel script mounts.
 
 For production verification, do not create a fake lead. Open a landing page with test UTMs and synthetic click IDs, confirm the hidden form fields plus first/conversion-touch persistence, and verify that GA4, Meta Pixel, and Vercel Analytics collectors are ready. Use the next real accepted lead to confirm Formspree arrival, the private receipt, GA4 Realtime plus the `generate_lead` key event, Meta browser/server event-ID deduplication when CAPI is enabled, and the matching Vercel `ad_landing_view` → `cta_click` → `lead_form_submit` funnel.
+
+For the exact September 29 Sealants creatives, native ID parameters, consent limits and database-first release checks, see `docs/meta-ads-readiness.md`.

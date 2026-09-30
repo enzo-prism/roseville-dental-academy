@@ -20,9 +20,26 @@ export type { AdClickIdField, LeadAttribution, UtmField } from "@/lib/lead-attri
 export const LEAD_FORM_SUCCESS_EVENT = "rda:lead-form-success";
 
 export type LeadFormSuccessDetail = {
+  acceptedFields?: ReadonlyArray<readonly [string, string]>;
   leadEventId: string;
   submissionId: string;
 };
+
+// Snapshot only public course/campaign metadata. Student contact details and
+// free-text fields never enter the browser measurement event.
+const LEAD_ANALYTICS_FIELDS = new Set([
+  "Form type", "Source page", "Page source", "Interested classes[]",
+  "Interested courses[]", "Renewal focus", "campaign_intent", "course_interest",
+  "landing_page", "page_path", "lead_event_id", "ad_id", "utm_campaign",
+  "utm_content", "utm_id", "utm_medium", "utm_source", "utm_source_platform", "utm_term",
+]);
+
+function acceptedAnalyticsFields(formData: FormData) {
+  return Object.freeze(Array.from(formData.entries())
+    .filter((entry): entry is [string, string] =>
+      LEAD_ANALYTICS_FIELDS.has(entry[0]) && typeof entry[1] === "string")
+    .map(([name, value]) => Object.freeze([name, value] as const)));
+}
 
 const subscribeNever = () => () => {};
 const getServerString = () => "";
@@ -179,6 +196,7 @@ export function useLeadFormSubmit() {
         formData.set("how-heard", "website");
       }
 
+      const acceptedFields = acceptedAnalyticsFields(formData);
       const response = await fetch(form.action, {
         body: formData,
         headers: { Accept: "application/json" },
@@ -196,7 +214,7 @@ export function useLeadFormSubmit() {
       form.dispatchEvent(
         new CustomEvent<LeadFormSuccessDetail>(LEAD_FORM_SUCCESS_EVENT, {
           bubbles: true,
-          detail: { leadEventId, submissionId: leadEventId },
+          detail: { acceptedFields, leadEventId, submissionId: leadEventId },
         }),
       );
       setStatus("success");
