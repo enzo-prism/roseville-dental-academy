@@ -560,9 +560,21 @@ function fillTouchGaps(stored: AttributionTouch, current: AttributionTouch): Att
     ) as Record<AttributionAdDimensionField, string>,
     gaClientId: stored.gaClientId || current.gaClientId,
     gaSessionId: stored.gaSessionId || current.gaSessionId,
+    // Landing path and referrer are first-touch. Later pageviews may only fill
+    // an empty slot on the same visit — they must not replace a stored value.
+    pagePath: stored.pagePath || current.pagePath,
+    referrer: stored.referrer || current.referrer,
     utm: Object.fromEntries(
       UTM_FIELDS.map((field) => [field, stored.utm[field] || current.utm[field]]),
     ) as Record<UtmField, string>,
+  };
+}
+
+function lockFirstTouchLanding(stored: AttributionTouch, next: AttributionTouch): AttributionTouch {
+  return {
+    ...next,
+    pagePath: stored.pagePath || next.pagePath,
+    referrer: stored.referrer || next.referrer,
   };
 }
 
@@ -595,9 +607,12 @@ function createRecord(
     expiresAt: hasCurrentCampaign
       ? new Date(now.getTime() + MAX_ATTRIBUTION_AGE_MS).toISOString()
       : stored.expiresAt,
-    firstTouch: isSameVisit(stored.firstTouch, currentTouch)
-      ? fillTouchGaps(stored.firstTouch, currentTouch)
-      : stored.firstTouch,
+    firstTouch: lockFirstTouchLanding(
+      stored.firstTouch,
+      isSameVisit(stored.firstTouch, currentTouch)
+        ? fillTouchGaps(stored.firstTouch, currentTouch)
+        : stored.firstTouch,
+    ),
     policyVersion: ATTRIBUTION_POLICY_VERSION,
   };
 }
@@ -736,7 +751,7 @@ export function resolveLeadAttribution(input?: {
     conversionTouch: record.conversionTouch,
     firstTouch: record.firstTouch,
     policyVersion: ATTRIBUTION_POLICY_VERSION,
-    referrer: record.conversionTouch.referrer,
+    referrer: record.firstTouch.referrer,
     sessionId,
     storageScope,
     utm: record.conversionTouch.utm,
@@ -756,6 +771,7 @@ export type LeadAttributionStamp = {
   campaign_intent: string;
   clickIds: Record<AdClickIdField, string>;
   landing_page: string;
+  referrer: string;
   utm: Record<UtmField, string>;
 };
 
@@ -777,6 +793,7 @@ export function getLeadAttributionStamp(
     campaign_intent: utm.utm_campaign,
     clickIds,
     landing_page: first.pagePath || conversion.pagePath,
+    referrer: first.referrer,
     utm,
   };
 }
@@ -804,6 +821,7 @@ export function getLeadAttributionFormFields(attribution: LeadAttribution) {
     first_touch_referrer: attribution.firstTouch.referrer,
     first_touch_session_id: attribution.firstTouch.sessionId,
     first_touch_id: attribution.firstTouch.touchId,
+    referrer: stamp.referrer,
     session_id: attribution.sessionId,
   };
 
