@@ -32,7 +32,7 @@ async function captureCollectors(page: Page, origin: string) {
   // Fail closed for every nonlocal request. Third-party SDKs/collectors and
   // any unmatched form submission can never reach a live service.
   await page.route("**/*", async (route) => {
-    if (new URL(route.request().url()).origin === origin) return route.continue();
+    if (new URL(route.request().url()).origin === origin) return route.fallback();
     await route.fulfill({ status: 200, contentType: "text/javascript", body: "" });
   });
   await page.addInitScript(() => {

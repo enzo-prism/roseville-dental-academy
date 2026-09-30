@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { blockOpenAIAdsPixelNetwork } from "./support/qa-helpers";
 import { spawn } from "node:child_process";
 import { cp, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
@@ -9,6 +10,7 @@ import { join, resolve } from "node:path";
 // schedule while another build or developer may be reading it.
 test("an intentionally empty feed renders no stale dates or CourseInstances", async ({ page, request }) => {
   test.setTimeout(180_000);
+  await blockOpenAIAdsPixelNetwork(page.context());
   const fixture = await mkdtemp(join(tmpdir(), "rda-empty-schedule-"));
   const root = process.cwd();
   const portReservation = createServer();

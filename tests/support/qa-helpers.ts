@@ -68,19 +68,76 @@ type SnapshotRenderData = {
   visibleLinks: Array<{ href: string; text: string }>;
 };
 
+const isolatedContexts = new WeakSet<BrowserContext>();
+
+const ANALYTICS_DOMAINS = [
+  "bzrcdn.openai.com",
+  "bzr.openai.com",
+  "facebook.com",
+  "facebook.net",
+  "googletagmanager.com",
+  "google-analytics.com",
+  "analytics.google.com",
+  "doubleclick.net",
+  "googleadservices.com",
+  "hotjar.com",
+  "hotjar.io",
+  "vercel-insights.com",
+  "vercel-analytics.com",
+  "vercel-scripts.com",
+] as const;
+
+function isAnalyticsNetworkUrl(url: URL) {
+  return ANALYTICS_DOMAINS.some((domain) =>
+    url.hostname === domain || url.hostname.endsWith(`.${domain}`),
+  ) || /^\/_vercel\/(?:insights|speed-insights)(?:\/|$)/u.test(url.pathname) ||
+    (/(^|\.)google\.[a-z.]+$/u.test(url.hostname) &&
+      /^\/(?:ccm\/collect|pagead\/|g\/collect)/u.test(url.pathname));
+}
+
+// Keep the established name for suite compatibility. All browser QA must be
+// isolated from live measurement, Formspree inboxes and attribution mutations,
+// including when it runs against a deployed preview with configured providers.
+// Individual page.route fixtures have precedence over these context defaults.
 export async function blockOpenAIAdsPixelNetwork(context: BrowserContext) {
-  for (const pattern of ["https://bzrcdn.openai.com/**", "https://bzr.openai.com/**"]) {
-    await context.route(pattern, async (route) => {
-      await route.fulfill({
-        body: "",
-        contentType: pattern.includes("bzrcdn") ? "text/javascript" : "text/plain",
-        status: 204,
-      });
-    });
+  if (isolatedContexts.has(context)) {
+    return;
   }
+
+  await context.route(isAnalyticsNetworkUrl, async (route) => {
+    await route.fulfill({
+      body: "",
+      contentType: route.request().resourceType() === "script"
+        ? "text/javascript" : "text/plain",
+      headers: { "access-control-allow-origin": "*" },
+      status: 204,
+    });
+  });
+  await context.route((url) =>
+    url.hostname === "formspree.io" || url.hostname.endsWith(".formspree.io"),
+  async (route) => {
+    await route.fulfill({
+      status: 422,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify({ error: "qa_network_isolation" }),
+    });
+  });
+  await context.route((url) =>
+    url.pathname.startsWith("/api/attribution/") &&
+      url.pathname !== "/api/attribution/dashboard",
+  async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "qa_network_isolation" }),
+    });
+  });
+  isolatedContexts.add(context);
 }
 
 export async function suppressSitePromo(context: BrowserContext) {
+  await blockOpenAIAdsPixelNetwork(context);
   await context.addInitScript((storageKey) => {
     try {
       window.localStorage.setItem(storageKey, "dismissed");
