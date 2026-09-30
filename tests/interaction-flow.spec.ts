@@ -1750,6 +1750,64 @@ test.describe("live-style interaction flows", () => {
       );
     });
 
+    test("first-touch landing_page survives later pageviews in the same visit", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await suppressSitePromo(page.context());
+      await page.goto(
+        `${localOrigin}/infection-control?utm_source=facebook&utm_medium=paid&utm_campaign=ic189_oct17&fbclid=testcheck123`,
+        {
+          referer: "https://www.facebook.com/",
+          timeout: 120_000,
+          waitUntil: "domcontentloaded",
+        },
+      );
+      await page.waitForLoadState("load").catch(() => undefined);
+      await page.waitForTimeout(2_000);
+
+      const landingForm = page.locator('form[data-rda-signup-form="true"]');
+      await expect(landingForm.locator('input[name="landing_page"]')).toHaveValue(
+        "/infection-control",
+      );
+      await expect(landingForm.locator('input[name="utm_source"]')).toHaveValue("facebook");
+      await expect(landingForm.locator('input[name="utm_medium"]')).toHaveValue("paid");
+      await expect(landingForm.locator('input[name="utm_campaign"]')).toHaveValue("ic189_oct17");
+      await expect(landingForm.locator('input[name="fbclid"]')).toHaveValue("testcheck123");
+      await expect(landingForm.locator('input[name="referrer"]')).toHaveValue(
+        /https:\/\/www\.facebook\.com\/?/,
+      );
+
+      await page.getByRole("link", { name: "Coronal Polish" }).first().click();
+      await expect(page).toHaveURL(/\/coronal-polish\/?$/);
+
+      const midForm = page.locator('form[data-rda-signup-form="true"]');
+      await expect(midForm.locator('input[name="landing_page"]')).toHaveValue(
+        "/infection-control",
+      );
+      await expect(midForm.locator('input[name="utm_campaign"]')).toHaveValue("ic189_oct17");
+      await expect(midForm.locator('input[name="fbclid"]')).toHaveValue("testcheck123");
+      await expect(midForm.locator('input[name="referrer"]')).toHaveValue(
+        /https:\/\/www\.facebook\.com\/?/,
+      );
+      await expect(midForm.locator('input[name="page_path"]')).toHaveValue("/coronal-polish");
+
+      await page.getByRole("link", { name: "Infection Control" }).first().click();
+      await expect(page).toHaveURL(/\/infection-control\/?$/);
+
+      const backForm = page.locator('form[data-rda-signup-form="true"]');
+      await expect(backForm.locator('input[name="landing_page"]')).toHaveValue(
+        "/infection-control",
+      );
+      await expect(backForm.locator('input[name="utm_source"]')).toHaveValue("facebook");
+      await expect(backForm.locator('input[name="utm_campaign"]')).toHaveValue("ic189_oct17");
+      await expect(backForm.locator('input[name="fbclid"]')).toHaveValue("testcheck123");
+      await expect(backForm.locator('input[name="referrer"]')).toHaveValue(
+        /https:\/\/www\.facebook\.com\/?/,
+      );
+      await expect(backForm.locator('input[name="page_path"]')).toHaveValue("/infection-control");
+    });
+
     test("first-touch Saturday tags and parsed ad_id stamp both Formspree forms", async ({
       page,
     }) => {
