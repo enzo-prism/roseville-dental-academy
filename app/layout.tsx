@@ -10,6 +10,7 @@ import { HotjarAnalytics } from "@/components/site/hotjar-analytics";
 import { InteractionAnalytics } from "@/components/site/interaction-analytics";
 import { LeadAttributionCapture } from "@/components/site/lead-attribution-capture";
 import { MetaPixel } from "@/components/site/meta-pixel";
+import { OpenAIMeasurementChoice } from "@/components/site/openai-measurement-choice";
 import { OpenAIAdsPixel } from "@/components/site/openai-ads-pixel";
 import { PublicRouteOnly } from "@/components/site/public-route-only";
 import { WhatsAppFab } from "@/components/site/whatsapp-fab";
@@ -59,6 +60,7 @@ export default function RootLayout({
           <HotjarAnalytics />
           <MetaPixel />
           <OpenAIAdsPixel />
+          <OpenAIMeasurementChoice />
           <LeadAttributionCapture />
           <Analytics mode={analyticsMode} />
           <SpeedInsights />

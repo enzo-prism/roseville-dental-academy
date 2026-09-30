@@ -10,6 +10,8 @@ import {
   type LeadAttribution,
 } from "@/lib/lead-attribution";
 
+import { measurementReferenceSnapshot, type MeasurementReferenceSnapshot } from "@/lib/openai-measurement";
+
 export {
   AD_CLICK_ID_FIELDS,
   getLeadAttributionStamp,
@@ -23,6 +25,7 @@ export type LeadFormSuccessDetail = {
   acceptedFields?: ReadonlyArray<readonly [string, string]>;
   leadEventId: string;
   submissionId: string;
+  openAIAdsReference?: MeasurementReferenceSnapshot;
 };
 
 // Snapshot only public course/campaign metadata. Student contact details and
@@ -197,6 +200,7 @@ export function useLeadFormSubmit() {
       }
 
       const acceptedFields = acceptedAnalyticsFields(formData);
+      const openAIAdsReference = measurementReferenceSnapshot();
       const response = await fetch(form.action, {
         body: formData,
         headers: { Accept: "application/json" },
@@ -214,7 +218,7 @@ export function useLeadFormSubmit() {
       form.dispatchEvent(
         new CustomEvent<LeadFormSuccessDetail>(LEAD_FORM_SUCCESS_EVENT, {
           bubbles: true,
-          detail: { acceptedFields, leadEventId, submissionId: leadEventId },
+          detail: { acceptedFields, leadEventId, submissionId: leadEventId, openAIAdsReference },
         }),
       );
       setStatus("success");

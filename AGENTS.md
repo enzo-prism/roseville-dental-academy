@@ -52,3 +52,13 @@ This is a single Next.js 16 app (App Router). Standard commands live in `README.
 - Dev server: `pnpm dev --hostname 127.0.0.1 --port 3000`. It uses the webpack dev runtime (`next dev --webpack`). First hits to each route compile on demand, so the initial page load and the first Playwright run are slow (the `test:smoke` suite can take ~5 min in dev). This is normal, not a hang.
 - Playwright: browsers are preinstalled (chromium). The `test:*` scripts start/reuse a server with `reuseExistingServer` in dev mode and health-check `/manifest.webmanifest`; host and port come from `LOCAL_ORIGIN` (default `http://127.0.0.1:3000`), and setting `PREVIEW_URL` disables the webserver entirely. Set `PLAYWRIGHT_SERVER_MODE=prod` (as `test:release` does) to test against `pnpm start` instead of `pnpm dev`.
 - Manual testing caveat: the "Request Course Info" / contact lead forms (`components/site/live-signup-section.tsx`, `use-lead-form.ts`) POST to a production Formspree endpoint on a *trusted* user submit. When manually exercising these forms, stop before the final submit (or intercept the request) so you don't create real production leads. Client-side validation and field entry are safe to demo.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

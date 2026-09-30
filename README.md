@@ -172,11 +172,13 @@ These routes submit to dedicated Formspree inboxes and capture UTMs plus support
 
 The lead runtime keeps separate 90-day first-touch and conversion-touch records, with session-only fallback when browser privacy signals restrict durable storage. Accepted requests use one browser-generated `lead_event_id` across browser events, pass it as Meta's `eventID`, and send a PII-free best-effort receipt to the private attribution ledger. This browser ID is not the immutable Formspree submission `_id`: authenticated reconciliation later establishes canonical identity as `form_id:_id` and verifies the browser receipt. See [docs/analytics.md](docs/analytics.md) for the field, consent, privacy, and reconciliation contracts.
 
-The ChatGPT Ads Measurement Pixel is also mounted sitewide. It uses pixel ID
-`Ek4Sce2YRxrGHS3oL51Qac` by default, with an optional
-`NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID` override. It measures PII-free `page_viewed` events and
-an accepted Formspree request as `lead_created`, reusing `lead_event_id` as OpenAI's
-`event_id`. GPC, DNT, and explicit denied RDA consent cookies disable measurement.
+ChatGPT Ads measurement requires `NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID` and explicit consent.
+Its SDK runs in an opaque, empty frame so automatic advanced matching cannot read student
+forms. Accepted Formspree requests retain the existing `lead_event_id` as OpenAI's
+`event_id`; native `oppref` is stored for up to 30 days after consent. Unknown consent,
+GPC, DNT and withdrawal block measurement. No OpenAI page-view event is sent. See
+[the measurement contract](docs/analytics.md#chatgpt-ads-measurement-pixel) and run
+`pnpm test:openai` before release.
 
 Use `/lp/dental-assisting-tiktok?utm_source=tiktok&utm_medium=paid_social&utm_campaign=dental_assisting_tiktok&utm_content=video_01` for TikTok Dental Assisting Program ads.
 
@@ -187,7 +189,7 @@ Important env vars:
 - `PREVIEW_URL`: target a deployed preview instead of local webserver startup.
 - `BASELINE_DIR`: alternate baseline location; defaults to `tests/baselines/live`.
 - `NEXT_PUBLIC_META_PIXEL_ID`: optional override for the Meta Pixel ID.
-- `NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID`: optional override for the ChatGPT Ads Measurement Pixel ID.
+- `NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID`: required public ChatGPT Ads Pixel ID; unset disables measurement.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional override for the GA4 measurement ID.
 - `NEXT_PUBLIC_HOTJAR_SITE_ID`: optional override for the Hotjar site ID.
 - `NEXT_PUBLIC_HOTJAR_VERSION`: optional override for the Hotjar snippet version.

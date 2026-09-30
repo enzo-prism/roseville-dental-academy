@@ -43,6 +43,14 @@ jobs:
       - name: Install visual diff dependencies
         run: python3 -m pip install --user Pillow
 
+      - name: Verify isolated OpenAI measurement
+        env:
+          CI: "true"
+          DATABASE_URL: ""
+          RDA_SYNC_SECRET: ""
+          CRON_SECRET: ""
+        run: pnpm test:openai
+
       - name: Run frozen-clone release gate
         env:
           BASELINE_DIR: tests/baselines/live

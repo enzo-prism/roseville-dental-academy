@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:https";
 import type { AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createStudentJobsSession, STUDENT_JOBS_COOKIE, STUDENT_JOBS_SESSION_SECONDS,
   studentJobsPasswordMatches, studentJobsAuthConfig, studentJobsSameOrigin, validStudentJobsSession } from "../lib/student-jobs-auth";
@@ -90,7 +91,7 @@ test("null Origin is allowed only for same-origin native form navigation to a tr
 test("real HTTPS browser native login and logout work with no-referrer and Origin null", async ({ browser }) => {
   // This fixture uses the production guard/session functions and genuine browser
   // POST metadata. API requests with a fabricated Origin cannot catch this case.
-  const directory = mkdtempSync(join(process.cwd(), "work/student-jobs-https-"));
+  const directory = mkdtempSync(join(tmpdir(), "rda-student-jobs-https-"));
   const observed: { path: string; origin: string | null; allowed: boolean }[] = [];
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", join(directory, "key.pem"),
     "-out", join(directory, "cert.pem"), "-days", "1", "-subj", "/CN=localhost"], { stdio: "ignore" });

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-iy86CXZiPVIVM7992dd5w3luGJuSgOPtz+i5rrCRSbc=' https://bzrcdn.openai.com; connect-src https://bzrcdn.openai.com https://bzr.openai.com; img-src https://bzr.openai.com; base-uri 'none'; form-action 'none'">
+  <title>Consent-based measurement</title>
+</head>
+<body>
+<script>
+(() => {
+  'use strict';
+  // This document must remain empty of customer content and run with
+  // sandbox="allow-scripts" only. Its opaque origin prevents access to forms
+  // in the parent document, including by automatic advanced matching.
+  const params = new URLSearchParams(location.search);
+  const pixelId = params.get('pixel_id') || '';
+  const channel = params.get('channel') || '';
+  const clickReference = params.get('oppref') || '';
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const canonical = ['rosevilledentalacademy.com', 'www.rosevilledentalacademy.com'].includes(location.hostname);
+  const localTest = ['localhost', '127.0.0.1'].includes(location.hostname) && pixelId === 'playwright-test-pixel';
+  const parentOrigin = location.origin;
+  const notify = (type, eventId) => parent.postMessage({ type, channel, ...(eventId ? { eventId } : {}) }, parentOrigin);
+
+  if (parent === window || (!canonical && !localTest) || !/^[a-zA-Z0-9_-]{1,128}$/.test(pixelId)
+      || !uuid.test(channel) || clickReference.length > 2048 || /[\u0000-\u0020\u007f]/.test(clickReference)) return;
+  // Refuse to run unless the browser enforces the intended opaque origin.
+  // Access to a same-origin parent's document means sandbox isolation is absent.
+  try { void parent.document; return; } catch { /* Expected SecurityError. */ }
+
+  const queue = (...args) => queue.q.push(args);
+  queue.q = [];
+  window.oaiq = queue;
+  queue('consent', true);
+  queue('init', { pixelId });
+
+  let ready = false;
+  const delivered = new Set();
+  addEventListener('message', (event) => {
+    const data = event.data;
+    if (event.source !== parent || event.origin !== parentOrigin || !data || typeof data !== 'object'
+        || data.type !== 'rda:openai-lead' || data.channel !== channel
+        || typeof data.eventId !== 'string' || !uuid.test(data.eventId) || !ready) return;
+    if (!delivered.has(data.eventId)) {
+      window.oaiq('measure', 'lead_created', { type: 'customer_action' }, { opt_out: true, event_id: data.eventId });
+      delivered.add(data.eventId);
+    }
+    // Acknowledges SDK queueing only, never ingestion or attributed conversion.
+    notify('rda:openai-queued', data.eventId);
+  });
+
+  let attempts = 0;
+  const load = () => {
+    attempts += 1;
+    const script = document.createElement('script');
+    let settled = false;
+    let timeout;
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      script.remove();
+      if (attempts < 3) setTimeout(load, attempts * 1000);
+      else notify('rda:openai-error');
+    };
+    script.src = 'https://bzrcdn.openai.com/sdk/oaiq.min.js';
+    script.async = true;
+    script.referrerPolicy = 'no-referrer';
+    script.onload = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (!window.oaiq.loaded) { notify('rda:openai-error'); return; }
+      ready = true;
+      notify('rda:openai-ready');
+    };
+    script.onerror = fail;
+    timeout = setTimeout(fail, 10000);
+    document.head.appendChild(script);
+  };
+  load();
+})();
+</script>
+</body>
+</html>

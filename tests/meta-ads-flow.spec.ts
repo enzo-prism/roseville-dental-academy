@@ -127,7 +127,11 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       const openaiLeads = observed.openai.filter((event) => event[0] === "measure" && event[1] === "lead_created");
       expect(leads).toHaveLength(1);
       expect(gaLeads).toHaveLength(1);
-      expect(openaiLeads).toHaveLength(1);
+      // These Meta fixtures provide no OpenAI consent. Positive isolated OpenAI
+      // delivery/UUID assertions are covered by openai-isolation.spec.ts.
+      expect(openaiLeads).toEqual([]);
+      await expect(page.locator('[data-rda-openai-measurement="true"]')).toHaveCount(0);
+      await expect(page.locator('script[src*="bzrcdn.openai.com"]')).toHaveCount(0);
       expect(observed.successes).toHaveLength(1);
       const eventId = multipartField(postedBody, "lead_event_id");
       expect(eventId).toMatch(/^[0-9a-f-]{36}$/);
@@ -143,7 +147,7 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       }
       expect(leads[0][3]).toEqual({ eventID: eventId });
       expect(gaLeads[0][2]).toMatchObject({ lead_event_id: eventId });
-      expect(openaiLeads[0][3]).toEqual({ event_id: eventId });
+      expect(observed.successes[0]).toMatchObject({ leadEventId: eventId, openAIAdsReference: { allowed: false } });
       expect(receipt).toMatchObject({ leadEventId: eventId });
       assertNoStudentData([leads, gaLeads, openaiLeads, observed.successes, receipt]);
       expect(observed.meta).toContainEqual(["init", DEFAULT_META_PIXEL_ID]);

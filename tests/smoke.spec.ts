@@ -433,85 +433,10 @@ test("Meta pixel tag is configured", async ({ page }, testInfo) => {
   expect(mismatches).toEqual([]);
 });
 
-test("ChatGPT Ads pixel is configured with consent-first page measurement", async ({
-  page,
-}, testInfo) => {
+test("ChatGPT Ads never loads the SDK in the parent form document", async ({ page }) => {
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const adsWindow = window as Window & {
-          oaiq?: ((...args: unknown[]) => void) & { q?: unknown[][] };
-        };
-
-        return adsWindow.oaiq?.q?.length ?? 0;
-      }),
-    )
-    .toBeGreaterThanOrEqual(3);
-
-  const result = await page.evaluate(() => {
-    const adsWindow = window as Window & {
-      oaiq?: ((...args: unknown[]) => void) & { q?: unknown[][] };
-    };
-    const calls = adsWindow.oaiq?.q ?? [];
-    const initCall = calls.find((call) => call[0] === "init");
-    const pageViewCalls = calls.filter(
-      (call) => call[0] === "measure" && call[1] === "page_viewed",
-    );
-
-    return {
-      calls,
-      hasSdkScript: Boolean(
-        document.querySelector(
-          'script[data-rda-openai-ads-pixel-sdk="true"][src="https://bzrcdn.openai.com/sdk/oaiq.min.js"]',
-        ),
-      ),
-      initializedPixelId:
-        typeof initCall?.[1] === "object" && initCall[1] && "pixelId" in initCall[1]
-          ? initCall[1].pixelId
-          : null,
-      oaiqReady: typeof adsWindow.oaiq === "function",
-      pageViewCalls,
-    };
-  });
-  const mismatches: string[] = [];
-
-  if (!result.oaiqReady) {
-    mismatches.push("homepage did not initialize the ChatGPT Ads oaiq queue");
-  }
-
-  if (!result.hasSdkScript) {
-    mismatches.push("homepage is missing the ChatGPT Ads Measurement Pixel SDK");
-  }
-
-  if (result.initializedPixelId !== "Ek4Sce2YRxrGHS3oL51Qac") {
-    mismatches.push("homepage ChatGPT Ads Pixel has the wrong Pixel ID");
-  }
-
-  if (JSON.stringify(result.calls[0]) !== JSON.stringify(["consent", true])) {
-    mismatches.push("homepage ChatGPT Ads Pixel did not set consent before init");
-  }
-
-  if (result.pageViewCalls.length !== 1) {
-    mismatches.push("homepage did not queue exactly one ChatGPT Ads page_viewed event");
-  }
-
-  smokeSummary.push({
-    mismatches,
-    route: "/",
-    status: mismatches.length === 0 ? "passed" : "failed",
-    type: "chatgpt-ads-pixel",
-  });
-
-  if (mismatches.length > 0) {
-    writeJsonArtifact(testInfo, "chatgpt-ads-pixel-summary.json", {
-      mismatches,
-      result,
-    });
-  }
-
-  expect(mismatches).toEqual([]);
+  expect(await page.evaluate(() => typeof (window as Window & { oaiq?: unknown }).oaiq)).toBe("undefined");
+  await expect(page.locator('script[data-rda-openai-ads-pixel-sdk="true"]')).toHaveCount(0);
 });
 
 for (const landingPage of adLandingPages) {
@@ -685,8 +610,8 @@ for (const landingPage of adLandingPages) {
       mismatches.push(`${landingPage.path} Meta Pixel is not available`);
     }
 
-    if (!result.hasOpenAIAdsSdk || !result.oaiqReady) {
-      mismatches.push(`${landingPage.path} ChatGPT Ads Pixel is not available`);
+    if (result.hasOpenAIAdsSdk || result.oaiqReady) {
+      mismatches.push(`${landingPage.path} must not run the OpenAI SDK in the form document`);
     }
 
     if (
