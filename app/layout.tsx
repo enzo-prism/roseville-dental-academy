@@ -11,6 +11,7 @@ import { InteractionAnalytics } from "@/components/site/interaction-analytics";
 import { LeadAttributionCapture } from "@/components/site/lead-attribution-capture";
 import { MetaPixel } from "@/components/site/meta-pixel";
 import { OpenAIAdsPixel } from "@/components/site/openai-ads-pixel";
+import { PublicRouteOnly } from "@/components/site/public-route-only";
 import { WhatsAppFab } from "@/components/site/whatsapp-fab";
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
 import { buildPageMetadata } from "../lib/site-metadata";
@@ -45,20 +46,24 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${notoSans.variable} ${playfairDisplay.variable}`}>
       <head>
-        <AnalyticsBootstrap />
+        <PublicRouteOnly>
+          <AnalyticsBootstrap />
+        </PublicRouteOnly>
       </head>
       <body className={LIVE_BODY_CLASS}>
         <GlobalStructuredData />
         {children}
-        <WhatsAppFab />
-        <GoogleAnalytics />
-        <HotjarAnalytics />
-        <MetaPixel />
-        <OpenAIAdsPixel />
-        <LeadAttributionCapture />
-        <Analytics mode={analyticsMode} />
-        <SpeedInsights />
-        <InteractionAnalytics />
+        <PublicRouteOnly>
+          <WhatsAppFab />
+          <GoogleAnalytics />
+          <HotjarAnalytics />
+          <MetaPixel />
+          <OpenAIAdsPixel />
+          <LeadAttributionCapture />
+          <Analytics mode={analyticsMode} />
+          <SpeedInsights />
+          <InteractionAnalytics />
+        </PublicRouteOnly>
       </body>
     </html>
   );

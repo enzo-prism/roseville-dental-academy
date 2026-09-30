@@ -2,6 +2,7 @@ import {
   getPublicSitemapRoutes,
   type LiveRoute,
 } from "@/lib/live-route-data";
+import { cancellationPolicyRoute } from "@/lib/academy-policies";
 import { journeyRoute } from "@/lib/journey-roadmap-data";
 import { getResourceSitemapRoutes } from "@/lib/resource-articles";
 import { SITE_URL } from "@/lib/site-config";
@@ -46,7 +47,7 @@ export function GET() {
     entries.push({ path, priority: priorityFor(path) });
   }
 
-  for (const route of [journeyRoute, ...getResourceSitemapRoutes()]) {
+  for (const route of [journeyRoute, cancellationPolicyRoute, ...getResourceSitemapRoutes()]) {
     const path = canonicalPathFor(route);
     if (seen.has(path)) continue;
     seen.add(path);

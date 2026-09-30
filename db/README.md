@@ -1,5 +1,11 @@
 # RDA private attribution ledger
 
+The filename-order migrator also includes `004_enrollment_test_pilot.sql` when present.
+Those dedicated staff access/throttle and TEST enrollment
+tables do not write to student attribution, real admissions, or real course-seat counts.
+See `docs/enrollment-pilot.md` for the separate staff gate, Stripe TEST-only configuration,
+durable capacity checks, webhook verification, and conservative hold reconciliation.
+
 This schema stores only pseudonymous CRM identity, cryptographic contact hashes, ad touchpoints,
 reviewed lead-to-enrollment links, delivery totals, and postback state. It does not store names,
 raw email/phone values, PMS chart numbers, health information, notes, or raw email-report fields.

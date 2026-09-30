@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
+import { ClinicalRequirements } from "@/components/site/clinical-requirements";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { showsCertificateExpiration } from "@/lib/certificate-expiration";
+import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE, hasStandaloneClinicalRequirements, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
 import { courseScheduleNote, formatCourseDateLabel, getUpcomingCourseSchedule } from "@/lib/course-schedule";
 import type {
   LiveCourseContent,
@@ -25,9 +28,6 @@ type LiveCourseSection = {
   body: string;
   heading: string;
 };
-
-const COURSE_NONREFUNDABLE_NOTE =
-  "All Roseville Dental Academy courses are nonrefundable.";
 
 function addPricePolicyMarker(body: string) {
   if (!body) {
@@ -476,6 +476,9 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               />
             ))}
           </div>
+          {hasStandaloneClinicalRequirements(course.id) ? (
+            <ClinicalRequirements className="mt-6" />
+          ) : null}
           {course.id === "infection-control" ? (
             <InfectionControlRequirementNotice className="mt-6" headingLevel="h2" />
           ) : null}
@@ -483,7 +486,11 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
             <CertificateExpirationNotice className="mt-6" headingLevel="h2" />
           ) : null}
           <p className="rda-course-policy-note mt-5 border-t border-border pt-4 text-sm leading-6 text-muted-foreground">
-            * {COURSE_NONREFUNDABLE_NOTE}
+            {course.id === "infection-control" ? <><span className="font-semibold">{INFECTION_CONTROL_PAYMENT_NOTE}</span>{" "}</> : null}
+            * {CANCELLATION_POLICY_SUMMARY}{" "}
+            <Link className="font-medium text-primary underline underline-offset-4" href={CANCELLATION_POLICY_PATH}>
+              {CANCELLATION_POLICY_TITLE}
+            </Link>
           </p>
         </div>
       ) : null}

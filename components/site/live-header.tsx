@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { SiteLink as Link } from "@/components/site/site-link";
 import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
   BookOpenCheck,
+  BriefcaseBusiness,
   ChevronDown,
   CircleHelp,
   FileUser,
@@ -75,6 +76,7 @@ const primaryLinks: NavLinkItem[] = [
 ];
 
 const moreLinks: NavLinkItem[] = [
+  { href: "/student-jobs", Icon: BriefcaseBusiness, iconKey: "briefcase-business", label: "Student & Alumni Jobs" },
   {
     href: "/dental-assisting-program",
     Icon: GraduationCap,
@@ -171,7 +173,7 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(function NavLink(
     ref,
   };
 
-  if (isExternalHref(href)) {
+  if (isExternalHref(href) || href === "/student-jobs") {
     return <a {...sharedProps}>{children}</a>;
   }
 

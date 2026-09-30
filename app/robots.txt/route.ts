@@ -4,6 +4,10 @@ export const dynamic = "force-static";
 
 const DISALLOWED_PATHS = [
   "/m/",
+  "/student-jobs",
+  "/enrollment-pilot",
+  "/api/student-jobs/",
+  "/api/enrollment/",
   "/resume-portal-dr/",
   "/resume-portal-dr-oms-only",
   "/g/api/",

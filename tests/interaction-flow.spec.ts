@@ -198,6 +198,7 @@ test.describe("live-style interaction flows", () => {
       await expect(menu.getByRole("menuitem", { name: "Meet the Instructors" })).toBeVisible();
       await expect(menu.getByRole("menuitem", { name: "FAQs" })).toBeVisible();
       await expect(menu.getByRole("menuitem", { name: "Photos" })).toBeVisible();
+      await expect(menu.getByRole("menuitem", { name: "Student & Alumni Jobs" })).toHaveAttribute("href", "/student-jobs");
 
       await menu.getByRole("menuitem", { name: "FAQs" }).click();
       await page.waitForURL("**/faqs-1", { timeout: 12_000 });
@@ -225,7 +226,7 @@ test.describe("live-style interaction flows", () => {
         "/journey",
       );
       await expect(page.locator("footer")).toContainText(
-        "All Roseville Dental Academy courses are nonrefundable.",
+        "If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
       );
 
       const alreadyWorking = journey.getByRole("button", { name: /Already working/ });
@@ -2162,8 +2163,8 @@ test.describe("live-style interaction flows", () => {
       await gotoSettled(page, "/infection-control");
       const coursePage = page.locator('[data-rda-live-course="infection-control"]');
       await expect(coursePage.getByText("$395*.", { exact: true })).toBeVisible();
-      await expect(coursePage.locator(".rda-course-policy-note")).toHaveText(
-        "* All Roseville Dental Academy courses are nonrefundable.",
+      await expect(coursePage.locator(".rda-course-policy-note")).toContainText(
+        "If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
       );
       const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
       await expect(courseForm).toBeVisible();

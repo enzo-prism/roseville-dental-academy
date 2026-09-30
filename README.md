@@ -121,7 +121,7 @@ pnpm exec playwright install chromium
 - `pnpm test:design`: UX stability plus visual parity.
 - `pnpm test:attribution`: attribution API, browser, Meta form flow, and database integrity regressions against localhost (also in Release Gate CI).
 - `pnpm test:attribution-db`: ledger migrations and triggers in an isolated in-memory Postgres (also in Release Gate CI; see `db/README.md`).
-- `pnpm test:release`: `lint` + `build`, then smoke, course-dates, interactions, parity-content, UX, and parity-visual against a local production server (`pnpm start` on port 3100 by default).
+- `pnpm test:release`: `lint` + `build`, then parity-visual, smoke, course-dates, interactions, parity-content, and UX against a local production server (`pnpm start` on port 3100 by default).
 - `pnpm test:preview`: the same six suites against a Vercel preview (`PREVIEW_URL` is required, no webserver is started, no lint/build).
 
 Changing course dates or any visible page copy drifts the committed content baselines and must be
@@ -135,7 +135,7 @@ dates share a course list, so a careless edit closes courses on unrelated dates.
 The analytics and paid-media event contract lives in [docs/analytics.md](docs/analytics.md).
 Current sitewide tracking includes GA4, Vercel Analytics, Hotjar, and Meta Pixel.
 Pixel components live under `components/site/*-analytics.tsx` and `components/site/*-pixel.tsx`,
-with global mounting handled in `app/layout.tsx`.
+with public-route mounting handled in `app/layout.tsx`. Private student jobs and the staff test-enrollment pilot suppress all marketing/analytics widgets, use full-document navigation across the public/private boundary, and return no-store/noindex/no-referrer headers.
 
 WhatsApp click-to-chat clicks are tracked through the document-level delegation in
 `components/site/interaction-analytics.tsx` (keyed on `data-rda-whatsapp`): they fire a
@@ -215,3 +215,11 @@ Visual parity failures should be triaged from the uploaded artifacts before chan
 - Production deployment and post-deploy verification steps live in [docs/production-runbook.md](docs/production-runbook.md).
 
 Meta launch tracking parameters, privacy limits, migration order and live checks: [docs/meta-ads-readiness.md](docs/meta-ads-readiness.md).
+
+## Approved academy policy and private tools
+
+The September 30 cancellation policy is centralized in `lib/academy-policies.ts`, published at `/cancellation-policy`, and shared by course notices, the footer, FAQs, and test checkout. Clinical instructions for Radiation Safety, Coronal Polish, and Sealants share `components/site/clinical-requirements.tsx`.
+
+The private student/alumni board is documented in [docs/student-jobs.md](docs/student-jobs.md). The separate staff-only, Stripe TEST enrollment pilot is documented in [docs/enrollment-pilot.md](docs/enrollment-pilot.md). Neither private route is in the sitemap. No real-payment launch is enabled by this release.
+
+For these changes, also run `pnpm exec playwright test tests/policy-clinicals.spec.ts tests/student-jobs.spec.ts tests/private-routes.spec.ts tests/rda-release.spec.ts tests/enrollment*.spec.ts` against a configured production-mode local server. Authentication checks need matching test-process passwords; skipped authentication tests are not evidence of configured access. Never place passwords or Stripe keys in committed files.

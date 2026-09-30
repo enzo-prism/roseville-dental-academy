@@ -28,6 +28,7 @@ import type {
   TestimonialData,
 } from "@/lib/site-types";
 import { activeSitePromo } from "@/lib/site-promo";
+import { CANCELLATION_POLICY_PARAGRAPHS, CLINICAL_COMPLETION_REQUIREMENT, CLINICAL_OUTSIDE_SITE_REQUIREMENT, CLINICAL_SCHEDULING_REQUIREMENT, CLINICAL_SITE_REQUIREMENT, CLINICAL_SUPERVISION_REQUIREMENT, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
 
 export const announcement = activeSitePromo.bannerText;
 
@@ -927,6 +928,22 @@ export const boardApprovalHighlights = [
 
 export const studentFaqHighlights = [
   {
+    question: "What is the cancellation and refund policy?",
+    answer: CANCELLATION_POLICY_PARAGRAPHS.join(" "),
+  },
+  {
+    question: "Is full payment required for Infection Control?",
+    answer: `${INFECTION_CONTROL_PAYMENT_NOTE} Call admissions to confirm availability and registration for your chosen course date.`,
+  },
+  {
+    question: "Where do I complete clinical training for X-ray, Coronal Polish, and Sealants?",
+    answer: `${CLINICAL_SITE_REQUIREMENT} ${CLINICAL_OUTSIDE_SITE_REQUIREMENT}`,
+  },
+  {
+    question: "When can I schedule and complete my clinical training?",
+    answer: `${CLINICAL_SCHEDULING_REQUIREMENT} ${CLINICAL_COMPLETION_REQUIREMENT} Contact admissions for access to the academy's scheduling platform.`,
+  },
+  {
     question: "Are the courses Dental Board approved?",
     answer:
       "The academy points students to the Dental Board of California approved-provider lists so they can verify current course status before enrolling. Current public lists include Roseville Dental Academy for Radiation Safety X1036, Infection Control IC189, Coronal Polishing CP148, and Pit and Fissure Sealants PF186.",
@@ -953,7 +970,7 @@ export const studentFaqHighlights = [
   {
     question: "Do students need to provide patients?",
     answer:
-      "Yes for clinical course requirements. Roseville Dental Academy does not provide patients, so students should plan ahead and confirm the exact patient requirements for their course with the office.",
+      `Yes for clinical course requirements. Roseville Dental Academy does not provide patients, so students should plan ahead and confirm the exact patient requirements for their course with the office. ${CLINICAL_SUPERVISION_REQUIREMENT}`,
   },
   {
     question: "How old do students need to be?",

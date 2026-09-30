@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { SiteLink as Link } from "@/components/site/site-link";
+import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE } from "@/lib/academy-policies";
 
 import { siteContact, socialLinks, whatsAppUrl } from "@/lib/site-data";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
@@ -10,6 +11,7 @@ const footerLinks = [
   { href: "/dental-assisting-program", label: "Dental Assisting Program" },
   { href: "/journey", label: "Career Journey" },
   { href: "/faqs-1", label: "FAQs" },
+  { href: "/student-jobs", label: "Student & Alumni Jobs" },
   { href: "/photos", label: "Photos" },
   { href: "/contact", label: "Contact Us" },
 ];
@@ -63,13 +65,20 @@ export function LiveFooter() {
         <Separator className="rda-footer-separator bg-primary-foreground/20" />
         <nav aria-label="Footer" className="rda-footer-links">
           {footerLinks.map((link) => (
-            <Link href={link.href} key={link.href}>
-              {link.label}
-            </Link>
+            link.href === "/student-jobs" ? (
+              <a href={link.href} key={link.href}>{link.label}</a>
+            ) : (
+              <Link href={link.href} key={link.href}>
+                {link.label}
+              </Link>
+            )
           ))}
         </nav>
         <SocialLinkButtons links={socialLinks} variant="footer" />
-        <p className="rda-footer-policy">All Roseville Dental Academy courses are nonrefundable.</p>
+        <p className="rda-footer-policy">
+          {CANCELLATION_POLICY_SUMMARY}{" "}
+          <Link className="underline underline-offset-4" href={CANCELLATION_POLICY_PATH}>{CANCELLATION_POLICY_TITLE}</Link>
+        </p>
         <p className="rda-footer-copy">Copyright © 2026 rosevilledental - All Rights Reserved.</p>
       </div>
     </footer>

@@ -140,3 +140,13 @@ Before any production push, check these docs when their contracts are touched:
 Pushing `main` is the production deploy (Vercel production project tracks `main`). After push, verify `https://rosevilledentalacademy.com`, not only the Vercel deployment URL.
 
 For the database-first Meta measurement release and remaining Ads Manager checks, see `docs/meta-ads-readiness.md`.
+
+## Policy, jobs, and TEST enrollment release
+
+Run the focused policy/clinical, student-jobs, private-routes, responsive release, and enrollment suites in addition to the six presentation gates. Validate real password sign-in and logout with matching server/test configuration, private HTML and RSC responses, and absence of third-party network traffic on direct private loads and public-to-private navigation.
+
+Before jobs access is enabled, provision the dedicated rate-limit table and server-only secrets described in `docs/student-jobs.md`. The daily `/api/student-jobs/retention` cron uses the existing `CRON_SECRET` and removes old limiter windows. Share the generated academy password privately; jobs data stays empty until an approved posting is supplied.
+
+The staff pilot uses its own password and cookie. Apply migration004 only to the verified RDA database. No live Stripe keys or real payments are accepted. Without RDA Stripe test credentials and its signed test webhook, the pilot reports unavailable and creates no checkout. Actual test payment, signed webhook, durable paid-record readback, and capacity reconciliation must pass before calling the Stripe pilot operational; see `docs/enrollment-pilot.md`.
+
+Vercel sensitive schedule-feed variables are masked in local exports. For local QA, independently compare the public `/api/course-schedule-status` revision with the committed schedule revision before using the unconfigured development fixture. Production builds still require the actual dashboard feed and fail closed if unavailable. Never substitute the masked placeholder or bypass that production requirement.
