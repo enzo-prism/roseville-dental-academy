@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 import type { BrowserContext, Page, TestInfo } from "@playwright/test";
 
@@ -311,9 +311,14 @@ export function getVisualBaseline(localPath: string, viewportLabel: string) {
     throw new Error(`No visual baseline registered for ${localPath} on ${viewportLabel}`);
   }
 
+  // Chromium's variable-font metrics differ across macOS and Linux. Keep the
+  // reviewed default reference and opt into an explicit platform reference only
+  // where one is committed; fonts, masks and diff tolerances remain enforced.
+  const platformPath = join(dirname(baselinePath), process.platform, basename(baselinePath));
+  const selectedPath = existsSync(resolve(process.cwd(), platformPath)) ? platformPath : baselinePath;
   return {
-    baselinePath,
-    image: readBaselineBinary(baselinePath),
+    baselinePath: selectedPath,
+    image: readBaselineBinary(selectedPath),
     route,
   };
 }

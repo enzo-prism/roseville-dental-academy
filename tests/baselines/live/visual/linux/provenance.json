@@ -1,0 +1,103 @@
+{
+  "referencePlatform": "linux",
+  "chromium": "147.0.7727.15",
+  "playwright": "1.59.0",
+  "sourceCommit": "dadd95038095a10034fb9eb0773e72c5b19df68d",
+  "githubRun": 36679491794,
+  "reviewed": "2026-09-29 America/Los_Angeles",
+  "productionCodeMatchesApprovedCommit": "fc2af6c8b62c6b8ac956df6214d92d9ec787e9fa",
+  "masksChanged": false,
+  "tolerancesChanged": false,
+  "references": [
+    {
+      "file": "home-desktop.png",
+      "sha256": "d7a70dfc37038f267eecf922de9205d90b2db3c2d913db5988880fcd5936f05a",
+      "fontDiagnostics": {
+        "browserState": {
+          "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36",
+          "fontsStatus": "loaded",
+          "scrollY": 0,
+          "activeElement": "BODY",
+          "nav": {
+            "fontFamily": "\"Noto Sans\", \"Noto Sans Fallback\", \"Noto Sans\", Arial, sans-serif",
+            "fontSize": "14px",
+            "fontWeight": "600",
+            "letterSpacing": "normal",
+            "homeBounds": {
+              "x": 189.5,
+              "y": 70,
+              "width": 77,
+              "height": 40
+            },
+            "rowBounds": {
+              "x": 144,
+              "y": 70,
+              "width": 1152,
+              "height": 77
+            },
+            "socialsBounds": {
+              "x": 663,
+              "y": 113,
+              "width": 114,
+              "height": 34
+            }
+          }
+        },
+        "platformFonts": [
+          {
+            "familyName": "Noto Sans",
+            "postScriptName": "NotoSans-Regular",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ],
+        "usesExpectedNavFont": true
+      }
+    },
+    {
+      "file": "photos-desktop.png",
+      "sha256": "e8c8274a7fcfa2f010802e4afc1bb54b5d9b4d60903ebee5b8b74de94b128cdf",
+      "fontDiagnostics": {
+        "browserState": {
+          "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36",
+          "fontsStatus": "loaded",
+          "scrollY": 0,
+          "activeElement": "BODY",
+          "nav": {
+            "fontFamily": "\"Noto Sans\", \"Noto Sans Fallback\", \"Noto Sans\", Arial, sans-serif",
+            "fontSize": "14px",
+            "fontWeight": "600",
+            "letterSpacing": "normal",
+            "homeBounds": {
+              "x": 189.5,
+              "y": 70,
+              "width": 77,
+              "height": 40
+            },
+            "rowBounds": {
+              "x": 144,
+              "y": 70,
+              "width": 1152,
+              "height": 77
+            },
+            "socialsBounds": {
+              "x": 663,
+              "y": 113,
+              "width": 114,
+              "height": 34
+            }
+          }
+        },
+        "platformFonts": [
+          {
+            "familyName": "Noto Sans",
+            "postScriptName": "NotoSans-Regular",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ],
+        "usesExpectedNavFont": true
+      }
+    }
+  ]
+}
