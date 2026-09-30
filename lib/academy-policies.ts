@@ -13,6 +13,8 @@ export const CANCELLATION_POLICY_PARAGRAPHS = [
   "By submitting payment, the student confirms that they have read, understood, and accepted this Cancellation and Refund Policy.",
 ] as const;
 
+export const CANCELLATION_POLICY_TEXT = CANCELLATION_POLICY_PARAGRAPHS.join("\n\n");
+
 export const CANCELLATION_POLICY_SUMMARY =
   "Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.";
 
