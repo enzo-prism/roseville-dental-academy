@@ -46,6 +46,12 @@ Do not describe the course as something to finish "shortly after" starting patie
 - Course pages and landing pages should avoid hard-coded seat counts unless the current schedule data is being refreshed in the same change.
 - Lead forms may collect course interest and UTM context, but analytics events must not send names, emails, phone numbers, notes, or message text.
 
+## Academy Clinical Location Instructions
+
+Jessica's September 30, 2026 clarification removes the closing instruction to call about patient requirements. The Radiation Safety, Coronal Polish, and Sealants pages now close with: "Please plan ahead when scheduling your clinical. Clinical training must be completed at our designated clinical site and is not transferable to another location."
+
+Enzo's follow-up instruction also removes the prior outside-location written-approval exception from the course pages and FAQ. `CLINICAL_OUTSIDE_SITE_REQUIREMENT` in `lib/academy-policies.ts` supplies the same non-transferable rule to the shared clinical component and FAQ answers; FAQ JSON-LD derives from those visible answers. This is the academy's location instruction, not a new claim about Dental Board regulations. Other patient responsibilities and prerequisites remain in their existing course data.
+
 ## Marking A Class Date Full
 
 Availability lives in `lib/course-schedule.ts`. A `"full"` status is also how a date that has already passed is retired, so this edit recurs often.
