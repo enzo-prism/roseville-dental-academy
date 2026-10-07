@@ -11,6 +11,7 @@ import {
   SEASONAL_FLYBY_ATTRIBUTE,
   SEASONAL_OPT_OUT_STORAGE_KEY,
   SEASONAL_OPT_OUT_VALUE,
+  SEASONAL_PEAK_ATTRIBUTE,
   SEASONAL_THEME_ATTRIBUTE,
 } from "@/lib/site-seasonal";
 
@@ -811,7 +812,7 @@ async function hideFloatingThirdPartyWidgets(page: Page) {
       for (const attribute of attributes) {
         document.documentElement.removeAttribute(attribute);
       }
-    }, [SEASONAL_THEME_ATTRIBUTE, SEASONAL_FLYBY_ATTRIBUTE])
+    }, [SEASONAL_THEME_ATTRIBUTE, SEASONAL_FLYBY_ATTRIBUTE, SEASONAL_PEAK_ATTRIBUTE])
     .catch(() => undefined);
 }
 

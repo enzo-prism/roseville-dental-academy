@@ -27,6 +27,7 @@ import type { LucideIcon } from "lucide-react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { forwardRef, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
+import { SeasonalBannerSky } from "@/components/site/seasonal-banner-sky";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import { Button } from "@/components/ui/button";
 import {
@@ -185,7 +186,7 @@ function subscribeToPromoTime(notify: () => void) {
   return () => window.clearInterval(timer);
 }
 
-export function LiveHeader({ currentRoute }: { currentRoute: string }) {
+export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: string; seasonal?: boolean }) {
   const activePath = useActivePath(currentRoute);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -225,6 +226,7 @@ export function LiveHeader({ currentRoute }: { currentRoute: string }) {
       data-rda-shell-header="true"
     >
       <div className="rda-promo-banner border-b border-primary/10 bg-primary text-primary-foreground" role="banner">
+        {seasonal ? <SeasonalBannerSky /> : null}
         {promoActive ? (
           <Link
             className="rda-promo-banner-link"

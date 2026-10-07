@@ -8,19 +8,22 @@
 export const SEASONAL_THEME_ATTRIBUTE = "data-rda-season";
 export const SEASONAL_FLYBY_ATTRIBUTE = "data-rda-season-flyby";
 export const SEASONAL_SCOPE_ATTRIBUTE = "data-rda-seasonal-scope";
+// Set on the theme's peak day (Halloween itself) for a little extra flourish.
+export const SEASONAL_PEAK_ATTRIBUTE = "data-rda-season-peak";
 
 // Setting this localStorage key to "off" keeps decorations off for a browser.
 // QA isolation uses it so parity baselines never depend on the calendar.
 export const SEASONAL_OPT_OUT_STORAGE_KEY = "rda-seasonal-theme";
 export const SEASONAL_OPT_OUT_VALUE = "off";
 
-export const SEASONAL_FLYBY_DURATION_MS = 8_000;
+export const SEASONAL_FLYBY_DURATION_MS = 9_000;
 // The fly-by is only spent (once per session) on a page that shows it.
 export const SEASONAL_FLYBY_TARGET = `[${SEASONAL_SCOPE_ATTRIBUTE}] .rda-promo-banner`;
 
 export type SeasonalTheme = {
   endsOn: string;
   id: string;
+  peakOn: string;
   startsOn: string;
   theme: "halloween";
   timeZone: string;
@@ -31,6 +34,7 @@ export const halloween2026: SeasonalTheme = {
   theme: "halloween",
   startsOn: "2026-10-01",
   endsOn: "2026-10-31",
+  peakOn: "2026-10-31",
   timeZone: "America/Los_Angeles",
 };
 
@@ -68,6 +72,11 @@ export function getSeasonalFlybyStorageKey(theme: SeasonalTheme) {
   return `rda-seasonal-flyby:${theme.id}`;
 }
 
+/** sessionStorage key for the footer ghost's once-per-session peek-and-wiggle intro. */
+export function getSeasonalPeekStorageKey(theme: SeasonalTheme) {
+  return `rda-seasonal-peek:${theme.id}`;
+}
+
 // Set on window by runSeasonalTheme so the client fallback knows the inline
 // script already ran.
 export const SEASONAL_SCRIPT_MARKER = "__rdaSeasonalTheme";
@@ -82,6 +91,8 @@ export type SeasonalThemeScriptConfig = {
   marker: string;
   optOutKey: string;
   optOutValue: string;
+  peakAttribute: string;
+  peakOn: string;
   startsOn: string;
   theme: string;
   themeAttribute: string;
@@ -99,6 +110,8 @@ export function getSeasonalThemeScriptConfig(theme: SeasonalTheme): SeasonalThem
     marker: SEASONAL_SCRIPT_MARKER,
     optOutKey: SEASONAL_OPT_OUT_STORAGE_KEY,
     optOutValue: SEASONAL_OPT_OUT_VALUE,
+    peakAttribute: SEASONAL_PEAK_ATTRIBUTE,
+    peakOn: theme.peakOn,
     startsOn: theme.startsOn,
     theme: theme.theme,
     themeAttribute: SEASONAL_THEME_ATTRIBUTE,
@@ -135,6 +148,7 @@ export function runSeasonalTheme(c: SeasonalThemeScriptConfig) {
     const today = year + "-" + month + "-" + day;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(today) || today < c.startsOn || today > c.endsOn) return;
     root.setAttribute(c.themeAttribute, c.theme);
+    if (today === c.peakOn) root.setAttribute(c.peakAttribute, "");
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const flyby = function () {
       if (!document.querySelector(c.flybyTarget)) return;

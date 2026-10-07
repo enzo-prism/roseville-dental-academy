@@ -3,6 +3,7 @@ import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POL
 
 import { siteContact, socialLinks, whatsAppUrl } from "@/lib/site-data";
 import { SeasonalFooterDecor } from "@/components/site/seasonal-footer-decor";
+import { SeasonalFooterFog } from "@/components/site/seasonal-footer-fog";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ const footerLinks = [
 export function LiveFooter({ seasonal = false }: { seasonal?: boolean }) {
   return (
     <footer className="rda-live-footer border-t border-border bg-primary text-primary-foreground" data-rda-shell-footer="true">
+      {seasonal ? <SeasonalFooterFog /> : null}
       {seasonal ? <SeasonalFooterDecor /> : null}
       <div className="rda-footer-inner">
         <div className="rda-footer-contact">

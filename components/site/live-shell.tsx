@@ -29,7 +29,7 @@ export function LiveShell({ children, route }: LiveShellProps) {
       <a className="rda-skip-link" href="#rda-main-content">
         Skip to main content
       </a>
-      <LiveHeader currentRoute={route.route} />
+      <LiveHeader currentRoute={route.route} seasonal={seasonal} />
       {route.shellVariant === "public" ? <SitePromoDialog /> : null}
       {children}
       <HomeHeroCarouselController enabled={route.route === "/"} />

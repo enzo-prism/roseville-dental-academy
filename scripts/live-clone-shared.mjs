@@ -23,7 +23,7 @@ const STRIPPED_PATH_FRAGMENTS = ["/signals/js/clients/scc-c2/"];
 // into snapshot/live or the committed baselines.
 export const SEASONAL_OPT_OUT_STORAGE_KEY = "rda-seasonal-theme";
 export const SEASONAL_OPT_OUT_VALUE = "off";
-export const SEASONAL_HTML_ATTRIBUTES = ["data-rda-season", "data-rda-season-flyby"];
+export const SEASONAL_HTML_ATTRIBUTES = ["data-rda-season", "data-rda-season-flyby", "data-rda-season-peak"];
 export const SEASONAL_SCOPE_ATTRIBUTE = "data-rda-seasonal-scope";
 // Decorations plus the inline <head> gate script (components/site/seasonal-theme-script.tsx).
 export const SEASONAL_DECORATION_SELECTOR = "[data-rda-seasonal], script#rda-seasonal-theme";

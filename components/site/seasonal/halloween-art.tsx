@@ -6,6 +6,9 @@ const DEEP = "var(--rda-color-primary-deep, #16344F)";
 const PUMPKIN = "var(--seasonal-pumpkin, #E8862E)";
 const PUMPKIN_DEEP = "var(--seasonal-pumpkin-deep, #C2621A)";
 const STEM = "var(--seasonal-stem, #5F7A3A)";
+const CANDLE = "var(--seasonal-candle, #FFD27A)";
+const CARD = "var(--card, #FFFEFD)";
+const SOFT = "var(--rda-color-primary-soft, #8EC5E8)";
 
 // Ghost-tooth hem: right root → furcation notch → left root, as two scalloped lobes each.
 const HEM =
@@ -17,62 +20,113 @@ const TAIL_FADE = [
   `M52.3 55.3C52.3 58 52.2 59.8 52 61.5${HEM}C11.8 59.8 11.7 58 11.7 55.3C18 52.5 25 55 32 52.8C39 50.8 46 56.5 52.3 55.3Z`,
 ];
 const ARMS = "M13.5 39.5L7 33.5M50.5 40.5L56.5 45";
+// Lantern mode: the right arm reaches out so its hand (centre 60.5 42.5) grips the lantern loop.
+const ARMS_LANTERN = "M13.5 39.5L7 33.5M50.5 39.5L60.5 42.5";
+
+/**
+ * Small candle lantern hanging from the ghost's right hand (lantern mode only).
+ * Drawn before the arms so the hand covers the top of the loop.
+ * Hand / loop pivot: (60.5 42.5). Flame: centre (61 58.6), base (61 61.5).
+ */
+function GhostLantern() {
+  return (
+    <g className="rda-ghost-lantern">
+      <path d="M57.6 51.5C57.2 42.5 64.8 42.5 64.4 51.5" fill="none" stroke={DEEP} strokeWidth="1.6" />
+      <rect fill={CARD} height="11" rx="1.6" width="9.6" x="56.2" y="54.5" />
+      <rect fill={CANDLE} height="11" opacity="0.75" rx="1.6" width="9.6" x="56.2" y="54.5" />
+      <rect fill={CARD} height="3.6" rx="0.6" stroke={DEEP} strokeWidth="0.8" width="3" x="59.5" y="61.4" />
+      <g className="rda-ghost-flame">
+        <path d="M61 55.6C62.4 57.4 63.1 58.6 63.1 59.4A2.1 2.1 0 0 1 58.9 59.4C58.9 58.6 59.6 57.4 61 55.6Z" fill={PUMPKIN} />
+        <path d="M61 57.6C61.8 58.6 62.1 59.3 62.1 59.8A1.1 1.1 0 0 1 59.9 59.8C59.9 59.3 60.2 58.6 61 57.6Z" fill={CANDLE} />
+      </g>
+      <path d="M57.9 56.6V63" stroke={CARD} strokeLinecap="round" strokeOpacity="0.9" strokeWidth="1" />
+      <rect fill="none" height="11" rx="1.6" stroke={DEEP} strokeWidth="2.25" width="9.6" x="56.2" y="54.5" />
+      <path d="M57.8 51H64.2L66.8 54.5H55.2Z" fill={DEEP} stroke={DEEP} strokeLinejoin="round" />
+      <rect fill={DEEP} height="2.6" rx="1.2" width="11.2" x="55.4" y="65.5" />
+    </g>
+  );
+}
 
 /**
  * Halloween 2026 mascot: a molar whose two roots become a wavy ghost hem.
- * viewBox 64×72; display at 56–72px wide. Arms are drawn first so the body
+ * viewBox 64×72 (lantern mode: 76×72, ghost unchanged at the left, lantern on
+ * the viewer's right; flame centre 61 58.6, flame base 61 61.5, hand pivot
+ * 60.5 42.5). Display at 56–72px tall. Arms are drawn first so the body
  * outline covers their roots. Flat shapes only (no ids/defs), so it renders
  * identically as a server component.
+ *
+ * Animation hooks (set `transform-box: fill-box` for the eye/flame groups):
+ * - `.rda-ghost-look` wraps both eyes; translate it about ±2 units to glance.
+ * - `.rda-ghost-eye` (×2) = eye + highlight; origin centre = eye centre
+ *   (24.5 27 / 39.5 27). scaleY(0.1) blinks, scaleY(1.18) widens.
+ * - `.rda-ghost-cheeks` carries `opacity="0.35"`; raise it via CSS to blush.
+ * - `.rda-ghost-mouth-smile` / `.rda-ghost-mouth-gasp` (attribute
+ *   `opacity="0"`) share the spot under the eyes; swap them via CSS opacity.
+ * - `.rda-ghost-lantern` / `.rda-ghost-flame` exist only with `lantern`.
  */
-export function GhostTooth({ className, ...props }: ArtProps) {
+export function GhostTooth({ className, lantern = false, ...props }: ArtProps & { lantern?: boolean }) {
+  const arms = lantern ? ARMS_LANTERN : ARMS;
   return (
     <svg
       aria-hidden="true"
       className={className}
       focusable="false"
-      viewBox="0 0 64 72"
+      viewBox={lantern ? "0 0 76 72" : "0 0 64 72"}
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
+      {lantern ? <GhostLantern /> : null}
       <g stroke={DEEP} strokeLinecap="round">
-        <path d={ARMS} strokeWidth="10.5" />
-        <path d={ARMS} stroke="var(--card, #FFFEFD)" strokeWidth="6" />
+        <path d={arms} strokeWidth="10.5" />
+        <path d={arms} stroke={CARD} strokeWidth="6" />
       </g>
-      <path d={BODY} fill="var(--card, #FFFEFD)" />
-      <g fill="var(--rda-color-primary-soft, #8EC5E8)" fillOpacity="0.17">
+      <path d={BODY} fill={CARD} />
+      <g fill={SOFT} fillOpacity="0.17">
         {TAIL_FADE.map((d) => (
           <path d={d} key={d} />
         ))}
       </g>
       <path d={BODY} fill="none" stroke={DEEP} strokeLinejoin="round" strokeWidth="2.25" />
-      <path
-        d="M14.5 15.5C15 11.5 17.5 9 21 8.5"
-        fill="none"
-        stroke="var(--rda-color-primary-soft, #8EC5E8)"
-        strokeLinecap="round"
-        strokeWidth="2.25"
-      />
-      <ellipse cx="18.5" cy="33" fill={PUMPKIN} opacity="0.35" rx="3.6" ry="2.2" />
-      <ellipse cx="45.5" cy="33" fill={PUMPKIN} opacity="0.35" rx="3.6" ry="2.2" />
-      <ellipse cx="24.5" cy="27" fill={DEEP} rx="3" ry="4" />
-      <ellipse cx="39.5" cy="27" fill={DEEP} rx="3" ry="4" />
-      <circle cx="25.6" cy="25.4" fill="var(--card, #FFFEFD)" r="1.1" />
-      <circle cx="40.6" cy="25.4" fill="var(--card, #FFFEFD)" r="1.1" />
-      <path d="M28.8 33.4Q32 34.6 35.2 33.4Q34.8 37.8 32 37.8Q29.2 37.8 28.8 33.4Z" fill={DEEP} />
-      <ellipse cx="32" cy="36.6" fill={PUMPKIN} opacity="0.75" rx="1.5" ry="0.8" />
+      <path d="M14.5 15.5C15 11.5 17.5 9 21 8.5" fill="none" stroke={SOFT} strokeLinecap="round" strokeWidth="2.25" />
+      <g className="rda-ghost-cheeks" fill={PUMPKIN} opacity="0.35">
+        <ellipse cx="18.5" cy="33" rx="3.6" ry="2.2" />
+        <ellipse cx="45.5" cy="33" rx="3.6" ry="2.2" />
+      </g>
+      <g className="rda-ghost-look">
+        <g className="rda-ghost-eye">
+          <ellipse cx="24.5" cy="27" fill={DEEP} rx="3" ry="4" />
+          <circle cx="25.6" cy="25.4" fill={CARD} r="1.1" />
+        </g>
+        <g className="rda-ghost-eye">
+          <ellipse cx="39.5" cy="27" fill={DEEP} rx="3" ry="4" />
+          <circle cx="40.6" cy="25.4" fill={CARD} r="1.1" />
+        </g>
+      </g>
+      <g className="rda-ghost-mouth rda-ghost-mouth-smile">
+        <path d="M28.8 33.4Q32 34.6 35.2 33.4Q34.8 37.8 32 37.8Q29.2 37.8 28.8 33.4Z" fill={DEEP} />
+        <ellipse cx="32" cy="36.6" fill={PUMPKIN} opacity="0.75" rx="1.5" ry="0.8" />
+      </g>
+      <g className="rda-ghost-mouth rda-ghost-mouth-gasp" opacity="0">
+        <ellipse cx="32" cy="35.6" fill={DEEP} rx="1.9" ry="2.4" />
+        <ellipse cx="32" cy="36.9" fill={PUMPKIN} opacity="0.75" rx="1.1" ry="0.7" />
+      </g>
     </svg>
   );
 }
 
+const PUMPKIN_CARVE = { fill: CANDLE, stroke: PUMPKIN_DEEP, strokeLinejoin: "round", strokeWidth: 0.9 } as const;
+
 /**
  * Tiny three-lobed pumpkin. viewBox 36×32 (9:8); heading divider at 18×16px,
- * footer cluster at 34–44px wide with `variant="smile"`.
+ * footer cluster at 34–44px wide. `variant`: `"plain"` (no face), `"smile"`
+ * (lit jack-o'-lantern, triangle eyes) or `"grin"` (lit, round eyes and a
+ * toothy grin). Lit faces sit in `.rda-pumpkin-face` for a flicker.
  */
 export function Pumpkin({
   className,
   variant = "plain",
   ...props
-}: ArtProps & { variant?: "plain" | "smile" }) {
+}: ArtProps & { variant?: "plain" | "smile" | "grin" }) {
   return (
     <svg
       aria-hidden="true"
@@ -98,10 +152,18 @@ export function Pumpkin({
         fill={PUMPKIN_DEEP}
       />
       {variant === "smile" ? (
-        <g fill={DEEP} opacity="0.85">
+        <g className="rda-pumpkin-face" {...PUMPKIN_CARVE}>
           <path d="M12.8 19.2L15 15L17.2 19.2Z" />
           <path d="M18.8 19.2L21 15L23.2 19.2Z" />
           <path d="M12.5 22.5Q18 28 23.5 22.5Q18 25 12.5 22.5Z" />
+        </g>
+      ) : null}
+      {variant === "grin" ? (
+        <g className="rda-pumpkin-face" {...PUMPKIN_CARVE}>
+          <circle cx="14.4" cy="16.8" r="2" />
+          <circle cx="21.6" cy="16.8" r="2" />
+          <path d="M11.4 21Q18 31.4 24.6 21Q18 24.6 11.4 21Z" />
+          <path d="M16.5 22.75Q18 23.05 19.5 22.75V24.3Q19.5 25.4 18 25.4Q16.5 25.4 16.5 24.3Z" fill={PUMPKIN} />
         </g>
       ) : null}
     </svg>
@@ -123,6 +185,75 @@ export function Bat({ className, ...props }: ArtProps) {
       <path d="M25.5 10C28 5.5 33 2.5 38.5 2.2C42 2 45 3.2 46.5 5.5Q43.5 7.8 43.2 11.8Q40.2 9.8 37.4 13Q34.4 11.4 31.6 15.2Q28.6 13.4 25.5 16ZM22.5 10C20 5.5 15 2.5 9.5 2.2C6 2 3 3.2 1.5 5.5Q4.5 7.8 4.8 11.8Q7.8 9.8 10.6 13Q13.6 11.4 16.4 15.2Q19.4 13.4 22.5 16ZM21.2 6.6Q20.6 3.2 21.4 2.2Q23 3.3 23.6 5.4ZM26.8 6.6Q27.4 3.2 26.6 2.2Q25 3.3 24.4 5.4Z" />
       <circle cx="24" cy="9" r="4" />
       <ellipse cx="24" cy="14" rx="3.6" ry="4.6" />
+    </svg>
+  );
+}
+
+/**
+ * Bat with separate wings for a CSS flap. viewBox 48×24, `currentColor`.
+ * Same silhouette as `Bat` at rest. Shoulder pivots (viewBox units, use with
+ * `transform-box: view-box`): left wing 22 12, right wing 26 12. Wing roots
+ * extend under the body, so rotating ±35° or scaleY(0.55) opens no gap.
+ * SVG rotate() is clockwise: the left wing lifts with a POSITIVE angle, the
+ * right wing with a NEGATIVE one. A raised wing tip reaches about y −5, so the
+ * svg carries `overflow="visible"` (keep it unclipped in CSS too).
+ */
+export function FlappingBat({ className, ...props }: ArtProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="currentColor"
+      focusable="false"
+      overflow="visible"
+      viewBox="0 0 48 24"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <g className="rda-bat-wing rda-bat-wing-left">
+        <path d="M23.6 9.2C20.5 5.3 15 2.5 9.5 2.2C6 2 3 3.2 1.5 5.5Q4.5 7.8 4.8 11.8Q7.8 9.8 10.6 13Q13.6 11.4 16.4 15.2Q19.4 13.3 22.6 14.6C23.8 13.2 24.2 11.2 23.6 9.2Z" />
+      </g>
+      <g className="rda-bat-wing rda-bat-wing-right">
+        <path d="M24.4 9.2C27.5 5.3 33 2.5 38.5 2.2C42 2 45 3.2 46.5 5.5Q43.5 7.8 43.2 11.8Q40.2 9.8 37.4 13Q34.4 11.4 31.6 15.2Q28.6 13.3 25.4 14.6C24.2 13.2 23.8 11.2 24.4 9.2Z" />
+      </g>
+      <g className="rda-bat-body">
+        <path d="M21.2 6.6Q20.6 3.2 21.4 2.2Q23 3.3 23.6 5.4ZM26.8 6.6Q27.4 3.2 26.6 2.2Q25 3.3 24.4 5.4Z" />
+        <circle cx="24" cy="9" r="4" />
+        <ellipse cx="24" cy="14" rx="3.6" ry="4.6" />
+      </g>
+    </svg>
+  );
+}
+
+const SPIDER_LEGS =
+  "M7.2 7.6Q4.5 3.6 2.4 5.4M6.5 9.4Q3 7.6 1.4 9.6M6.5 11Q3 11.2 1.8 13.6M7.4 12.6Q5 15.2 3.6 16.8M12.8 7.6Q15.5 3.6 17.6 5.4M13.5 9.4Q17 7.6 18.6 9.6M13.5 11Q17 11.2 18.2 13.6M12.6 12.6Q15 15.2 16.4 16.8";
+
+/**
+ * Small friendly spider that dangles from a CSS-drawn thread. viewBox 20×18.
+ * Thread attachment: top-centre of the body outline, (10 4.6) — body top edge
+ * 5.4 plus half the stroke. Light body reads on the logo-blue hero panel.
+ */
+export function Spider({ className, ...props }: ArtProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      focusable="false"
+      viewBox="0 0 20 18"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path d={SPIDER_LEGS} fill="none" stroke={DEEP} strokeLinecap="round" strokeWidth="1.5" />
+      <circle cx="10" cy="9.8" fill={CARD} r="4.4" stroke={DEEP} strokeWidth="1.6" />
+      <g fill={PUMPKIN} opacity="0.45">
+        <ellipse cx="7.3" cy="11.3" rx="0.9" ry="0.55" />
+        <ellipse cx="12.7" cy="11.3" rx="0.9" ry="0.55" />
+      </g>
+      <circle cx="8.4" cy="9.3" fill={DEEP} r="1.05" />
+      <circle cx="11.6" cy="9.3" fill={DEEP} r="1.05" />
+      <circle cx="8.75" cy="8.95" fill={CARD} r="0.36" />
+      <circle cx="11.95" cy="8.95" fill={CARD} r="0.36" />
+      <path d="M9.1 11.25Q10 12.05 10.9 11.25" fill="none" stroke={DEEP} strokeLinecap="round" strokeWidth="0.7" />
     </svg>
   );
 }
