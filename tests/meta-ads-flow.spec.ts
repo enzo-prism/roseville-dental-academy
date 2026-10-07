@@ -304,4 +304,117 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       await expect(page.locator('script[src*="connect.facebook.net"]')).toHaveCount(0);
     });
   }
+
+  const browserFbp = "fb.1.1710000000000.1234567890";
+  const googleSearchUrl =
+    "/dental-assisting-program?utm_source=google&utm_medium=cpc&utm_campaign=google_search&gclid=google_click_456";
+
+  test("Google-referrer submit carries browser _fbp and leaves touch-level fbp empty", async ({ page, baseURL }) => {
+    let postedBody = "";
+    await page.context().addCookies([
+      { name: "_fbp", value: browserFbp, url: baseURL ?? "http://127.0.0.1:3000" },
+    ]);
+    await page.route("https://formspree.io/**", async (route) => {
+      expect(route.request().url()).toBe("https://formspree.io/f/xzdkgaeg");
+      postedBody = route.request().postData() ?? "";
+      await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+    });
+    await page.route("**/api/attribution/receipt", (route) => route.fulfill({
+      status: 202, contentType: "application/json", body: '{"ok":true}',
+    }));
+
+    await page.goto(googleSearchUrl, {
+      referer: "https://www.google.com/",
+      waitUntil: "networkidle",
+    });
+    const form = page.locator('form[data-rda-signup-form="true"]').first();
+    await expect(form.locator('input[name="fbp"]')).toHaveValue("");
+    await expect(form.locator('input[name="gclid"]')).toHaveValue("google_click_456");
+    await fillSignup(form);
+    await form.getByRole("button", { name: "Request next steps" }).click();
+    await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+
+    expect(multipartField(postedBody, "fbp")).toBe(browserFbp);
+    expect(multipartField(postedBody, "gclid")).toBe("google_click_456");
+    expect(multipartField(postedBody, "fbclid") || "").toBe("");
+    expect(multipartField(postedBody, "fbc") || "").toBe("");
+    expect(multipartField(postedBody, "first_touch_fbp") || "").toBe("");
+    expect(multipartField(postedBody, "conversion_touch_fbp") || "").toBe("");
+
+    const observed = await captures(page);
+    const leads = observed.meta.filter((event) => event[0] === "track" && event[1] === "Lead");
+    expect(leads).toHaveLength(1);
+    expect(observed.meta.filter((event) => event[0] === "trackSingle")).toEqual([]);
+    expect(leads[0][3]).toEqual({ eventID: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+    assertNoStudentData([leads, observed.successes]);
+  });
+
+  for (const restriction of ["DNT", "GPC"] as const) {
+    test(`${restriction} Google-referrer submit omits browser _fbp`, async ({ page, baseURL }) => {
+      let postedBody = "";
+      await page.addInitScript((privacySignal) => {
+        Object.defineProperty(navigator, privacySignal === "GPC" ? "globalPrivacyControl" : "doNotTrack", {
+          configurable: true, value: privacySignal === "GPC" ? true : "1",
+        });
+      }, restriction);
+      await page.context().addCookies([
+        { name: "_fbp", value: browserFbp, url: baseURL ?? "http://127.0.0.1:3000" },
+      ]);
+      await page.route("https://formspree.io/**", async (route) => {
+        postedBody = route.request().postData() ?? "";
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+      });
+      await page.route("**/api/attribution/receipt", (route) => route.fulfill({
+        status: 202, contentType: "application/json", body: '{"ok":true}',
+      }));
+
+      await page.goto(googleSearchUrl, {
+        referer: "https://www.google.com/",
+        waitUntil: "networkidle",
+      });
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await fillSignup(form);
+      await form.getByRole("button", { name: "Request next steps" }).click();
+      await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+      expect(multipartField(postedBody, "fbp") || "").toBe("");
+      expect(postedBody).not.toContain(browserFbp);
+    });
+  }
+
+  test("fbclid visit still submits matching fbc and cookie fbp with one Lead", async ({ page, baseURL }) => {
+    let postedBody = "";
+    const fbclid = "meta_click_123";
+    const browserFbc = `fb.1.1710000000000.${fbclid}`;
+    await page.context().addCookies([
+      { name: "_fbp", value: browserFbp, url: baseURL ?? "http://127.0.0.1:3000" },
+      { name: "_fbc", value: browserFbc, url: baseURL ?? "http://127.0.0.1:3000" },
+    ]);
+    await page.route("https://formspree.io/**", async (route) => {
+      postedBody = route.request().postData() ?? "";
+      await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+    });
+    await page.route("**/api/attribution/receipt", (route) => route.fulfill({
+      status: 202, contentType: "application/json", body: '{"ok":true}',
+    }));
+
+    await page.goto(`${sealantsUrl(creatives[0].content)}&fbclid=${fbclid}`, { waitUntil: "networkidle" });
+    const form = page.locator('form[data-rda-signup-form="true"]').first();
+    await expect(form.locator('input[name="fbclid"]')).toHaveValue(fbclid);
+    await expect(form.locator('input[name="fbc"]')).toHaveValue(browserFbc);
+    await expect(form.locator('input[name="fbp"]')).toHaveValue(browserFbp);
+    await fillSignup(form);
+    await form.getByRole("button", { name: "Request next steps" }).click();
+    await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+
+    expect(multipartField(postedBody, "fbclid")).toBe(fbclid);
+    expect(multipartField(postedBody, "fbc")).toBe(browserFbc);
+    expect(multipartField(postedBody, "fbp")).toBe(browserFbp);
+
+    const observed = await captures(page);
+    const leads = observed.meta.filter((event) => event[0] === "track" && event[1] === "Lead");
+    expect(leads).toHaveLength(1);
+    expect(observed.meta.filter((event) => event[0] === "trackSingle")).toEqual([]);
+    expect(leads[0][3]).toEqual({ eventID: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+    assertNoStudentData([leads, observed.successes]);
+  });
 });
