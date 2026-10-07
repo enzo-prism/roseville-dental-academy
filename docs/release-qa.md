@@ -28,6 +28,12 @@ PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pn
 PLAYWRIGHT_NO_WEBSERVER=1 LOCAL_ORIGIN=https://www.rosevilledentalacademy.com pnpm test:parity-content
 ```
 
+Seasonal decoration layer (`lib/site-seasonal.ts`; pins the browser clock, so it runs the same in any month — every other suite opts out of the layer via `suppressSeasonalTheme` in `tests/support/qa-helpers.ts`; also a Release Gate step):
+
+```bash
+PLAYWRIGHT_SERVER_MODE=prod LOCAL_ORIGIN=http://127.0.0.1:3100 pnpm test:seasonal
+```
+
 Visual parity only:
 
 ```bash

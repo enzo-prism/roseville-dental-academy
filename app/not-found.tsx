@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { fetchLiveMirrorDocument } from "@/lib/live-route-data";
 import { buildPageMetadata } from "@/lib/site-metadata";
+import { activeSeasonalTheme } from "@/lib/site-seasonal";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "404 Not Found | Roseville Dental Academy",
@@ -14,7 +15,11 @@ export default async function NotFound() {
   const document = await fetchLiveMirrorDocument("/registration");
 
   return (
-    <div className="rda-not-found-page" data-rda-shell-ready="true">
+    <div
+      className="rda-not-found-page"
+      data-rda-seasonal-scope={activeSeasonalTheme ? "true" : undefined}
+      data-rda-shell-ready="true"
+    >
       {document.headStylesHtml ? (
         <div dangerouslySetInnerHTML={{ __html: document.headStylesHtml }} />
       ) : null}

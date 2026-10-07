@@ -65,6 +65,10 @@
   /* WhatsApp brand color (official #25D366) for the click-to-chat button. */
   --whatsapp: #25d366;
   --whatsapp-foreground: #ffffff;
+  /* Seasonal layer (Halloween): decorative art only, never text or controls. */
+  --seasonal-pumpkin: #e8862e;
+  --seasonal-pumpkin-deep: #c2621a;
+  --seasonal-stem: #5f7a3a;
   --destructive: oklch(0.577 0.245 27.325);
   --border: #d8d0c4;
   --input: #d8d0c4;
@@ -4815,6 +4819,442 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   --sidebar-accent-foreground: oklch(0.986 0.002 67.8);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.547 0.021 43.1);
+}
+
+/* ==========================================================================
+   Seasonal layer — Halloween (see DESIGN.md "Seasonal Layer").
+   Everything here is decorative and gated twice:
+   1. <html data-rda-season="halloween">, set by the <head> script in
+      components/site/seasonal-theme-script.tsx while lib/site-seasonal.ts is
+      in range on the academy's local calendar;
+   2. [data-rda-seasonal-scope], which only public shells and the 404 carry.
+   Decorations are absolutely positioned (no layout shift), add no text, and
+   only animate transform/opacity.
+   ========================================================================== */
+
+[data-rda-seasonal] {
+  display: none;
+}
+
+/* 1. Banner bat: one fly-by on the first page view of a session. */
+html[data-rda-season="halloween"][data-rda-season-flyby] [data-rda-seasonal-scope] .rda-promo-banner {
+  overflow: hidden;
+  position: relative;
+}
+
+html[data-rda-season="halloween"][data-rda-season-flyby] [data-rda-seasonal-scope] .rda-promo-banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-rda-season="halloween"][data-rda-season-flyby] [data-rda-seasonal-scope] .rda-promo-banner::after {
+  animation: rda-seasonal-flyby 4.6s var(--rda-ease-smooth) 1.1s both;
+  background-color: var(--rda-color-surface);
+  content: "";
+  height: 14px;
+  left: 0;
+  -webkit-mask: url("/assets/seasonal/halloween-2026/bat.svg") center / contain no-repeat;
+  mask: url("/assets/seasonal/halloween-2026/bat.svg") center / contain no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: calc(50% - 7px);
+  width: 28px;
+  z-index: 0;
+}
+
+@keyframes rda-seasonal-flyby {
+  0% {
+    opacity: 0;
+    transform: translate3d(-48px, 6px, 0) rotate(-6deg);
+  }
+
+  8% {
+    opacity: 0.92;
+  }
+
+  25% {
+    transform: translate3d(calc(25vw - 24px), -5px, 0) rotate(5deg);
+  }
+
+  50% {
+    transform: translate3d(calc(50vw - 24px), 4px, 0) rotate(-4deg);
+  }
+
+  75% {
+    transform: translate3d(calc(75vw - 24px), -6px, 0) rotate(6deg);
+  }
+
+  92% {
+    opacity: 0.92;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(100vw + 24px), -2px, 0) rotate(-2deg);
+  }
+}
+
+/* 2. Homepage hero: a faint corner cobweb on the blue copy panel. */
+html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-home-hero-copy {
+  isolation: isolate;
+  position: relative;
+}
+
+html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-home-hero-copy::before {
+  aspect-ratio: 1;
+  background-color: var(--rda-color-surface);
+  content: "";
+  -webkit-mask: url("/assets/seasonal/halloween-2026/cobweb.svg") top right / contain no-repeat;
+  mask: url("/assets/seasonal/halloween-2026/cobweb.svg") top right / contain no-repeat;
+  opacity: 0.28;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform-origin: top right;
+  width: clamp(92px, 11vw, 148px);
+  z-index: -1;
+}
+
+html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-home-hero:hover .rda-home-hero-copy::before {
+  animation: rda-seasonal-sway 2.6s var(--rda-ease-smooth);
+}
+
+@keyframes rda-seasonal-sway {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  30% {
+    transform: rotate(-3deg);
+  }
+
+  65% {
+    transform: rotate(1.6deg);
+  }
+}
+
+/* 3. Section headings: a tiny pumpkin perched in a gap in the divider. */
+@media screen {
+  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-section-heading {
+    view-timeline: --rda-seasonal-divider block;
+  }
+
+  /* Padding widens each divider by the pumpkin's gap, keeping its own width. */
+  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-section-heading > span:empty {
+    background: linear-gradient(
+      90deg,
+      var(--rda-color-primary) 0 calc(50% - 15px),
+      transparent calc(50% - 15px) calc(50% + 15px),
+      var(--rda-color-primary) calc(50% + 15px) 100%
+    );
+    box-sizing: content-box;
+    padding-inline: 16px;
+    position: relative;
+  }
+}
+
+html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-section-heading > span:empty::after {
+  background: url("/assets/seasonal/halloween-2026/pumpkin.svg") center / contain no-repeat;
+  content: "";
+  height: 16px;
+  left: calc(50% - 9px);
+  pointer-events: none;
+  position: absolute;
+  /* Centres the pumpkin body (61% down the art, below the stem) on the line. */
+  top: -9px;
+  transform-origin: 50% 61%;
+  width: 18px;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-section-heading > span:empty::after {
+      animation: rda-seasonal-pumpkin-pop linear both;
+      /* From the divider reaching the viewport's bottom edge to ~a third up. */
+      animation-range: entry 100% cover 35%;
+      animation-timeline: --rda-seasonal-divider;
+    }
+  }
+}
+
+@keyframes rda-seasonal-pumpkin-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(5px) scale(0.5) rotate(-18deg);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.08) rotate(4deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 4. Footer: pumpkins on the top edge with the ghost-tooth easter egg. */
+html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-live-footer {
+  position: relative;
+}
+
+html[data-rda-season="halloween"] [data-rda-seasonal-scope] [data-rda-seasonal] {
+  display: block;
+}
+
+.rda-seasonal-footer {
+  /* Left side keeps clear of the bottom-right WhatsApp FAB. */
+  bottom: calc(100% - 20px);
+  height: 64px;
+  left: max(18px, calc(50% - 540px));
+  pointer-events: none;
+  position: absolute;
+  width: 128px;
+  z-index: 1;
+}
+
+.rda-seasonal-footer-pumpkins {
+  align-items: flex-end;
+  bottom: 0;
+  display: flex;
+  gap: 2px;
+  left: 0;
+  position: absolute;
+  z-index: 2;
+}
+
+.rda-seasonal-footer-pumpkin {
+  display: block;
+  filter: drop-shadow(0 3px 3px rgba(22, 52, 79, 0.22));
+  height: auto;
+}
+
+.rda-seasonal-footer-pumpkin-small {
+  width: 28px;
+}
+
+.rda-seasonal-footer-pumpkin-large {
+  width: 42px;
+}
+
+.rda-seasonal-footer-pumpkin-medium {
+  width: 33px;
+}
+
+.rda-seasonal-ghost-button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  /* Low enough that the front pumpkins hide the ghost's fading hem. */
+  bottom: 6px;
+  cursor: pointer;
+  left: 54px;
+  padding: 4px;
+  pointer-events: auto;
+  position: absolute;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 1;
+}
+
+/* Two-tone ring: deep blue reads on the page surface, the halo on the blue footer. */
+.rda-seasonal-ghost-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--rda-color-surface);
+  outline: 2px solid var(--rda-color-primary-deep);
+  outline-offset: 2px;
+}
+
+.rda-seasonal-ghost {
+  animation: rda-seasonal-bob 6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+  width: 52px;
+}
+
+/* The footer ghost sits inside the button; the 404 ghost is shown by the scoped [data-rda-seasonal] rule. */
+.rda-seasonal-footer-ghost {
+  display: block;
+}
+
+.rda-seasonal-ghost-art {
+  display: block;
+  filter: drop-shadow(0 4px 6px rgba(22, 52, 79, 0.24));
+  height: auto;
+  transition: transform 260ms var(--rda-ease-premium);
+  width: 100%;
+}
+
+.rda-seasonal-ghost-button:hover .rda-seasonal-ghost-art,
+.rda-seasonal-ghost-button:focus-visible .rda-seasonal-ghost-art {
+  transform: translateY(-7px) rotate(-4deg);
+}
+
+.rda-seasonal-ghost-button[data-rda-bursting] .rda-seasonal-ghost-art {
+  animation: rda-seasonal-boo 560ms var(--rda-ease-premium);
+}
+
+@keyframes rda-seasonal-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes rda-seasonal-boo {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  35% {
+    transform: translateY(-16px) scale(1.08, 0.94);
+  }
+
+  70% {
+    transform: translateY(-4px) scale(0.97, 1.04);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.rda-seasonal-bat-burst {
+  /* Starts from the ghost-tooth's head. */
+  bottom: 40px;
+  left: 80px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 3;
+}
+
+.rda-seasonal-bat {
+  animation: rda-seasonal-bat-flight 1.6s var(--rda-ease-smooth) var(--rda-bat-delay, 0ms) both;
+  color: var(--rda-color-primary-deep);
+  left: calc(var(--rda-bat-size, 24px) / -2);
+  position: absolute;
+  top: calc(var(--rda-bat-size, 24px) / -4);
+  width: var(--rda-bat-size, 24px);
+}
+
+.rda-seasonal-bat-art {
+  animation: rda-seasonal-flap 170ms ease-in-out infinite alternate;
+  display: block;
+  height: auto;
+  transform-origin: 50% 45%;
+  width: 100%;
+}
+
+@keyframes rda-seasonal-bat-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.35) rotate(0deg);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--rda-bat-dx, 0px), var(--rda-bat-dy, -120px), 0) scale(1)
+      rotate(var(--rda-bat-rotate, 0deg));
+  }
+}
+
+@keyframes rda-seasonal-flap {
+  from {
+    transform: scaleY(1);
+  }
+
+  to {
+    transform: scaleY(0.62);
+  }
+}
+
+/* 5. 404: a ghost-tooth floats in the empty row above the centred heading. */
+html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-not-found-content h1 {
+  position: relative;
+}
+
+html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-not-found-content h1::before {
+  animation: rda-seasonal-bob 6s ease-in-out infinite;
+  aspect-ratio: 64 / 72;
+  background: url("/assets/seasonal/halloween-2026/ghost.svg") center / contain no-repeat;
+  bottom: calc(100% + 14px);
+  content: "";
+  filter: drop-shadow(0 4px 6px rgba(22, 52, 79, 0.18));
+  left: calc(50% - 30px);
+  pointer-events: none;
+  position: absolute;
+  transform-origin: 50% 90%;
+  width: 60px;
+}
+
+@media (max-width: 760px) {
+  .rda-seasonal-footer {
+    bottom: calc(100% - 18px);
+    left: 14px;
+    transform: scale(0.84);
+    transform-origin: 0 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-home-hero:hover .rda-home-hero-copy::before,
+  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-not-found-content h1::before,
+  .rda-seasonal-ghost,
+  .rda-seasonal-ghost-button[data-rda-bursting] .rda-seasonal-ghost-art,
+  .rda-seasonal-bat-art {
+    animation: none;
+  }
+
+  .rda-seasonal-ghost-art {
+    transition: none;
+  }
+
+  .rda-seasonal-ghost-button:hover .rda-seasonal-ghost-art,
+  .rda-seasonal-ghost-button:focus-visible .rda-seasonal-ghost-art {
+    transform: none;
+  }
+
+  /* The easter egg still answers, but the bats just appear and fade. */
+  .rda-seasonal-bat {
+    animation-name: rda-seasonal-bat-fade;
+    transform: translate3d(var(--rda-bat-dx, 0px), calc(var(--rda-bat-dy, -120px) * 0.5), 0)
+      rotate(var(--rda-bat-rotate, 0deg));
+  }
+}
+
+@media print {
+  html[data-rda-season="halloween"] [data-rda-seasonal-scope] [data-rda-seasonal],
+  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-home-hero-copy::before,
+  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-section-heading > span:empty::after,
+  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-not-found-content h1::before {
+    display: none;
+  }
+}
+
+@keyframes rda-seasonal-bat-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  30%,
+  70% {
+    opacity: 1;
+  }
 }
 
 @theme inline {

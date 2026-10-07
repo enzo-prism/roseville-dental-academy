@@ -15,6 +15,9 @@ colors:
   accent-foreground: "#16344F"
   whatsapp: "#25D366"
   whatsapp-foreground: "#FFFFFF"
+  seasonal-pumpkin: "#E8862E"
+  seasonal-pumpkin-deep: "#C2621A"
+  seasonal-stem: "#5F7A3A"
   secondary: "#EEE9E2"
   secondary-foreground: "#282522"
   border: "#D8D0C4"
@@ -190,6 +193,17 @@ Paid Meta landers (`/lp/dental-assisting-enroll`, `/lp/coronal-sealants-renewal`
 - **Contact map:** the Google Maps card renders in every contact section (compact and full). On desktop it fills the grid column beside the info card and stretches to match its height (340px minimum); on mobile it stacks below at 280px. Never leave the contact grid's second column empty.
 - **Feedback and overlays:** Use shadcn/Radix primitives such as `AlertDialog`, `Tooltip`, `DropdownMenu`, and `Sheet` when behavior is needed.
 - **Imagery:** Use existing real academy imagery and logo assets. Generated or external imagery must only be used when explicitly approved or already part of the current content inventory.
+
+## Seasonal Layer
+
+Seasonal decorations are small, optional delight on top of the locked design, never a re-theme. The current layer is Halloween (`halloween-2026`, October 1–31 on the academy's America/Los_Angeles calendar), configured in `lib/site-seasonal.ts`.
+
+- **Gating:** on public routes a `<head>` script (`components/site/seasonal-theme-script.tsx`) sets `<html data-rda-season="halloween">` before first paint while the theme is in range, so decorations switch on and off without a redeploy and never flash or shift layout. A client fallback applies the same function where React inserted the script without running it (Next's client-rendered 404 shell, or client navigation from a private route). `localStorage["rda-seasonal-theme"] = "off"` opts a browser out; QA isolation uses it. After `endsOn`, the next build ships no seasonal script or footer markup at all.
+- **Scope:** decorations render only inside `[data-rda-seasonal-scope]`, which `LiveShell` sets for public shells and the 404 page sets for itself. Paid and non-paid `/lp/*` landers, utility/auth screens, `/student-jobs`, and `/enrollment-pilot` never show seasonal art.
+- **Inventory:** a one-time bat fly-by in the promo banner (the first page view per session that shows a seasonal banner), a faint cobweb in the homepage hero copy panel, tiny pumpkins perched in section-heading dividers, a pumpkin cluster with the ghost-tooth mascot on the footer's top-left edge, and a ghost-tooth floating above the 404 heading. The footer ghost-tooth is the only control: a real button ("Release the Halloween bats") that sends a few bats fluttering off.
+- **Tokens:** `seasonal-pumpkin`, `seasonal-pumpkin-deep`, and `seasonal-stem` are reserved for seasonal artwork only (no text, so they are not bound to a text component). The ghost-tooth uses `card` with `primary-deep` linework. The banner bat and the cobweb are single-colour CSS masks in the surface color; the easter-egg bats are inline SVG in `primary-deep`. Static SVGs (`bat`, `pumpkin`, `ghost`) are rendered from the React components so both stay identical. Artwork lives in `components/site/seasonal/halloween-art.tsx` and the versioned `public/assets/seasonal/halloween-2026/` folder (assets are served immutable, so new art gets a new folder).
+- **Rules:** decorative art is `aria-hidden`, has no text, is absolutely positioned (zero layout impact, no horizontal overflow), uses `pointer-events: none` except the ghost-tooth button, and animates only `transform`/`opacity`. Under `prefers-reduced-motion: reduce` the art stays static, the banner fly-by is skipped, and the easter-egg bats only fade. Keep the bottom-right corner clear for the WhatsApp FAB, keep the art below the header/dialog layers, and keep tone friendly (no gore, skulls, or jump scares).
+- **QA:** content and visual baselines are captured with the layer off; `tests/seasonal-theme.spec.ts` covers the on state with a fixed clock.
 
 ## Validation
 
