@@ -659,7 +659,7 @@ test.describe("live-style interaction flows", () => {
         ),
       ).toBeVisible();
       await expect(
-        courseSystem.getByText("October 12, 2026; November 20, 2026; December 5, 2026"),
+        courseSystem.getByText("November 20, 2026; December 5, 2026"),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",
@@ -2104,7 +2104,7 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="note"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
       await expect(form.getByText("Classes or certifications to ask about")).toBeVisible();
-      await expect(form.getByText("Next open date: October 12, 2026")).toHaveCount(1);
+      await expect(form.getByText("Next open date: November 20, 2026")).toHaveCount(1);
       await expect(form.getByText("Next open date: September 12, 2026 (Saturday Academy)")).toHaveCount(0);
       await expect(form.getByText("Next open date: September 12, 2026", { exact: true })).toHaveCount(0);
       await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(0);
@@ -2435,15 +2435,15 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator('form[data-rda-landing-form="true"]')).toBeVisible();
     });
 
-    test("DA enroll LP lists October 12 as the next start after September 12 filled", async ({ page }) => {
+    test("DA enroll LP lists November 20 as the next start after October 12 filled", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/lp/dental-assisting-enroll");
 
       const dates = page.locator(".rda-ad-date-list");
 
-      await expect(page.getByText("Next start: October 12, 2026")).toBeVisible();
+      await expect(page.getByText("Next start: November 20, 2026")).toBeVisible();
       await expect(dates.getByText("September 12, 2026 (Saturday Academy)")).toHaveCount(0);
-      await expect(dates.getByText("October 12, 2026")).toBeVisible();
+      await expect(dates.getByText("October 12, 2026")).toHaveCount(0);
       await expect(dates.getByText("November 20, 2026")).toBeVisible();
       await expect(dates.getByText("December 5, 2026")).toBeVisible();
       await expect(
@@ -2454,7 +2454,8 @@ test.describe("live-style interaction flows", () => {
 
       await expect(startSelect).toBeVisible();
       await expect(startSelect.locator("option", { hasText: "September 12, 2026 (Saturday Academy)" })).toHaveCount(0);
-      await expect(startSelect.locator("option", { hasText: "October 12, 2026" })).toHaveCount(1);
+      await expect(startSelect.locator("option", { hasText: "October 12, 2026" })).toHaveCount(0);
+      await expect(startSelect.locator("option", { hasText: "November 20, 2026" })).toHaveCount(1);
     });
   });
 

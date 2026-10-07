@@ -1,9 +1,9 @@
 import { COURSE_SCHEDULE_REVIEWED_ON, getCourseSchedule, type CourseScheduleId } from "@/lib/course-schedule";
 
-// October 12 is full on production. Preview/CI still fall back to the bundled
-// fixture, which lists that Monday start as open, so the promo must target the
-// next open Dental Assisting date (Nov 20) and a new storage key so previously
-// dismissed visitors see the updated announcement once.
+// October 12 is full on production and in this bundled fixture. Preview/CI use
+// the fixture when the dashboard feed is not configured, so the promo targets
+// the next open Dental Assisting date (Nov 20) and a new storage key so
+// previously dismissed visitors see the updated announcement once.
 export const DENTAL_ASSISTING_PROMO_ID = "rda-promo-da-2026-11-20";
 
 export const dentalAssistingNovemberPromo = {
