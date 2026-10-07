@@ -47,7 +47,7 @@ cannot be filled later. No raw IP is collected. The worker
 shares it only through the existing enabled/live-send/approved-policy gates. Legacy records with no
 consented User-Agent are disabled with `client_user_agent_unavailable`; no browser identity is invented.
 The source URL is built from the configured canonical site origin and captured path, excluding queries,
-fragments, credentials, and foreign origins. Browser Pixel and CAPI dataset IDs must match.
+fragments, credentials, and foreign origins. Browser Pixel and CAPI dataset IDs must match on the primary identity only. An optional secondary browser pixel does not change that guard and is never posted to CAPI.
 These fields follow [Meta's official website event sample](https://github.com/fbsamples/lead-ads-webhook-sample/blob/main/postman/FB%20Conversions%20API%20%28Part%201%20-%20online%29.postman_collection.json).
 
 

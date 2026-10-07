@@ -21,7 +21,7 @@
     "test:course-dates": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/course-dates.spec.ts tests/course-schedule-empty.spec.ts",
     "test:smoke": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/smoke.spec.ts",
     "test:interactions": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/interaction-flow.spec.ts",
-    "test:attribution": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/attribution-api.spec.ts tests/attribution-integrity.spec.ts tests/browser-attribution.spec.ts tests/meta-ads-flow.spec.ts tests/postback-worker.spec.ts tests/site-promo.spec.ts tests/qa-network-isolation.spec.ts",
+    "test:attribution": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/attribution-api.spec.ts tests/attribution-integrity.spec.ts tests/browser-attribution.spec.ts tests/meta-ads-flow.spec.ts tests/meta-pixel-config.spec.ts tests/postback-worker.spec.ts tests/site-promo.spec.ts tests/qa-network-isolation.spec.ts",
     "test:parity-content": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.spec.ts",
     "test:parity-visual": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.visual.spec.ts",
     "test:ux": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/ux-stability.spec.ts",
@@ -32,7 +32,8 @@
     "schedule:pull": "node scripts/pull-course-schedule.mjs",
     "test:academy": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/policy-clinicals.spec.ts tests/student-jobs.spec.ts tests/private-routes.spec.ts tests/rda-release.spec.ts tests/enrollment*.spec.ts",
     "test:seasonal": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/seasonal-theme.spec.ts",
-    "test:openai": "NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID=playwright-test-pixel LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3207} playwright test tests/openai-isolation.spec.ts"
+    "test:openai": "NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID=playwright-test-pixel LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3207} playwright test tests/openai-isolation.spec.ts",
+    "test:meta-secondary": "NEXT_PUBLIC_META_SECONDARY_PIXEL_ID=${NEXT_PUBLIC_META_SECONDARY_PIXEL_ID:-999888777666555} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3208} playwright test tests/meta-secondary-pixel.spec.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

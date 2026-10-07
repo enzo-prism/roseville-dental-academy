@@ -51,6 +51,15 @@ jobs:
           CRON_SECRET: ""
         run: pnpm test:openai
 
+      - name: Verify optional secondary Meta Pixel
+        env:
+          CI: "true"
+          DATABASE_URL: ""
+          RDA_SYNC_SECRET: ""
+          CRON_SECRET: ""
+          NEXT_PUBLIC_META_SECONDARY_PIXEL_ID: "999888777666555"
+        run: pnpm test:meta-secondary
+
       - name: Run frozen-clone release gate
         env:
           BASELINE_DIR: tests/baselines/live
