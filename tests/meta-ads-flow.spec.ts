@@ -381,6 +381,32 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     });
   }
 
+  test("denied consent cookie omits submit-time browser _fbp on a Google visit", async ({ page, baseURL }) => {
+    let postedBody = "";
+    await page.context().addCookies([
+      { name: "_fbp", value: browserFbp, url: baseURL ?? "http://127.0.0.1:3000" },
+      { name: "rda_analytics_consent", value: "denied", url: baseURL ?? "http://127.0.0.1:3000" },
+    ]);
+    await page.route("https://formspree.io/**", async (route) => {
+      postedBody = route.request().postData() ?? "";
+      await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+    });
+    await page.route("**/api/attribution/receipt", (route) => route.fulfill({
+      status: 202, contentType: "application/json", body: '{"ok":true}',
+    }));
+
+    await page.goto(googleSearchUrl, {
+      referer: "https://www.google.com/",
+      waitUntil: "networkidle",
+    });
+    const form = page.locator('form[data-rda-signup-form="true"]').first();
+    await fillSignup(form);
+    await form.getByRole("button", { name: "Request next steps" }).click();
+    await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+    expect(multipartField(postedBody, "fbp") || "").toBe("");
+    expect(postedBody).not.toContain(browserFbp);
+  });
+
   test("fbclid visit still submits matching fbc and cookie fbp with one Lead", async ({ page, baseURL }) => {
     let postedBody = "";
     const fbclid = "meta_click_123";
