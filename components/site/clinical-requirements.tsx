@@ -46,9 +46,7 @@ export function ClinicalRequirements({ className }: { className?: string }) {
           <p>{CLINICAL_SUPPORT_NOTE}</p>
         </div>
         <p>
-          Please plan ahead when scheduling your clinical. Call{" "}
-          <a className="font-medium text-primary underline underline-offset-4" href="tel:9168889821">916-888-9821</a>
-          {" "}to confirm patient requirements and access to the academy&apos;s scheduling platform.
+          Please plan ahead when scheduling your clinical. {CLINICAL_OUTSIDE_SITE_REQUIREMENT}
         </p>
       </div>
     </section>

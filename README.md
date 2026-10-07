@@ -19,6 +19,7 @@ The current runtime is a shell-first hybrid:
 - `snapshot/live/html/*.html` contains frozen source pages used for sanitized page bodies.
 - `public/__live/` and `public/assets/live/` contain mirrored live assets.
 - `tests/baselines/live/` contains committed content and visual baselines.
+- `lib/site-seasonal.ts` + `components/site/seasonal-*.tsx` are the date-gated seasonal decoration layer (Halloween, October 1–31 Pacific). A `<head>` script switches it on and off by the academy's calendar day without a redeploy; rules live in the "Seasonal Layer" section of `DESIGN.md`, and `pnpm test:seasonal` covers it.
 - `components/site/structured-data.tsx` emits all JSON-LD (Organization/LocalBusiness, WebSite, Course list, Course, FAQ, Breadcrumb, Article). Google-sourced testimonials remain visible content but are intentionally omitted from review schema.
 - `lib/resource-articles.ts` + `app/resources/**` are the indexable `/resources` content hub (SEO guides). See [docs/seo.md](docs/seo.md).
 

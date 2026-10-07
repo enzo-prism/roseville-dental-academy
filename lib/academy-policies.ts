@@ -63,10 +63,10 @@ export const CLINICAL_EXPECTATIONS = [
 ] as const;
 export const CLINICAL_SCHEDULING_REQUIREMENT =
   "Clinical appointments must be scheduled in advance on our scheduling platform but not before the didactic and laboratory portion has been completed. Students should plan accordingly and make every effort to arrive on time and be prepared to complete their assigned clinical requirements.";
-// Preserve the source's explicit exception alongside its designated-site rule.
-// This does not promise that either the academy or the Board will approve a change.
+// Jessica's September 30 clarification: clinical training cannot move to another
+// location. Keep the course guidance and FAQ consistent with this requirement.
 export const CLINICAL_OUTSIDE_SITE_REQUIREMENT =
-  "Because clinical training involves patient appointments and limited clinical availability, students cannot complete their clinical requirements at an outside dental office or substitute another clinical location without prior written approval from Roseville Dental Academy and the Dental Board.";
+  "Clinical training must be completed at our designated clinical site and is not transferable to another location.";
 export const CLINICAL_COMPLETION_REQUIREMENT =
   "The clinical portion is an important part of your overall training. Students must successfully complete the required clinical experience and demonstrate the necessary competencies before completing the course.";
 export const CLINICAL_SUPPORT_NOTE =

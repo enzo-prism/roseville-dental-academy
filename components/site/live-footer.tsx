@@ -2,6 +2,7 @@ import { SiteLink as Link } from "@/components/site/site-link";
 import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE } from "@/lib/academy-policies";
 
 import { siteContact, socialLinks, whatsAppUrl } from "@/lib/site-data";
+import { SeasonalFooterDecor } from "@/components/site/seasonal-footer-decor";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,10 @@ const footerLinks = [
   { href: "/contact", label: "Contact Us" },
 ];
 
-export function LiveFooter() {
+export function LiveFooter({ seasonal = false }: { seasonal?: boolean }) {
   return (
     <footer className="rda-live-footer border-t border-border bg-primary text-primary-foreground" data-rda-shell-footer="true">
+      {seasonal ? <SeasonalFooterDecor /> : null}
       <div className="rda-footer-inner">
         <div className="rda-footer-contact">
           <p className="rda-footer-name">{siteContact.school}</p>

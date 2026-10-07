@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
 import { createEnrollmentSession, ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
 import { availableTestDates } from "@/lib/enrollment-http";
+import { suppressSeasonalTheme } from "./support/qa-helpers";
 
 const fixture = process.env.ENROLLMENT_FIXTURE_TESTS === "1";
 const origin = process.env.LOCAL_ORIGIN ?? "http://127.0.0.1:3117";
@@ -49,6 +50,7 @@ test.describe("isolated Next.js API plus Stripe fixtures and real PostgreSQL eng
     expect(reconciled.status()).toBe(200); expect((await reconciled.json()).status).toBe("expired");
   });
   test("browser reload recovers abandoned hold and forbids a new checkout until verified expiry", async ({ page }) => {
+    await suppressSeasonalTheme(page.context());
     await page.context().addCookies([{ name: ENROLLMENT_PILOT_COOKIE, value: createEnrollmentSession(auth), domain: new URL(origin).hostname, path: "/", secure: true, httpOnly: true, sameSite: "Strict" }]);
     const data = payload(); await page.request.post("/api/enrollment/checkout", { data, headers });
     await page.goto("/enrollment-pilot"); await page.evaluate((saved) => sessionStorage.setItem("rda-test-checkout-hold", JSON.stringify(saved)), { id: data.holdId, date: data.date });
@@ -59,6 +61,7 @@ test.describe("isolated Next.js API plus Stripe fixtures and real PostgreSQL eng
     await expect(page.getByRole("status")).toContainText("test seat is released");
   });
   test("browser requires date and policy, clears a definite full response and blocks duplicate same-tick submits", async ({ page }) => {
+    await suppressSeasonalTheme(page.context());
     await page.context().addCookies([{ name: ENROLLMENT_PILOT_COOKIE, value: createEnrollmentSession(auth), domain: new URL(origin).hostname, path: "/", secure: true, httpOnly: true, sameSite: "Strict" }]);
     await page.goto("/enrollment-pilot");
     let calls = 0;
@@ -78,6 +81,7 @@ test.describe("isolated Next.js API plus Stripe fixtures and real PostgreSQL eng
     await expect(page.getByRole("button",{name:"Continue to Stripe test checkout"})).toBeDisabled();
   });
   test("configured staff checkout stays readable and usable at mobile, tablet and desktop", async ({ page }) => {
+    await suppressSeasonalTheme(page.context());
     await page.context().addCookies([{ name: ENROLLMENT_PILOT_COOKIE, value: createEnrollmentSession(auth), domain: new URL(origin).hostname, path: "/", secure: true, httpOnly: true, sameSite: "Strict" }]);
     const folder="/Users/enzo/Documents/Codex/2026-09-30/anal-2/work/rda-enrollment-fixture/screenshots"; await mkdir(folder,{recursive:true});
     for(const width of [375,768,1280]) {

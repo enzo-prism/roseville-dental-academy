@@ -3,6 +3,7 @@ import { chromium } from "playwright";
 import {
   BASELINE_DIR,
   LIVE_ORIGIN,
+  SEASONAL_HTML_ATTRIBUTES,
   VISUAL_VIEWPORTS,
   getMaskSelectors,
   loadAssetMap,
@@ -10,6 +11,7 @@ import {
   normalizeHrefForBaseline,
   normalizeTextValue,
   normalizeVisibleAssetUrl,
+  suppressSeasonalTheme,
   writeBinaryFile,
   writeJson,
 } from "./live-clone-shared.mjs";
@@ -175,7 +177,8 @@ async function hideFloatingThirdPartyWidgets(page) {
         .live-elevenlabs-widget,
         [data-rda-whatsapp],
         [data-rda-promo-dialog],
-        [data-rda-promo-overlay] {
+        [data-rda-promo-overlay],
+        [data-rda-seasonal] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -183,6 +186,16 @@ async function hideFloatingThirdPartyWidgets(page) {
         }
       `,
     })
+    .catch(() => undefined);
+  // Mirrors hideFloatingThirdPartyWidgets in tests/support/qa-helpers.ts:
+  // seasonal pseudo-element decorations are gated by <html> attributes, not
+  // [data-rda-seasonal], so drop those as well.
+  await page
+    .evaluate((attributes) => {
+      for (const attribute of attributes) {
+        document.documentElement.removeAttribute(attribute);
+      }
+    }, SEASONAL_HTML_ATTRIBUTES)
     .catch(() => undefined);
 }
 
@@ -205,11 +218,13 @@ async function captureContentSnapshot(page, url, assetMap) {
   const raw = await page.evaluate(() => {
     // Mirrors the additive parity selectors in tests/support/qa-helpers.ts. The
     // site promo dialog/overlay is suppressed in every parity suite via
-    // suppressSitePromo, so baseline capture must exclude it too.
+    // suppressSitePromo, so baseline capture must exclude it too. The same goes
+    // for seasonal decorations (suppressSeasonalTheme).
     const additiveParitySelectors = [
       "[data-rda-course-reviews]",
       "[data-rda-promo-dialog]",
       "[data-rda-promo-overlay]",
+      "[data-rda-seasonal]",
     ];
 
     function isVisible(element) {
@@ -386,6 +401,8 @@ async function main() {
       const page = await browser.newPage({
         viewport: { width: 1280, height: 900 },
       });
+      // Mirrors suppressSeasonalTheme in tests/support/qa-helpers.ts.
+      await suppressSeasonalTheme(page);
 
       try {
         const url = `${CAPTURE_ORIGIN}${route.sourcePath}`;

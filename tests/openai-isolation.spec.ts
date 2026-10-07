@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { activeSitePromo } from "@/lib/site-promo";
+import { suppressSeasonalTheme } from "./support/qa-helpers";
 
 const SDK_URL = "https://bzrcdn.openai.com/sdk/oaiq.min.js";
 const ID = "2adf0fb4-35eb-4714-923c-2622329ba7d6";
@@ -16,6 +18,16 @@ test.beforeAll(async ({ request }) => {
   expect(response.ok()).toBe(true);
   sdk = await response.text();
   bridge = await readFile("public/measurement/openai.html", "utf8");
+});
+
+// This suite owns its own network routing, so only the seasonal opt-out is shared.
+// The calendar-driven promo dialog is modal (it hides the footer nav from role
+// queries) while it is active, so it is dismissed up front as in other suites.
+test.beforeEach(async ({ context }) => {
+  await suppressSeasonalTheme(context);
+  await context.addInitScript((key) => {
+    try { localStorage.setItem(key, "dismissed"); } catch { /* blocked storage */ }
+  }, activeSitePromo.storageKey);
 });
 
 async function mockVendor(page: import("@playwright/test").Page, payloads: string[], delay = 0) {

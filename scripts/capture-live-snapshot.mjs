@@ -22,7 +22,9 @@ import {
   shouldLocalizeAssetUrl,
   stripCommerceEmbeds,
   stripServiceWorkerRegistration,
+  stripSeasonalDecorations,
   stripTelemetryScripts,
+  suppressSeasonalTheme,
   writeBinaryFile,
 } from "./live-clone-shared.mjs";
 
@@ -133,6 +135,9 @@ async function main() {
   const skippedAssets = [];
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1400 } });
+  // The live Next site renders seasonal decorations by the calendar; never
+  // freeze them (or the ghost-tooth button markup) into snapshot/live.
+  await suppressSeasonalTheme(page);
 
   const recordAsset = (candidate) => {
     const normalized = normalizeExternalUrl(candidate);
@@ -199,6 +204,8 @@ async function main() {
           localPath: previewLocalPath,
         };
       }
+
+      await stripSeasonalDecorations(page);
 
       const html = replaceFrozenPdfPreview(
         `<!DOCTYPE html>${await page.evaluate(() => document.documentElement.outerHTML)}`,

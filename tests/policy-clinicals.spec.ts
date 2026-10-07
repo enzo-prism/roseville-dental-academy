@@ -25,7 +25,7 @@ test("the approved policy is complete and linked from course and footer notices"
 });
 
 for (const course of ["radiation-safety", "coronal-polish", "sealants"]) {
-  test(`${course} explains scheduling, patient responsibilities, site approval, and completion`, async ({ page }) => {
+  test(`${course} explains scheduling, patient responsibilities, designated location, and completion`, async ({ page }) => {
     await page.goto(`/${course}`);
     const clinical = page.locator("[data-rda-clinical-requirements]");
     await expect(clinical.getByRole("heading", { name: "Clinical Requirements Guidelines" })).toBeVisible();
@@ -33,9 +33,12 @@ for (const course of ["radiation-safety", "coronal-polish", "sealants"]) {
     await expect(clinical).toContainText("not before the didactic and laboratory portion has been completed");
     await expect(clinical).toContainText("student provided patients");
     await expect(clinical).toContainText("supervision of a licensed dentist");
-    await expect(clinical).toContainText("prior written approval from Roseville Dental Academy and the Dental Board");
+    await expect(clinical).toContainText("Clinical training must be completed at our designated clinical site and is not transferable to another location.");
+    await expect(clinical).not.toContainText("prior written approval");
     await expect(clinical).toContainText("successfully complete the required clinical experience and demonstrate the necessary competencies before completing the course");
-    await expect(clinical.getByRole("link", { name: "916-888-9821" })).toHaveAttribute("href", "tel:9168889821");
+    await expect(clinical).toContainText("Please plan ahead when scheduling your clinical. Clinical training must be completed at our designated clinical site and is not transferable to another location.");
+    await expect(clinical).not.toContainText("to confirm patient requirements and access to the academy's scheduling platform");
+    await expect(clinical.locator('a[href^="tel:"]')).toHaveCount(0);
   });
 }
 
@@ -55,7 +58,9 @@ test("FAQ visible answers and structured data include the approved cancellation 
   expect(visibleParagraphs).toEqual([...APPROVED_CANCELLATION_POLICY_PARAGRAPHS]);
   await expect(cancellation).not.toContainText("reschedule at our discretion");
   await expect(cancellation).not.toContainText("at its discretion");
-  await expect(faqs).toContainText("prior written approval from Roseville Dental Academy and the Dental Board");
+  const clinicalLocation = faqs.locator(".rda-student-faq-card").filter({ hasText: "Where do I complete clinical training for X-ray, Coronal Polish, and Sealants?" });
+  await expect(clinicalLocation).toContainText("Clinical training must be completed at our designated clinical site and is not transferable to another location.");
+  await expect(clinicalLocation).not.toContainText("prior written approval");
   await expect(faqs).toContainText("not before the didactic and laboratory portion has been completed");
   const structured = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
     scripts.map((script) => JSON.parse(script.textContent || "{}")),
@@ -64,4 +69,6 @@ test("FAQ visible answers and structured data include the approved cancellation 
   expect(faqSchema).toBeTruthy();
   const schemaAnswer = faqSchema.mainEntity.find((item: { name: string }) => item.name === "What is the cancellation and refund policy?").acceptedAnswer.text;
   expect(schemaAnswer).toBe(APPROVED_CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"));
+  const clinicalSchemaAnswer = faqSchema.mainEntity.find((item: { name: string }) => item.name === "Where do I complete clinical training for X-ray, Coronal Polish, and Sealants?").acceptedAnswer.text;
+  expect(clinicalSchemaAnswer).toBe((await clinicalLocation.locator("p").innerText()).trim());
 });

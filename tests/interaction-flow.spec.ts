@@ -5,6 +5,7 @@ import { activeSitePromo } from "@/lib/site-promo";
 import {
   blockOpenAIAdsPixelNetwork,
   localOrigin,
+  suppressSeasonalTheme,
   suppressSitePromo,
 } from "./support/qa-helpers";
 
@@ -26,6 +27,11 @@ async function gotoSettled(
 }
 
 test.describe("live-style interaction flows", () => {
+  // Covers the allowPromo paths too, which skip suppressSitePromo.
+  test.beforeEach(async ({ context }) => {
+    await suppressSeasonalTheme(context);
+  });
+
   test("WhatsApp button stays bottom-right and ElevenLabs is gone", async ({ page }) => {
     const viewports = [
       { height: 900, name: "desktop", width: 1280 },

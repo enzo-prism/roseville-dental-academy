@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { LiveRoute } from "@/lib/live-route-data";
+import { activeSeasonalTheme } from "@/lib/site-seasonal";
 
 import { HomeHeroCarouselController } from "./home-hero-carousel-controller";
 import { LiveFooter } from "./live-footer";
@@ -13,10 +14,15 @@ type LiveShellProps = {
 };
 
 export function LiveShell({ children, route }: LiveShellProps) {
+  // Seasonal decorations are opt-in per shell: public pages only, never the
+  // utility/auth screens or private academy tools.
+  const seasonal = route.shellVariant === "public" && activeSeasonalTheme !== null;
+
   return (
     <div
       className="rda-live-shell"
       data-rda-current-route={route.route}
+      data-rda-seasonal-scope={seasonal ? "true" : undefined}
       data-rda-shell-ready="true"
       data-rda-shell={route.shellVariant}
     >
@@ -27,7 +33,7 @@ export function LiveShell({ children, route }: LiveShellProps) {
       {route.shellVariant === "public" ? <SitePromoDialog /> : null}
       {children}
       <HomeHeroCarouselController enabled={route.route === "/"} />
-      <LiveFooter />
+      <LiveFooter seasonal={seasonal} />
     </div>
   );
 }

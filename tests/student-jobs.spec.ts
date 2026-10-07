@@ -11,6 +11,7 @@ import { createStudentJobsSession, STUDENT_JOBS_COOKIE, STUDENT_JOBS_SESSION_SEC
 import { parseStudentJobs, safeStudentJobApplyUrl } from "../lib/student-jobs-data";
 import { STUDENT_JOBS_RATE_LIMIT_SQL } from "../lib/student-jobs-rate-limit";
 import { getSiteOrigin } from "../lib/site-config";
+import { suppressSeasonalTheme } from "./support/qa-helpers";
 
 const config = { password: "test-only-strong-password-123456", secret: "test-only-independent-session-secret-123456" };
 const fixture = { id: "fixture-only", title: "Fixture opportunity", employer: "Fixture", location: "Roseville",
@@ -241,6 +242,7 @@ test("login/logout require same origin POST and never accept a redirect destinat
 });
 
 test("password form works at mobile width with accessible controls and generic errors", async ({ page }) => {
+  await suppressSeasonalTheme(page.context());
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/student-jobs?status=denied");
   await expect(page.getByRole("heading", { level: 1, name: "Student & Alumni Job Board" })).toBeVisible();

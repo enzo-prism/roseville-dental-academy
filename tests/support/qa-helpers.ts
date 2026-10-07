@@ -7,6 +7,12 @@ import type { BrowserContext, Page, TestInfo } from "@playwright/test";
 
 import frozenManifest from "@/snapshot/live/manifest.json";
 import { DENTAL_ASSISTING_PROMO_ID } from "@/lib/site-promo";
+import {
+  SEASONAL_FLYBY_ATTRIBUTE,
+  SEASONAL_OPT_OUT_STORAGE_KEY,
+  SEASONAL_OPT_OUT_VALUE,
+  SEASONAL_THEME_ATTRIBUTE,
+} from "@/lib/site-seasonal";
 
 import fixtures from "./qa-routes.json";
 
@@ -69,6 +75,13 @@ type SnapshotRenderData = {
 };
 
 const isolatedContexts = new WeakSet<BrowserContext>();
+const seasonalSuppressedContexts = new WeakSet<BrowserContext>();
+
+export type QaIsolationOptions = {
+  // "calendar" leaves the seasonal decoration layer to the (Playwright-clocked)
+  // calendar. Only tests/seasonal-theme.spec.ts should use it.
+  seasonalTheme?: "calendar" | "suppress";
+};
 
 const ANALYTICS_DOMAINS = [
   "bzrcdn.openai.com",
@@ -99,7 +112,14 @@ function isAnalyticsNetworkUrl(url: URL) {
 // isolated from live measurement, Formspree inboxes and attribution mutations,
 // including when it runs against a deployed preview with configured providers.
 // Individual page.route fixtures have precedence over these context defaults.
-export async function blockOpenAIAdsPixelNetwork(context: BrowserContext) {
+export async function blockOpenAIAdsPixelNetwork(
+  context: BrowserContext,
+  options: QaIsolationOptions = {},
+) {
+  if (options.seasonalTheme !== "calendar") {
+    await suppressSeasonalTheme(context);
+  }
+
   if (isolatedContexts.has(context)) {
     return;
   }
@@ -136,8 +156,32 @@ export async function blockOpenAIAdsPixelNetwork(context: BrowserContext) {
   isolatedContexts.add(context);
 }
 
-export async function suppressSitePromo(context: BrowserContext) {
-  await blockOpenAIAdsPixelNetwork(context);
+// The seasonal decoration layer (lib/site-seasonal.ts) switches itself on by the
+// academy's calendar day, so a suite run in October would otherwise render
+// Halloween decorations into parity, visual and layout checks. Every QA context
+// opts out through the same localStorage key real visitors can use; the layer's
+// own coverage lives in tests/seasonal-theme.spec.ts. Mirrored in
+// scripts/live-clone-shared.mjs for live baseline/snapshot capture.
+export async function suppressSeasonalTheme(context: BrowserContext) {
+  if (seasonalSuppressedContexts.has(context)) {
+    return;
+  }
+
+  seasonalSuppressedContexts.add(context);
+  await context.addInitScript(({ key, value }) => {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // Blocked storage: hideFloatingThirdPartyWidgets still hides the layer.
+    }
+  }, { key: SEASONAL_OPT_OUT_STORAGE_KEY, value: SEASONAL_OPT_OUT_VALUE });
+}
+
+export async function suppressSitePromo(
+  context: BrowserContext,
+  options: QaIsolationOptions = {},
+) {
+  await blockOpenAIAdsPixelNetwork(context, options);
   await context.addInitScript((storageKey) => {
     try {
       window.localStorage.setItem(storageKey, "dismissed");
@@ -749,7 +793,8 @@ async function hideFloatingThirdPartyWidgets(page: Page) {
         .live-elevenlabs-widget,
         [data-rda-whatsapp],
         [data-rda-promo-dialog],
-        [data-rda-promo-overlay] {
+        [data-rda-promo-overlay],
+        [data-rda-seasonal] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -757,6 +802,16 @@ async function hideFloatingThirdPartyWidgets(page: Page) {
         }
       `,
     })
+    .catch(() => undefined);
+  // Seasonal pseudo-element decorations (hero cobweb, divider pumpkins, banner
+  // bat) are gated by these <html> attributes rather than [data-rda-seasonal],
+  // so drop them too in case the opt-out in suppressSeasonalTheme was bypassed.
+  await page
+    .evaluate((attributes) => {
+      for (const attribute of attributes) {
+        document.documentElement.removeAttribute(attribute);
+      }
+    }, [SEASONAL_THEME_ATTRIBUTE, SEASONAL_FLYBY_ATTRIBUTE])
     .catch(() => undefined);
 }
 
@@ -967,6 +1022,7 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
       "[data-rda-course-reviews]",
       "[data-rda-promo-dialog]",
       "[data-rda-promo-overlay]",
+      "[data-rda-seasonal]",
     ];
 
     function normalizeValue(value: string) {

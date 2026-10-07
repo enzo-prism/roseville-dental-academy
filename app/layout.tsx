@@ -13,6 +13,7 @@ import { MetaPixel } from "@/components/site/meta-pixel";
 import { OpenAIMeasurementChoice } from "@/components/site/openai-measurement-choice";
 import { OpenAIAdsPixel } from "@/components/site/openai-ads-pixel";
 import { PublicRouteOnly } from "@/components/site/public-route-only";
+import { SeasonalThemeScript } from "@/components/site/seasonal-theme-script";
 import { WhatsAppFab } from "@/components/site/whatsapp-fab";
 import { LIVE_BODY_CLASS } from "../lib/live-route-data";
 import { buildPageMetadata } from "../lib/site-metadata";
@@ -45,10 +46,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${notoSans.variable} ${playfairDisplay.variable}`}>
+    <html
+      lang="en"
+      className={`${notoSans.variable} ${playfairDisplay.variable}`}
+      // The seasonal <head> script may add data-rda-season before hydration.
+      suppressHydrationWarning
+    >
       <head>
         <PublicRouteOnly>
           <AnalyticsBootstrap />
+          {/* Public routes only: private tools never show seasonal art. */}
+          <SeasonalThemeScript />
         </PublicRouteOnly>
       </head>
       <body className={LIVE_BODY_CLASS}>

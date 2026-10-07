@@ -79,6 +79,14 @@ jobs:
           LOCAL_ORIGIN: http://127.0.0.1:3111
         run: pnpm test:academy
 
+      - name: Verify seasonal decoration layer
+        env:
+          CI: "true"
+          DATABASE_URL: ""
+          PLAYWRIGHT_SERVER_MODE: prod
+          LOCAL_ORIGIN: http://127.0.0.1:3112
+        run: pnpm test:seasonal
+
       - name: Upload QA artifacts
         if: always()
         uses: actions/upload-artifact@v4

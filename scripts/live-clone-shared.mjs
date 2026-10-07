@@ -15,6 +15,61 @@ const LOCALIZABLE_HOSTS = new Set(["img1.wsimg.com", "cdn.trustedsite.com"]);
 const STRIPPED_HOSTS = new Set(["www.googletagmanager.com", "connect.facebook.net"]);
 const STRIPPED_PATH_FRAGMENTS = ["/signals/js/clients/scc-c2/"];
 
+// Mirrors SEASONAL_OPT_OUT_STORAGE_KEY / SEASONAL_OPT_OUT_VALUE and the <html>
+// attributes in lib/site-seasonal.ts (tests/seasonal-theme.spec.ts asserts they
+// match). The live Next site switches seasonal decorations on by the calendar,
+// so every capture from it opts out, exactly like suppressSeasonalTheme in
+// tests/support/qa-helpers.ts; otherwise an October refresh bakes decorations
+// into snapshot/live or the committed baselines.
+export const SEASONAL_OPT_OUT_STORAGE_KEY = "rda-seasonal-theme";
+export const SEASONAL_OPT_OUT_VALUE = "off";
+export const SEASONAL_HTML_ATTRIBUTES = ["data-rda-season", "data-rda-season-flyby"];
+export const SEASONAL_SCOPE_ATTRIBUTE = "data-rda-seasonal-scope";
+// Decorations plus the inline <head> gate script (components/site/seasonal-theme-script.tsx).
+export const SEASONAL_DECORATION_SELECTOR = "[data-rda-seasonal], script#rda-seasonal-theme";
+
+/** Opts a Playwright page or context out of the seasonal layer before navigation. */
+export async function suppressSeasonalTheme(pageOrContext) {
+  await pageOrContext.addInitScript(
+    ({ key, value }) => {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch {
+        // Blocked storage: stripSeasonalDecorations still removes the layer.
+      }
+    },
+    { key: SEASONAL_OPT_OUT_STORAGE_KEY, value: SEASONAL_OPT_OUT_VALUE },
+  );
+}
+
+/** Removes seasonal DOM and <html> gates from a loaded page before it is serialized. */
+export async function stripSeasonalDecorations(page) {
+  await page
+    .evaluate(
+      ({ attributes, scopeAttribute, selector }) => {
+        for (const attribute of attributes) {
+          document.documentElement.removeAttribute(attribute);
+        }
+
+        for (const element of Array.from(document.querySelectorAll(selector))) {
+          element.remove();
+        }
+
+        // A captured body must not carry a scope that re-enables decorations
+        // wherever it is mounted later.
+        for (const element of Array.from(document.querySelectorAll(`[${scopeAttribute}]`))) {
+          element.removeAttribute(scopeAttribute);
+        }
+      },
+      {
+        attributes: SEASONAL_HTML_ATTRIBUTES,
+        scopeAttribute: SEASONAL_SCOPE_ATTRIBUTE,
+        selector: SEASONAL_DECORATION_SELECTOR,
+      },
+    )
+    .catch(() => undefined);
+}
+
 export const VISUAL_VIEWPORTS = {
   desktop: { width: 1440, height: 2200 },
   mobile: { width: 390, height: 844 },
