@@ -2365,8 +2365,8 @@ test.describe("live-style interaction flows", () => {
       const banner = page.locator("[data-rda-promo-banner='true']");
 
       await expect(banner).toBeVisible();
-      await expect(banner).toContainText("Next Dental Assisting start:");
-      await expect(banner).toContainText("Monday, October 12.");
+      await expect(banner).toContainText("Next Dental Assisting class starts Nov 20.");
+      await expect(banner).toContainText("Weekday or Saturday schedules");
       await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
       expect(activeSitePromo.ctaHref).toBe("/lp/dental-assisting-enroll");
     });
@@ -2378,16 +2378,20 @@ test.describe("live-style interaction flows", () => {
       const dialog = page.locator("[data-rda-promo-dialog='true']");
 
       await expect(dialog).toBeVisible({ timeout: 8_000 });
-      await expect(dialog.getByText("Monday Dental Assisting class", { exact: true })).toBeVisible();
+      await expect(dialog.getByText("Dental Assisting class", { exact: true })).toBeVisible();
       await expect(
-        dialog.getByRole("heading", { name: "Next Dental Assisting start is Monday, October 12, 2026" }),
+        dialog.getByRole("heading", {
+          name: "Next class starts Nov 20, with weekday or Saturday schedules",
+        }),
       ).toBeVisible();
-      await expect(dialog.getByText("Seats are still open in the Monday class.", { exact: false })).toBeVisible();
+      await expect(
+        dialog.getByText("Ask admissions which schedule fits your week.", { exact: false }),
+      ).toBeVisible();
 
       const cta = dialog.locator("[data-rda-promo-cta='true']");
 
       await expect(cta).toHaveAttribute("href", "/lp/dental-assisting-enroll");
-      await expect(cta).toHaveText("Ask about October 12");
+      await expect(cta).toHaveText("Ask about Nov 20");
 
       await dialog.getByRole("button", { name: "Dismiss class announcement" }).click();
       await expect(dialog).toHaveCount(0);
@@ -2401,6 +2405,25 @@ test.describe("live-style interaction flows", () => {
 
       await gotoSettled(page, "/contact", { allowPromo: true });
       await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+    });
+
+    test("popup does not auto-open after a lead form field has focus", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await page.goto(`${localOrigin}/`, {
+        timeout: 120_000,
+        waitUntil: "domcontentloaded",
+      });
+
+      const nameField = page.locator('form[data-rda-signup-form="true"] input[name="Name"]').first();
+      const submit = page.locator('form[data-rda-signup-form="true"] button[type="submit"]').first();
+
+      await nameField.waitFor({ state: "visible" });
+      await nameField.focus();
+      await expect(nameField).toBeFocused();
+      await page.waitForTimeout(2_500);
+
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+      await expect(submit).toBeVisible();
     });
 
     test("popup is not shown on ad landing pages", async ({ page }) => {

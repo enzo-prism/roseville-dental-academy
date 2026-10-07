@@ -1,23 +1,24 @@
 import { COURSE_SCHEDULE_REVIEWED_ON, getCourseSchedule, type CourseScheduleId } from "@/lib/course-schedule";
 
-// September 23 sync: the Saturday Dental Assisting class is full, so the
-// banner promotes the next open start, the Monday class on October 12.
-export const DENTAL_ASSISTING_PROMO_ID = "rda-promo-da-monday-2026-10-12";
+// October 12 is full on production. Preview/CI still fall back to the bundled
+// fixture, which lists that Monday start as open, so the promo must target the
+// next open Dental Assisting date (Nov 20) and a new storage key so previously
+// dismissed visitors see the updated announcement once.
+export const DENTAL_ASSISTING_PROMO_ID = "rda-promo-da-2026-11-20";
 
-export const dentalAssistingMondayPromo = {
+export const dentalAssistingNovemberPromo = {
   courseId: "dental-assisting-program",
-  startDate: "2026-10-12",
+  startDate: "2026-11-20",
   id: DENTAL_ASSISTING_PROMO_ID,
   storageKey: DENTAL_ASSISTING_PROMO_ID,
-  eyebrow: "Monday Dental Assisting class",
-  headline: "Next Dental Assisting start is Monday, October 12, 2026",
-  body: "Seats are still open in the Monday class. Students attend one class day a week plus one assigned externship day. Ask admissions to reserve your seat.",
-  ctaLabel: "Ask about October 12",
+  eyebrow: "Dental Assisting class",
+  headline: "Next class starts Nov 20, with weekday or Saturday schedules",
+  body: "The next Dental Assisting class starts Nov 20, with weekday or Saturday schedules. Ask admissions which schedule fits your week.",
+  ctaLabel: "Ask about Nov 20",
   ctaHref: "/lp/dental-assisting-enroll",
   bannerText:
-    "Next Dental Assisting start: Monday, October 12. Seats open →",
-  // Keep the campaign through the Monday start so remaining seats can convert.
-  endsAt: "2026-10-12",
+    "Next Dental Assisting class starts Nov 20. Weekday or Saturday schedules →",
+  endsAt: "2026-11-20",
 } as const;
 
 export type SitePromo = {
@@ -34,7 +35,7 @@ export type SitePromo = {
   storageKey: string;
 };
 
-export const activeSitePromo: SitePromo = dentalAssistingMondayPromo;
+export const activeSitePromo: SitePromo = dentalAssistingNovemberPromo;
 
 export const fallbackAnnouncement =
   "Now accepting registration for 2026 Dental Assisting Training programs.";
