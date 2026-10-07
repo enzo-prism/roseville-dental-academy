@@ -2647,7 +2647,9 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 }
 
 .rda-signup-form label,
-.rda-signup-notes {
+.rda-signup-notes,
+.rda-signup-how-heard,
+.rda-how-heard-field {
   display: grid;
   gap: 7px;
 }
@@ -2689,6 +2691,7 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 }
 
 .rda-signup-form input,
+.rda-signup-form select,
 .rda-signup-form textarea,
 .rda-signup-form button[type="submit"] {
   scroll-margin-block-end: 190px;
@@ -2735,8 +2738,10 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
 
 .rda-newsletter-section input,
 .rda-signup-form input,
+.rda-signup-form select,
 .rda-signup-form textarea,
 .rda-contact-form-card input,
+.rda-contact-form-card select,
 .rda-contact-form-card textarea {
   border: 1px solid var(--rda-color-border);
   border-radius: 6px;
@@ -2745,9 +2750,20 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   width: 100%;
 }
 
+.rda-signup-form select,
+.rda-contact-form-card select,
+.rda-how-heard-select {
+  appearance: auto;
+  background-color: var(--rda-color-surface);
+  color: var(--rda-color-heading);
+  font: inherit;
+}
+
 .rda-signup-form input:focus-visible,
+.rda-signup-form select:focus-visible,
 .rda-signup-form textarea:focus-visible,
 .rda-contact-form-card input:focus-visible,
+.rda-contact-form-card select:focus-visible,
 .rda-contact-form-card textarea:focus-visible {
   border-color: var(--rda-color-primary);
   outline: 2px solid var(--rda-color-accent-border);

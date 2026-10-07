@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   COURSE_SCHEDULE_REVIEWED_ON,
   buildCourseScheduleMonths,
@@ -180,10 +180,16 @@ test.beforeEach(async ({ context }) => {
   await context.route("https://formspree.io/**", (route) => route.abort());
 });
 
+async function gotoPage(page: Page, path: string) {
+  // Ad landers and public pages can stall on third-party `load` (pixels, fonts).
+  // Date assertions only need DOM + JSON-LD, matching smoke/preview navigation.
+  await page.goto(path, { timeout: 120_000, waitUntil: "domcontentloaded" });
+}
+
 for (const width of [390, 1280]) {
   test(`homepage schedule, cards, and request choices agree at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/");
+    await gotoPage(page, "/");
     const schedule = page.locator('[data-rda-home-course-block="schedule"]');
     await expect(schedule.getByText("Upcoming 2026 Class Schedule")).toBeVisible();
     expect(await schedule.locator("time").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("datetime")))).toEqual([
@@ -215,7 +221,7 @@ for (const width of [390, 1280]) {
 
 for (const path of ["/bls-cpr-1", "/infection-control", "/radiation-safety", "/coronal-polish", "/sealants", "/dental-assisting-program", "/faqs-1", "/contact", ...adLandingPages.map((page) => page.path)]) {
   test(`current dates across ${path}`, async ({ page }) => {
-    await page.goto(path);
+    await gotoPage(page, path);
     const body = await page.locator("body").innerText();
     expect(body).not.toMatch(/(?:June|July|August|September) \d/);
     expect(body).not.toContain("next available date is August");
@@ -230,7 +236,7 @@ for (const path of ["/bls-cpr-1", "/infection-control", "/radiation-safety", "/c
 
 test("infection-control mobile FABs do not cover course copy", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/infection-control");
+  await gotoPage(page, "/infection-control");
 
   const copyOverlapsFabs = async (selector: string) =>
     page.evaluate((sel) => {
@@ -269,7 +275,7 @@ test("infection-control mobile FABs do not cover course copy", async ({ page }) 
 });
 
 test("course JSON-LD omits sold-out October instances", async ({ page }) => {
-  await page.goto("/radiation-safety");
+  await gotoPage(page, "/radiation-safety");
   const radiationSchema = JSON.parse(
     (await page.locator("#rda-ld-course-radiation-safety").textContent()) ?? "{}",
   ) as { hasCourseInstance?: Array<{ startDate?: string; eventStatus?: string }> };
@@ -278,7 +284,7 @@ test("course JSON-LD omits sold-out October instances", async ({ page }) => {
   expect(radiationDates).toEqual(["2026-11-07", "2026-12-05"]);
   expect(radiationDates).not.toContain("2026-10-17");
 
-  await page.goto("/sealants");
+  await gotoPage(page, "/sealants");
   const sealantsSchema = JSON.parse(
     (await page.locator("#rda-ld-course-sealants").textContent()) ?? "{}",
   ) as { hasCourseInstance?: Array<{ startDate?: string; eventStatus?: string }> };
@@ -289,7 +295,7 @@ test("course JSON-LD omits sold-out October instances", async ({ page }) => {
 
   // Open dates on a shared day stay listed: Infection Control keeps October 17
   // even though X-rays / Radiation Safety is full that day.
-  await page.goto("/infection-control");
+  await gotoPage(page, "/infection-control");
   const infectionSchema = JSON.parse(
     (await page.locator("#rda-ld-course-infection-control").textContent()) ?? "{}",
   ) as { hasCourseInstance?: Array<{ startDate?: string }> };
@@ -302,14 +308,14 @@ test("course JSON-LD omits sold-out October instances", async ({ page }) => {
 });
 
 test("infection-control page and FAQs omit November 7 while keeping later dates", async ({ page }) => {
-  await page.goto("/infection-control");
+  await gotoPage(page, "/infection-control");
   const upcomingDates = page.locator('[data-rda-live-course="infection-control"] .rda-course-date');
   await expect(upcomingDates.getByText("October 17, 2026")).toHaveCount(1);
   await expect(upcomingDates.getByText("November 7, 2026")).toHaveCount(0);
   await expect(upcomingDates.getByText("November 14, 2026")).toHaveCount(1);
   await expect(upcomingDates.getByText("December 5, 2026")).toHaveCount(1);
 
-  await page.goto("/faqs-1");
+  await gotoPage(page, "/faqs-1");
   const faqBody = await page.locator("body").innerText();
   expect(faqBody).toContain("Infection Control: October 17, 2026; November 14, 2026; December 5, 2026");
   expect(faqBody).not.toContain("Infection Control: October 17, 2026; November 7, 2026");

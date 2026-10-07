@@ -193,8 +193,9 @@ function trackGaContactAction(
 function getUnattributedContactChannel(channel: Extract<ContactChannelSource, "phone" | "whatsapp">) {
   const source = CONTACT_CHANNEL_SOURCE[channel];
 
+  // Click-side channel marks use contact_method. Visitor how_heard is Formspree-only.
   return {
-    how_heard: source.howHeard,
+    contact_method: source.howHeard,
     lead_source: source.leadSource,
   };
 }
@@ -544,6 +545,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     utm_term: optionalSlugValue(getFormValue(formData, "utm_term")),
     ad_id: optionalCompactValue(getFormValue(formData, "ad_id")),
     renewal_focus: optionalSlugValue(getFormValue(formData, "Renewal focus")),
+    // Visitor-facing how_heard / how_heard_other stay on the Formspree payload only.
   };
 
   trackSiteEvent("lead_form_submit", {

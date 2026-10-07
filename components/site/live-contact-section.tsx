@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 
+import { HowHeardField } from "@/components/site/how-heard-field";
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import { LeadAttributionHiddenFields } from "@/components/site/lead-attribution-fields";
 import {
@@ -190,6 +191,7 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
                     </FieldLabel>
                   </FieldContent>
                 </Field>
+                <HowHeardField id={formId} />
                 <Field>
                   <Textarea aria-label="Message" name="message" placeholder="Message" rows={5} />
                 </Field>

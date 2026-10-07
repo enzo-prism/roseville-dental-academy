@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+import { HowHeardField } from "@/components/site/how-heard-field";
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import { trackGaEvent } from "@/components/site/google-analytics";
 import { trackSiteEvent } from "@/components/site/interaction-analytics";
@@ -229,6 +230,7 @@ function AdLandingLeadForm({
             </span>
             <Input autoComplete="tel" name="Phone" placeholder="Phone" required type="tel" />
           </label>
+          <HowHeardField variant="ad" />
           {page.leadSelects?.map((field) => {
             const Icon = field.icon ? SELECT_ICONS[field.icon] : null;
 

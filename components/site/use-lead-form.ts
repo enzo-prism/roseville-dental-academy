@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import {
   buildAttributionReceipt,
@@ -78,7 +78,7 @@ export function useLeadAttribution(): LeadAttribution {
     [input],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!input) {
       return;
     }
@@ -185,6 +185,10 @@ export function useLeadFormSubmit() {
 
       if (!String(formData.get("landing_page") || "").trim() && stamp.landing_page) {
         formData.set("landing_page", stamp.landing_page);
+      }
+
+      if (!String(formData.get("referrer") || "").trim() && stamp.referrer) {
+        formData.set("referrer", stamp.referrer);
       }
 
       if (!String(formData.get("campaign_intent") || "").trim() && stamp.campaign_intent) {
