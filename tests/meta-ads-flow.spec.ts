@@ -310,6 +310,16 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
   const cookieFbc = `fb.1.1710000000000.${cookieFbclid}`;
   const metaFbclidUrl = `${sealantsUrl(creatives[0].content)}&fbclid=${cookieFbclid}`;
 
+  function receiptClickIds(
+    receipt: Record<string, unknown> | null,
+    key: "conversionTouch" | "firstTouch",
+  ) {
+    const touch = receipt?.[key];
+    if (!touch || typeof touch !== "object") return {};
+    const clickIds = (touch as { clickIds?: Record<string, string> }).clickIds;
+    return clickIds ?? {};
+  }
+
   function expectNoCookieMetaIdsInLead(
     postedBody: string,
     receipt: Record<string, unknown> | null,
@@ -323,14 +333,14 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     expect(multipartField(postedBody, "conversion_touch_fbp") || "").toBe("");
     expect(postedBody).not.toContain(cookieFbp);
     expect(postedBody).not.toContain(cookieFbc);
-    expect(receipt).not.toBeNull();
-    const firstTouch = receipt?.firstTouch as { clickIds?: Record<string, string> } | undefined;
-    const conversionTouch = receipt?.conversionTouch as { clickIds?: Record<string, string> } | undefined;
-    expect(firstTouch?.clickIds?.fbclid).toBe(cookieFbclid);
-    expect(firstTouch?.clickIds?.fbc || "").toBe("");
-    expect(firstTouch?.clickIds?.fbp || "").toBe("");
-    expect(conversionTouch?.clickIds?.fbc || "").toBe("");
-    expect(conversionTouch?.clickIds?.fbp || "").toBe("");
+    expect(receipt).toBeTruthy();
+    const firstTouch = receiptClickIds(receipt, "firstTouch");
+    const conversionTouch = receiptClickIds(receipt, "conversionTouch");
+    expect(firstTouch.fbclid).toBe(cookieFbclid);
+    expect(firstTouch.fbc || "").toBe("");
+    expect(firstTouch.fbp || "").toBe("");
+    expect(conversionTouch.fbc || "").toBe("");
+    expect(conversionTouch.fbp || "").toBe("");
   }
 
   test("allowed Meta fbclid visit still submits matching cookie fbc and fbp", async ({ page, baseURL }) => {
@@ -358,14 +368,14 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     await fillSignup(form);
     await form.getByRole("button", { name: "Request next steps" }).click();
     await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
-    await expect.poll(() => receipt).not.toBeNull();
+    await expect.poll(() => Boolean(receipt)).toBeTruthy();
 
     expect(multipartField(postedBody, "fbclid")).toBe(cookieFbclid);
     expect(multipartField(postedBody, "fbc")).toBe(cookieFbc);
     expect(multipartField(postedBody, "fbp")).toBe(cookieFbp);
-    const firstTouch = receipt?.firstTouch as { clickIds?: Record<string, string> } | undefined;
-    expect(firstTouch?.clickIds?.fbc).toBe(cookieFbc);
-    expect(firstTouch?.clickIds?.fbp).toBe(cookieFbp);
+    const firstTouch = receiptClickIds(receipt, "firstTouch");
+    expect(firstTouch.fbc).toBe(cookieFbc);
+    expect(firstTouch.fbp).toBe(cookieFbp);
     assertNoStudentData([receipt]);
   });
 
@@ -405,7 +415,7 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       await fillSignup(form);
       await form.getByRole("button", { name: "Request next steps" }).click();
       await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
-      await expect.poll(() => receipt).not.toBeNull();
+      await expect.poll(() => Boolean(receipt)).toBeTruthy();
       expectNoCookieMetaIdsInLead(postedBody, receipt);
       assertNoStudentData([receipt]);
     });
