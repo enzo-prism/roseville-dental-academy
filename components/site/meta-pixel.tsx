@@ -3,12 +3,13 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
 
-import { getMetaPixelId, metaMeasurementAllowed } from "@/lib/meta-pixel-config";
+import { getMetaBrowserPixelIds, metaMeasurementAllowed } from "@/lib/meta-pixel-config";
 
 type FbqCommand =
   | ["consent", "revoke" | "grant"]
   | ["init", string, Record<string, unknown>?]
   | ["track", string, Record<string, unknown>?, MetaPixelEventOptions?]
+  | ["trackSingle", string, string, Record<string, unknown>?, MetaPixelEventOptions?]
   | ["trackCustom", string, Record<string, unknown>?];
 
 type MetaPixelEventName = "Contact" | "Lead" | "PageView" | "ViewContent";
@@ -65,11 +66,24 @@ export function trackMetaPixelEvent(
   }
 
   const eventID = options.eventID ? compactMetaValue(options.eventID) : undefined;
+  const payload = safeMetaProperties(properties);
+  const pixelIds = getMetaBrowserPixelIds();
 
-  if (eventID) {
-    window.fbq("track", eventName, safeMetaProperties(properties), { eventID });
-  } else {
-    window.fbq("track", eventName, safeMetaProperties(properties));
+  if (pixelIds.length === 1) {
+    if (eventID) {
+      window.fbq("track", eventName, payload, { eventID });
+    } else {
+      window.fbq("track", eventName, payload);
+    }
+    return true;
+  }
+
+  for (const pixelId of pixelIds) {
+    if (eventID) {
+      window.fbq("trackSingle", pixelId, eventName, payload, { eventID });
+    } else {
+      window.fbq("trackSingle", pixelId, eventName, payload);
+    }
   }
   return true;
 }
@@ -101,23 +115,26 @@ function MetaPageViewTracker() {
 }
 
 export function MetaPixel() {
-  const pixelId = getMetaPixelId();
+  const pixelIds = getMetaBrowserPixelIds();
 
-  if (!pixelId) {
+  if (!pixelIds[0]) {
     return null;
   }
 
   return (
     <>
       <noscript>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          height="1"
-          src={`https://www.facebook.com/tr?id=${encodeURIComponent(pixelId)}&ev=PageView&noscript=1`}
-          style={{ display: "none" }}
-          width="1"
-        />
+        {pixelIds.map((pixelId) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={pixelId}
+            alt=""
+            height="1"
+            src={`https://www.facebook.com/tr?id=${encodeURIComponent(pixelId)}&ev=PageView&noscript=1`}
+            style={{ display: "none" }}
+            width="1"
+          />
+        ))}
       </noscript>
       <Suspense fallback={null}>
         <MetaPageViewTracker />

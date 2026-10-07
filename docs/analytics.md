@@ -153,6 +153,10 @@ For GA4 reporting beyond event counts, register useful event-scoped custom dimen
 
 The Meta Pixel base code uses the shared `lib/meta-pixel-config.ts` default pixel ID `356932321507746` (public override retained). GPC, DNT, or any explicit denied RDA consent cookie blocks/revokes JavaScript Meta measurement. Unknown consent preserves the existing browser behavior without writing a consent grant. It sends the initial `PageView` during page load, then `components/site/meta-pixel.tsx` sends additional `PageView` events on client-side route changes.
 
+An optional second browser pixel is read from `NEXT_PUBLIC_META_SECONDARY_PIXEL_ID`. It is unset by default, so the bootstrap stays the historical `fbq('init', primary)` plus `fbq('track', 'PageView')` snippet. The intended Infection Control ads dataset is `2267802987317047`; it is not a code default. A blank value or a value equal to the primary ID is treated as unset. When set and distinct, both pixels are initialized under the same consent/GPC/DNT gate, `PageView` and accepted `Lead` are sent once to each pixel with `fbq('trackSingle', id, ...)`, and Lead uses the same `eventID` on both calls. The noscript image for the secondary ID is emitted only then.
+
+Server-side Meta CAPI stays tied to the primary browser identity. The existing dataset-mismatch guard still refuses when `META_CAPI_PIXEL_ID` differs from `getMetaPixelId()`. A configured secondary pixel does not retarget CAPI or dual-send server events. Enable in Vercel by adding the variable named `NEXT_PUBLIC_META_SECONDARY_PIXEL_ID` and redeploying; roll back by unsetting it and redeploying. Two pixels let ads that optimize on the secondary dataset see browser events, at the cost of a browser-only second stream and two Event Manager views. See `docs/meta-ads-readiness.md`.
+
 Safe Meta standard events:
 
 | Event | When it fires | Safe parameters |
@@ -215,7 +219,7 @@ public SDK source. Queue acknowledgement is not live ingestion or ad attribution
 
 ## Validation
 
-Run `pnpm lint`, `pnpm build`, and `pnpm test:interactions` after changing event logic. `pnpm test:smoke` verifies the analytics and pixel script mounts.
+Run `pnpm lint`, `pnpm build`, and `pnpm test:interactions` after changing event logic. `pnpm test:smoke` verifies the analytics and pixel script mounts. `pnpm test:attribution` covers the unset/primary-only Meta path and CAPI's primary-only guard. `pnpm test:meta-secondary` starts a dedicated server with `NEXT_PUBLIC_META_SECONDARY_PIXEL_ID` and checks that both pixels receive one PageView and one accepted Lead.
 
 For production verification, do not create a fake lead. Open a landing page with test UTMs and synthetic click IDs, confirm the hidden form fields plus first/conversion-touch persistence, and verify that GA4, Meta Pixel, and Vercel Analytics collectors are ready. Use the next real accepted lead to confirm Formspree arrival, the private receipt, GA4 Realtime plus the `generate_lead` key event, Meta browser/server event-ID deduplication when CAPI is enabled, and the matching Vercel `ad_landing_view` → `cta_click` → `lead_form_submit` funnel.
 

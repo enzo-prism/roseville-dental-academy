@@ -87,6 +87,8 @@ async function sendMeta(job: PendingPostback): Promise<PostbackOutcome> {
   if (!token || !pixelId || !version || !/^[0-9]{5,40}$/u.test(pixelId) || !/^v\d{1,2}\.\d{1,2}$/u.test(version)) {
     return { status: "retry", retryable: true, errorCode: "not_configured", errorSummary: "Meta CAPI is not configured with valid identifiers" };
   }
+  // CAPI stays bound to the primary browser Pixel only. A configured secondary
+  // browser pixel does not change this identity check and is never posted to.
   if (pixelId !== getMetaPixelId()) {
     return { status: "retry", retryable: true, errorCode: "pixel_mismatch",
       errorSummary: "Meta CAPI dataset does not match the browser Pixel" };

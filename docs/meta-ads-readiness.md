@@ -12,7 +12,7 @@ The saved destination paths target `/sealants` and the campaign is `RDA Sealants
 
 ## Website changes
 
-- Bootstrap, client tracking and noscript use one configurable pixel ID, default `356932321507746`. Meta CAPI refuses to send when its configured dataset differs from that browser identity.
+- Bootstrap, client tracking and noscript use one configurable pixel ID, default `356932321507746`. An optional second browser pixel (`NEXT_PUBLIC_META_SECONDARY_PIXEL_ID`) is unset by default, so today's bootstrap is unchanged. Meta CAPI stays tied to the primary identity and refuses to send when its configured dataset differs from that primary browser identity.
 - GPC, DNT and any explicit denied consent cookie block/revoke JavaScript Meta measurement.
 - Accepted lead events use a frozen non-PII snapshot of the request actually sent, with one shared browser UUID and duplicate-event suppression. Failed submissions do not produce a Lead.
 - Meta custom `page_path` excludes raw query parameters. Explicit campaign fields remain available.
@@ -53,6 +53,18 @@ Avoid duplicating these keys between the destination URL and Ads Manager's URL P
 
 The active website pixel default is `356932321507746`; select that accessible dataset and `Lead` in the appropriate website conversion setup after verifying ownership/access. The code does not change Ads Manager's selected dataset `2267802987317047` or resolve Facebook Page permissions.
 
+## Optional secondary pixel (Infection Control ads dataset)
+
+RDA Infection Control ads currently optimize on dataset `2267802987317047`, which receives nothing from the website today. The site can optionally init that dataset as a second browser pixel without changing the primary identity or CAPI.
+
+- **Env var:** `NEXT_PUBLIC_META_SECONDARY_PIXEL_ID`. Unset (the default) keeps today's single-pixel bootstrap, client `fbq('track', ...)` calls, and one noscript image.
+- **Intended value:** `2267802987317047`. It is not a code default. If the value is blank, whitespace, or equal to the primary ID, it is treated as unset.
+- **When set and distinct:** both pixels are initialized under the same GPC/DNT/denied-consent gate. `PageView` and accepted `Lead` fire once per pixel via `fbq('trackSingle', id, ...)` and share the same `eventID` on Lead so Meta can de-dup the pair. A second noscript image is added only then.
+- **CAPI:** remains primary-only. `META_CAPI_PIXEL_ID` must still match the primary browser identity (`NEXT_PUBLIC_META_PIXEL_ID` or default `356932321507746`). Setting a secondary pixel does not dual-send CAPI and must not break that guard. Pointing CAPI at `2267802987317047` while the primary browser pixel stays `356932321507746` still fails closed.
+- **Enable in Vercel:** add the environment variable named `NEXT_PUBLIC_META_SECONDARY_PIXEL_ID` (Preview and/or Production as chosen) and redeploy. This PR does not set that value.
+- **Roll back:** unset `NEXT_PUBLIC_META_SECONDARY_PIXEL_ID` in Vercel and redeploy. No code revert is required.
+- **Tradeoff:** the ads dataset can then see the same browser PageView/Lead events the site already sends. The secondary path is browser-only (no CAPI de-dup), Event Manager will show the events in two datasets, and a later `fbq('track')` would fan out to both unless callers keep using `trackSingle`. Two pixels are a measurement bridge, not proof Meta accepted the events or that Ads Manager selected the right dataset.
+
 ## Consent and measurement limits
 
 Unknown consent remains unknown. This release adds no banner or consent grant. Browser Pixel retains the existing unknown-consent behavior, while the private receipt parser retains its stricter existing policy: no analytics consent strips campaign/analytics identifiers; no marketing consent strips click IDs and native ad dimensions. Formspree's existing field capture remains unchanged.
@@ -84,7 +96,7 @@ The schedule work incorporates the existing website PR #33 implementation; coord
 
 Local flow tests intercept all third-party requests and Formspree submissions. They test both exact saved links and explicit-ID variants, campaign persistence across clean navigation, accepted/rejected responses, a delayed response with changed class selections, UUID deduplication, and privacy restrictions. PGlite tests execute actual persistence functions and migrations with synthetic data.
 
-Run lint, production build, `test:attribution-db`, `test:attribution`, and the full presentation/interaction release gate before release. Do not submit fabricated production leads as a smoke test or launch a paid $1/day campaign to substitute for this validation.
+Run lint, production build, `test:attribution-db`, `test:attribution`, `test:meta-secondary`, and the full presentation/interaction release gate before release. Do not submit fabricated production leads as a smoke test or launch a paid $1/day campaign to substitute for this validation.
 
 Meta's [official website-event sample](https://github.com/fbsamples/lead-ads-webhook-sample/blob/main/postman/FB%20Conversions%20API%20%28Part%201%20-%20online%29.postman_collection.json) identifies the website URL and client user agent requirements; its [Business SDK example](https://github.com/facebook/facebook-python-business-sdk#conversions-api) uses an absolute URL. Local mocks validate the contract, not a live acknowledgement. This release does not change the disabled-by-default CAPI, validate-only or approved-policy gates.
 

@@ -192,7 +192,8 @@ test("Google postbacks reject static-token-only configuration", async () => {
 test("provider acknowledgement and validate-only states stay distinct", async () => {
   const originalFetch = globalThis.fetch;
   const environmentNames = ["RDA_PLATFORM_POSTBACKS_ENABLED", "META_CAPI_ACCESS_TOKEN", "META_CAPI_PIXEL_ID",
-    "NEXT_PUBLIC_META_PIXEL_ID", "META_GRAPH_API_VERSION", "GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET",
+    "NEXT_PUBLIC_META_PIXEL_ID", "NEXT_PUBLIC_META_SECONDARY_PIXEL_ID", "META_GRAPH_API_VERSION",
+    "GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET",
     "GOOGLE_OAUTH_REFRESH_TOKEN", "GOOGLE_ADS_OPERATING_ACCOUNT_ID", "GOOGLE_ADS_LOGIN_ACCOUNT_ID",
     "GOOGLE_ADS_CONVERSION_ACTION_ID", "RDA_POSTBACK_CONSENT_POLICY_VERSIONS",
     "RDA_GOOGLE_MILESTONE_MAP_JSON", "RDA_META_MILESTONE_MAP_JSON", "RDA_POSTBACK_VALIDATE_ONLY"];
@@ -204,6 +205,7 @@ test("provider acknowledgement and validate-only states stay distinct", async ()
     process.env.META_CAPI_PIXEL_ID = DEFAULT_META_PIXEL_ID;
     process.env.META_GRAPH_API_VERSION = "v24.0";
     delete process.env.NEXT_PUBLIC_META_PIXEL_ID;
+    delete process.env.NEXT_PUBLIC_META_SECONDARY_PIXEL_ID;
     delete process.env.RDA_POSTBACK_VALIDATE_ONLY;
     delete process.env.RDA_META_MILESTONE_MAP_JSON;
     const baseJob = { attemptCount: 0, conversionEventId: "conversion_01", emailSha256: "a".repeat(64),
@@ -260,6 +262,15 @@ test("provider acknowledgement and validate-only states stay distinct", async ()
     process.env.META_CAPI_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
     expect(await sendPlatformPostback({ ...baseJob, platform: "meta" })).toMatchObject({ status: "accepted" });
     expect(requests[2]).toBe("https://graph.facebook.com/v24.0/9876543210123/events");
+
+    // A secondary browser pixel must not retarget CAPI or break the primary guard.
+    process.env.NEXT_PUBLIC_META_SECONDARY_PIXEL_ID = "999888777666555";
+    expect(await sendPlatformPostback({ ...baseJob, platform: "meta" })).toMatchObject({ status: "accepted" });
+    expect(requests[3]).toBe("https://graph.facebook.com/v24.0/9876543210123/events");
+    process.env.META_CAPI_PIXEL_ID = process.env.NEXT_PUBLIC_META_SECONDARY_PIXEL_ID;
+    expect(await sendPlatformPostback({ ...baseJob, platform: "meta" }))
+      .toMatchObject({ status: "retry", retryable: true, errorCode: "pixel_mismatch" });
+    expect(requests).toHaveLength(4);
 
     process.env.GOOGLE_OAUTH_CLIENT_ID = "client";
     process.env.GOOGLE_OAUTH_CLIENT_SECRET = "secret";

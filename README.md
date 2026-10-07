@@ -190,6 +190,7 @@ Important env vars:
 - `PREVIEW_URL`: target a deployed preview instead of local webserver startup.
 - `BASELINE_DIR`: alternate baseline location; defaults to `tests/baselines/live`.
 - `NEXT_PUBLIC_META_PIXEL_ID`: optional override for the Meta Pixel ID.
+- `NEXT_PUBLIC_META_SECONDARY_PIXEL_ID`: optional second Meta Pixel. Unset keeps today's single-pixel bootstrap. The intended Infection Control ads dataset is `2267802987317047`; do not hardcode it as a default. CAPI stays tied to the primary pixel. See [docs/meta-ads-readiness.md](docs/meta-ads-readiness.md).
 - `NEXT_PUBLIC_OPENAI_ADS_PIXEL_ID`: required public ChatGPT Ads Pixel ID; unset disables measurement.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional override for the GA4 measurement ID.
 - `NEXT_PUBLIC_HOTJAR_SITE_ID`: optional override for the Hotjar site ID.

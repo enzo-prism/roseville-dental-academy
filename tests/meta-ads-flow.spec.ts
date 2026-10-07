@@ -208,8 +208,9 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     await form.getByRole("button", { name: "Request next steps" }).click();
     await expect(page.locator('[data-rda-lead-form-error="true"]')).toBeVisible();
     const observed = await captures(page);
-    expect(observed.meta.filter((event) => event[1] === "Lead")).toHaveLength(0);
-    expect(observed.ga.filter((event) => event[1] === "generate_lead")).toHaveLength(0);
+      expect(observed.meta.filter((event) => event[1] === "Lead")).toHaveLength(0);
+      expect(observed.meta.filter((event) => event[0] === "trackSingle")).toHaveLength(0);
+      expect(observed.ga.filter((event) => event[1] === "generate_lead")).toHaveLength(0);
     expect(observed.openai.filter((event) => event[1] === "lead_created")).toHaveLength(0);
     expect(observed.successes).toHaveLength(0);
     expect(receipts).toBe(0);
@@ -217,6 +218,8 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
 
   test("phone and WhatsApp Meta Contact properties exclude query identifiers", async ({ page }) => {
     await page.goto(`${sealantsUrl(creatives[0].content)}&fbclid=synthetic_private_click&arbitrary=synthetic-private%40example.test`, { waitUntil: "networkidle" });
+    await page.locator('a[href^="tel:"]').first().waitFor();
+    await page.locator("a[data-rda-whatsapp]").first().waitFor();
     await page.evaluate(() => {
       for (const selector of ['a[href^="tel:"]', "a[data-rda-whatsapp]"]) {
         const link = document.querySelector<HTMLAnchorElement>(selector);
@@ -232,6 +235,44 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       const properties = JSON.stringify(event[2]);
       expect(properties).not.toMatch(/fbclid|synthetic_private_click|arbitrary|synthetic-private|utm_|ad_id/);
     }
+  });
+
+  test("unset secondary pixel keeps primary-only bootstrap, PageView, and Lead", async ({ page }) => {
+    await page.route("https://formspree.io/**", (route) => route.fulfill({
+      status: 200, contentType: "application/json", body: '{"ok":true}',
+    }));
+    await page.route("**/api/attribution/receipt", (route) => route.fulfill({ status: 202, body: '{}' }));
+    await page.goto(sealantsUrl(creatives[0].content), { waitUntil: "networkidle" });
+
+    const bootstrap = await page.locator("#rda-meta-pixel").textContent();
+    expect(bootstrap).toContain(`fbq('init', ${JSON.stringify(DEFAULT_META_PIXEL_ID)});`);
+    expect(bootstrap).toContain("fbq('track', 'PageView');");
+    expect(bootstrap).not.toContain("trackSingle");
+    expect(bootstrap).not.toContain("2267802987317047");
+    const noscript = await page.evaluate(() =>
+      [...document.querySelectorAll("noscript")].map((node) => node.innerHTML).join(""),
+    );
+    expect(noscript).toContain(`facebook.com/tr?id=${DEFAULT_META_PIXEL_ID}`);
+    expect(noscript).toMatch(/facebook\.com\/tr\?id=356932321507746&(?:amp;)?ev=PageView&(?:amp;)?noscript=1/);
+    expect(noscript.match(/facebook\.com\/tr\?id=/g)).toHaveLength(1);
+
+    const beforeSubmit = await captures(page);
+    const pageViews = beforeSubmit.meta.filter((event) => event[0] === "track" && event[1] === "PageView");
+    expect(beforeSubmit.meta.filter((event) => event[0] === "init")).toEqual([["init", DEFAULT_META_PIXEL_ID]]);
+    expect(beforeSubmit.meta.filter((event) => event[0] === "trackSingle")).toEqual([]);
+    expect(pageViews).toHaveLength(1);
+
+    const form = page.locator('form[data-rda-signup-form="true"]').first();
+    await fillSignup(form);
+    await form.getByRole("button", { name: "Request next steps" }).click();
+    await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+
+    const observed = await captures(page);
+    const leads = observed.meta.filter((event) => event[0] === "track" && event[1] === "Lead");
+    expect(leads).toHaveLength(1);
+    expect(observed.meta.filter((event) => event[0] === "trackSingle")).toEqual([]);
+    expect(leads[0][3]).toEqual({ eventID: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+    assertNoStudentData([leads, observed.successes]);
   });
 
   for (const restriction of ["GPC", "DNT", "denied-cookie"] as const) {
@@ -256,7 +297,7 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       await form.getByRole("button", { name: "Request next steps" }).click();
       await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
       const observed = await captures(page);
-      expect(observed.meta.filter((event) => event[0] === "track" || event[0] === "init")).toHaveLength(0);
+      expect(observed.meta.filter((event) => event[0] === "track" || event[0] === "trackSingle" || event[0] === "init")).toHaveLength(0);
       expect(observed.meta).toContainEqual(["consent", "revoke"]);
       expect(observed.meta).not.toContainEqual(["consent", "grant"]);
       expect(observed.successes).toHaveLength(1);
