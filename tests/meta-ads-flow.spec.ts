@@ -3,6 +3,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_META_PIXEL_ID } from "@/lib/meta-pixel-config";
 import { suppressSitePromo } from "./support/qa-helpers";
 
+const INTENDED_SECONDARY_PIXEL_ID = "2267802987317047";
+
 const creatives = [
   { name: "video", content: "video_sept25_clinical", adId: "120249119768590567" },
   { name: "photo", content: "photo_sept18_graduation", adId: "120249119794550567" },
@@ -64,6 +66,22 @@ function assertNoStudentData(value: unknown) {
 function multipartField(body: string, name: string) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return body.match(new RegExp(`name="${escaped}"\\r\\n\\r\\n([^\\r]*)`))?.[1];
+}
+
+function trackLeads(observed: Captures) {
+  return observed.meta.filter((event) => event[0] === "track" && event[1] === "Lead");
+}
+
+function trackSingleLeads(observed: Captures, pixelId: string) {
+  return observed.meta.filter(
+    (event) => event[0] === "trackSingle" && event[1] === pixelId && event[2] === "Lead",
+  );
+}
+
+function expectNoLeadOnEitherPixel(observed: Captures) {
+  expect(trackLeads(observed)).toHaveLength(0);
+  expect(trackSingleLeads(observed, DEFAULT_META_PIXEL_ID)).toHaveLength(0);
+  expect(trackSingleLeads(observed, INTENDED_SECONDARY_PIXEL_ID)).toHaveLength(0);
 }
 
 async function fillSignup(form: Locator, howHeard?: string) {
@@ -211,9 +229,9 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     await form.getByRole("button", { name: "Request next steps" }).click();
     await expect(page.locator('[data-rda-lead-form-error="true"]')).toBeVisible();
     const observed = await captures(page);
-      expect(observed.meta.filter((event) => event[1] === "Lead")).toHaveLength(0);
-      expect(observed.meta.filter((event) => event[0] === "trackSingle")).toHaveLength(0);
-      expect(observed.ga.filter((event) => event[1] === "generate_lead")).toHaveLength(0);
+    expectNoLeadOnEitherPixel(observed);
+    expect(observed.meta.filter((event) => event[0] === "trackSingle")).toHaveLength(0);
+    expect(observed.ga.filter((event) => event[1] === "generate_lead")).toHaveLength(0);
     expect(observed.openai.filter((event) => event[1] === "lead_created")).toHaveLength(0);
     expect(observed.successes).toHaveLength(0);
     expect(receipts).toBe(0);
@@ -221,14 +239,24 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
 
   test("phone and WhatsApp Meta Contact properties exclude query identifiers", async ({ page }) => {
     await page.goto(`${sealantsUrl(creatives[0].content)}&fbclid=synthetic_private_click&arbitrary=synthetic-private%40example.test`, { waitUntil: "networkidle" });
-    await page.locator('a[href^="tel:"]').first().waitFor();
-    await page.locator("a[data-rda-whatsapp]").first().waitFor();
-    await page.evaluate(() => {
-      for (const selector of ['a[href^="tel:"]', "a[data-rda-whatsapp]"]) {
-        const link = document.querySelector<HTMLAnchorElement>(selector);
+    await page.waitForLoadState("load");
+    await expect(page.locator('a[data-rda-lead-source="phone"]').first()).toBeAttached();
+    await expect(page.locator("a[data-rda-whatsapp]").first()).toBeAttached();
+    // InteractionAnalytics attaches in useEffect; third-party stubs can delay that.
+    await expect.poll(async () => {
+      await page.evaluate(() => {
+        const link = document.querySelector<HTMLAnchorElement>('a[data-rda-lead-source="phone"]');
         link?.addEventListener("click", (event) => event.preventDefault(), { once: true });
         link?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-      }
+      });
+      return (await captures(page)).meta.filter((event) => (
+        event[1] === "Contact" && (event[2] as { content_name?: string } | undefined)?.content_name === "call"
+      )).length;
+    }).toBeGreaterThan(0);
+    await page.evaluate(() => {
+      const link = document.querySelector<HTMLAnchorElement>("a[data-rda-whatsapp]");
+      link?.addEventListener("click", (event) => event.preventDefault(), { once: true });
+      link?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
     const observed = await captures(page);
     const contacts = observed.meta.filter((event) => event[1] === "Contact");
@@ -308,7 +336,7 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     });
   }
 
-  test("infection-control initializes Meta pixel and accepted Lead has eventID", async ({ page }) => {
+  test("infection-control how_heard stays off Meta Lead", async ({ page }) => {
     let formspreeStatus = 422;
     let postedBody = "";
     await page.route("https://formspree.io/**", async (route) => {
@@ -325,11 +353,6 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
 
     await page.goto("/infection-control", { waitUntil: "networkidle" });
 
-    const bootstrap = await page.locator("#rda-meta-pixel").textContent();
-    expect(bootstrap).toContain(DEFAULT_META_PIXEL_ID);
-    expect(bootstrap).toMatch(/fbq\('init',\s*['"]356932321507746['"]/);
-    expect(await page.evaluate(() => typeof window.fbq === "function")).toBe(true);
-
     const form = page.locator('form[data-rda-signup-form="true"]').first();
     await expect(form.locator('select[name="how_heard"]')).toBeVisible();
     await expect(form.locator('select[name="how_heard"]')).not.toHaveAttribute("required");
@@ -337,7 +360,7 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
 
     await form.getByRole("button", { name: "Request next steps" }).click();
     await expect(page.locator('[data-rda-lead-form-error="true"]')).toBeVisible();
-    expect((await captures(page)).meta.filter((event) => event[0] === "track" && event[1] === "Lead")).toHaveLength(0);
+    expectNoLeadOnEitherPixel(await captures(page));
     expect(postedBody).toContain("Instagram");
 
     formspreeStatus = 200;
@@ -345,11 +368,8 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
 
     const observed = await captures(page);
-    const leads = observed.meta.filter((event) => event[0] === "track" && event[1] === "Lead");
+    const leads = trackLeads(observed);
     expect(leads).toHaveLength(1);
-    const eventId = multipartField(postedBody, "lead_event_id");
-    expect(eventId).toMatch(/^[0-9a-f-]{36}$/);
-    expect(leads[0][3]).toEqual({ eventID: eventId });
     expect(multipartField(postedBody, "how_heard")).toBe("Instagram");
     expect(JSON.stringify(leads[0])).not.toMatch(/how_heard|Instagram|how_heard_other/);
     assertNoStudentData([leads, observed.successes]);

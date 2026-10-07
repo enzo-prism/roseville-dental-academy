@@ -193,8 +193,9 @@ function trackGaContactAction(
 function getUnattributedContactChannel(channel: Extract<ContactChannelSource, "phone" | "whatsapp">) {
   const source = CONTACT_CHANNEL_SOURCE[channel];
 
+  // Click-side channel marks use contact_method. Visitor how_heard is Formspree-only.
   return {
-    how_heard: source.howHeard,
+    contact_method: source.howHeard,
     lead_source: source.leadSource,
   };
 }

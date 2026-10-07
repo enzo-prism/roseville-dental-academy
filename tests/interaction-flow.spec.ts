@@ -1410,9 +1410,10 @@ test.describe("live-style interaction flows", () => {
       expect(contactEvent).toMatchObject({
         content_category: "contact",
         content_name: "call",
-        how_heard: "phone",
+        contact_method: "phone",
         lead_source: "phone",
       });
+      expect(contactEvent).not.toHaveProperty("how_heard");
       expect(contactEvent).not.toHaveProperty("ad_id");
       expect(contactEvent).not.toHaveProperty("utm_content");
       expect(ctaEvent).toMatchObject({
@@ -1987,12 +1988,12 @@ test.describe("live-style interaction flows", () => {
         expect.arrayContaining([
           expect.objectContaining({
             content_name: "call",
-            how_heard: "phone",
+            contact_method: "phone",
             lead_source: "phone",
           }),
           expect.objectContaining({
             content_name: "whatsapp",
-            how_heard: "whatsapp",
+            contact_method: "whatsapp",
             lead_source: "whatsapp",
           }),
         ]),
@@ -2001,6 +2002,8 @@ test.describe("live-style interaction flows", () => {
         expect.not.arrayContaining([
           expect.objectContaining({ ad_id: adId }),
           expect.objectContaining({ utm_content: utmContent }),
+          expect.objectContaining({ how_heard: "phone" }),
+          expect.objectContaining({ how_heard: "whatsapp" }),
         ]),
       );
     });
