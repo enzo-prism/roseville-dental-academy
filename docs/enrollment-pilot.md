@@ -15,7 +15,8 @@ is needed. Configure server-side variables through the verified deployment's sec
 - `RDA_ENROLLMENT_PILOT_PASSWORD`: a separate random staff password of at least 20 characters.
 - `RDA_ENROLLMENT_PILOT_SESSION_SECRET`: random signing secret of at least 32 characters.
 - `RDA_ENROLLMENT_TEST_ORIGIN`: exact HTTPS deployment origin with no trailing slash or path.
-- `RDA_STRIPE_TEST_SECRET_KEY`: Stripe test `sk_test_` or suitably scoped `rk_test_` key.
+- `RDA_STRIPE_TEST_SECRET_KEY`: Stripe test secret `sk_test_…` or restricted test key `rk_test_…`.
+  `rk_test_` is intentional and matches the same `^(sk|rk)_test_` guard in `lib/enrollment-contract.ts`.
 - `RDA_STRIPE_TEST_WEBHOOK_SECRET`: matching test endpoint `whsec_` signing secret.
 
 Register the test Stripe endpoint `/api/enrollment/webhook` for `checkout.session.completed`,
@@ -83,7 +84,9 @@ attempts, retry/replay, terminal conflicts, and durable login limits. These test
 
 `pnpm test:enrollment-pilot` is the CI readiness command: it unit-tests the activate script's live-key
 guard and webhook idempotency against a mocked Stripe client, then runs `pnpm enrollment:verify`
-(isolated 004 re-apply plus mocked paid / expired / 13th-seat checks). It never uses live keys or a
+(isolated 004 re-apply plus mocked paid / expired / 13th-seat checks). In CI the paid, expired, and
+12-seat cap paths are proven at the isolated Postgres/DB level by `scripts/enrollment-pilot-verify.mjs`.
+The real-route Next.js harness below is opt-in and is not the CI proof. It never uses live keys or a
 network Stripe account.
 
 `scripts/enrollment-fixture-preload.mjs` is a separate opt-in local integration harness. It refuses any
@@ -116,7 +119,7 @@ In the verified project's sensitive/server environment (Preview and Production a
 - `RDA_ENROLLMENT_PILOT_PASSWORD` — already present
 - `RDA_ENROLLMENT_PILOT_SESSION_SECRET` — already present
 - `RDA_ENROLLMENT_TEST_ORIGIN` — exact HTTPS deployment origin, no trailing slash or path
-- `RDA_STRIPE_TEST_SECRET_KEY` — Stripe test `sk_test_` or scoped `rk_test_` only
+- `RDA_STRIPE_TEST_SECRET_KEY` — Stripe test `sk_test_` or `rk_test_` only (`rk_test_` is intentional)
 - `RDA_STRIPE_TEST_WEBHOOK_SECRET` — leave empty until step 4 prints it
 
 Do not add live `sk_live_` / `rk_live_` keys. The app and the activate script both refuse them.
@@ -136,10 +139,13 @@ DATABASE_URL=… pnpm attribution:migrate:check
 DATABASE_URL=… pnpm attribution:migrate
 ```
 
-`--check` only inspects whether `004_enrollment_test_pilot.sql` is already applied (`applied: true`
-or `false`) and does not write. The apply command is idempotent: `004` uses `IF NOT EXISTS` /
-`OR REPLACE` and is safe to re-run. `pnpm attribution:migrate -- --dry-run` lists migration files
-without connecting.
+`--check` only inspects whether the 004 objects exist (`to_regclass` / `to_regprocedure`) and
+reports `applied: true` or `false`. It does not compare function bodies to the SQL file, so a
+drifted `CREATE OR REPLACE` function still reports applied. It does not write. The apply command
+is idempotent: `004` uses `IF NOT EXISTS` / `OR REPLACE` and is safe to re-run.
+`pnpm attribution:migrate -- --dry-run` lists migration files without connecting.
+Unknown flags (`--chek`, `--dryrun`, stray positionals) print a usage error, exit non-zero, and
+make no database calls. The `--` separator that pnpm passes is ignored.
 
 ### 4. Register the test webhook (create only if missing)
 
@@ -148,13 +154,18 @@ RDA_STRIPE_TEST_SECRET_KEY=… RDA_ENROLLMENT_TEST_ORIGIN=https://… pnpm enrol
 RDA_STRIPE_TEST_SECRET_KEY=… RDA_ENROLLMENT_TEST_ORIGIN=https://… pnpm enrollment:activate
 ```
 
-The script refuses live keys, lists Stripe test webhook endpoints, and creates
+The script refuses live keys (`sk_live_` / `rk_live_`) and accepts only `sk_test_` or `rk_test_`
+(same guard as `lib/enrollment-contract.ts`). It lists Stripe test webhook endpoints and creates
 `<origin>/api/enrollment/webhook` only when that URL is absent, with exactly
 `checkout.session.completed`, `checkout.session.expired`, and
-`checkout.session.async_payment_succeeded`. If the endpoint already exists with those events, it
-is reused and no secret is printed. On create, the signing secret is written **once to stdout**.
+`checkout.session.async_payment_succeeded`. If the endpoint already exists with those events and
+is enabled, it is reused and no secret is printed. If that matching endpoint is disabled, activate
+re-enables it (`disabled: false` only) rather than failing or creating a second endpoint; no
+secret is printed. On create, the signing secret is written **once to stdout**.
 Store it as `RDA_STRIPE_TEST_WEBHOOK_SECRET` in Vercel, then discard the terminal output. Redeploy
-again so the app can verify signatures.
+again so the app can verify signatures. Unknown flags (`--dryrun`, `--disabl`, stray positionals)
+print a usage error, exit non-zero, and make no Stripe calls. The `--` separator that pnpm passes
+is ignored.
 
 A restricted test key needs permission to create, retrieve, list, and expire Checkout Sessions and
 to list/create/update Webhook Endpoints.
@@ -195,5 +206,9 @@ expiry, any three-digit CVC):
 
    The staff page fails closed ("awaiting secure configuration") without those variables. Do not
    drop ledger tables or hand-edit `paid`/`expired` rows. Local time never frees a hold.
+   After rollback, a later `pnpm enrollment:activate` re-enables the same endpoint and prints
+   **no** secret (Stripe only returns `whsec_` on create). Reveal the existing signing secret or
+   roll it in the Stripe test dashboard, then store the current value as
+   `RDA_STRIPE_TEST_WEBHOOK_SECRET`.
 
 Real live-mode payment activation remains a separate approved release.

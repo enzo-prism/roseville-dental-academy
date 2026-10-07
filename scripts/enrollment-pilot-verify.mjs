@@ -6,10 +6,19 @@ import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 
+import { VERIFY_USAGE, parseKnownFlags } from "./cli-args.mjs";
 import {
   inspectEnrollmentPilot,
   readAttributionMigrations,
 } from "./migrate-attribution.mjs";
+
+export function parseVerifyArgs(argv) {
+  parseKnownFlags(argv, {
+    flags: new Set(),
+    valued: new Set(),
+    usage: VERIFY_USAGE,
+  });
+}
 
 const OWNER = "a".repeat(64);
 const DATE = "2026-10-12";
@@ -189,6 +198,7 @@ export async function runEnrollmentPilotVerify(root = join(dirname(fileURLToPath
 }
 
 async function main() {
+  parseVerifyArgs(process.argv.slice(2));
   console.log(JSON.stringify(await runEnrollmentPilotVerify()));
 }
 

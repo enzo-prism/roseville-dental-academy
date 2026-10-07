@@ -1,5 +1,7 @@
 import { fileURLToPath } from "node:url";
 
+import { ACTIVATE_USAGE, parseKnownFlags } from "./cli-args.mjs";
+
 export const ENROLLMENT_WEBHOOK_PATH = "/api/enrollment/webhook";
 export const ENROLLMENT_WEBHOOK_EVENTS = [
   "checkout.session.completed",
@@ -62,26 +64,15 @@ export function findEnrollmentWebhooks(endpoints, url) {
 }
 
 export function parseActivateArgs(argv, env = process.env) {
-  const args = [...argv];
-  let origin;
-  const rest = [];
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--origin") {
-      origin = args[index + 1];
-      index += 1;
-      continue;
-    }
-    if (arg.startsWith("--origin=")) {
-      origin = arg.slice("--origin=".length);
-      continue;
-    }
-    rest.push(arg);
-  }
+  const parsed = parseKnownFlags(argv, {
+    flags: new Set(["--dry-run", "--disable"]),
+    valued: new Set(["--origin"]),
+    usage: ACTIVATE_USAGE,
+  });
   return {
-    dryRun: rest.includes("--dry-run"),
-    disable: rest.includes("--disable"),
-    origin: origin ?? env.RDA_ENROLLMENT_TEST_ORIGIN,
+    dryRun: parsed.flags.has("--dry-run"),
+    disable: parsed.flags.has("--disable"),
+    origin: parsed.values["--origin"] ?? env.RDA_ENROLLMENT_TEST_ORIGIN,
     key: env.RDA_STRIPE_TEST_SECRET_KEY,
   };
 }

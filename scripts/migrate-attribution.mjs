@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 
 import { neon } from "@neondatabase/serverless";
 
+import { MIGRATE_USAGE, parseKnownFlags } from "./cli-args.mjs";
+
 export function splitSqlStatements(source) {
   const statements = [];
   let buffer = "";
@@ -122,9 +124,14 @@ export async function readAttributionMigrations(root) {
 }
 
 export function parseMigratorArgs(argv) {
+  const parsed = parseKnownFlags(argv, {
+    flags: new Set(["--check", "--dry-run"]),
+    valued: new Set(),
+    usage: MIGRATE_USAGE,
+  });
   return {
-    check: argv.includes("--check"),
-    dryRun: argv.includes("--dry-run"),
+    check: parsed.flags.has("--check"),
+    dryRun: parsed.flags.has("--dry-run"),
   };
 }
 

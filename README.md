@@ -122,9 +122,9 @@ pnpm exec playwright install chromium
 - `pnpm test:design`: UX stability plus visual parity.
 - `pnpm test:attribution`: attribution API, browser, Meta form flow, and database integrity regressions against localhost (also in Release Gate CI).
 - `pnpm test:attribution-db`: ledger migrations and triggers in an isolated in-memory Postgres (also in Release Gate CI; see `db/README.md`).
-- `pnpm attribution:migrate:check`: inspect whether enrollment migration `004` is already applied (no writes).
-- `pnpm enrollment:activate`: create the Stripe **test** enrollment webhook only if missing; refuses live keys; `--dry-run` / `--disable` supported.
-- `pnpm enrollment:verify` / `pnpm test:enrollment-pilot`: isolated mocked paid / expired / capacity checks plus activate-script unit tests (also in Release Gate CI).
+- `pnpm attribution:migrate:check`: inspect whether enrollment 004 objects exist (not that function bodies are current; no writes). Unknown flags fail closed.
+- `pnpm enrollment:activate`: create the Stripe **test** enrollment webhook only if missing; refuses live keys; accepts `sk_test_` or `rk_test_`; `--dry-run` / `--disable` / `--origin`; a disabled match is re-enabled (`disabled: false` only). Unknown flags fail closed.
+- `pnpm enrollment:verify` / `pnpm test:enrollment-pilot`: isolated mocked paid / expired / capacity checks (CI DB-level proof) plus activate-script unit tests (also in Release Gate CI). The real-route harness is opt-in.
 - `pnpm test:release`: `lint` + `build`, then parity-visual, smoke, course-dates, interactions, parity-content, and UX against a local production server (`pnpm start` on port 3100 by default).
 - `pnpm test:preview`: the same six suites against a Vercel preview (`PREVIEW_URL` is required, no webserver is started, no lint/build).
 
