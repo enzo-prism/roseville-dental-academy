@@ -304,4 +304,110 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       await expect(page.locator('script[src*="connect.facebook.net"]')).toHaveCount(0);
     });
   }
+
+  const cookieFbp = "fb.1.1710000000000.1234567890";
+  const cookieFbclid = "restricted_meta_click";
+  const cookieFbc = `fb.1.1710000000000.${cookieFbclid}`;
+  const metaFbclidUrl = `${sealantsUrl(creatives[0].content)}&fbclid=${cookieFbclid}`;
+
+  function expectNoCookieMetaIdsInLead(
+    postedBody: string,
+    receipt: Record<string, unknown> | null,
+  ) {
+    expect(multipartField(postedBody, "fbclid")).toBe(cookieFbclid);
+    expect(multipartField(postedBody, "fbc") || "").toBe("");
+    expect(multipartField(postedBody, "fbp") || "").toBe("");
+    expect(multipartField(postedBody, "first_touch_fbc") || "").toBe("");
+    expect(multipartField(postedBody, "first_touch_fbp") || "").toBe("");
+    expect(multipartField(postedBody, "conversion_touch_fbc") || "").toBe("");
+    expect(multipartField(postedBody, "conversion_touch_fbp") || "").toBe("");
+    expect(postedBody).not.toContain(cookieFbp);
+    expect(postedBody).not.toContain(cookieFbc);
+    expect(receipt).not.toBeNull();
+    const firstTouch = receipt?.firstTouch as { clickIds?: Record<string, string> } | undefined;
+    const conversionTouch = receipt?.conversionTouch as { clickIds?: Record<string, string> } | undefined;
+    expect(firstTouch?.clickIds?.fbclid).toBe(cookieFbclid);
+    expect(firstTouch?.clickIds?.fbc || "").toBe("");
+    expect(firstTouch?.clickIds?.fbp || "").toBe("");
+    expect(conversionTouch?.clickIds?.fbc || "").toBe("");
+    expect(conversionTouch?.clickIds?.fbp || "").toBe("");
+  }
+
+  test("allowed Meta fbclid visit still submits matching cookie fbc and fbp", async ({ page, baseURL }) => {
+    let postedBody = "";
+    let receipt: Record<string, unknown> | null = null;
+    await page.context().addCookies([
+      { name: "_fbp", value: cookieFbp, url: baseURL ?? "http://127.0.0.1:3000" },
+      { name: "_fbc", value: cookieFbc, url: baseURL ?? "http://127.0.0.1:3000" },
+    ]);
+    await page.route("https://formspree.io/**", async (route) => {
+      expect(route.request().url()).toBe("https://formspree.io/f/xzdkgaeg");
+      postedBody = route.request().postData() ?? "";
+      await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+    });
+    await page.route("**/api/attribution/receipt", async (route) => {
+      receipt = JSON.parse(route.request().postData() ?? "null") as Record<string, unknown>;
+      await route.fulfill({ status: 202, contentType: "application/json", body: '{"ok":true}' });
+    });
+
+    await page.goto(metaFbclidUrl, { waitUntil: "networkidle" });
+    const form = page.locator('form[data-rda-signup-form="true"]').first();
+    await expect(form.locator('input[name="fbclid"]')).toHaveValue(cookieFbclid);
+    await expect(form.locator('input[name="fbc"]')).toHaveValue(cookieFbc);
+    await expect(form.locator('input[name="fbp"]')).toHaveValue(cookieFbp);
+    await fillSignup(form);
+    await form.getByRole("button", { name: "Request next steps" }).click();
+    await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+    await expect.poll(() => receipt).not.toBeNull();
+
+    expect(multipartField(postedBody, "fbclid")).toBe(cookieFbclid);
+    expect(multipartField(postedBody, "fbc")).toBe(cookieFbc);
+    expect(multipartField(postedBody, "fbp")).toBe(cookieFbp);
+    const firstTouch = receipt?.firstTouch as { clickIds?: Record<string, string> } | undefined;
+    expect(firstTouch?.clickIds?.fbc).toBe(cookieFbc);
+    expect(firstTouch?.clickIds?.fbp).toBe(cookieFbp);
+    assertNoStudentData([receipt]);
+  });
+
+  for (const restriction of ["DNT", "GPC", "denied-cookie"] as const) {
+    test(`${restriction} Meta fbclid visit omits cookie fbc and fbp from form and receipt`, async ({ page, baseURL }) => {
+      let postedBody = "";
+      let receipt: Record<string, unknown> | null = null;
+      if (restriction === "denied-cookie") {
+        await page.context().addCookies([
+          { name: "rda_attribution_consent", value: "denied", url: baseURL ?? "http://127.0.0.1:3000" },
+        ]);
+      } else {
+        await page.addInitScript((privacySignal) => {
+          Object.defineProperty(navigator, privacySignal === "GPC" ? "globalPrivacyControl" : "doNotTrack", {
+            configurable: true, value: privacySignal === "GPC" ? true : "1",
+          });
+        }, restriction);
+      }
+      await page.context().addCookies([
+        { name: "_fbp", value: cookieFbp, url: baseURL ?? "http://127.0.0.1:3000" },
+        { name: "_fbc", value: cookieFbc, url: baseURL ?? "http://127.0.0.1:3000" },
+      ]);
+      await page.route("https://formspree.io/**", async (route) => {
+        postedBody = route.request().postData() ?? "";
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+      });
+      await page.route("**/api/attribution/receipt", async (route) => {
+        receipt = JSON.parse(route.request().postData() ?? "null") as Record<string, unknown>;
+        await route.fulfill({ status: 202, contentType: "application/json", body: '{"ok":true}' });
+      });
+
+      await page.goto(metaFbclidUrl, { waitUntil: "networkidle" });
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(form.locator('input[name="fbclid"]')).toHaveValue(cookieFbclid);
+      await expect(form.locator('input[name="fbc"]')).toHaveValue("");
+      await expect(form.locator('input[name="fbp"]')).toHaveValue("");
+      await fillSignup(form);
+      await form.getByRole("button", { name: "Request next steps" }).click();
+      await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+      await expect.poll(() => receipt).not.toBeNull();
+      expectNoCookieMetaIdsInLead(postedBody, receipt);
+      assertNoStudentData([receipt]);
+    });
+  }
 });

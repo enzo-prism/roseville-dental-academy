@@ -10,7 +10,14 @@ type AttributionModule = typeof import("@/lib/lead-attribution");
 
 // Load the actual browser module in a fresh browser-like context per test, so
 // persisted visits and module-memory fallback are exercised without a network.
-function browserAttribution(options: { blockedStorage?: boolean; cookies?: string; local?: Map<string, string>; session?: Map<string, string> } = {}) {
+function browserAttribution(options: {
+  blockedStorage?: boolean;
+  cookies?: string;
+  doNotTrack?: string;
+  globalPrivacyControl?: boolean;
+  local?: Map<string, string>;
+  session?: Map<string, string>;
+} = {}) {
   const cookies = new Map<string, string>();
   const local = options.local ?? new Map<string, string>();
   const session = options.session ?? new Map<string, string>();
@@ -29,7 +36,10 @@ function browserAttribution(options: { blockedStorage?: boolean; cookies?: strin
       cookies.set(name, parts.join("="));
     },
   };
-  const window = { location: new URL("https://rosevilledentalacademy.com/") };
+  const window = {
+    doNotTrack: options.doNotTrack,
+    location: new URL("https://rosevilledentalacademy.com/"),
+  };
   for (const [name, store] of [["localStorage", local], ["sessionStorage", session]] as const) {
     Object.defineProperty(window, name, {
       get() {
@@ -46,7 +56,10 @@ function browserAttribution(options: { blockedStorage?: boolean; cookies?: strin
     Date,
     document,
     DOMException,
-    navigator: { doNotTrack: "0" },
+    navigator: {
+      doNotTrack: options.doNotTrack ?? "0",
+      globalPrivacyControl: options.globalPrivacyControl === true,
+    },
     URL,
     URLSearchParams,
     window,
@@ -189,6 +202,94 @@ test("unknown consent remains unknown and does not become server marketing conse
   });
   expect(receipt.firstTouch.consent.analytics).toBe(false);
   expect(receipt.conversionTouch.consent.marketing).toBe(false);
+});
+
+const META_BROWSER_COOKIES = "_fbc=fb.1.123.meta_click; _fbp=fb.1.123.browser";
+
+function expectNoCookieMetaIds(attribution: LeadAttribution, api: AttributionModule) {
+  expect(attribution.clickIds.fbclid).toBe("meta_click");
+  expect(attribution.clickIds.fbc).toBe("");
+  expect(attribution.clickIds.fbp).toBe("");
+  expect(attribution.firstTouch.clickIds.fbc).toBe("");
+  expect(attribution.firstTouch.clickIds.fbp).toBe("");
+  expect(attribution.conversionTouch.clickIds.fbc).toBe("");
+  expect(attribution.conversionTouch.clickIds.fbp).toBe("");
+  const fields = api.getLeadAttributionFormFields(attribution);
+  expect(fields.fbclid).toBe("meta_click");
+  expect(fields.fbc).toBe("");
+  expect(fields.fbp).toBe("");
+  expect(fields.first_touch_fbc).toBe("");
+  expect(fields.first_touch_fbp).toBe("");
+  expect(fields.conversion_touch_fbc).toBe("");
+  expect(fields.conversion_touch_fbp).toBe("");
+  const receipt = api.buildAttributionReceipt(attribution, {
+    acceptedAt: SECOND, formId: "synthetic-form", formKey: "course-info", leadEventId: "synthetic-event",
+  });
+  expect(receipt.firstTouch.clickIds.fbclid).toBe("meta_click");
+  expect(receipt.firstTouch.clickIds.fbc).toBe("");
+  expect(receipt.firstTouch.clickIds.fbp).toBe("");
+  expect(receipt.conversionTouch.clickIds.fbc).toBe("");
+  expect(receipt.conversionTouch.clickIds.fbp).toBe("");
+}
+
+test("allowed Meta fbclid visit stores matching _fbc and _fbp cookies on the touch", () => {
+  const browser = browserAttribution({ cookies: META_BROWSER_COOKIES });
+  const attribution = browser.visit(META, FIRST);
+  expect(attribution.consentState).toBe("unknown");
+  expect(attribution.conversionTouch.clickIds.fbclid).toBe("meta_click");
+  expect(attribution.conversionTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
+  expect(attribution.conversionTouch.clickIds.fbp).toBe("fb.1.123.browser");
+  const fields = browser.api.getLeadAttributionFormFields(attribution);
+  expect(fields.fbclid).toBe("meta_click");
+  expect(fields.fbc).toBe("fb.1.123.meta_click");
+  expect(fields.fbp).toBe("fb.1.123.browser");
+  const receipt = browser.api.buildAttributionReceipt(attribution, {
+    acceptedAt: SECOND, formId: "synthetic-form", formKey: "course-info", leadEventId: "synthetic-event",
+  });
+  expect(receipt.firstTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
+  expect(receipt.firstTouch.clickIds.fbp).toBe("fb.1.123.browser");
+  expect(receipt.conversionTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
+  expect(receipt.conversionTouch.clickIds.fbp).toBe("fb.1.123.browser");
+});
+
+test("DNT Meta fbclid visit stores no cookie-derived fbc or fbp", () => {
+  const browser = browserAttribution({ cookies: META_BROWSER_COOKIES, doNotTrack: "1" });
+  const attribution = browser.visit(META, FIRST);
+  expect(attribution.consentState).toBe("restricted");
+  expectNoCookieMetaIds(attribution, browser.api);
+});
+
+test("GPC Meta fbclid visit stores no cookie-derived fbc or fbp", () => {
+  const browser = browserAttribution({
+    cookies: META_BROWSER_COOKIES,
+    globalPrivacyControl: true,
+  });
+  const attribution = browser.visit(META, FIRST);
+  expect(attribution.consentState).toBe("restricted");
+  expectNoCookieMetaIds(attribution, browser.api);
+});
+
+test("denied attribution consent cookie Meta fbclid visit stores no cookie-derived fbc or fbp", () => {
+  const browser = browserAttribution({
+    cookies: `${META_BROWSER_COOKIES}; rda_attribution_consent=denied`,
+  });
+  const attribution = browser.visit(META, FIRST);
+  expect(attribution.consentState).toBe("restricted");
+  expectNoCookieMetaIds(attribution, browser.api);
+});
+
+test("restricted Meta visit keeps URL click IDs and drops only cookie-derived fbc/fbp", () => {
+  const browser = browserAttribution({
+    cookies: META_BROWSER_COOKIES,
+    doNotTrack: "1",
+  });
+  const attribution = browser.visit(`${META}&fbc=url_fbc&fbp=url_fbp`, FIRST);
+  expect(attribution.consentState).toBe("restricted");
+  expect(attribution.clickIds.fbclid).toBe("meta_click");
+  expect(attribution.clickIds.fbc).toBe("url_fbc");
+  expect(attribution.clickIds.fbp).toBe("url_fbp");
+  expect(attribution.conversionTouch.clickIds.fbc).toBe("url_fbc");
+  expect(attribution.conversionTouch.clickIds.fbp).toBe("url_fbp");
 });
 
 test("throwing storage object getters safely retain attribution in memory", () => {
