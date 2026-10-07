@@ -6,10 +6,11 @@ import {
   buildAttributionReceipt,
   getLeadAttributionFormFields,
   getLeadAttributionStamp,
+  getSubmitTimeBrowserFbp,
   resolveLeadAttribution,
   type LeadAttribution,
 } from "@/lib/lead-attribution";
-
+import { metaMeasurementAllowed } from "@/lib/meta-pixel-config";
 import { measurementReferenceSnapshot, type MeasurementReferenceSnapshot } from "@/lib/openai-measurement";
 
 export {
@@ -180,6 +181,16 @@ export function useLeadFormSubmit() {
       for (const [field, value] of Object.entries(getLeadAttributionFormFields(attribution))) {
         if (value) {
           formData.set(field, value);
+        }
+      }
+
+      // Top-level `fbp` is the current browser cookie at submit. Touch-level
+      // fbp/fbc stay Meta+fbclid gated (PR #34) so a later Google visit does
+      // not inherit a stored Meta browser ID.
+      if (!String(formData.get("fbp") || "").trim() && metaMeasurementAllowed()) {
+        const browserFbp = getSubmitTimeBrowserFbp();
+        if (browserFbp) {
+          formData.set("fbp", browserFbp);
         }
       }
 

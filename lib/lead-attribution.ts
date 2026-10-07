@@ -408,6 +408,17 @@ export function getAttributionConsentState(): AttributionConsentState {
   return "unknown";
 }
 
+// Current `_fbp` cookie for the top-level Formspree field only. Touch-level
+// fbp stays Meta+fbclid gated so a later Google visit does not inherit it.
+// Never synthesizes an fb.1.* value.
+export function getSubmitTimeBrowserFbp() {
+  if (getAttributionConsentState() === "restricted") {
+    return "";
+  }
+
+  return compactAttributionValue(getCookieValue("_fbp"));
+}
+
 type BrowserStorage = "localStorage" | "sessionStorage";
 
 function readStorage(storage: BrowserStorage, key: string) {
