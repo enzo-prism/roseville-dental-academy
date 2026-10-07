@@ -544,6 +544,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     utm_term: optionalSlugValue(getFormValue(formData, "utm_term")),
     ad_id: optionalCompactValue(getFormValue(formData, "ad_id")),
     renewal_focus: optionalSlugValue(getFormValue(formData, "Renewal focus")),
+    // Visitor-facing how_heard / how_heard_other stay on the Formspree payload only.
   };
 
   trackSiteEvent("lead_form_submit", {

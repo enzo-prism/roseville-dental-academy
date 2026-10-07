@@ -66,11 +66,14 @@ function multipartField(body: string, name: string) {
   return body.match(new RegExp(`name="${escaped}"\\r\\n\\r\\n([^\\r]*)`))?.[1];
 }
 
-async function fillSignup(form: Locator) {
+async function fillSignup(form: Locator, howHeard?: string) {
   await form.locator('input[name="Name"]').fill(student.name);
   await form.locator('input[name="_replyto"]').fill(student.email);
   await form.locator('input[name="Phone"]').fill(student.phone);
   await form.locator('textarea[name="Notes"]').fill(student.notes);
+  if (howHeard) {
+    await form.locator('select[name="how_heard"]').selectOption(howHeard);
+  }
   if (await form.getByRole("checkbox", { checked: true }).count() === 0) {
     await form.getByRole("checkbox").first().check();
   }
@@ -304,4 +307,51 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       await expect(page.locator('script[src*="connect.facebook.net"]')).toHaveCount(0);
     });
   }
+
+  test("infection-control initializes Meta pixel and accepted Lead has eventID", async ({ page }) => {
+    let formspreeStatus = 422;
+    let postedBody = "";
+    await page.route("https://formspree.io/**", async (route) => {
+      postedBody = route.request().postData() ?? "";
+      await route.fulfill({
+        status: formspreeStatus,
+        contentType: "application/json",
+        body: formspreeStatus === 200 ? '{"ok":true}' : '{"error":"synthetic_rejection"}',
+      });
+    });
+    await page.route("**/api/attribution/receipt", (route) =>
+      route.fulfill({ status: 202, contentType: "application/json", body: '{"ok":true}' }),
+    );
+
+    await page.goto("/infection-control", { waitUntil: "networkidle" });
+
+    const bootstrap = await page.locator("#rda-meta-pixel").textContent();
+    expect(bootstrap).toContain(DEFAULT_META_PIXEL_ID);
+    expect(bootstrap).toMatch(/fbq\('init',\s*['"]356932321507746['"]/);
+    expect(await page.evaluate(() => typeof window.fbq === "function")).toBe(true);
+
+    const form = page.locator('form[data-rda-signup-form="true"]').first();
+    await expect(form.locator('select[name="how_heard"]')).toBeVisible();
+    await expect(form.locator('select[name="how_heard"]')).not.toHaveAttribute("required");
+    await fillSignup(form, "Instagram");
+
+    await form.getByRole("button", { name: "Request next steps" }).click();
+    await expect(page.locator('[data-rda-lead-form-error="true"]')).toBeVisible();
+    expect((await captures(page)).meta.filter((event) => event[0] === "track" && event[1] === "Lead")).toHaveLength(0);
+    expect(postedBody).toContain("Instagram");
+
+    formspreeStatus = 200;
+    await form.getByRole("button", { name: "Request next steps" }).click();
+    await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+
+    const observed = await captures(page);
+    const leads = observed.meta.filter((event) => event[0] === "track" && event[1] === "Lead");
+    expect(leads).toHaveLength(1);
+    const eventId = multipartField(postedBody, "lead_event_id");
+    expect(eventId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(leads[0][3]).toEqual({ eventID: eventId });
+    expect(multipartField(postedBody, "how_heard")).toBe("Instagram");
+    expect(JSON.stringify(leads[0])).not.toMatch(/how_heard|Instagram|how_heard_other/);
+    assertNoStudentData([leads, observed.successes]);
+  });
 });

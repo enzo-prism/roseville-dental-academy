@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { HowHeardField } from "@/components/site/how-heard-field";
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import { LeadAttributionHiddenFields } from "@/components/site/lead-attribution-fields";
 import {
@@ -291,6 +292,7 @@ export function LiveSignupSection({
             <Input autoComplete="tel" id={`${formId}-phone`} name="Phone" placeholder="Phone" required type="tel" />
           </Field>
         </FieldGroup>
+        <HowHeardField className="rda-signup-how-heard" id={formId} />
         <Field className="rda-signup-notes">
           <FieldLabel className="rda-field-label" htmlFor={`${formId}-notes`}>
             <SignupIcon Icon={MessageSquareText} dataIcon="notes" />

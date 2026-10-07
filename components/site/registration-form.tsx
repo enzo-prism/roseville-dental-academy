@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 
+import { HowHeardField } from "@/components/site/how-heard-field";
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import { LeadAttributionHiddenFields } from "@/components/site/lead-attribution-fields";
 import {
@@ -444,15 +445,7 @@ export function RegistrationForm() {
                 Anything else admissions should know?
               </legend>
               <div className="grid gap-3.5 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reg-hear-about">How did you hear about us?</Label>
-                  <Input
-                    className="h-11 rounded-xl bg-background"
-                    id="reg-hear-about"
-                    name="How did you hear about us?"
-                    type="text"
-                  />
-                </div>
+                <HowHeardField id="reg-hear-about" variant="registration" />
                 <div className="space-y-2">
                   <Label htmlFor="reg-notes">Questions or notes</Label>
                   <Textarea

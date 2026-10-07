@@ -1784,6 +1784,63 @@ test.describe("live-style interaction flows", () => {
       await expect(backForm.locator('input[name="page_path"]')).toHaveValue("/infection-control");
     });
 
+    test("first-touch UTMs and click IDs are posted after navigating to another form", async ({
+      page,
+    }) => {
+      let formspreeRequestBody = "";
+      await page.route("https://formspree.io/f/**", async (route) => {
+        formspreeRequestBody = route.request().postData() ?? "";
+        await route.fulfill({
+          body: JSON.stringify({ ok: true }),
+          contentType: "application/json",
+          status: 200,
+        });
+      });
+
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=instagram&utm_medium=paid_social&utm_campaign=first_touch_ig&utm_content=ig_creative&utm_term=rda&fbclid=first_ig_click",
+      );
+
+      await page.getByRole("link", { name: "Coronal Polish" }).first().click();
+      await expect(page).toHaveURL(/\/coronal-polish\/?$/);
+
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(form.locator('input[name="landing_page"]')).toHaveValue("/infection-control");
+      await expect(form.locator('input[name="utm_source"]')).toHaveValue("instagram");
+      await expect(form.locator('input[name="utm_medium"]')).toHaveValue("paid_social");
+      await expect(form.locator('input[name="utm_campaign"]')).toHaveValue("first_touch_ig");
+      await expect(form.locator('input[name="utm_content"]')).toHaveValue("ig_creative");
+      await expect(form.locator('input[name="utm_term"]')).toHaveValue("rda");
+      await expect(form.locator('input[name="fbclid"]')).toHaveValue("first_ig_click");
+      await expect(form.locator('select[name="how_heard"]')).toBeVisible();
+      await expect(form.locator('select[name="how_heard"]')).not.toHaveAttribute("required");
+      await form.locator('select[name="how_heard"]').selectOption("Other");
+      await expect(form.locator('input[name="how_heard_other"]')).toBeVisible();
+      await form.locator('select[name="how_heard"]').selectOption("Instagram");
+      await expect(form.locator('input[name="how_heard_other"]')).toHaveCount(0);
+
+      await form.getByRole("checkbox").first().click();
+      await form.locator('input[name="Name"]').fill("Synthetic First Touch");
+      await form.locator('input[name="_replyto"]').fill("synthetic-first-touch@example.test");
+      await form.locator('input[name="Phone"]').fill("916-555-0140");
+      await form.locator('select[name="how_heard"]').selectOption("Instagram");
+      await form.getByRole("button", { name: "Request next steps" }).click();
+      await expect(page.getByText("Request sent")).toBeVisible();
+      await expect.poll(() => formspreeRequestBody).not.toBe("");
+
+      expect(formspreeRequestBody).toContain("/infection-control");
+      expect(formspreeRequestBody).toContain("instagram");
+      expect(formspreeRequestBody).toContain("paid_social");
+      expect(formspreeRequestBody).toContain("first_touch_ig");
+      expect(formspreeRequestBody).toContain("ig_creative");
+      expect(formspreeRequestBody).toContain("rda");
+      expect(formspreeRequestBody).toContain("first_ig_click");
+      expect(formspreeRequestBody).toContain("how_heard");
+      expect(formspreeRequestBody).toContain("Instagram");
+    });
+
     test("first-touch Saturday tags and parsed ad_id stamp both Formspree forms", async ({
       page,
     }) => {
@@ -2006,6 +2063,8 @@ test.describe("live-style interaction flows", () => {
 
         await expect(form.locator('input[name="lead_source"]')).toHaveValue("website");
         await expect(form.locator('input[name="how-heard"]')).toHaveValue("website");
+        await expect(form.locator('select[name="how_heard"]')).toHaveCount(1);
+        await expect(form.locator('select[name="how_heard"]')).not.toHaveAttribute("required");
       }
 
       await gotoSettled(page, "/");
