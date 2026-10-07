@@ -2290,6 +2290,14 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   width: 100%;
 }
 
+.rda-gallery-item[data-rda-gallery-instagram="true"] {
+  background: var(--muted);
+}
+
+.rda-gallery-item[data-rda-gallery-instagram="true"] img {
+  object-fit: contain;
+}
+
 .rda-gallery-actions {
   margin-top: 24px;
   text-align: center;

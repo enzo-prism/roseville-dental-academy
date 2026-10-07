@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Award, BadgeCheck, CheckCircle2, ClipboardCheck, ListChecks } from "lucide-react";
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
+import { AcademyMediaSection } from "@/components/site/academy-media-section";
 import { HomepageCourseSections } from "@/components/site/homepage-course-sections";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import {
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { LiveRoute } from "@/lib/live-route-data";
+import { academyClassPhotos, academyTeamMedia, academyTrainingVideos } from "@/lib/academy-media";
 import {
   boardApprovalHighlights,
   homeGalleryHighlight,
@@ -47,8 +49,14 @@ export function LiveStableWidgets({ route }: { route: LiveRoute }) {
       {slots.has("home") ? <HomepageCourseSections /> : null}
       {slots.has("board") ? <StableBoardApproval /> : null}
       {slots.has("instructors") ? <StableInstructorBios /> : null}
+      {slots.has("instructors") ? <AcademyMediaSection id="academy-team" title="Teaching and learning at RDA" description="Meet the people behind the training through moments shared by the academy." items={academyTeamMedia} /> : null}
       {slots.has("faqs") ? <StableStudentFaqs /> : null}
+      {route.route === "/photos" ? <AcademyMediaSection id="academy-class-photos" title="Classes and student milestones" description="First days, class celebrations, and completion certificates, shared by Roseville Dental Academy." items={academyClassPhotos} /> : null}
+      {route.route === "/photos" ? <AcademyMediaSection id="academy-training-videos" title="See the training in action" description="Watch students practice, answer classroom questions, and learn together inside the academy. Choose a video to play." items={academyTrainingVideos} /> : null}
       {slots.has("photos") ? <StableGallery full={route.route === "/photos"} /> : null}
+      {route.route === "/" || route.route === "/dental-assisting-program" ? (
+        <AcademyMediaSection id="academy-training-videos" title="See the training in action" description="Watch students practice, answer classroom questions, and learn together inside the academy. Choose a video to play." items={academyTrainingVideos.slice(0, 2)} />
+      ) : null}
       {route.route === "/contact" && slots.has("contact") ? <LiveContactSection /> : null}
       {slots.has("signup") && route.route !== "/" ? (
         <LiveSignupSection
@@ -338,14 +346,14 @@ function StableGallery({ full = false }: { full?: boolean }) {
             ) : null}
             <div className="rda-gallery-grid">
               {group.items.map((item) => (
-                <Card className="rda-gallery-item border-border bg-card" key={item.src}>
+                <Card className="rda-gallery-item border-border bg-card" data-rda-gallery-instagram={item.src.includes("/assets/social/instagram/") || undefined} key={item.src}>
                   <AspectRatio ratio={4 / 3}>
                     <Image
                       alt={item.alt}
                       fill
                       sizes="(max-width: 760px) 100vw, 33vw"
                       src={item.src}
-                      unoptimized
+                      unoptimized={!item.src.includes("/assets/social/instagram/")}
                     />
                   </AspectRatio>
                 </Card>
