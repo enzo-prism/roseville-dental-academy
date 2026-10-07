@@ -17,6 +17,12 @@ import { Button } from "@/components/ui/button";
 import { activeSitePromo, isSitePromoActive } from "@/lib/site-promo";
 
 const SHOW_DELAY_MS = 1500;
+const LEAD_FORM_SELECTOR = [
+  "form[data-rda-signup-form]",
+  "form[data-rda-contact-form]",
+  "form[data-rda-landing-form]",
+  "form[data-rda-registration-form]",
+].join(",");
 
 function readDismissed(storageKey: string) {
   try {
@@ -24,6 +30,11 @@ function readDismissed(storageKey: string) {
   } catch {
     return false;
   }
+}
+
+function isLeadFormFieldActive() {
+  const active = document.activeElement;
+  return active instanceof HTMLElement && Boolean(active.closest(LEAD_FORM_SELECTOR));
 }
 
 function writeDismissed(storageKey: string) {
@@ -43,13 +54,35 @@ export function SitePromoDialog() {
       return undefined;
     }
 
-    const timer = window.setTimeout(() => {
-      if (!isSitePromoActive(activeSitePromo, Date.now())) return;
+    let cancelled = false;
+
+    const openIfIdle = () => {
+      if (cancelled || !isSitePromoActive(activeSitePromo, Date.now())) return;
+      // Keep the modal off the lead-form submit path: if a visitor is already
+      // in a form, do not cover the request button.
+      if (isLeadFormFieldActive()) return;
       setReady(true);
       setOpen(true);
-    }, SHOW_DELAY_MS);
+    };
 
-    return () => window.clearTimeout(timer);
+    const timer = window.setTimeout(openIfIdle, SHOW_DELAY_MS);
+
+    const onFocusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement) || !target.closest(LEAD_FORM_SELECTOR)) {
+        return;
+      }
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+
+    document.addEventListener("focusin", onFocusIn);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("focusin", onFocusIn);
+    };
   }, []);
 
   useEffect(() => {

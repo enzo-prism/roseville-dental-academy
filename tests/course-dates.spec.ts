@@ -22,7 +22,8 @@ import courseScheduleData from "../data/course-schedule.json";
 test("reviewed schedule excludes elapsed dates without inventing sold-out history", () => {
   expect(COURSE_SCHEDULE_REVIEWED_ON).toBe("2026-09-23");
   expect(getUpcomingScheduleMonths().map((month) => month.month)).toEqual(["October", "November", "December"]);
-  expect(getAvailableCourseDates("dental-assisting-program")).toEqual(["October 12, 2026", "November 20, 2026", "December 5, 2026"]);
+  expect(getAvailableCourseDates("dental-assisting-program")).toEqual(["November 20, 2026", "December 5, 2026"]);
+  expect(getCourseSchedule("dental-assisting-program").find((entry) => entry.isoDate === "2026-10-12")?.status).toBe("full");
   expect(getAvailableCourseDates("bls-cpr-1")).toEqual(["October 17, 2026", "November 7, 2026", "December 5, 2026"]);
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-18")).toBe("November 7, 2026");
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-12-06")).toBeUndefined();
@@ -45,7 +46,7 @@ test("reviewed schedule excludes elapsed dates without inventing sold-out histor
   expect(getNextAvailableCourseDate("radiation-safety", "2026-12-06")).toBeUndefined();
   expect(getAvailableCourseDates("coronal-polish")).toEqual(["October 24, 2026", "November 14, 2026", "December 12, 2026"]);
   expect(getAvailableCourseDates("sealants")).toEqual(["November 14, 2026", "December 12, 2026"]);
-  expect(getNextAvailableCourseDate("dental-assisting-program", "2026-09-12")).toBe("October 12, 2026");
+  expect(getNextAvailableCourseDate("dental-assisting-program", "2026-09-12")).toBe("November 20, 2026");
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-17")).toBe("October 17, 2026");
   expect(getNextAvailableCourseDate("radiation-safety", "2026-10-17")).toBe("November 7, 2026");
   expect(getNextAvailableCourseDate("sealants", "2026-10-24")).toBe("November 14, 2026");
@@ -193,7 +194,7 @@ for (const width of [390, 1280]) {
     await expect(page.getByText("Next open date: November 7, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: October 24, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: November 14, 2026", { exact: true })).toHaveCount(1);
-    await expect(page.getByText("Next open date: October 12, 2026", { exact: true })).toHaveCount(1);
+    await expect(page.getByText("Next open date: November 20, 2026", { exact: true })).toHaveCount(1);
     const novemberSeven = schedule.locator(".rda-home-schedule-date-row").filter({
       has: page.locator('time[datetime="2026-11-07"]'),
     });
@@ -278,6 +279,15 @@ test("course JSON-LD omits sold-out October instances", async ({ page }) => {
   expect(radiationDates).toEqual(["2026-11-07", "2026-12-05"]);
   expect(radiationDates).not.toContain("2026-10-17");
 
+  await page.goto("/dental-assisting-program");
+  const dentalSchema = JSON.parse(
+    (await page.locator("#rda-ld-course-dental-assisting-program").textContent()) ?? "{}",
+  ) as { hasCourseInstance?: Array<{ startDate?: string }> };
+  const dentalDates = (dentalSchema.hasCourseInstance ?? []).map((entry) => entry.startDate);
+
+  expect(dentalDates).toEqual(["2026-11-20", "2026-12-05"]);
+  expect(dentalDates).not.toContain("2026-10-12");
+
   await page.goto("/sealants");
   const sealantsSchema = JSON.parse(
     (await page.locator("#rda-ld-course-sealants").textContent()) ?? "{}",
@@ -320,6 +330,7 @@ test("AI discovery dates match the reviewed course schedule", async ({ request }
   expect(response.ok()).toBe(true);
   const text = await response.text();
   expect(text).toContain("October 17, 2026");
-  expect(text).toContain("October 12, 2026");
+  expect(text).toContain("November 20, 2026");
+  expect(text).not.toContain("October 12, 2026");
   expect(text).not.toMatch(/(?:June|July|August|September) \d/);
 });

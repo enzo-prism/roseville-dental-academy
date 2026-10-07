@@ -659,7 +659,7 @@ test.describe("live-style interaction flows", () => {
         ),
       ).toBeVisible();
       await expect(
-        courseSystem.getByText("October 12, 2026; November 20, 2026; December 5, 2026"),
+        courseSystem.getByText("November 20, 2026; December 5, 2026"),
       ).toBeVisible();
       await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
         "href",
@@ -2104,7 +2104,7 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="note"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
       await expect(form.getByText("Classes or certifications to ask about")).toBeVisible();
-      await expect(form.getByText("Next open date: October 12, 2026")).toHaveCount(1);
+      await expect(form.getByText("Next open date: November 20, 2026")).toHaveCount(1);
       await expect(form.getByText("Next open date: September 12, 2026 (Saturday Academy)")).toHaveCount(0);
       await expect(form.getByText("Next open date: September 12, 2026", { exact: true })).toHaveCount(0);
       await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(0);
@@ -2365,8 +2365,8 @@ test.describe("live-style interaction flows", () => {
       const banner = page.locator("[data-rda-promo-banner='true']");
 
       await expect(banner).toBeVisible();
-      await expect(banner).toContainText("Next Dental Assisting start:");
-      await expect(banner).toContainText("Monday, October 12.");
+      await expect(banner).toContainText("Next Dental Assisting class starts Friday, Nov 20.");
+      await expect(banner).toContainText("Saturday class starts Dec 5.");
       await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
       expect(activeSitePromo.ctaHref).toBe("/lp/dental-assisting-enroll");
     });
@@ -2378,16 +2378,20 @@ test.describe("live-style interaction flows", () => {
       const dialog = page.locator("[data-rda-promo-dialog='true']");
 
       await expect(dialog).toBeVisible({ timeout: 8_000 });
-      await expect(dialog.getByText("Monday Dental Assisting class", { exact: true })).toBeVisible();
+      await expect(dialog.getByText("Dental Assisting class", { exact: true })).toBeVisible();
       await expect(
-        dialog.getByRole("heading", { name: "Next Dental Assisting start is Monday, October 12, 2026" }),
+        dialog.getByRole("heading", {
+          name: "Next class starts Friday, Nov 20. Saturday class starts Dec 5.",
+        }),
       ).toBeVisible();
-      await expect(dialog.getByText("Seats are still open in the Monday class.", { exact: false })).toBeVisible();
+      await expect(
+        dialog.getByText("Ask admissions which schedule fits your week.", { exact: false }),
+      ).toBeVisible();
 
       const cta = dialog.locator("[data-rda-promo-cta='true']");
 
       await expect(cta).toHaveAttribute("href", "/lp/dental-assisting-enroll");
-      await expect(cta).toHaveText("Ask about October 12");
+      await expect(cta).toHaveText("Ask about Nov 20");
 
       await dialog.getByRole("button", { name: "Dismiss class announcement" }).click();
       await expect(dialog).toHaveCount(0);
@@ -2403,6 +2407,95 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
     });
 
+    test("popup does not auto-open after a lead form field has focus", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await page.goto(`${localOrigin}/`, {
+        timeout: 120_000,
+        waitUntil: "domcontentloaded",
+      });
+
+      const nameField = page.locator('form[data-rda-signup-form="true"] input[name="Name"]').first();
+      const submit = page.locator('form[data-rda-signup-form="true"] button[type="submit"]').first();
+
+      await nameField.waitFor({ state: "visible" });
+      await nameField.focus();
+      await expect(nameField).toBeFocused();
+      await page.waitForTimeout(2_500);
+
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+      await expect(submit).toBeVisible();
+    });
+
+    test("popup stays closed after a lead-form field is focused then blurred before the timer", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await page.goto(`${localOrigin}/`, {
+        timeout: 120_000,
+        waitUntil: "domcontentloaded",
+      });
+
+      const nameField = page.locator('form[data-rda-signup-form="true"] input[name="Name"]').first();
+
+      await nameField.waitFor({ state: "visible" });
+      await nameField.focus();
+      await expect(nameField).toBeFocused();
+      await nameField.blur();
+      await expect(nameField).not.toBeFocused();
+      await page.waitForTimeout(2_500);
+
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+    });
+
+    test("popup does not open or steal focus when a lead-form field is focused early", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await page.addInitScript(() => {
+        const selector = [
+          'form[data-rda-signup-form] input[name="Name"]',
+          'form[data-rda-contact-form] input[name="Name"]',
+        ].join(",");
+
+        const tryFocus = () => {
+          const field = document.querySelector(selector);
+          if (!(field instanceof HTMLElement) || document.activeElement === field) {
+            return Boolean(field);
+          }
+          field.focus({ preventScroll: true });
+          return document.activeElement === field;
+        };
+
+        const start = () => {
+          if (tryFocus()) {
+            return;
+          }
+          const observer = new MutationObserver(() => {
+            if (tryFocus()) {
+              observer.disconnect();
+            }
+          });
+          observer.observe(document.documentElement, { childList: true, subtree: true });
+        };
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", start, { once: true });
+        } else {
+          start();
+        }
+      });
+
+      await page.goto(`${localOrigin}/infection-control`, {
+        timeout: 120_000,
+        waitUntil: "domcontentloaded",
+      });
+
+      const nameField = page.locator('form[data-rda-signup-form="true"] input[name="Name"]').first();
+
+      await nameField.waitFor({ state: "visible" });
+      await expect(nameField).toBeFocused();
+      await page.waitForTimeout(2_500);
+
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+      await expect(nameField).toBeFocused();
+    });
+
     test("popup is not shown on ad landing pages", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/lp/dental-assisting-enroll", { allowPromo: true });
@@ -2412,15 +2505,15 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator('form[data-rda-landing-form="true"]')).toBeVisible();
     });
 
-    test("DA enroll LP lists October 12 as the next start after September 12 filled", async ({ page }) => {
+    test("DA enroll LP lists November 20 as the next start after October 12 filled", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/lp/dental-assisting-enroll");
 
       const dates = page.locator(".rda-ad-date-list");
 
-      await expect(page.getByText("Next start: October 12, 2026")).toBeVisible();
+      await expect(page.getByText("Next start: November 20, 2026")).toBeVisible();
       await expect(dates.getByText("September 12, 2026 (Saturday Academy)")).toHaveCount(0);
-      await expect(dates.getByText("October 12, 2026")).toBeVisible();
+      await expect(dates.getByText("October 12, 2026")).toHaveCount(0);
       await expect(dates.getByText("November 20, 2026")).toBeVisible();
       await expect(dates.getByText("December 5, 2026")).toBeVisible();
       await expect(
@@ -2431,7 +2524,8 @@ test.describe("live-style interaction flows", () => {
 
       await expect(startSelect).toBeVisible();
       await expect(startSelect.locator("option", { hasText: "September 12, 2026 (Saturday Academy)" })).toHaveCount(0);
-      await expect(startSelect.locator("option", { hasText: "October 12, 2026" })).toHaveCount(1);
+      await expect(startSelect.locator("option", { hasText: "October 12, 2026" })).toHaveCount(0);
+      await expect(startSelect.locator("option", { hasText: "November 20, 2026" })).toHaveCount(1);
     });
   });
 

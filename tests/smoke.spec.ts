@@ -1344,7 +1344,8 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
     "Dates are penciled in and may change; admissions will confirm current availability.",
     "October 17",
     "October 24",
-    "October 12, 2026",
+    "October 12",
+    "November 20, 2026",
     "Initial and renewal BLS/CPR training for healthcare providers",
     "Board-approved 8-hour Infection Control training for unlicensed dental assistants",
     "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified",
@@ -1392,7 +1393,7 @@ test("Drive-derived homepage details render without private student data", async
     viewport: { width: 1280, height: 900 },
   });
   const requiredPhrases = [
-    "Next Dental Assisting start: Monday, October 12. Seats open →",
+    "Next Dental Assisting class starts Friday, Nov 20. Saturday class starts Dec 5. →",
     "Dental Board Course Details",
     "Radiation Safety X1036",
     "Infection Control IC189",
@@ -1927,7 +1928,6 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
     "Does this request reserve a seat?",
     "Do students need to provide patients?",
     "Roseville Dental Academy does not provide patients",
-    "October 12, 2026",
     "November 20, 2026",
     "December 12, 2026",
   ]) {
