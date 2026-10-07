@@ -218,6 +218,8 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
 
   test("phone and WhatsApp Meta Contact properties exclude query identifiers", async ({ page }) => {
     await page.goto(`${sealantsUrl(creatives[0].content)}&fbclid=synthetic_private_click&arbitrary=synthetic-private%40example.test`, { waitUntil: "networkidle" });
+    await page.locator('a[href^="tel:"]').first().waitFor();
+    await page.locator("a[data-rda-whatsapp]").first().waitFor();
     await page.evaluate(() => {
       for (const selector of ['a[href^="tel:"]', "a[data-rda-whatsapp]"]) {
         const link = document.querySelector<HTMLAnchorElement>(selector);
@@ -250,7 +252,8 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     const noscript = await page.evaluate(() =>
       [...document.querySelectorAll("noscript")].map((node) => node.innerHTML).join(""),
     );
-    expect(noscript).toContain(`facebook.com/tr?id=${DEFAULT_META_PIXEL_ID}&ev=PageView&noscript=1`);
+    expect(noscript).toContain(`facebook.com/tr?id=${DEFAULT_META_PIXEL_ID}`);
+    expect(noscript).toMatch(/facebook\.com\/tr\?id=356932321507746&(?:amp;)?ev=PageView&(?:amp;)?noscript=1/);
     expect(noscript.match(/facebook\.com\/tr\?id=/g)).toHaveLength(1);
 
     const beforeSubmit = await captures(page);

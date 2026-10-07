@@ -109,8 +109,14 @@ test.describe("optional secondary Meta Pixel when enabled", () => {
     const noscript = await page.evaluate(() =>
       [...document.querySelectorAll("noscript")].map((node) => node.innerHTML).join(""),
     );
-    expect(noscript).toContain(`facebook.com/tr?id=${DEFAULT_META_PIXEL_ID}&ev=PageView&noscript=1`);
-    expect(noscript).toContain(`facebook.com/tr?id=${SECONDARY_PIXEL_ID}&ev=PageView&noscript=1`);
+    expect(noscript).toContain(`facebook.com/tr?id=${DEFAULT_META_PIXEL_ID}`);
+    expect(noscript).toContain(`facebook.com/tr?id=${SECONDARY_PIXEL_ID}`);
+    expect(noscript).toMatch(
+      new RegExp(`facebook\\.com/tr\\?id=${DEFAULT_META_PIXEL_ID}&(?:amp;)?ev=PageView&(?:amp;)?noscript=1`),
+    );
+    expect(noscript).toMatch(
+      new RegExp(`facebook\\.com/tr\\?id=${SECONDARY_PIXEL_ID}&(?:amp;)?ev=PageView&(?:amp;)?noscript=1`),
+    );
     expect(noscript.match(/facebook\.com\/tr\?id=/g)).toHaveLength(2);
 
     const beforeSubmit = await captures(page);
