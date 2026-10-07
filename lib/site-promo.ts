@@ -12,12 +12,12 @@ export const dentalAssistingNovemberPromo = {
   id: DENTAL_ASSISTING_PROMO_ID,
   storageKey: DENTAL_ASSISTING_PROMO_ID,
   eyebrow: "Dental Assisting class",
-  headline: "Next class starts Nov 20, with weekday or Saturday schedules",
-  body: "The next Dental Assisting class starts Nov 20, with weekday or Saturday schedules. Ask admissions which schedule fits your week.",
+  headline: "Next class starts Friday, Nov 20. Saturday class starts Dec 5.",
+  body: "The next Dental Assisting class starts Friday, Nov 20. Saturday class starts Dec 5. Ask admissions which schedule fits your week.",
   ctaLabel: "Ask about Nov 20",
   ctaHref: "/lp/dental-assisting-enroll",
   bannerText:
-    "Next Dental Assisting class starts Nov 20. Weekday or Saturday schedules →",
+    "Next Dental Assisting class starts Friday, Nov 20. Saturday class starts Dec 5. →",
   endsAt: "2026-11-20",
 } as const;
 

@@ -1393,7 +1393,7 @@ test("Drive-derived homepage details render without private student data", async
     viewport: { width: 1280, height: 900 },
   });
   const requiredPhrases = [
-    "Next Dental Assisting class starts Nov 20. Weekday or Saturday schedules →",
+    "Next Dental Assisting class starts Friday, Nov 20. Saturday class starts Dec 5. →",
     "Dental Board Course Details",
     "Radiation Safety X1036",
     "Infection Control IC189",

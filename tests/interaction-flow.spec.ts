@@ -2365,8 +2365,8 @@ test.describe("live-style interaction flows", () => {
       const banner = page.locator("[data-rda-promo-banner='true']");
 
       await expect(banner).toBeVisible();
-      await expect(banner).toContainText("Next Dental Assisting class starts Nov 20.");
-      await expect(banner).toContainText("Weekday or Saturday schedules");
+      await expect(banner).toContainText("Next Dental Assisting class starts Friday, Nov 20.");
+      await expect(banner).toContainText("Saturday class starts Dec 5.");
       await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
       expect(activeSitePromo.ctaHref).toBe("/lp/dental-assisting-enroll");
     });
@@ -2381,7 +2381,7 @@ test.describe("live-style interaction flows", () => {
       await expect(dialog.getByText("Dental Assisting class", { exact: true })).toBeVisible();
       await expect(
         dialog.getByRole("heading", {
-          name: "Next class starts Nov 20, with weekday or Saturday schedules",
+          name: "Next class starts Friday, Nov 20. Saturday class starts Dec 5.",
         }),
       ).toBeVisible();
       await expect(
@@ -2424,6 +2424,76 @@ test.describe("live-style interaction flows", () => {
 
       await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
       await expect(submit).toBeVisible();
+    });
+
+    test("popup stays closed after a lead-form field is focused then blurred before the timer", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await page.goto(`${localOrigin}/`, {
+        timeout: 120_000,
+        waitUntil: "domcontentloaded",
+      });
+
+      const nameField = page.locator('form[data-rda-signup-form="true"] input[name="Name"]').first();
+
+      await nameField.waitFor({ state: "visible" });
+      await nameField.focus();
+      await expect(nameField).toBeFocused();
+      await nameField.blur();
+      await expect(nameField).not.toBeFocused();
+      await page.waitForTimeout(2_500);
+
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+    });
+
+    test("popup does not open or steal focus when a lead-form field is focused early", async ({ page }) => {
+      await page.setViewportSize({ height: 900, width: 1280 });
+      await page.addInitScript(() => {
+        const selector = [
+          'form[data-rda-signup-form] input[name="Name"]',
+          'form[data-rda-contact-form] input[name="Name"]',
+        ].join(",");
+
+        const tryFocus = () => {
+          const field = document.querySelector(selector);
+          if (!(field instanceof HTMLElement) || document.activeElement === field) {
+            return Boolean(field);
+          }
+          field.focus({ preventScroll: true });
+          return document.activeElement === field;
+        };
+
+        const start = () => {
+          if (tryFocus()) {
+            return;
+          }
+          const observer = new MutationObserver(() => {
+            if (tryFocus()) {
+              observer.disconnect();
+            }
+          });
+          observer.observe(document.documentElement, { childList: true, subtree: true });
+        };
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", start, { once: true });
+        } else {
+          start();
+        }
+      });
+
+      await page.goto(`${localOrigin}/infection-control`, {
+        timeout: 120_000,
+        waitUntil: "domcontentloaded",
+      });
+
+      const nameField = page.locator('form[data-rda-signup-form="true"] input[name="Name"]').first();
+
+      await nameField.waitFor({ state: "visible" });
+      await expect(nameField).toBeFocused();
+      await page.waitForTimeout(2_500);
+
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+      await expect(nameField).toBeFocused();
     });
 
     test("popup is not shown on ad landing pages", async ({ page }) => {
