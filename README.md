@@ -122,6 +122,9 @@ pnpm exec playwright install chromium
 - `pnpm test:design`: UX stability plus visual parity.
 - `pnpm test:attribution`: attribution API, browser, Meta form flow, and database integrity regressions against localhost (also in Release Gate CI).
 - `pnpm test:attribution-db`: ledger migrations and triggers in an isolated in-memory Postgres (also in Release Gate CI; see `db/README.md`).
+- `pnpm attribution:migrate:check`: inspect whether enrollment migration `004` is already applied (no writes).
+- `pnpm enrollment:activate`: create the Stripe **test** enrollment webhook only if missing; refuses live keys; `--dry-run` / `--disable` supported.
+- `pnpm enrollment:verify` / `pnpm test:enrollment-pilot`: isolated mocked paid / expired / capacity checks plus activate-script unit tests (also in Release Gate CI).
 - `pnpm test:release`: `lint` + `build`, then parity-visual, smoke, course-dates, interactions, parity-content, and UX against a local production server (`pnpm start` on port 3100 by default).
 - `pnpm test:preview`: the same six suites against a Vercel preview (`PREVIEW_URL` is required, no webserver is started, no lint/build).
 
@@ -223,6 +226,6 @@ Meta launch tracking parameters, privacy limits, migration order and live checks
 
 The September 30 cancellation policy is centralized in `lib/academy-policies.ts`, published at `/cancellation-policy`, and shared by course notices, the footer, FAQs, and test checkout. Clinical instructions for Radiation Safety, Coronal Polish, and Sealants share `components/site/clinical-requirements.tsx`.
 
-The private student/alumni board is documented in [docs/student-jobs.md](docs/student-jobs.md). The separate staff-only, Stripe TEST enrollment pilot is documented in [docs/enrollment-pilot.md](docs/enrollment-pilot.md). Neither private route is in the sitemap. No real-payment launch is enabled by this release.
+The private student/alumni board is documented in [docs/student-jobs.md](docs/student-jobs.md). The separate staff-only, Stripe TEST enrollment pilot is documented in [docs/enrollment-pilot.md](docs/enrollment-pilot.md), including the ordered switch-on recipe for the day Stripe test keys arrive. Neither private route is in the sitemap. No real-payment launch is enabled by this release.
 
 For these changes, also run `pnpm exec playwright test tests/policy-clinicals.spec.ts tests/student-jobs.spec.ts tests/private-routes.spec.ts tests/rda-release.spec.ts tests/enrollment*.spec.ts` against a configured production-mode local server. Authentication checks need matching test-process passwords; skipped authentication tests are not evidence of configured access. Never place passwords or Stripe keys in committed files.

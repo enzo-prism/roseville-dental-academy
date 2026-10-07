@@ -81,6 +81,11 @@ session retrieval/verification using the reviewed server library and original le
 runs isolated HMAC/session/provider fixtures and PGlite PostgreSQL tests, including concurrent capacity
 attempts, retry/replay, terminal conflicts, and durable login limits. These tests do not call live services.
 
+`pnpm test:enrollment-pilot` is the CI readiness command: it unit-tests the activate script's live-key
+guard and webhook idempotency against a mocked Stripe client, then runs `pnpm enrollment:verify`
+(isolated 004 re-apply plus mocked paid / expired / 13th-seat checks). It never uses live keys or a
+network Stripe account.
+
 `scripts/enrollment-fixture-preload.mjs` is a separate opt-in local integration harness. It refuses any
 non-loopback origin, genuine database URL, or non-fixture key. In an isolated copy of the project, build
 normally and start Next with the preload, fake database URL `postgres://fixture:fixture@db.fixture.neon.tech/test`,
@@ -95,3 +100,100 @@ Fixture success is not proof of an actual Stripe integration. Before calling the
 configure the verified RDA test account/webhook, complete a real Stripe **test-mode** transaction, verify
 the resulting signed webhook and durable ledger, test an expired checkout and full capacity, and confirm
 the private success page on mobile and desktop. Real payment activation remains a separate approved release.
+
+## Switch-on recipe (the day Stripe TEST keys arrive)
+
+Do these steps in order. Vercel already has `RDA_ENROLLMENT_PILOT_PASSWORD` and
+`RDA_ENROLLMENT_PILOT_SESSION_SECRET`. The only missing production pieces are the Stripe **test**
+secret key and matching webhook signing secret. Never put secret values in tickets, screenshots,
+chat, git, or this document.
+
+### 1. Set environment variable **names** in Vercel
+
+In the verified project's sensitive/server environment (Preview and Production as needed), set:
+
+- `DATABASE_URL` — already present; verified RDA Neon connection
+- `RDA_ENROLLMENT_PILOT_PASSWORD` — already present
+- `RDA_ENROLLMENT_PILOT_SESSION_SECRET` — already present
+- `RDA_ENROLLMENT_TEST_ORIGIN` — exact HTTPS deployment origin, no trailing slash or path
+- `RDA_STRIPE_TEST_SECRET_KEY` — Stripe test `sk_test_` or scoped `rk_test_` only
+- `RDA_STRIPE_TEST_WEBHOOK_SECRET` — leave empty until step 4 prints it
+
+Do not add live `sk_live_` / `rk_live_` keys. The app and the activate script both refuse them.
+
+### 2. Redeploy
+
+Redeploy so `RDA_ENROLLMENT_TEST_ORIGIN` and `RDA_STRIPE_TEST_SECRET_KEY` are live. The webhook secret
+is still missing; the staff page will keep reporting configuration incomplete until step 4 finishes
+and you redeploy once more.
+
+### 3. Check migration 004, then apply
+
+Against the verified Neon URL only:
+
+```bash
+DATABASE_URL=… pnpm attribution:migrate:check
+DATABASE_URL=… pnpm attribution:migrate
+```
+
+`--check` only inspects whether `004_enrollment_test_pilot.sql` is already applied (`applied: true`
+or `false`) and does not write. The apply command is idempotent: `004` uses `IF NOT EXISTS` /
+`OR REPLACE` and is safe to re-run. `pnpm attribution:migrate -- --dry-run` lists migration files
+without connecting.
+
+### 4. Register the test webhook (create only if missing)
+
+```bash
+RDA_STRIPE_TEST_SECRET_KEY=… RDA_ENROLLMENT_TEST_ORIGIN=https://… pnpm enrollment:activate -- --dry-run
+RDA_STRIPE_TEST_SECRET_KEY=… RDA_ENROLLMENT_TEST_ORIGIN=https://… pnpm enrollment:activate
+```
+
+The script refuses live keys, lists Stripe test webhook endpoints, and creates
+`<origin>/api/enrollment/webhook` only when that URL is absent, with exactly
+`checkout.session.completed`, `checkout.session.expired`, and
+`checkout.session.async_payment_succeeded`. If the endpoint already exists with those events, it
+is reused and no secret is printed. On create, the signing secret is written **once to stdout**.
+Store it as `RDA_STRIPE_TEST_WEBHOOK_SECRET` in Vercel, then discard the terminal output. Redeploy
+again so the app can verify signatures.
+
+A restricted test key needs permission to create, retrieve, list, and expire Checkout Sessions and
+to list/create/update Webhook Endpoints.
+
+### 5. Verify
+
+Automated (mocked Stripe, no network, safe in CI):
+
+```bash
+pnpm enrollment:verify
+```
+
+That command re-applies `004` twice in isolated Postgres, then proves:
+
+1. A signed `checkout.session.completed` event marks the hold `paid` and leaves 11 seats.
+2. A signed `checkout.session.expired` event releases the hold so another reserve succeeds.
+3. A 13th reserve is rejected once 12 reserved/paid seats exist.
+
+Manual Stripe **test mode** (no real charges; fictional email; card `4242 4242 4242 4242`, a future
+expiry, any three-digit CVC):
+
+1. Successful purchase: staff login at `/enrollment-pilot`, choose an upcoming Infection Control
+   date, accept the current cancellation policy, pay with `4242…`. Confirmation shows a paid test
+   enrollment; that date's remaining test seats decrement by one.
+2. Abandoned checkout: start a second checkout, close the Stripe tab without paying, then use
+   **Close or verify an abandoned test checkout** (or wait for `checkout.session.expired`). The
+   reserved seat is released.
+3. Full class: after 12 reserved or paid test seats on one date, a 13th checkout is blocked.
+4. Walkthrough: repeat the staff checkout at 390px wide and 1280px wide. Confirm the form, policy,
+   and confirmation remain usable; do not capture secrets or personal data in screenshots.
+5. Rollback: remove `RDA_STRIPE_TEST_SECRET_KEY` and `RDA_STRIPE_TEST_WEBHOOK_SECRET` from Vercel
+   (and `RDA_ENROLLMENT_TEST_ORIGIN` if you want the origin cleared), redeploy, then disable the
+   test endpoint:
+
+   ```bash
+   RDA_STRIPE_TEST_SECRET_KEY=… RDA_ENROLLMENT_TEST_ORIGIN=https://… pnpm enrollment:activate -- --disable
+   ```
+
+   The staff page fails closed ("awaiting secure configuration") without those variables. Do not
+   drop ledger tables or hand-edit `paid`/`expired` rows. Local time never frees a hold.
+
+Real live-mode payment activation remains a separate approved release.

@@ -11,7 +11,9 @@ reviewed lead-to-enrollment links, delivery totals, and postback state. It does 
 raw email/phone values, PMS chart numbers, health information, notes, or raw email-report fields.
 
 Apply migrations only to the verified RDA database, in filename order. The first migration is
-idempotent for clean provisioning. Production provisioning and migration are release actions and
+idempotent for clean provisioning. `004_enrollment_test_pilot.sql` is also safe to re-run
+(`IF NOT EXISTS` / `CREATE OR REPLACE`). `pnpm attribution:migrate:check` reports whether 004 is
+already applied without writing. Production provisioning and migration are release actions and
 must be reviewed separately from a local build.
 
 Run `pnpm test:attribution-db` before release. It executes the full migration in an isolated

@@ -7,6 +7,7 @@ test("durable test capacity, idempotent reservations, replay conflicts, and term
   const db = await PGlite.create();
   try {
     await db.exec(await readFile("db/migrations/004_enrollment_test_pilot.sql", "utf8"));
+    await db.exec(await readFile("db/migrations/004_enrollment_test_pilot.sql", "utf8"));
     const owner = "a".repeat(64), date = "2026-10-12", policy = "2026-09-30";
     const ids = Array.from({ length: 24 }, () => randomUUID());
     const results = await Promise.all(ids.map((id) => db.query(

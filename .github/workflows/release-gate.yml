@@ -61,6 +61,9 @@ jobs:
       - name: Verify attribution database integrity
         run: pnpm test:attribution-db
 
+      - name: Verify enrollment test-pilot readiness
+        run: pnpm test:enrollment-pilot
+
       - name: Verify paid-media measurement
         env:
           CI: "true"
