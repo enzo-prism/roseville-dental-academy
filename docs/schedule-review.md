@@ -32,7 +32,7 @@ Upcoming dates:
 
 - Dental Assisting: October 12 (Monday class); November 20; December 5, 2026.
 - BLS: October 17; November 7; December 5, 2026.
-- Infection Control: October 17; November 14; December 5, 2026.
+- Infection Control: November 14; December 5, 2026 (October 17, 2026 is full).
 - Radiation Safety: November 7; December 5, 2026 (October 17, 2026 is full).
 - Coronal Polish: October 24; November 14; December 12, 2026.
 - Sealants: November 14; December 12, 2026 (October 24, 2026 is full).
@@ -57,6 +57,11 @@ because they change daily. Jessica will share the Dental Assisting start
 rotation (Monday, Friday, Saturday; each track starts about every 11 weeks) and
 the team will map a 2027 calendar; add those dates only once they are received.
 Dates remain penciled in, subject to admissions confirmation.
+
+October 12 update: Enzo requested marking the October 17 Infection Control
+class full. The dashboard entry and committed development fixture now use
+`full`; November 14 and December 5 remain open. October 17 stays visible with
+a Full badge and is omitted from open-date suggestions and CourseInstance schema.
 
 Elapsed dates are excluded from upcoming cards, dates, forms, and CourseInstance
 schema. Sold-out (`full`) dates stay on the page with a Full badge but are omitted

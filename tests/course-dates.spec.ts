@@ -27,14 +27,13 @@ test("reviewed schedule excludes elapsed dates without inventing sold-out histor
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-18")).toBe("November 7, 2026");
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-12-06")).toBeUndefined();
   expect(getAvailableCourseDates("infection-control")).toEqual([
-    "October 17, 2026",
     "November 14, 2026",
     "December 5, 2026",
   ]);
-  expect(getNextAvailableCourseDate("infection-control")).toBe("October 17, 2026");
+  expect(getNextAvailableCourseDate("infection-control")).toBe("November 14, 2026");
   expect(getNextAvailableCourseDate("infection-control", "2026-10-18")).toBe("November 14, 2026");
   expect(getNextAvailableCourseDate("infection-control", "2026-12-06")).toBeUndefined();
-  expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-10-17")?.status).toBe("available");
+  expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-10-17")?.status).toBe("full");
   expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-11-07")).toBeUndefined();
   expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-11-14")?.status).toBe("available");
   expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-12-05")?.status).toBe("available");
@@ -189,11 +188,18 @@ for (const width of [390, 1280]) {
     expect(await schedule.locator("time").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("datetime")))).toEqual([
       "2026-10-12", "2026-10-17", "2026-10-24", "2026-11-07", "2026-11-14", "2026-11-20", "2026-12-05", "2026-12-12",
     ]);
-    await expect(page.getByText("Next open date: October 17, 2026", { exact: true })).toHaveCount(2);
+    await expect(page.getByText("Next open date: October 17, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: November 7, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: October 24, 2026", { exact: true })).toHaveCount(1);
-    await expect(page.getByText("Next open date: November 14, 2026", { exact: true })).toHaveCount(1);
+    await expect(page.getByText("Next open date: November 14, 2026", { exact: true })).toHaveCount(2);
     await expect(page.getByText("Next open date: October 12, 2026", { exact: true })).toHaveCount(1);
+    const octoberSeventeen = schedule.locator(".rda-home-schedule-date-row").filter({
+      has: page.locator('time[datetime="2026-10-17"]'),
+    });
+    await expect(octoberSeventeen.locator('.rda-home-schedule-course-wrap[data-status="full"]').filter({
+      has: page.getByRole("link", { name: "Infection Control", exact: true }),
+    }).getByText("Full", { exact: true })).toBeVisible();
+    await expect(octoberSeventeen.getByRole("link", { name: "BLS / CPR" })).toBeVisible();
     const novemberSeven = schedule.locator(".rda-home-schedule-date-row").filter({
       has: page.locator('time[datetime="2026-11-07"]'),
     });
@@ -287,14 +293,13 @@ test("course JSON-LD omits sold-out October instances", async ({ page }) => {
   expect(sealantsDates).toEqual(["2026-11-14", "2026-12-12"]);
   expect(sealantsDates).not.toContain("2026-10-24");
 
-  // Open dates on a shared day stay listed: Infection Control keeps October 17
-  // even though X-rays / Radiation Safety is full that day.
+  // The full October Infection Control class remains visible with a badge,
+  // but its structured data advertises only the later open dates.
   await page.goto("/infection-control");
   const infectionSchema = JSON.parse(
     (await page.locator("#rda-ld-course-infection-control").textContent()) ?? "{}",
   ) as { hasCourseInstance?: Array<{ startDate?: string }> };
   expect((infectionSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).toEqual([
-    "2026-10-17",
     "2026-11-14",
     "2026-12-05",
   ]);
@@ -305,13 +310,15 @@ test("infection-control page and FAQs omit November 7 while keeping later dates"
   await page.goto("/infection-control");
   const upcomingDates = page.locator('[data-rda-live-course="infection-control"] .rda-course-date');
   await expect(upcomingDates.getByText("October 17, 2026")).toHaveCount(1);
+  await expect(upcomingDates.filter({ hasText: "October 17, 2026" })).toHaveAttribute("data-status", "full");
+  await expect(upcomingDates.filter({ hasText: "October 17, 2026" }).getByText("Full", { exact: true })).toBeVisible();
   await expect(upcomingDates.getByText("November 7, 2026")).toHaveCount(0);
   await expect(upcomingDates.getByText("November 14, 2026")).toHaveCount(1);
   await expect(upcomingDates.getByText("December 5, 2026")).toHaveCount(1);
 
   await page.goto("/faqs-1");
   const faqBody = await page.locator("body").innerText();
-  expect(faqBody).toContain("Infection Control: October 17, 2026; November 14, 2026; December 5, 2026");
+  expect(faqBody).toContain("Infection Control: November 14, 2026; December 5, 2026");
   expect(faqBody).not.toContain("Infection Control: October 17, 2026; November 7, 2026");
 });
 
