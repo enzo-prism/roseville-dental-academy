@@ -210,11 +210,21 @@ async function discoverInstagram() {
 async function importInstagram() {
   const discovered = await discoverInstagram();
   const outputDir = resolve(ASSET_ROOT, "instagram");
-  await resetDir(outputDir);
-  const posts = [];
+  // Course and gallery pages reuse selected posts, including local caption files.
+  // A feed refresh must not remove media that those pages still reference.
+  const previousManifest = await readFile(MANIFEST_PATH, "utf8")
+    .then((content) => JSON.parse(content))
+    .catch((error) => {
+      if (error.code === "ENOENT") return { posts: [] };
+      throw error;
+    });
+  const posts = previousManifest.posts.filter((post) => post.platform === "instagram");
+  const previousUrls = new Set(posts.map((post) => post.sourceUrl));
+  await ensureDir(outputDir);
   const errors = [];
 
   for (const [index, item] of discovered.entries()) {
+    if (previousUrls.has(item.sourceUrl)) continue;
     try {
       const baseName = `${String(index + 1).padStart(2, "0")}-${slugify(item.id)}`;
       const mediaExt = item.mediaType === "video" ? ".mp4" : ".jpg";
@@ -255,7 +265,7 @@ async function importInstagram() {
 
   return {
     errors,
-    posts,
+    posts: posts.sort((a, b) => Date.parse(b.publishedAt ?? "") - Date.parse(a.publishedAt ?? "")),
     status: posts.length >= REQUIRED_POSTS ? "ready" : "blocked",
   };
 }

@@ -1277,6 +1277,9 @@ export const homeGalleryHighlight = {
     "See recent student moments from hands-on dental assisting, radiography, BLS, and clinical safety training.",
   ctaLabel: "View the full gallery",
   items: [
+    livePhoto("/assets/social/instagram/curated/2026-09-12-first-day.webp", "New dental assisting students gathered outside Roseville Dental Academy on their first day"),
+    livePhoto("/assets/social/instagram/curated/2026-09-18-class-celebration.webp", "Roseville Dental Academy students holding a congratulations banner outdoors"),
+    livePhoto("/assets/social/instagram/curated/2026-08-17-graduates.webp", "Roseville Dental Academy graduates holding completion certificates outdoors"),
     livePhoto("/assets/live/drive/recent-class-tree.jpg", "Recent Roseville Dental Academy class group outside the academy"),
     livePhoto("/assets/live/drive/recent-certificates-banner.jpg", "Recent Roseville Dental Academy students holding completion certificates"),
     livePhoto("/assets/live/programs/dental-assisting-chairside.jpg", "Students practicing chairside dental assisting skills"),
