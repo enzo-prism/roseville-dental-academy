@@ -1,4 +1,4 @@
-# Course schedule review: September 23, 2026
+# Course schedule review: October 14, 2026
 
 **Source of truth (from September 28, 2026):** the RDA dashboard's Class dates
 page. Production builds run `scripts/pull-course-schedule.mjs`, which pulls the
@@ -30,12 +30,12 @@ static copy stale.
 
 Upcoming dates:
 
-- Dental Assisting: October 12 (Monday class); November 20; December 5, 2026.
+- Dental Assisting: November 20 (Friday class); December 5 (Saturday class), 2026. October 12 is full and elapsed.
 - BLS: October 17; November 7; December 5, 2026.
 - Infection Control: November 14; December 5, 2026 (October 17, 2026 is full).
 - Radiation Safety: November 7; December 5, 2026 (October 17, 2026 is full).
-- Coronal Polish: October 24; November 14; December 12, 2026.
-- Sealants: November 14; December 12, 2026 (October 24, 2026 is full).
+- Coronal Polish: November 14; December 12, 2026 (October 24, 2026 is full).
+- Sealants: December 12, 2026 (October 24 and November 14, 2026 are full).
 
 Sources: Jessica's May 20 Course Dates email establishes November/December.
 July 10 commit `ebfbce61b231f57decbe8d75691de517d8afac10` revises the October
@@ -62,6 +62,26 @@ October 12 update: Enzo requested marking the October 17 Infection Control
 class full. The dashboard entry and committed development fixture now use
 `full`; November 14 and December 5 remain open. October 17 stays visible with
 a Full badge and is omitted from open-date suggestions and CourseInstance schema.
+
+October 14 reconciliation: Jessica requested October 24 Coronal Polish be marked
+full on October 13 and repeated the request on October 14 because the website
+still showed it open. The dashboard source was corrected to `full`; November 14
+and December 12 remain open. Its Full badge stays visible, while next-open copy,
+request choices, FAQ date summaries, paid landing pages, and CourseInstance schema
+use the later open dates. The committed fixture also matches the dashboard's
+already-full October 12 Dental Assisting and November 14 Sealants records, with
+the academy-local cutoff advanced to October 14. The authoritative schedule has
+no 2027 dates; do not infer future dates from this year's rotation.
+
+Deployment checks compare the bundled revision with the fixture, accept the
+dashboard's daily cutoff when it is at least as recent as the fixture, and
+still require an exact cutoff for committed-data builds. Paid-page smoke checks
+recognize both the primary-only Meta PageView and the configured two-pixel
+`trackSingle` bootstrap.
+
+The Dental Assisting announcement now promotes Friday November 20 and Saturday
+December 5 with a new dismissal key. The popup stays closed if a visitor is
+already using a lead form.
 
 Elapsed dates are excluded from upcoming cards, dates, forms, and CourseInstance
 schema. Sold-out (`full`) dates stay on the page with a Full badge but are omitted
