@@ -1,4 +1,5 @@
 -- TEST reservations are entirely separate from real admissions and attribution.
+-- Idempotent: safe to re-run. Tables/indexes use IF NOT EXISTS; functions use OR REPLACE.
 CREATE TABLE IF NOT EXISTS enrollment_test_dates (
   course_date date PRIMARY KEY,
   capacity integer NOT NULL DEFAULT 12 CHECK (capacity = 12)
