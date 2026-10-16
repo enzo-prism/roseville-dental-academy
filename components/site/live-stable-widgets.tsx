@@ -278,8 +278,10 @@ function StableStudentFaqs() {
             <CardHeader>
               <CardTitle>{item.question}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p>{item.answer}</p>
+            <CardContent className="flex flex-col gap-4">
+              {item.answer.split(/\n\n+/).map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
             </CardContent>
           </Card>
         ))}

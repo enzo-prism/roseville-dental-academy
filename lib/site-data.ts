@@ -28,7 +28,7 @@ import type {
   TestimonialData,
 } from "@/lib/site-types";
 import { activeSitePromo } from "@/lib/site-promo";
-import { CANCELLATION_POLICY_PARAGRAPHS, CLINICAL_COMPLETION_REQUIREMENT, CLINICAL_OUTSIDE_SITE_REQUIREMENT, CLINICAL_SCHEDULING_REQUIREMENT, CLINICAL_SITE_REQUIREMENT, CLINICAL_SUPERVISION_REQUIREMENT, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
+import { CANCELLATION_POLICY_TEXT, CLINICAL_COMPLETION_REQUIREMENT, CLINICAL_OUTSIDE_SITE_REQUIREMENT, CLINICAL_SCHEDULING_REQUIREMENT, CLINICAL_SITE_REQUIREMENT, CLINICAL_SUPERVISION_REQUIREMENT, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
 
 export const announcement = activeSitePromo.bannerText;
 
@@ -929,7 +929,7 @@ export const boardApprovalHighlights = [
 export const studentFaqHighlights = [
   {
     question: "What is the cancellation and refund policy?",
-    answer: CANCELLATION_POLICY_PARAGRAPHS.join(" "),
+    answer: CANCELLATION_POLICY_TEXT,
   },
   {
     question: "Is full payment required for Infection Control?",
