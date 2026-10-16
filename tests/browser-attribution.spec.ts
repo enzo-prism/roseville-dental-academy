@@ -10,7 +10,14 @@ type AttributionModule = typeof import("@/lib/lead-attribution");
 
 // Load the actual browser module in a fresh browser-like context per test, so
 // persisted visits and module-memory fallback are exercised without a network.
-function browserAttribution(options: { blockedStorage?: boolean; cookies?: string; local?: Map<string, string>; session?: Map<string, string> } = {}) {
+function browserAttribution(options: {
+  blockedStorage?: boolean;
+  cookies?: string;
+  doNotTrack?: string;
+  globalPrivacyControl?: boolean;
+  local?: Map<string, string>;
+  session?: Map<string, string>;
+} = {}) {
   const cookies = new Map<string, string>();
   const local = options.local ?? new Map<string, string>();
   const session = options.session ?? new Map<string, string>();
@@ -29,7 +36,10 @@ function browserAttribution(options: { blockedStorage?: boolean; cookies?: strin
       cookies.set(name, parts.join("="));
     },
   };
-  const window = { location: new URL("https://rosevilledentalacademy.com/") };
+  const window = {
+    doNotTrack: options.doNotTrack,
+    location: new URL("https://rosevilledentalacademy.com/"),
+  };
   for (const [name, store] of [["localStorage", local], ["sessionStorage", session]] as const) {
     Object.defineProperty(window, name, {
       get() {
@@ -46,7 +56,10 @@ function browserAttribution(options: { blockedStorage?: boolean; cookies?: strin
     Date,
     document,
     DOMException,
-    navigator: { doNotTrack: "0" },
+    navigator: {
+      doNotTrack: options.doNotTrack ?? "0",
+      globalPrivacyControl: options.globalPrivacyControl === true,
+    },
     URL,
     URLSearchParams,
     window,
@@ -200,6 +213,30 @@ test("throwing storage object getters safely retain attribution in memory", () =
   expect(later.conversionTouch).toEqual(initial.conversionTouch);
   expect(later.sessionId).toBe(initial.sessionId);
   expect(() => browser.api.getAttributionStorageSnapshot()).not.toThrow();
+});
+
+test("submit-time browser fbp reads the cookie without writing it onto a Google touch", () => {
+  const browser = browserAttribution({ cookies: "_fbp=fb.1.123.browser" });
+  const google = browser.visit(GOOGLE, FIRST);
+  expect(google.conversionTouch.clickIds.fbp).toBe("");
+  expect(google.clickIds.fbp).toBe("");
+  expect(browser.api.getLeadAttributionFormFields(google).fbp).toBe("");
+  expect(browser.api.getSubmitTimeBrowserFbp()).toBe("fb.1.123.browser");
+});
+
+test("DNT and GPC omit submit-time browser fbp even when the cookie exists", () => {
+  expect(browserAttribution({
+    cookies: "_fbp=fb.1.123.browser",
+    doNotTrack: "1",
+  }).api.getSubmitTimeBrowserFbp()).toBe("");
+  expect(browserAttribution({
+    cookies: "_fbp=fb.1.123.browser",
+    globalPrivacyControl: true,
+  }).api.getSubmitTimeBrowserFbp()).toBe("");
+});
+
+test("submit-time browser fbp does not invent a cookie value", () => {
+  expect(browserAttribution().api.getSubmitTimeBrowserFbp()).toBe("");
 });
 
 test("creative ad IDs require an exact known prefix followed only by a numeric ID", () => {
