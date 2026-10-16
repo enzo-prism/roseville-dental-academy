@@ -294,7 +294,13 @@ export function parseAttributionTouch(
   const platform = (dimensions.platform || utm.utm_source).toLowerCase();
   const hasMetaCampaign = /^(facebook|instagram|meta|fb|ig)$/u.test(platform) ||
     Boolean(clickIds.fbclid);
-  if (hasMetaCampaign && clickIds.fbclid) {
+  // Cookie-derived Meta browser IDs stay off for DNT, GPC, or a denied RDA
+  // consent cookie. URL click IDs (fbclid, and query fbc/fbp) remain.
+  if (
+    hasMetaCampaign &&
+    clickIds.fbclid &&
+    getAttributionConsentState() !== "restricted"
+  ) {
     const cookieFbc = compactAttributionValue(getCookieValue("_fbc"));
     if (cookieFbc.endsWith(`.${clickIds.fbclid}`)) {
       clickIds.fbc ||= cookieFbc;
