@@ -3,7 +3,9 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
-const output = resolve(root, "dogfood-output/student-enrollment");
+const output = resolve(root, process.argv.includes("--serve")
+  ? "dogfood-output/student-enrollment-preview"
+  : "dogfood-output/student-enrollment");
 await mkdir(output, { recursive: true });
 const env = { ...process.env };
 for (const name of Object.keys(env))
@@ -73,6 +75,7 @@ try {
       [
         resolve(root, "node_modules/@playwright/test/cli.js"),
         "test",
+        "--output=dogfood-output/student-enrollment/playwright",
         "tests/enrollment-contract.spec.ts",
         "tests/enrollment-ledger.spec.ts",
         "tests/enrollment-api.spec.ts",
