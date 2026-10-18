@@ -14,6 +14,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   month: "short",
   year: "numeric",
+  timeZone: "America/Los_Angeles",
 });
 
 function formatDate(value?: string) {
@@ -51,9 +52,10 @@ function SocialLocalMedia({ post }: { post: SocialChannelPost }) {
           controls
           playsInline
           poster={post.posterSrc}
-          preload="metadata"
+          preload="none"
           src={post.localSrc}
         >
+          {post.captionsSrc ? <track default kind="captions" label="English" src={post.captionsSrc} srcLang="en" /> : null}
           <a href={post.localSrc}>Download video</a>
         </video>
         <span className="rda-social-video-badge" aria-hidden="true">
@@ -68,7 +70,7 @@ function SocialLocalMedia({ post }: { post: SocialChannelPost }) {
     <div className="rda-social-media-frame" data-rda-social-local-media="image">
       <Image
         alt={post.alt}
-        className="object-cover"
+        className={post.platform === "instagram" ? "object-contain" : "object-cover"}
         fill
         sizes="(max-width: 760px) 100vw, (max-width: 1200px) 62vw, 720px"
         src={post.localSrc}
@@ -204,12 +206,31 @@ export function SocialMediaGrid({ page }: { page: SocialChannelPageData }) {
   const hasEnoughPosts =
     page.scrapeStatus.status === "ready" &&
     page.socialPosts.length >= SOCIAL_IMPORT_REQUIRED_POSTS;
+  const selectedPosts = page.slug === "instagram"
+    ? page.socialPosts.filter((post) => post.localSrc.includes("/curated/"))
+    : [];
+  const archivePosts = selectedPosts.length
+    ? page.socialPosts.filter((post) => !post.localSrc.includes("/curated/"))
+    : [];
 
   return hasEnoughPosts ? (
     <div className="grid min-w-0 gap-4" data-rda-social-local-grid={page.slug}>
-      {page.socialPosts.map((post, index) => (
+      {(selectedPosts.length ? selectedPosts : page.socialPosts).map((post, index) => (
         <SocialPostCard index={index} key={post.sourceUrl} page={page} post={post} />
       ))}
+      {archivePosts.length ? (
+        <details className="rounded-lg border border-border bg-card p-4">
+          <summary className="min-h-11 cursor-pointer py-3 font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+            Earlier Instagram posts ({archivePosts.length})
+          </summary>
+          <p className="mb-4 text-sm text-muted-foreground">These are historical posts. Class dates and seat availability in older posts may have changed; contact admissions for current details.</p>
+          <div className="grid min-w-0 gap-4">
+            {archivePosts.map((post, index) => (
+              <SocialPostCard index={selectedPosts.length + index} key={post.sourceUrl} page={page} post={post} />
+            ))}
+          </div>
+        </details>
+      ) : null}
     </div>
   ) : (
     <SocialImportBlocker page={page} />
