@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
 import { enrollmentDate } from "@/lib/enrollment-contract";
+import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
 import {
   studentConfig,
   studentInput,
@@ -17,7 +18,7 @@ import {
 const offer = "11111111-1111-4111-8111-111111111111",
   policy = "2026-09-30";
 test("database course dates preserve their calendar day and reject null", () => {
-  expect(enrollmentDate(new Date(2099,10,14))).toBe("2099-11-14");
+  expect(enrollmentDate(new Date(2099, 10, 14))).toBe("2099-11-14");
   expect(enrollmentDate("2099-11-14")).toBe("2099-11-14");
   expect(() => enrollmentDate(null)).toThrow();
 });
@@ -134,8 +135,13 @@ test("student database enforces shared inventory, separate modes, replay, roster
       (await db.query("SELECT * FROM student_enrollment_offerings")).rows,
     ).toHaveLength(0);
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-11-14',39500,2,$2,$3,now(),'fixture',true)",
-      [offer, policy, STUDENT_POLICY_HASH],
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-11-14',39500,2,$2,$3,$4,now(),'fixture',true)",
+      [
+        offer,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
     );
     const reserve = (id: string, index: number, mode = "test") =>
       db.query(
@@ -202,9 +208,65 @@ test("student database enforces shared inventory, separate modes, replay, roster
       ).rows[0].status,
     ).toBe("review");
     expect((await reserve(randomUUID(), 100)).rows).toHaveLength(0);
-    await expect(event("evt_latepaid", "paid")).rejects.toThrow(
-      "Conflicting terminal state",
+    await event("evt_latepaid", "paid");
+    await event("evt_paid", "refunded");
+    expect(
+      (
+        await db.query<{ status: string }>(
+          "SELECT status FROM student_enrollments WHERE id=$1",
+          [ids[0]],
+        )
+      ).rows[0].status,
+    ).toBe("refunded");
+    expect(
+      (await db.query("SELECT * FROM student_enrollment_mail")).rows,
+    ).toHaveLength(1);
+    expect(
+      (
+        await db.query<{ outcome: string }>(
+          "SELECT outcome FROM student_enrollment_events WHERE event_id='evt_paid'",
+        )
+      ).rows[0].outcome,
+    ).toBe("paid");
+    const raced = ids[2];
+    await db.query(
+      "UPDATE student_enrollments SET stripe_session_id='cs_test_order' WHERE id=$1",
+      [raced],
     );
+    await Promise.all(
+      [
+        ["evt_racepaid", "paid"],
+        ["evt_racerefund", "refunded"],
+        ["evt_racestale", "paid"],
+      ].map(([eventId, outcome]) =>
+        db.query(
+          "SELECT apply_student_enrollment_event($1,$2,'cs_test_order','pi_order',$3)",
+          [eventId, raced, outcome],
+        ),
+      ),
+    );
+    expect(
+      (
+        await db.query<{ status: string }>(
+          "SELECT status FROM student_enrollments WHERE id=$1",
+          [raced],
+        )
+      ).rows[0].status,
+    ).toBe("refunded");
+    expect(
+      (
+        await db.query(
+          "SELECT * FROM student_enrollment_mail WHERE enrollment_id=$1",
+          [raced],
+        )
+      ).rows.length,
+    ).toBeLessThanOrEqual(1);
+    await expect(
+      db.query(
+        "SELECT apply_student_enrollment_event('evt_paid',$1,'cs_test_order','pi_order','paid')",
+        [raced],
+      ),
+    ).rejects.toThrow("Event identity conflict");
     await db.query(
       "UPDATE student_enrollments SET stripe_session_id='cs_test_expire',stripe_expires_at=1 WHERE id=$1",
       [ids[1]],

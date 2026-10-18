@@ -227,7 +227,7 @@ test.describe("student enrollment isolated full stack", () => {
     expect(result.status()).toBe(200);
     expect((await result.json()).status).toBe("expired");
   });
-  test("unpaid completed sessions do not fulfill and signed events reject wrong environment and tampering", async ({
+  test("open unpaid sessions do not fulfill and signed events reject wrong environment and tampering", async ({
     request,
   }) => {
     const data = payload(),
@@ -310,8 +310,11 @@ test.describe("student enrollment isolated full stack", () => {
     await page.route("https://checkout.stripe.com/**", (route) =>
       route.abort(),
     );
-    const checkoutResponse = page.waitForResponse((response) =>
-      response.url().endsWith("/api/student-enrollment/checkout") && response.request().method() === "POST");
+    const checkoutResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/student-enrollment/checkout") &&
+        response.request().method() === "POST",
+    );
     await page
       .getByRole("button", { name: "Continue to Stripe test checkout" })
       .click();
@@ -383,5 +386,169 @@ test.describe("student enrollment isolated full stack", () => {
           r.status === "reserved",
       ),
     ).toHaveLength(12);
+  });
+  test("same paid event remains acknowledged after partial/full refunds and refund-first delivery never creates a confirmation", async ({
+    request,
+  }) => {
+    const send = async (raw: string) => {
+      const t = Math.floor(Date.now() / 1000),
+        sig = createHmac("sha256", "whsec_fixture")
+          .update(`${t}.${raw}`)
+          .digest("hex");
+      return request.post("/api/student-enrollment/webhook", {
+        data: raw,
+        headers: { "stripe-signature": `t=${t},v1=${sig}` },
+      });
+    };
+    const data = payload(),
+      created = await request.post("/api/student-enrollment/checkout", {
+        data,
+        headers,
+      });
+    expect(created.status()).toBe(200);
+    const id = (await created.json()).url.split("/").at(-1),
+      raw = JSON.stringify({
+        id: `evt_order${randomUUID().replaceAll("-", "")}`,
+        livemode: false,
+        type: "checkout.session.completed",
+        data: { object: { id } },
+      });
+    await control({ status: "complete" });
+    expect((await send(raw)).status()).toBe(200);
+    expect((await send(raw)).status()).toBe(200);
+    await control({ status: "complete", refundedAmount: 10000 });
+    expect(
+      (
+        await webhook(request, id, "charge.refunded", {
+          data: { object: { payment_intent: `pi_fixture${id.slice(8)}` } },
+        })
+      ).status(),
+    ).toBe(200);
+    let state = await evidence();
+    expect(
+      state.student_enrollments.find((r: { id: string }) => r.id === data.id)
+        .refunded_amount,
+    ).toBe(10000);
+    await control({ status: "complete", refundedAmount: 39500 });
+    expect(
+      (
+        await webhook(request, id, "charge.refunded", {
+          data: { object: { payment_intent: `pi_fixture${id.slice(8)}` } },
+        })
+      ).status(),
+    ).toBe(200);
+    expect((await send(raw)).status()).toBe(200);
+    expect((await send(raw)).status()).toBe(200);
+    state = await evidence();
+    expect(
+      state.student_enrollments.find((r: { id: string }) => r.id === data.id)
+        .status,
+    ).toBe("refunded");
+    expect(
+      state.student_enrollment_mail.filter(
+        (r: { enrollment_id: string }) => r.enrollment_id === data.id,
+      ),
+    ).toHaveLength(1);
+    await control({});
+    const early = payload(),
+      earlyCreated = await request.post("/api/student-enrollment/checkout", {
+        data: early,
+        headers,
+      });
+    expect(earlyCreated.status()).toBe(200);
+    const earlyId = (await earlyCreated.json()).url.split("/").at(-1);
+    await control({ status: "complete", refundedAmount: 39500 });
+    expect((await webhook(request, earlyId)).status()).toBe(200);
+    await control({ status: "complete", refundedAmount: 0 });
+    expect((await webhook(request, earlyId)).status()).toBe(200);
+    state = await evidence();
+    expect(
+      state.student_enrollments.find((r: { id: string }) => r.id === early.id)
+        .status,
+    ).toBe("refunded");
+    expect(
+      state.student_enrollment_mail.some(
+        (r: { enrollment_id: string }) => r.enrollment_id === early.id,
+      ),
+    ).toBe(false);
+  });
+  test("complete unpaid checkout and actual async failure retain one seat for review; async success confirms once", async ({
+    request,
+  }) => {
+    const data = payload(),
+      created = await request.post("/api/student-enrollment/checkout", {
+        data,
+        headers,
+      });
+    expect(created.status()).toBe(200);
+    const id = (await created.json()).url.split("/").at(-1);
+    await control({ status: "complete", paymentStatus: "unpaid" });
+    expect(
+      (await webhook(request, id, "checkout.session.completed")).status(),
+    ).toBe(200);
+    expect(
+      (
+        await webhook(request, id, "checkout.session.async_payment_failed")
+      ).status(),
+    ).toBe(200);
+    let state = await evidence();
+    expect(
+      state.student_enrollments.find((r: { id: string }) => r.id === data.id)
+        .status,
+    ).toBe("reserved");
+    expect(
+      state.student_enrollment_mail.some(
+        (r: { enrollment_id: string }) => r.enrollment_id === data.id,
+      ),
+    ).toBe(false);
+    await control({});
+    const next = payload(),
+      nextCreated = await request.post("/api/student-enrollment/checkout", {
+        data: next,
+        headers,
+      });
+    expect(nextCreated.status()).toBe(200);
+    const nextId = (await nextCreated.json()).url.split("/").at(-1);
+    const completedId=`evt_asynccomplete${randomUUID().replaceAll("-","")}`;
+    const successId=`evt_asyncsuccess${randomUUID().replaceAll("-","")}`;
+    await control({ status: "complete", paymentStatus: "unpaid" });
+    expect((await webhook(request, nextId,"checkout.session.completed",{id:completedId})).status()).toBe(200);
+    await control({ status: "complete", paymentStatus: "paid" });
+    expect(
+      (
+        await webhook(
+          request,
+          nextId,
+          "checkout.session.async_payment_succeeded",
+          {id:successId},
+        )
+      ).status(),
+    ).toBe(200);
+    expect(
+      (
+        await webhook(
+          request,
+          nextId,
+          "checkout.session.async_payment_succeeded",
+          {id:successId},
+        )
+      ).status(),
+    ).toBe(200);
+    expect((await webhook(request,nextId,"checkout.session.completed",{id:completedId})).status()).toBe(200);
+    expect((await webhook(request,nextId,"checkout.session.async_payment_failed")).status()).toBe(200);
+    state = await evidence();
+    expect(
+      state.student_enrollments.find((r: { id: string }) => r.id === data.id)
+        .status,
+    ).toBe("reserved");
+    expect(
+      state.student_enrollments.find((r: { id: string }) => r.id === next.id)
+        .status,
+    ).toBe("paid");
+    expect(
+      state.student_enrollment_mail.filter(
+        (r: { enrollment_id: string }) => r.enrollment_id === next.id,
+      ),
+    ).toHaveLength(1);
   });
 });

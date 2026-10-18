@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
-import { ENROLLMENT_POLICY_VERSION, enrollmentDate } from "@/lib/enrollment-contract";
+import {
+  ENROLLMENT_POLICY_VERSION,
+  enrollmentDate,
+} from "@/lib/enrollment-contract";
 
 export const STUDENT_COOKIE = "__Host-rda-student-checkout";
 export const STUDENT_POLICY_HASH = createHash("sha256")
@@ -22,6 +25,7 @@ export type StudentOffering = {
   currency: string;
   policy_version: string;
   policy_hash: string;
+  policy_text: string;
   remaining: number;
 };
 export type StudentEnrollment = {
@@ -36,6 +40,7 @@ export type StudentEnrollment = {
   currency: string;
   policy_version: string;
   policy_hash: string;
+  policy_text: string;
   status: "reserved" | "paid" | "expired" | "refunded";
   stripe_session_id: string | null;
   stripe_payment_intent: string | null;
@@ -100,7 +105,7 @@ export async function studentOfferings(
     WHERE e.offering_id=o.id AND e.status IN ('reserved','paid','refunded')))::int AS remaining
     FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true
     AND o.course_date > (now() AT TIME ZONE 'America/Los_Angeles')::date
-    AND o.policy_version=${ENROLLMENT_POLICY_VERSION} AND o.policy_hash=${STUDENT_POLICY_HASH} ORDER BY o.course_date`;
+    AND o.policy_version=${ENROLLMENT_POLICY_VERSION} AND o.policy_hash=${STUDENT_POLICY_HASH} AND o.policy_text IS NOT NULL ORDER BY o.course_date`;
   return rows.map((row) => ({
     ...row,
     course_date: enrollmentDate(row.course_date),

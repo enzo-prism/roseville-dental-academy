@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS student_enrollment_offerings (
   external_seats integer NOT NULL CHECK (external_seats BETWEEN 0 AND 12),
   policy_version text NOT NULL,
   policy_hash text NOT NULL CHECK (policy_hash ~ '^[a-f0-9]{64}$'),
+  policy_text text NOT NULL CHECK (encode(sha256(convert_to(policy_text,'UTF8')),'hex')=policy_hash),
   reviewed_at timestamptz NOT NULL,
   review_reference text NOT NULL CHECK (length(review_reference) > 0),
   enabled boolean NOT NULL DEFAULT false,
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
   adult_attested boolean NOT NULL CHECK (adult_attested),
   policy_version text NOT NULL,
   policy_hash text NOT NULL,
+  policy_text text NOT NULL CHECK (encode(sha256(convert_to(policy_text,'UTF8')),'hex')=policy_hash),
   policy_accepted_at timestamptz NOT NULL DEFAULT now(),
   amount integer NOT NULL CHECK (amount > 0),
   currency text NOT NULL CHECK (currency = 'usd'),
@@ -55,6 +57,13 @@ CREATE TABLE IF NOT EXISTS student_enrollment_mail (
   delivered_at timestamptz,
   captured_body text
 );
+-- Existing private test databases may have the earlier draft schema. Missing
+-- snapshots fail closed; never backfill historical consent with today's policy.
+ALTER TABLE student_enrollment_offerings ADD COLUMN IF NOT EXISTS policy_text text;
+ALTER TABLE student_enrollments ADD COLUMN IF NOT EXISTS policy_text text;
+ALTER TABLE student_enrollment_mail ADD COLUMN IF NOT EXISTS payload jsonb;
+ALTER TABLE student_enrollment_mail ADD COLUMN IF NOT EXISTS template_version text;
+ALTER TABLE student_enrollment_mail ADD COLUMN IF NOT EXISTS payload_created_at timestamptz;
 CREATE OR REPLACE FUNCTION reserve_student_enrollment(p_id uuid,p_offering uuid,p_owner text,p_name text,p_email text,p_phone text,p_policy text,p_hash text,p_mode text)
 RETURNS SETOF student_enrollments LANGUAGE plpgsql AS $$
 DECLARE offer student_enrollment_offerings; held student_enrollments;
@@ -68,48 +77,66 @@ BEGIN
     RETURN NEXT held; RETURN;
   END IF;
   IF NOT offer.enabled OR offer.course_date <= (now() AT TIME ZONE 'America/Los_Angeles')::date
-    OR offer.policy_version<>p_policy OR offer.policy_hash<>p_hash THEN RAISE EXCEPTION 'Offering unavailable'; END IF;
+    OR offer.policy_version<>p_policy OR offer.policy_hash<>p_hash OR offer.policy_text IS NULL
+    OR encode(sha256(convert_to(offer.policy_text,'UTF8')),'hex')<>p_hash THEN RAISE EXCEPTION 'Offering unavailable'; END IF;
   IF (SELECT count(*) FROM student_enrollments WHERE owner_hash=p_owner AND status='reserved')>=2 THEN RETURN; END IF;
   -- Refunded seats stay counted until academy staff explicitly reconcile inventory.
   IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=p_offering AND status IN ('reserved','paid','refunded'))>=offer.capacity THEN RETURN; END IF;
-  RETURN QUERY INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,amount,currency)
-    VALUES(p_id,p_offering,offer.course_date,p_owner,p_name,p_email,p_phone,true,p_policy,p_hash,offer.amount,offer.currency) RETURNING *;
+  RETURN QUERY INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency)
+    VALUES(p_id,p_offering,offer.course_date,p_owner,p_name,p_email,p_phone,true,p_policy,p_hash,offer.policy_text,offer.amount,offer.currency) RETURNING *;
 END;
 $$;
 CREATE OR REPLACE FUNCTION apply_student_enrollment_event(p_event text,p_id uuid,p_session text,p_intent text,p_outcome text)
 RETURNS boolean LANGUAGE plpgsql AS $$
-DECLARE held student_enrollments; recorded student_enrollment_events;
+DECLARE held student_enrollments; recorded student_enrollment_events; is_new boolean;
 BEGIN
   SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
   IF NOT FOUND OR held.stripe_session_id IS DISTINCT FROM p_session THEN RAISE EXCEPTION 'Unbound session'; END IF;
   SELECT * INTO recorded FROM student_enrollment_events WHERE event_id=p_event;
+  is_new:=NOT FOUND;
   IF FOUND THEN
-    IF recorded.enrollment_id<>p_id OR recorded.session_id<>p_session OR recorded.outcome<>p_outcome THEN RAISE EXCEPTION 'Event identity conflict'; END IF;
-    RETURN false;
+    IF recorded.enrollment_id<>p_id OR recorded.session_id<>p_session THEN RAISE EXCEPTION 'Event identity conflict'; END IF;
+    -- A receipt identifies its resource, not the provider's mutable current state.
+    -- Preserve its first observed outcome while allowing verified paid/refunded
+    -- reconciliation after a duplicate or reordered delivery.
+    IF recorded.outcome<>p_outcome AND NOT (recorded.outcome IN ('paid','refunded') AND p_outcome IN ('paid','refunded')) THEN RAISE EXCEPTION 'Event identity conflict'; END IF;
   END IF;
   IF p_outcome NOT IN ('paid','expired','refunded') THEN RAISE EXCEPTION 'Invalid outcome'; END IF;
   IF p_outcome IN ('paid','refunded') AND (p_intent IS NULL OR p_intent !~ '^pi_[A-Za-z0-9]+$') THEN RAISE EXCEPTION 'Invalid payment intent'; END IF;
   IF held.stripe_payment_intent IS NOT NULL AND held.stripe_payment_intent IS DISTINCT FROM p_intent THEN RAISE EXCEPTION 'Payment identity conflict'; END IF;
+  IF held.status='refunded' AND p_outcome='paid' THEN
+    IF is_new THEN INSERT INTO student_enrollment_events(event_id,enrollment_id,session_id,outcome) VALUES(p_event,p_id,p_session,p_outcome); END IF;
+    RETURN false;
+  END IF;
   IF held.status<>p_outcome AND NOT (held.status='reserved' AND p_outcome IN ('paid','expired','refunded')) AND NOT (held.status='paid' AND p_outcome='refunded') THEN RAISE EXCEPTION 'Conflicting terminal state'; END IF;
-  INSERT INTO student_enrollment_events(event_id,enrollment_id,session_id,outcome) VALUES(p_event,p_id,p_session,p_outcome);
+  IF is_new THEN INSERT INTO student_enrollment_events(event_id,enrollment_id,session_id,outcome) VALUES(p_event,p_id,p_session,p_outcome); END IF;
   UPDATE student_enrollments SET status=p_outcome,stripe_payment_intent=p_intent,updated_at=now() WHERE id=p_id;
   IF p_outcome='paid' THEN INSERT INTO student_enrollment_mail(enrollment_id) VALUES(p_id) ON CONFLICT DO NOTHING; END IF;
   IF p_outcome='refunded' THEN UPDATE student_enrollment_mail SET status='review' WHERE enrollment_id=p_id AND status IN ('pending','sending'); END IF;
-  RETURN true;
+  RETURN is_new OR held.status<>p_outcome;
 END;
 $$;
 -- Prevent price/date/policy edits from changing already-issued Checkout bodies.
 CREATE OR REPLACE FUNCTION protect_student_offering() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF EXISTS(SELECT 1 FROM student_enrollments WHERE offering_id=OLD.id) AND
-    (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash)
-    IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash) THEN RAISE EXCEPTION 'Offering already has enrollments'; END IF;
+    (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash,NEW.policy_text)
+    IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash,OLD.policy_text) THEN RAISE EXCEPTION 'Offering already has enrollments'; END IF;
   IF NEW.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=OLD.id AND status IN ('reserved','paid','refunded'))>NEW.capacity THEN RAISE EXCEPTION 'Inventory exceeds capacity'; END IF;
   RETURN NEW;
 END;
 $$;
 DROP TRIGGER IF EXISTS student_offering_immutable ON student_enrollment_offerings;
 CREATE TRIGGER student_offering_immutable BEFORE UPDATE ON student_enrollment_offerings FOR EACH ROW EXECUTE FUNCTION protect_student_offering();
+CREATE OR REPLACE FUNCTION protect_student_mail_payload() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.payload IS NOT NULL AND (NEW.payload,NEW.template_version,NEW.payload_created_at)
+    IS DISTINCT FROM (OLD.payload,OLD.template_version,OLD.payload_created_at) THEN RAISE EXCEPTION 'Confirmation payload is immutable'; END IF;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS student_mail_payload_immutable ON student_enrollment_mail;
+CREATE TRIGGER student_mail_payload_immutable BEFORE UPDATE ON student_enrollment_mail FOR EACH ROW EXECUTE FUNCTION protect_student_mail_payload();
 CREATE OR REPLACE VIEW student_enrollment_roster AS
   SELECT e.id,e.student_name,e.email,e.phone,e.status,e.amount,e.currency,e.refunded_amount,e.policy_accepted_at,e.policy_version,
     e.stripe_session_id,e.stripe_payment_intent,o.mode,o.course_id,o.course_date

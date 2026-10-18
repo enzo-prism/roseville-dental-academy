@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { SiteLink } from "@/components/site/site-link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StudentEnrollmentForm } from "@/components/site/student-enrollment-form";
@@ -36,9 +36,9 @@ export default async function EnrollmentPage() {
               Online enrollment is currently unavailable. Please contact the
               academy to confirm course dates and availability.
             </p>
-            <Link href="/contact" className="text-primary underline">
+            <SiteLink href="/contact" className="text-primary underline">
               Contact Roseville Dental Academy
-            </Link>
+            </SiteLink>
           </CardContent>
         </Card>
       ) : (

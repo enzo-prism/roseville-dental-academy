@@ -24,7 +24,8 @@ Before creating a live offering, academy staff must confirm the price/date and r
 existing offline enrollments. Set `external_seats` to the already allocated seat count;
 never assume that all 12 seats remain. Each offering needs a review timestamp, a nonempty
 review reference, the current policy version and SHA-256 of the exact policy paragraphs
-joined by two newlines. Offerings start disabled. No application API creates or enables them.
+joined by two newlines, and those exact paragraphs in `policy_text`. Each reservation
+copies that accepted policy snapshot. Offerings start disabled. No application API creates or enables them.
 Apply migration `005_student_enrollment.sql` using the filename-order migrator only against
 the verified RDA database after review. It is repeatable and seeds zero offerings.
 
@@ -52,6 +53,10 @@ amount, currency, client reference, expiry, and all binding metadata. Paid outco
 the roster and confirmation outbox atomically; success-page navigation does not fulfill.
 The confirmation page requires the original HTTP-only browser cookie and a durable paid
 record. It never confirms a payment just because an opaque ID appears in a URL.
+Event receipts retain their first observed outcome and bind permanently to the same
+enrollment/session. Verified current payment state reconciles monotonically under the
+database lock: refunds may advance a paid enrollment; stale paid reads never reverse a
+refund. A paid event replayed after refund is acknowledged without another confirmation.
 
 ## Secure configuration
 
@@ -74,6 +79,9 @@ Stripe account-read verification runs before issuing sessions and accepting paym
 The Mac mini Chrome dashboard was observed signed in as Roseville Dental Academy at the
 expected merchant on October 18. No keys were opened or created. The connected Stripe
 plugin's Prism account must not be substituted for RDA.
+The existing RDA sandbox was independently verified as `acct_1UJHgaCCgcgk1x8Q`, linked
+in Stripe's switcher to the RDA live account. No sandbox webhook destination or product
+was configured when inspected. Inline Checkout pricing does not require a catalog product.
 
 Register `/api/student-enrollment/webhook` for `checkout.session.completed`,
 `checkout.session.expired`, `checkout.session.async_payment_succeeded`,
@@ -89,6 +97,14 @@ retries reuse the single outbox row and provider idempotency key. An ambiguous s
 than 12 hours changes to `review` rather than risking a duplicate after the provider's
 24-hour deduplication window. The staff roster shows queued/delivery state; `sent` means
 provider acceptance, not inbox delivery. Monitor delivery/bounces in the approved mail provider.
+Before its first attempt, each outbox row persists the complete sender, recipient, subject,
+text and template version. Every attempt sends that stored JSON, including the first.
+The database rejects later payload edits; later policy/template/sender changes cannot
+silently change a queued confirmation or the bytes sent with its idempotency key. The
+text uses the policy accepted by that enrollment rather than the current site's policy.
+If an older private test database has no accepted-policy snapshot, do not invent it from
+today's text: rebuild the disposable fixture database or reconcile its original acceptance
+evidence before attempting delivery. No production database has been migrated by this task.
 
 `/enrollment-pilot/roster` requires the existing separate staff password/session configuration.
 It shows verified paid/refunded students only, with no public roster API. Staff can retry
@@ -121,6 +137,11 @@ It runs both the existing pilot and new student suites. Evidence is saved under
 `dogfood-output/student-enrollment/` and responsive screenshots under `test-results/`.
 `pnpm preview:student-enrollment` serves the synthetic UI at `http://127.0.0.1:3117/enroll`.
 These two commands must only run locally, never as a deployed start command.
+The mail transport suite also exercises the live-delivery code path inside a hermetic
+test process with fake configuration, an isolated PostgreSQL engine, and a fetch handler
+that blocks every non-fixture request. It simulates provider acceptance followed by a
+timeout, temporary errors, concurrent claims, retry leases and the manual-review cutoff.
+It never uses real mail credentials, sends external email, or enables a deployment flag.
 
 Fixture proof is not an actual Stripe test-mode transaction. Before launch, complete the
 verified RDA sandbox/test Checkout, validate signed delivery and persistent paid roster,

@@ -251,8 +251,8 @@ export async function recordStudentSession(
     if (charge.refunded === true && charge.amount_refunded === held.amount)
       outcome = "refunded";
   }
-  // A stale paid event must not reverse an already verified refund.
-  if (held.status === "refunded" && outcome === "paid") return held;
+  // The database reconciles monotonically under its row lock, including a stale
+  // paid read racing a refund. Receipt identity stays independent of current state.
   if (outcome)
     await studentDatabase()`SELECT apply_student_enrollment_event(${eventId},${id}::uuid,${session.id},${intent},${outcome})`;
   return getStudentEnrollment(id);

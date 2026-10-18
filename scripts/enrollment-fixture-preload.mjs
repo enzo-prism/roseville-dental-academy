@@ -21,7 +21,7 @@ if (process.env.RDA_STUDENT_PAYMENTS_MODE) {
   const paragraphs=[...source.split("export const CANCELLATION_POLICY_PARAGRAPHS = [")[1].split("] as const")[0].matchAll(/"([^"\n]*)"/g)].map(m=>m[1]);
   const hash=createHash("sha256").update(paragraphs.join("\n\n")).digest("hex");
   for (const [id,date] of [["11111111-1111-4111-8111-111111111111","2099-11-14"],["22222222-2222-4222-8222-222222222222","2099-12-05"]]) {
-    await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$2,39500,0,'2026-09-30',$3,now(),'isolated synthetic fixture',true)",[id,date,hash]);
+    await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$2,39500,0,'2026-09-30',$3,$4,now(),'isolated synthetic fixture',true)",[id,date,hash,paragraphs.join("\n\n")]);
   }
 }
 const sessions = new Map(); const keys = new Map();
@@ -48,6 +48,7 @@ globalThis.fetch = async (input, init = {}) => {
       return Response.json({ ...result, rows: result.rows.map((row) => result.fields.map(({ name, dataTypeID }) => {
         const value = row[name]; if (value === null) return null;
         if (dataTypeID === 16) return value ? "t" : "f";
+        if ([114,3802].includes(dataTypeID)) return JSON.stringify(value);
         if (value instanceof Date) return dataTypeID === 1082 ? value.toISOString().slice(0,10) : value.toISOString(); return String(value);
       })) });
     } catch (error) { return Response.json({ message: error.message }, { status: 400 }); }
@@ -75,8 +76,9 @@ globalThis.fetch = async (input, init = {}) => {
       const session = sessions.get(id);
       if (url.pathname.endsWith("/expire")) { session.status = "expired"; session.payment_status = "unpaid"; }
       else if (control.status) { session.status = control.status; session.payment_status = control.status === "complete" ? "paid" : "unpaid"; }
+      if (control.paymentStatus) session.payment_status=control.paymentStatus;
       if (session.status === "complete") {
-        session.payment_intent={id:`pi_fixture${id.slice(8)}`,latest_charge:{id:`ch_fixture${id.slice(8)}`,payment_intent:`pi_fixture${id.slice(8)}`,amount:session.amount_total,currency:"usd",livemode:false,amount_refunded:control.refundedAmount ?? 0,refunded:control.refundedAmount === session.amount_total}};
+        session.payment_intent={id:`pi_fixture${id.slice(8)}`,status:session.payment_status === "paid" ? "succeeded" : "requires_payment_method",latest_charge:session.payment_status === "paid" ? {id:`ch_fixture${id.slice(8)}`,payment_intent:`pi_fixture${id.slice(8)}`,amount:session.amount_total,currency:"usd",livemode:false,amount_refunded:control.refundedAmount ?? 0,refunded:control.refundedAmount === session.amount_total} : null};
       }
       return Response.json({ ...session, ...(control.amount !== undefined ? { amount_total: control.amount } : {}), ...(control.livemode !== undefined ? { livemode: control.livemode } : {}) });
     }
