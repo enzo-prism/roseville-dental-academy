@@ -134,11 +134,13 @@ test.describe("student enrollment isolated full stack", () => {
     expect(mail[0].status).toBe("captured");
     expect(mail[0].captured_body).toContain("TEST ONLY");
     expect(mail[0].captured_body).toContain(data.id);
+    expect(mail[0].captured_body).toContain("2099-11-14");
     const confirmation = await request.get(
       `/enroll/confirmation?enrollment=${data.id}`,
       { headers },
     );
     expect(await confirmation.text()).toContain("Payment confirmed");
+    expect(await confirmation.text()).toContain("2099-11-14");
     expect(confirmation.headers()["cache-control"]).toContain("no-store");
     expect(
       await (
@@ -308,9 +310,12 @@ test.describe("student enrollment isolated full stack", () => {
     await page.route("https://checkout.stripe.com/**", (route) =>
       route.abort(),
     );
+    const checkoutResponse = page.waitForResponse((response) =>
+      response.url().endsWith("/api/student-enrollment/checkout") && response.request().method() === "POST");
     await page
       .getByRole("button", { name: "Continue to Stripe test checkout" })
       .click();
+    expect((await checkoutResponse).status()).toBe(200);
     await page.goto("/enroll");
     await expect(
       page.getByRole("button", { name: "Continue to Stripe test checkout" }),

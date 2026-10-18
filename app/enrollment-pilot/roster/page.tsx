@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { enrollmentOwner } from "@/lib/enrollment-http";
+import { enrollmentDate } from "@/lib/enrollment-contract";
 import { studentConfig, studentDatabase } from "@/lib/student-enrollment";
 export default async function StudentRoster() {
   const staff = await enrollmentOwner(),
@@ -52,7 +53,7 @@ export default async function StudentRoster() {
             {rows.map((r) => (
               <tr key={String(r.id)}>
                 {[
-                  String(r.course_date).slice(0, 10),
+                enrollmentDate(r.course_date),
                   r.student_name,
                   r.email,
                   r.phone,

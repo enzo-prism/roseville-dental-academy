@@ -48,7 +48,7 @@ globalThis.fetch = async (input, init = {}) => {
       return Response.json({ ...result, rows: result.rows.map((row) => result.fields.map(({ name, dataTypeID }) => {
         const value = row[name]; if (value === null) return null;
         if (dataTypeID === 16) return value ? "t" : "f";
-        if (value instanceof Date) return value.toISOString(); return String(value);
+        if (value instanceof Date) return dataTypeID === 1082 ? value.toISOString().slice(0,10) : value.toISOString(); return String(value);
       })) });
     } catch (error) { return Response.json({ message: error.message }, { status: 400 }); }
   }

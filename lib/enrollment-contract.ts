@@ -2,6 +2,15 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const ENROLLMENT_AMOUNT = 39500;
 export const ENROLLMENT_POLICY_VERSION = "2026-09-30";
+// PostgreSQL DATE parsers return local-midnight Date objects. Preserve the calendar
+// date rather than slicing Date.toString() or shifting it through UTC.
+export function enrollmentDate(value: unknown) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+  }
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  throw new Error("Invalid enrollment course date");
+}
 export type EnrollmentConfig = { key: string; webhookSecret: string; origin: string };
 export type EnrollmentHold = { hold_id: string; course_date: string; owner_hash: string;
   policy_version: string; status: "reserved" | "paid" | "expired";

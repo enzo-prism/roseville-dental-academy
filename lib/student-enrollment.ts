@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
-import { ENROLLMENT_POLICY_VERSION } from "@/lib/enrollment-contract";
+import { ENROLLMENT_POLICY_VERSION, enrollmentDate } from "@/lib/enrollment-contract";
 
 export const STUDENT_COOKIE = "__Host-rda-student-checkout";
 export const STUDENT_POLICY_HASH = createHash("sha256")
@@ -103,7 +103,7 @@ export async function studentOfferings(
     AND o.policy_version=${ENROLLMENT_POLICY_VERSION} AND o.policy_hash=${STUDENT_POLICY_HASH} ORDER BY o.course_date`;
   return rows.map((row) => ({
     ...row,
-    course_date: String(row.course_date).slice(0, 10),
+    course_date: enrollmentDate(row.course_date),
   })) as StudentOffering[];
 }
 export async function getStudentEnrollment(id: string) {
@@ -112,7 +112,7 @@ export async function getStudentEnrollment(id: string) {
   return rows[0]
     ? ({
         ...rows[0],
-        course_date: String(rows[0].course_date).slice(0, 10),
+        course_date: enrollmentDate(rows[0].course_date),
       } as StudentEnrollment)
     : undefined;
 }

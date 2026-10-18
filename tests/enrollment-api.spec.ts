@@ -39,6 +39,7 @@ test.describe("isolated Next.js API plus Stripe fixtures and real PostgreSQL eng
     for (let attempt=0; attempt<2; attempt++) expect((await request.post("/api/enrollment/webhook", { data: raw, headers: { "stripe-signature": `t=${t},v1=${signature}` } })).status()).toBe(200);
     confirmation = await request.get(`/enrollment-pilot/confirmation?hold=${data.holdId}`, { headers }); expect(await confirmation.text()).toContain("Test payment verified");
     expect(await confirmation.text()).toContain("No real money was charged");
+    expect(await confirmation.text()).toContain(data.date!);
     expect(await (await request.get(`/enrollment-pilot/confirmation?hold=${randomUUID()}`, { headers })).text()).toContain("Test payment not verified");
     expect((await request.post("/api/enrollment/webhook", { data: `${raw} `, headers: { "stripe-signature": `t=${t},v1=${signature}` } })).status()).toBe(400);
   });

@@ -10,7 +10,7 @@ import {
   studentAllowance,
 } from "@/lib/student-enrollment-http";
 import { startStudentSession } from "@/lib/student-enrollment-stripe";
-import { ENROLLMENT_POLICY_VERSION } from "@/lib/enrollment-contract";
+import { ENROLLMENT_POLICY_VERSION, enrollmentDate } from "@/lib/enrollment-contract";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const held = rows[0]
       ? ({
           ...rows[0],
-          course_date: String(rows[0].course_date).slice(0, 10),
+          course_date: enrollmentDate(rows[0].course_date),
         } as StudentEnrollment)
       : undefined;
     if (!held)

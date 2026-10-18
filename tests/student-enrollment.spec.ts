@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
+import { enrollmentDate } from "@/lib/enrollment-contract";
 import {
   studentConfig,
   studentInput,
@@ -15,6 +16,11 @@ import {
 } from "@/lib/student-enrollment-stripe";
 const offer = "11111111-1111-4111-8111-111111111111",
   policy = "2026-09-30";
+test("database course dates preserve their calendar day and reject null", () => {
+  expect(enrollmentDate(new Date(2099,10,14))).toBe("2099-11-14");
+  expect(enrollmentDate("2099-11-14")).toBe("2099-11-14");
+  expect(() => enrollmentDate(null)).toThrow();
+});
 test("student configuration fails closed and never mixes live keys, wrong merchants or origins", () => {
   const before = { ...process.env };
   try {
