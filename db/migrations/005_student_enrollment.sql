@@ -1,0 +1,130 @@
+-- Separate from the staff pilot. No live offering or inventory is seeded here.
+CREATE TABLE IF NOT EXISTS student_enrollment_offerings (
+  id uuid PRIMARY KEY,
+  mode text NOT NULL CHECK (mode IN ('test','live')),
+  course_id text NOT NULL CHECK (course_id = 'infection-control'),
+  course_date date NOT NULL,
+  amount integer NOT NULL CHECK (amount > 0 AND amount <= 1000000),
+  currency text NOT NULL DEFAULT 'usd' CHECK (currency = 'usd'),
+  capacity integer NOT NULL DEFAULT 12 CHECK (capacity = 12),
+  external_seats integer NOT NULL CHECK (external_seats BETWEEN 0 AND 12),
+  policy_version text NOT NULL,
+  policy_hash text NOT NULL CHECK (policy_hash ~ '^[a-f0-9]{64}$'),
+  reviewed_at timestamptz NOT NULL,
+  review_reference text NOT NULL CHECK (length(review_reference) > 0),
+  enabled boolean NOT NULL DEFAULT false,
+  UNIQUE(mode, course_id, course_date)
+);
+CREATE TABLE IF NOT EXISTS student_enrollments (
+  id uuid PRIMARY KEY,
+  offering_id uuid NOT NULL REFERENCES student_enrollment_offerings(id),
+  course_date date NOT NULL,
+  owner_hash text NOT NULL CHECK (owner_hash ~ '^[a-f0-9]{64}$'),
+  student_name text NOT NULL CHECK (length(student_name) BETWEEN 2 AND 100),
+  email text NOT NULL CHECK (length(email) BETWEEN 3 AND 254),
+  phone text NOT NULL CHECK (length(phone) BETWEEN 7 AND 30),
+  adult_attested boolean NOT NULL CHECK (adult_attested),
+  policy_version text NOT NULL,
+  policy_hash text NOT NULL,
+  policy_accepted_at timestamptz NOT NULL DEFAULT now(),
+  amount integer NOT NULL CHECK (amount > 0),
+  currency text NOT NULL CHECK (currency = 'usd'),
+  refunded_amount integer NOT NULL DEFAULT 0 CHECK (refunded_amount >= 0 AND refunded_amount <= amount),
+  status text NOT NULL DEFAULT 'reserved' CHECK (status IN ('reserved','paid','expired','refunded')),
+  stripe_session_id text UNIQUE,
+  stripe_payment_intent text UNIQUE,
+  stripe_expires_at bigint NOT NULL DEFAULT floor(extract(epoch FROM now()))::bigint + 3600,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS student_enrollment_inventory ON student_enrollments(offering_id,status);
+CREATE UNIQUE INDEX IF NOT EXISTS student_enrollment_duplicate ON student_enrollments(offering_id,lower(email)) WHERE status IN ('reserved','paid','refunded');
+CREATE TABLE IF NOT EXISTS student_enrollment_events (
+  event_id text PRIMARY KEY,
+  enrollment_id uuid NOT NULL REFERENCES student_enrollments(id),
+  session_id text NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('paid','expired','refunded')),
+  received_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS student_enrollment_mail (
+  enrollment_id uuid PRIMARY KEY REFERENCES student_enrollments(id),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sending','sent','captured','review')),
+  started_at timestamptz,
+  attempted_at timestamptz,
+  provider_id text,
+  delivered_at timestamptz,
+  captured_body text
+);
+CREATE OR REPLACE FUNCTION reserve_student_enrollment(p_id uuid,p_offering uuid,p_owner text,p_name text,p_email text,p_phone text,p_policy text,p_hash text,p_mode text)
+RETURNS SETOF student_enrollments LANGUAGE plpgsql AS $$
+DECLARE offer student_enrollment_offerings; held student_enrollments;
+BEGIN
+  SELECT * INTO offer FROM student_enrollment_offerings WHERE id=p_offering AND mode=p_mode FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown offering'; END IF;
+  SELECT * INTO held FROM student_enrollments WHERE id=p_id;
+  IF FOUND THEN
+    IF held.offering_id<>p_offering OR held.owner_hash<>p_owner OR held.student_name<>p_name
+      OR held.email<>p_email OR held.phone<>p_phone OR held.policy_version<>p_policy OR held.policy_hash<>p_hash THEN RAISE EXCEPTION 'Enrollment identity conflict'; END IF;
+    RETURN NEXT held; RETURN;
+  END IF;
+  IF NOT offer.enabled OR offer.course_date <= (now() AT TIME ZONE 'America/Los_Angeles')::date
+    OR offer.policy_version<>p_policy OR offer.policy_hash<>p_hash THEN RAISE EXCEPTION 'Offering unavailable'; END IF;
+  IF (SELECT count(*) FROM student_enrollments WHERE owner_hash=p_owner AND status='reserved')>=2 THEN RETURN; END IF;
+  -- Refunded seats stay counted until academy staff explicitly reconcile inventory.
+  IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=p_offering AND status IN ('reserved','paid','refunded'))>=offer.capacity THEN RETURN; END IF;
+  RETURN QUERY INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,amount,currency)
+    VALUES(p_id,p_offering,offer.course_date,p_owner,p_name,p_email,p_phone,true,p_policy,p_hash,offer.amount,offer.currency) RETURNING *;
+END;
+$$;
+CREATE OR REPLACE FUNCTION apply_student_enrollment_event(p_event text,p_id uuid,p_session text,p_intent text,p_outcome text)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE held student_enrollments; recorded student_enrollment_events;
+BEGIN
+  SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND OR held.stripe_session_id IS DISTINCT FROM p_session THEN RAISE EXCEPTION 'Unbound session'; END IF;
+  SELECT * INTO recorded FROM student_enrollment_events WHERE event_id=p_event;
+  IF FOUND THEN
+    IF recorded.enrollment_id<>p_id OR recorded.session_id<>p_session OR recorded.outcome<>p_outcome THEN RAISE EXCEPTION 'Event identity conflict'; END IF;
+    RETURN false;
+  END IF;
+  IF p_outcome NOT IN ('paid','expired','refunded') THEN RAISE EXCEPTION 'Invalid outcome'; END IF;
+  IF p_outcome IN ('paid','refunded') AND (p_intent IS NULL OR p_intent !~ '^pi_[A-Za-z0-9]+$') THEN RAISE EXCEPTION 'Invalid payment intent'; END IF;
+  IF held.stripe_payment_intent IS NOT NULL AND held.stripe_payment_intent IS DISTINCT FROM p_intent THEN RAISE EXCEPTION 'Payment identity conflict'; END IF;
+  IF held.status<>p_outcome AND NOT (held.status='reserved' AND p_outcome IN ('paid','expired','refunded')) AND NOT (held.status='paid' AND p_outcome='refunded') THEN RAISE EXCEPTION 'Conflicting terminal state'; END IF;
+  INSERT INTO student_enrollment_events(event_id,enrollment_id,session_id,outcome) VALUES(p_event,p_id,p_session,p_outcome);
+  UPDATE student_enrollments SET status=p_outcome,stripe_payment_intent=p_intent,updated_at=now() WHERE id=p_id;
+  IF p_outcome='paid' THEN INSERT INTO student_enrollment_mail(enrollment_id) VALUES(p_id) ON CONFLICT DO NOTHING; END IF;
+  IF p_outcome='refunded' THEN UPDATE student_enrollment_mail SET status='review' WHERE enrollment_id=p_id AND status IN ('pending','sending'); END IF;
+  RETURN true;
+END;
+$$;
+-- Prevent price/date/policy edits from changing already-issued Checkout bodies.
+CREATE OR REPLACE FUNCTION protect_student_offering() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF EXISTS(SELECT 1 FROM student_enrollments WHERE offering_id=OLD.id) AND
+    (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash)
+    IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash) THEN RAISE EXCEPTION 'Offering already has enrollments'; END IF;
+  IF NEW.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=OLD.id AND status IN ('reserved','paid','refunded'))>NEW.capacity THEN RAISE EXCEPTION 'Inventory exceeds capacity'; END IF;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS student_offering_immutable ON student_enrollment_offerings;
+CREATE TRIGGER student_offering_immutable BEFORE UPDATE ON student_enrollment_offerings FOR EACH ROW EXECUTE FUNCTION protect_student_offering();
+CREATE OR REPLACE VIEW student_enrollment_roster AS
+  SELECT e.id,e.student_name,e.email,e.phone,e.status,e.amount,e.currency,e.refunded_amount,e.policy_accepted_at,e.policy_version,
+    e.stripe_session_id,e.stripe_payment_intent,o.mode,o.course_id,o.course_date
+  FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.status IN ('paid','refunded');
+
+CREATE TABLE IF NOT EXISTS student_enrollment_attempts (
+  bucket text NOT NULL, window_start timestamptz NOT NULL, attempts integer NOT NULL, PRIMARY KEY(bucket,window_start)
+);
+CREATE OR REPLACE FUNCTION student_enrollment_allowance(p_bucket text) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE window_time timestamptz; hits integer;
+BEGIN
+  window_time:=to_timestamp(floor(extract(epoch FROM now())/900)*900);
+  INSERT INTO student_enrollment_attempts VALUES(p_bucket,window_time,1) ON CONFLICT(bucket,window_start)
+    DO UPDATE SET attempts=student_enrollment_attempts.attempts+1 RETURNING attempts INTO hits;
+  DELETE FROM student_enrollment_attempts WHERE window_start<now()-interval '1 day';
+  RETURN hits<=20;
+END;
+$$;

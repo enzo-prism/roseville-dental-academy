@@ -5,12 +5,14 @@ import { CalendarDays } from "lucide-react";
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { ClinicalRequirements } from "@/components/site/clinical-requirements";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
+import { SiteLink } from "@/components/site/site-link";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { showsCertificateExpiration } from "@/lib/certificate-expiration";
+import { studentConfig } from "@/lib/student-enrollment";
 import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE, hasStandaloneClinicalRequirements, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
 import { courseScheduleNote, formatCourseDateLabel, getUpcomingCourseSchedule } from "@/lib/course-schedule";
 import type {
@@ -492,6 +494,9 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               {CANCELLATION_POLICY_TITLE}
             </Link>
           </p>
+          {course.id === "infection-control" && studentConfig()?.mode === "live" ? (
+            <Button asChild className="mt-6"><SiteLink href="/enroll">Enroll and pay in full</SiteLink></Button>
+          ) : null}
         </div>
       ) : null}
       {reviewGroup ? <CourseReviews course={course} group={reviewGroup} /> : null}

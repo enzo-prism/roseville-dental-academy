@@ -6,7 +6,12 @@ tables do not write to student attribution, real admissions, or real course-seat
 See `docs/enrollment-pilot.md` for the separate staff gate, Stripe TEST-only configuration,
 durable capacity checks, webhook verification, and conservative hold reconciliation.
 
-This schema stores only pseudonymous CRM identity, cryptographic contact hashes, ad touchpoints,
+`005_student_enrollment.sql` adds a separate student roster, explicit offering inventory,
+verified payment events, and confirmation outbox. Unlike the attribution schema, this student
+schema stores private names, emails, and phone numbers. It seeds no real offerings or students;
+live activation remains disabled. See `docs/student-payments.md` for isolation, access, and launch gates.
+
+The attribution schema stores only pseudonymous CRM identity, cryptographic contact hashes, ad touchpoints,
 reviewed lead-to-enrollment links, delivery totals, and postback state. It does not store names,
 raw email/phone values, PMS chart numbers, health information, notes, or raw email-report fields.
 

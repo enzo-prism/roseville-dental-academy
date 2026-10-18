@@ -2,6 +2,10 @@
 
 This repo is a production-ready, live-faithful Next.js rebuild of [rosevilledentalacademy.com](https://www.rosevilledentalacademy.com).
 
+Student payment development and activation gates are documented in [docs/student-payments.md](docs/student-payments.md).
+Live checkout and outbound enrollment emails default to disabled. `pnpm test:student-enrollment`
+runs the isolated pilot/student fixture suites; `pnpm preview:student-enrollment` opens a local synthetic preview after building.
+
 The current runtime is a shell-first hybrid:
 
 - React owns the shared shell: header, navigation, mobile menu, footer, contact blocks, and the WhatsApp click-to-chat button. There is no cookie banner (consent state lives in pixel/consent modules, and the interaction suite asserts the banner is absent) and no ElevenLabs chat widget.
