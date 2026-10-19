@@ -20,6 +20,9 @@ import {
   writeSuiteSummary,
 } from "./support/qa-helpers";
 
+import { publishedCutoff } from "./support/published-schedule";
+import { getUpcomingScheduleMonths, getAvailableCourseDates } from "../lib/course-schedule";
+
 const smokeSummary: Array<Record<string, unknown>> = [];
 
 test.describe.configure({ mode: "serial" });
@@ -1336,7 +1339,8 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
   expect(mismatches).toEqual([]);
 });
 
-test("homepage course cards use unique descriptive copy", async ({ page }, testInfo) => {
+test("homepage course cards use unique descriptive copy", async ({ page, request }, testInfo) => {
+  const cutoff = await publishedCutoff(request);
   const snapshot = await captureSnapshot(page, `${localOrigin}/`, {
     viewport: { width: 1280, height: 900 },
   });
@@ -1344,9 +1348,8 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
   const requiredCourseCopy = [
     "2026 Class Schedule",
     "Dates are penciled in and may change; admissions will confirm current availability.",
-    "October 17",
-    "October 24",
-    "November 20, 2026",
+    ...getUpcomingScheduleMonths(cutoff).flatMap(month => month.entries.map(entry => entry.day)),
+    ...getAvailableCourseDates("dental-assisting-program", cutoff),
     "Initial and renewal BLS/CPR training for healthcare providers",
     "Board-approved 8-hour Infection Control training for unlicensed dental assistants",
     "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified",
