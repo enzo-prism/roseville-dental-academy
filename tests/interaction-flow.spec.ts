@@ -3,6 +3,7 @@ import { getUpcomingScheduleMonths } from "../lib/course-schedule";
 import { expect, test } from "@playwright/test";
 
 import { adLandingPages, PAID_TRAFFIC_LANDER_SLUGS } from "@/lib/ad-landing-pages";
+import { getMetaPixelId } from "../lib/meta-pixel-config";
 import { activeSitePromo } from "@/lib/site-promo";
 import {
   blockOpenAIAdsPixelNetwork,
@@ -10,6 +11,23 @@ import {
   suppressSeasonalTheme,
   suppressSitePromo,
 } from "./support/qa-helpers";
+
+// Compare the primary pixel's payloads in either supported deployment mode.
+// The dedicated secondary-pixel suite verifies delivery to both IDs separately.
+function primaryMetaEvents(events: unknown[][]) {
+  return events.flatMap(event => event[0] !== "trackSingle" ? [event]
+    : event[1] === getMetaPixelId() ? [["track", ...event.slice(2)]] : []);
+}
+
+test("primary Meta assertions accept both event formats without counting the secondary twice", () => {
+  const properties = { content_name: "call" };
+  const options = { eventID: "synthetic-event-id" };
+  expect(primaryMetaEvents([["track", "Contact", properties, options]])).toEqual([["track", "Contact", properties, options]]);
+  expect(primaryMetaEvents([
+    ["trackSingle", getMetaPixelId(), "Contact", properties, options],
+    ["trackSingle", "secondary-test-id", "Contact", properties, options],
+  ])).toEqual([["track", "Contact", properties, options]]);
+});
 
 async function gotoSettled(
   page: import("@playwright/test").Page,
@@ -1333,6 +1351,7 @@ test.describe("live-style interaction flows", () => {
       const gaEvents = events.ga.filter(
         (event): event is ["event", string, Record<string, unknown>?] => event[0] === "event",
       );
+      events.meta = primaryMetaEvents(events.meta);
       const metaTrackEvents = events.meta.filter(
         (event): event is ["track", string, Record<string, unknown>?] => event[0] === "track",
       );
@@ -1590,7 +1609,7 @@ test.describe("live-style interaction flows", () => {
 
         return {
           ga: (analyticsWindow.__rdaTestGtagEvents ?? []).map((event) => event[1]),
-          meta: (analyticsWindow.__rdaTestMetaEvents ?? []).map((event) => event[1]),
+          meta: (analyticsWindow.__rdaTestMetaEvents ?? []).map((event) => event[0] === "trackSingle" ? event[2] : event[1]),
           openai: (analyticsWindow.__rdaTestOpenAIEvents ?? []).map((event) => event[1]),
           vercel: (analyticsWindow.__rdaTestVercelEvents ?? []).map((event) =>
             typeof event[1] === "object" && event[1] && "name" in event[1]
@@ -1861,13 +1880,10 @@ test.describe("live-style interaction flows", () => {
           ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
       });
 
-      const contactEvents = await page.evaluate(() => {
-        const analyticsWindow = window as Window & { __rdaTestMetaEvents?: unknown[][] };
-        return (analyticsWindow.__rdaTestMetaEvents ?? []).filter(
-          (event): event is ["track", string, Record<string, unknown>?] =>
-            event[0] === "track" && event[1] === "Contact",
-        );
-      });
+      const capturedContacts = await page.evaluate(() => (window as Window & { __rdaTestMetaEvents?: unknown[][] }).__rdaTestMetaEvents ?? []);
+      const contactEvents = primaryMetaEvents(capturedContacts).filter(
+        (event): event is ["track", string, Record<string, unknown>?] => event[0] === "track" && event[1] === "Contact",
+      );
 
       expect(contactEvents.length).toBeGreaterThanOrEqual(2);
       expect(contactEvents.map((event) => event[2])).toEqual(
