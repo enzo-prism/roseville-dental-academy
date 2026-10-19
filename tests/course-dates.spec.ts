@@ -336,6 +336,8 @@ test("deployment expectations roll past October 17 without changing approved his
     ...baseline, bodyText: "Approved copy. BLS / CPR Next open date: November 7, 2026. Unrelated October 17 history.",
   });
   expect(getCourseSchedule("bls-cpr-1").find(row => row.isoDate === "2026-10-17")?.status).toBe("available");
+  const sharedDate = { bodyText: "Coronal Polish Next open date: November 14, 2026 Infection Control Next open date: November 14, 2026", links: [] };
+  expect(projectScheduleBaseline(sharedDate, "2026-11-15", "/contact").bodyText).toBe("Coronal Polish Next open date: December 12, 2026 Infection Control Next open date: December 5, 2026");
 });
 
 test("published cutoffs follow the academy Pacific date across midnight and DST", () => {

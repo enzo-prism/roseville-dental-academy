@@ -5,6 +5,8 @@ import {
   courseScheduleCourseDetails, getAvailableCourseDates, getNextAvailableCourseDate,
   getUpcomingCourseSchedule, getUpcomingScheduleMonths, type CourseScheduleId,
 } from "../../lib/course-schedule";
+import { homepageCourseSections } from "../../lib/homepage-course-sections";
+import { signupInterestOptions } from "../../lib/site-data";
 import { getSeasonalLocalDate } from "../../lib/site-seasonal";
 
 export const scheduleIds = Object.keys(courseScheduleCourseDetails) as CourseScheduleId[];
@@ -71,11 +73,26 @@ export function projectScheduleBaseline<T extends { bodyText: string; links: Arr
     const panel = (rows: typeof before) => rows.length ? `Upcoming Class Dates ${rows.map(row => `${row.date}${row.status === "full" ? " FULL" : ""}`).join(" ")} ` : "";
     if (panel(before)) replacements.push([panel(before), panel(after)]);
     if (nextBefore && nextBefore !== nextAfter) {
-      for (const prefix of ["Next open date: ", "Next available date: ", "Next: "]) {
-        replacements.push([`${prefix}${nextBefore}`, nextAfter ? `${prefix}${nextAfter}` : "Ask admissions for current availability"]);
+      const option = signupInterestOptions.find(option => option.scheduleId === id);
+      if (option) replacements.push([
+        `${option.label} Next open date: ${nextBefore}`,
+        `${option.label} ${nextAfter ? `Next open date: ${nextAfter}` : "Ask admissions for current availability"}`,
+      ]);
+      const decodedPath = decodeURIComponent(path).slice(1);
+      if ((decodedPath === "bls/cpr-1" ? "bls-cpr-1" : decodedPath) === id) replacements.push([
+        `Next available date: ${nextBefore}.`,
+        nextAfter ? `Next available date: ${nextAfter}.` : "Ask admissions for upcoming dates.",
+      ]);
+      if (path === "/") {
+        const card = homepageCourseSections.standaloneGroups.flatMap(group => [...group.courses]).find(card => card.scheduleId === id);
+        if (card) replacements.push([
+          `${card.title} ${card.price} Next: ${nextBefore}`,
+          `${card.title} ${card.price}${nextAfter ? ` Next: ${nextAfter}` : ""}`,
+        ]);
       }
     }
   }
+
   // Lists must be replaced before individual next-date values to avoid partial edits.
   for (const [before, after] of [...new Map(replacements).entries()].sort((a,b) => b[0].length-a[0].length)) bodyText = bodyText.split(before).join(after);
   let links = baseline.links;
