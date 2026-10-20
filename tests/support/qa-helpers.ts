@@ -1024,6 +1024,9 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
       "[data-rda-promo-dialog]",
       "[data-rda-promo-overlay]",
       "[data-rda-seasonal]",
+      // Deployment-only opt-in UI is covered by openai-isolation.spec.ts.
+      // Its feature flag must not change the frozen page-content contract.
+      '[aria-label="Advertising measurement choice"]',
     ];
 
     function normalizeValue(value: string) {

@@ -13,6 +13,8 @@ import {
   writeTextArtifact,
 } from "./support/qa-helpers";
 
+import { publishedCutoff, projectScheduleBaseline } from "./support/published-schedule";
+
 const contentParitySummary: Array<Record<string, unknown>> = [];
 
 test.describe.configure({ mode: "serial" });
@@ -22,8 +24,10 @@ test.beforeEach(async ({ context }) => {
 });
 
 for (const route of routeMappings) {
-  test(`content parity ${route.label}`, async ({ page }, testInfo) => {
-    const baseline = getContentBaseline(route.localPath);
+  test(`content parity ${route.label}`, async ({ page, request }, testInfo) => {
+    const cutoff = await publishedCutoff(request);
+    const committed = getContentBaseline(route.localPath);
+    const baseline = { ...committed, snapshot: projectScheduleBaseline(committed.snapshot, cutoff, route.localPath) };
     const localSnapshot = await captureSnapshot(
       page,
       `${localOrigin}${route.localPath}`,
