@@ -211,3 +211,104 @@ test("creative ad IDs require an exact known prefix followed only by a numeric I
     expect(api.parseMetaAdIdFromUtmContent(content)).toBe("");
   }
 });
+
+const IC_CAMPAIGNS = [
+  { content: "ic189_student_120249085995100567", adId: "120249085995100567" },
+  { content: "ic189_cert_120248882486160567", adId: "120248882486160567" },
+];
+const IC_ADSET = "120249000000000567";
+const IC_CAMPAIGN = "120248000000000567";
+function infectionControlUrl(content: string) {
+  return `/infection-control?utm_source=facebook&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_id=${IC_CAMPAIGN}&utm_term=${IC_ADSET}&utm_content=${content}`;
+}
+
+for (const creative of IC_CAMPAIGNS) {
+  test(`${creative.content} restores native IDs and retains them on clean navigation`, () => {
+    const browser = browserAttribution();
+    const initial = browser.visit(infectionControlUrl(creative.content), FIRST);
+    expect(initial.firstTouch.dimensions).toMatchObject({
+      ad_id: creative.adId, adset_id: IC_ADSET, campaign_id: IC_CAMPAIGN,
+    });
+    const later = browser.visit("/contact", SECOND);
+    expect(later.firstTouch).toEqual(initial.firstTouch);
+    expect(later.conversionTouch).toEqual(initial.conversionTouch);
+    expect(browser.api.getLeadAttributionFormFields(later)).toMatchObject({
+      ad_id: creative.adId, first_touch_adset_id: IC_ADSET,
+      conversion_touch_ad_id: creative.adId, conversion_touch_adset_id: IC_ADSET,
+    });
+  });
+}
+
+test("old persisted IC189 touches recover only their own native dimensions", () => {
+  const browser = browserAttribution();
+  browser.visit(infectionControlUrl(IC_CAMPAIGNS[0].content), FIRST);
+  const stored = JSON.parse(browser.local.get("rda_lead_attribution_v2")!);
+  stored.firstTouch.dimensions.ad_id = "";
+  stored.firstTouch.dimensions.adset_id = "";
+  stored.conversionTouch.dimensions.ad_id = "";
+  stored.conversionTouch.dimensions.adset_id = "";
+  browser.local.set("rda_lead_attribution_v2", JSON.stringify(stored));
+  const reloaded = browserAttribution({ local: browser.local, session: browser.session });
+  const later = reloaded.visit(infectionControlUrl(IC_CAMPAIGNS[1].content)
+    .replace(IC_ADSET, "120249111111111567"), SECOND);
+  expect(later.firstTouch.dimensions).toMatchObject({
+    ad_id: IC_CAMPAIGNS[0].adId, adset_id: IC_ADSET,
+  });
+  expect(later.firstTouch.touchId).toBe(stored.firstTouch.touchId);
+  expect(later.firstTouch.capturedAt).toBe(FIRST);
+  expect(later.conversionTouch.dimensions).toMatchObject({
+    ad_id: IC_CAMPAIGNS[1].adId, adset_id: "120249111111111567",
+  });
+  expect(reloaded.api.getLeadAttributionFormFields(later).ad_id).toBe(IC_CAMPAIGNS[0].adId);
+});
+
+test("explicit conflicting native IDs win over legacy IC189 tags before and after reload", () => {
+  const browser = browserAttribution();
+  const initial = browser.visit(`${infectionControlUrl(IC_CAMPAIGNS[0].content)}&ad_id=999999999&ad_set_id=888888888&campaign_id=777777777`, FIRST);
+  const expected = { ad_id: "999999999", adset_id: "888888888", campaign_id: "777777777" };
+  expect(initial.firstTouch.dimensions).toMatchObject(expected);
+  const reloaded = browserAttribution({ local: browser.local, session: browser.session });
+  const later = reloaded.visit("/contact", SECOND);
+  expect(later.firstTouch.dimensions).toMatchObject(expected);
+  expect(later.conversionTouch.dimensions).toMatchObject(expected);
+});
+
+test("legacy ad-set mapping requires paid Meta context and a recognized numeric creative", () => {
+  const { api } = browserAttribution();
+  const base = infectionControlUrl(IC_CAMPAIGNS[0].content);
+  const parse = (url: string) => api.parseAttributionTouch(new URL(url, "https://example.test").search, "", "https://example.test", "/infection-control");
+  for (const source of ["facebook", "instagram", "fb", "ig", "meta", "meta_ads"]) {
+    expect(parse(base.replace("utm_source=facebook", `utm_source=${source}`)).dimensions.adset_id).toBe(IC_ADSET);
+  }
+  expect(parse(base.replace("utm_source=facebook", "utm_source=fb&utm_source_platform=meta_ads")).dimensions.adset_id).toBe(IC_ADSET);
+  for (const url of [
+    base.replace("facebook", "google"),
+    base.replace("paid_social", "organic"),
+    base.replace("paid_social", "referral"),
+    base.replace(IC_CAMPAIGNS[0].content, "unrecognized_120249085995100567"),
+    `${base}&ad_id=999999999`,
+    `${base}&ad_id={{ad.id}}`,
+    `${base}&platform=google`,
+    base.replace("utm_source=facebook", "utm_source=google") + "&fbclid=meta_click",
+  ]) {
+    expect(parse(url).dimensions.adset_id).toBe("");
+  }
+  expect(parse(`${base}&ad_id=999999999`).dimensions.ad_id).toBe("999999999");
+});
+
+test("malformed IC189 suffixes and unresolved dynamic macros never become inferred IDs", () => {
+  const { api } = browserAttribution();
+  for (const content of [
+    "ic189_student_1234", "ic189_student_123456_suffix", "ic189_cert_extra_123456",
+    "ic189_cert_{{ad.id}}", "ic189_student_" + "1".repeat(41), "unknown_123456",
+  ]) {
+    expect(api.parseMetaAdIdFromUtmContent(content)).toBe("");
+    const touch = api.parseAttributionTouch(new URL(infectionControlUrl(content), "https://example.test").search, "", "https://example.test", "/");
+    expect(touch.dimensions.ad_id).toBe("");
+    expect(touch.dimensions.adset_id).toBe("");
+  }
+  for (const term of ["{{adset.id}}", "1234", "123456_keyword", "1".repeat(41)]) {
+    const query = new URL(infectionControlUrl(IC_CAMPAIGNS[0].content).replace(IC_ADSET, term), "https://example.test").search;
+    expect(api.parseAttributionTouch(query, "", "https://example.test", "/").dimensions.adset_id).toBe("");
+  }
+});

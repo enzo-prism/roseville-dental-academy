@@ -19,6 +19,8 @@ export const META_UTM_CONTENT_AD_PREFIXES = [
   "student_story_",
   "video_sept25_clinical_",
   "photo_sept18_graduation_",
+  "ic189_student_",
+  "ic189_cert_",
 ] as const;
 
 export const ATTRIBUTION_POLICY_VERSION = "2026-08-23";
@@ -107,6 +109,23 @@ export function parseMetaAdIdFromUtmContent(utmContent: string | null | undefine
   }
 
   return "";
+}
+
+function legacyMetaAdsetId(
+  utm: Record<UtmField, string>,
+  dimensions: Record<AttributionAdDimensionField, string>,
+) {
+  // These legacy paid Meta links put the ad-set ID in utm_term. A numeric
+  // search term or fbclid alone is not evidence of an ad set.
+  const platform = (dimensions.platform || utm.utm_source_platform || utm.utm_source)
+    .trim().toLowerCase();
+  const medium = utm.utm_medium.trim().toLowerCase();
+  const legacyAdId = parseMetaAdIdFromUtmContent(utm.utm_content);
+  return /^(meta|meta_ads|facebook|instagram|fb|ig)$/u.test(platform) &&
+    /^(paid_social|paid-social|paid|cpc|ppc)$/u.test(medium) &&
+    legacyAdId && dimensions.ad_id === legacyAdId &&
+    /^\d{5,40}$/u.test(utm.utm_term)
+    ? utm.utm_term : "";
 }
 
 function createId() {
@@ -290,6 +309,7 @@ export function parseAttributionTouch(
   dimensions.platform ||= utm.utm_source_platform || utm.utm_source;
   dimensions.campaign_id ||= utm.utm_id;
   dimensions.ad_id ||= parseMetaAdIdFromUtmContent(utm.utm_content);
+  dimensions.adset_id ||= legacyMetaAdsetId(utm, dimensions);
 
   const platform = (dimensions.platform || utm.utm_source).toLowerCase();
   const hasMetaCampaign = /^(facebook|instagram|meta|fb|ig)$/u.test(platform) ||
@@ -335,6 +355,7 @@ function normalizeTouch(value: Partial<AttributionTouch> | undefined): Attributi
 
   dimensions.campaign_id ||= utm.utm_id;
   dimensions.ad_id ||= parseMetaAdIdFromUtmContent(utm.utm_content);
+  dimensions.adset_id ||= legacyMetaAdsetId(utm, dimensions);
 
   return {
     capturedAt: compactAttributionValue(value?.capturedAt),
