@@ -87,6 +87,47 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     }));
   });
 
+  for (const content of ["ic189_student_120249085995100567", "ic189_cert_120248882486160567"]) {
+    test(`${content} legacy tags reach accepted form and measurement after navigation`, async ({ page }) => {
+      let postedBody = "";
+      let receipt: Record<string, unknown> | null = null;
+      await page.route("https://formspree.io/**", async (route) => {
+        expect(route.request().url()).toBe("https://formspree.io/f/xzdkgaeg");
+        postedBody = route.request().postData() ?? "";
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+      });
+      await page.route("**/api/attribution/receipt", async (route) => {
+        receipt = JSON.parse(route.request().postData() ?? "null") as Record<string, unknown>;
+        await route.fulfill({ status: 202, contentType: "application/json", body: '{"ok":true}' });
+      });
+      const adId = content.split("_").at(-1)!;
+      await page.goto(`/infection-control?utm_source=facebook&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=${content}&utm_id=${campaignId}&utm_term=${adsetId}`, { waitUntil: "networkidle" });
+      await expect(page.locator('form[data-rda-signup-form="true"] input[name="ad_id"]')).toHaveValue(adId);
+      await page.goto("/contact", { waitUntil: "networkidle" });
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await fillSignup(form);
+      await form.getByRole("button", { name: "Request next steps" }).click();
+      await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+      await expect.poll(() => receipt).not.toBeNull();
+      expect(multipartField(postedBody, "ad_id")).toBe(adId);
+      expect(multipartField(postedBody, "campaign_id")).toBe(campaignId);
+      for (const role of ["first", "conversion"]) {
+        expect(multipartField(postedBody, `${role}_touch_ad_id`)).toBe(adId);
+        expect(multipartField(postedBody, `${role}_touch_adset_id`)).toBe(adsetId);
+      }
+      const observed = await captures(page);
+      const leads = observed.meta.filter((event) => event[0] === "track" && event[1] === "Lead");
+      expect(leads).toHaveLength(1);
+      expect(leads[0][2]).toMatchObject({ ad_id: adId, utm_content: content });
+      expect(observed.ga.filter((event) => event[0] === "event" && event[1] === "generate_lead")).toHaveLength(1);
+      expect(receipt).toMatchObject({
+        firstTouch: { dimensions: { ad_id: adId, adset_id: adsetId }, consent: { marketing: false } },
+        conversionTouch: { dimensions: { ad_id: adId, adset_id: adsetId }, consent: { marketing: false } },
+      });
+      assertNoStudentData([leads, receipt]);
+    });
+  }
+
   for (const creative of attributionCases) {
     test(`${creative.name} URL preserves attribution and sends one accepted Lead`, async ({ page }) => {
       let postedBody = "";
