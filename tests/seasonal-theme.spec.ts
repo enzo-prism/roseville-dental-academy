@@ -1758,7 +1758,8 @@ test.describe("seasonal theme: footer ghost", () => {
     await expect.poll(async () => (await blinks()).some((value) => value !== null), { timeout: 10_000 }).toBe(true);
     // Each blink ends (the attribute is removed again).
     await expect(ghost).not.toHaveAttribute("data-rda-blink", /.*/, { timeout: 2_000 });
-    expect((await blinks()).at(-1)).toBeNull();
+    // The recorder reports mutations asynchronously; wait for the removal to land.
+    await expect.poll(async () => (await blinks()).at(-1), { timeout: 2_000 }).toBeNull();
   });
 
   test("a press while the ghost is hiding also spends the session's peek", async ({ page }) => {
