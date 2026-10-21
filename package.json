@@ -22,7 +22,7 @@
     "snapshot:refresh": "node scripts/capture-live-snapshot.mjs && node scripts/refresh-live-baselines.mjs",
     "test:course-dates": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/course-dates.spec.ts tests/course-schedule-empty.spec.ts",
     "test:smoke": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/smoke.spec.ts",
-    "test:interactions": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/interaction-flow.spec.ts",
+    "test:interactions": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/interaction-flow.spec.ts tests/redesign.spec.ts",
     "test:attribution": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/attribution-api.spec.ts tests/attribution-integrity.spec.ts tests/browser-attribution.spec.ts tests/meta-ads-flow.spec.ts tests/meta-pixel-config.spec.ts tests/postback-worker.spec.ts tests/site-promo.spec.ts tests/qa-network-isolation.spec.ts",
     "test:parity-content": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.spec.ts",
     "test:parity-visual": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.visual.spec.ts",

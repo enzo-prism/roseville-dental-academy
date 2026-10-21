@@ -1,20 +1,36 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  CalendarDays,
+  ChevronRight,
+  CircleDollarSign,
+  ClipboardList,
+  Clock3,
+  ExternalLink,
+  GraduationCap,
+  Layers,
+  ListChecks,
+  Phone,
+  Quote,
+  Star,
+  Target,
+  Users,
+} from "lucide-react";
 
+import { courseIcons } from "@/components/academy/course-icons";
+import { LazyVideo } from "@/components/academy/lazy-video";
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { ClinicalRequirements } from "@/components/site/clinical-requirements";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
 import { SiteLink } from "@/components/site/site-link";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { showsCertificateExpiration } from "@/lib/certificate-expiration";
 import { studentConfig } from "@/lib/student-enrollment";
 import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE, hasStandaloneClinicalRequirements, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
-import { courseScheduleNote, formatCourseDateLabel, getUpcomingCourseSchedule } from "@/lib/course-schedule";
+import { getAcademyCourse } from "@/lib/academy-catalog";
+import { courseScheduleNote, formatCourseDateLabel, getNextAvailableCourseDate, getUpcomingCourseSchedule } from "@/lib/course-schedule";
 import type {
   LiveCourseContent,
   LiveCourseLink,
@@ -23,6 +39,8 @@ import type {
 import {
   courseReviewHighlights,
   googleReviewsUrl,
+  siteContact,
+  whatsAppUrl,
   type CourseReviewGroup,
 } from "@/lib/site-data";
 
@@ -30,6 +48,35 @@ type LiveCourseSection = {
   body: string;
   heading: string;
 };
+
+const sectionIcons: Record<string, typeof Users> = {
+  "Best next step": Target,
+  Format: Layers,
+  Prerequisites: ListChecks,
+  "What students get at the end": GraduationCap,
+  "Who is it for?": Users,
+};
+
+const SMALL_WORDS = new Set(["a", "an", "and", "for", "in", "of", "or", "the", "to"]);
+const KEEP_UPPER = new Set(["BLS", "CPR", "RDA", "DA"]);
+
+/** "BLS CERTIFICATION COURSE - INITIAL OR RENEWAL" -> "BLS Certification Course — Initial or Renewal". */
+function toDisplayTitle(heading: string) {
+  if (heading !== heading.toUpperCase()) {
+    return heading;
+  }
+
+  return heading
+    .split(/\s+/u)
+    .map((word, index) => {
+      if (word === "-") return "—";
+      if (KEEP_UPPER.has(word)) return word;
+      const lower = word.toLowerCase();
+      if (index > 0 && SMALL_WORDS.has(lower)) return lower;
+      return lower.replace(/(^|-)(\p{L})/gu, (_, dash: string, letter: string) => `${dash}${letter.toUpperCase()}`);
+    })
+    .join(" ");
+}
 
 function addPricePolicyMarker(body: string) {
   if (!body) {
@@ -68,33 +115,6 @@ function splitCourseSections(course: LiveCourseContent): LiveCourseSection[] {
   return sections;
 }
 
-function splitBulletBody(body: string) {
-  if (body.startsWith("- ")) {
-    return {
-      items: body
-        .slice(2)
-        .split(" - ")
-        .map((item) => `- ${item}`),
-      lead: "",
-    };
-  }
-
-  const marker = ": - ";
-  const markerIndex = body.indexOf(marker);
-
-  if (markerIndex < 0) {
-    return undefined;
-  }
-
-  return {
-    items: body
-      .slice(markerIndex + marker.length)
-      .split(" - ")
-      .map((item) => `- ${item}`),
-    lead: body.slice(0, markerIndex + 1),
-  };
-}
-
 function renderTextWithLinks(text: string, links: LiveCourseLink[] = []) {
   const pieces: ReactNode[] = [];
   let cursor = 0;
@@ -118,11 +138,7 @@ function renderTextWithLinks(text: string, links: LiveCourseLink[] = []) {
     }
 
     pieces.push(
-      <a
-        className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
-        href={link.href}
-        key={`link-${key}`}
-      >
+      <a className="ac-inline-link" href={link.href} key={`link-${key}`}>
         {link.text}
       </a>,
     );
@@ -137,55 +153,7 @@ function renderTextWithLinks(text: string, links: LiveCourseLink[] = []) {
   return pieces.length ? pieces : text;
 }
 
-function CourseBody({ body, links }: { body: string; links?: LiveCourseLink[] }) {
-  if (!body) {
-    return null;
-  }
-
-  const bulletBody = splitBulletBody(body);
-
-  if (bulletBody) {
-    return (
-      <div className="space-y-4">
-        {bulletBody.lead ? (
-          <p className="text-base leading-7 text-foreground">
-            {renderTextWithLinks(bulletBody.lead, links)}
-          </p>
-        ) : null}
-        <ul className="grid gap-3 text-base leading-7 text-foreground">
-          {bulletBody.items.map((item) => (
-            <li
-              className="rounded-lg border border-border bg-background px-4 py-3"
-              key={item}
-            >
-              {renderTextWithLinks(item, links)}
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-
-  if (links?.some((link) => link.text === body)) {
-    const link = links.find((item) => item.text === body);
-
-    if (link) {
-      return (
-        <Button asChild className="h-auto px-4 py-2" variant="outline">
-          <a href={link.href}>{link.text}</a>
-        </Button>
-      );
-    }
-  }
-
-  return (
-    <p className="text-base leading-7 text-foreground">
-      {renderTextWithLinks(body, links)}
-    </p>
-  );
-}
-
-function CourseHeroMedia({
+function CourseMedia({
   loading = "lazy",
   media,
 }: {
@@ -193,152 +161,58 @@ function CourseHeroMedia({
   media: LiveCourseMedia;
 }) {
   if (media.type === "video") {
-    return (
-      <video
-        aria-label={media.alt}
-        autoPlay
-        className="size-full object-cover"
-        loop
-        muted
-        playsInline
-        poster={media.poster}
-        preload="metadata"
-        src={media.src}
-      />
-    );
+    return <LazyVideo label={media.alt} poster={media.poster} src={media.src} />;
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- Keep literal live asset URLs for parity checks.
-    <img
-      alt={media.alt}
-      className="size-full object-cover"
-      loading={loading}
-      src={media.src}
-    />
+    // eslint-disable-next-line @next/next/no-img-element -- Literal asset URLs keep course imagery stable.
+    <img alt={media.alt} decoding="async" fetchPriority={loading === "eager" ? "high" : undefined} loading={loading} src={media.src} />
   );
 }
 
-function CourseSectionCard({
-  prominent = false,
-  section,
-  links,
-}: {
-  links?: LiveCourseLink[];
-  prominent?: boolean;
-  section: LiveCourseSection;
-}) {
-  const body =
-    section.heading === "Price" ? addPricePolicyMarker(section.body) : section.body;
-  // Short fact sections (price, duration, format) read better as compact stat
-  // cards than full badge-headed panels. Text, links, and order are unchanged.
-  const isQuickFact =
-    body.length > 0 &&
-    body.length <= 80 &&
-    !body.startsWith("- ") &&
-    !body.includes(": - ") &&
-    !(links ?? []).some((link) => body.includes(link.text));
-
-  if (isQuickFact) {
-    return (
-      <Card
-        className={
-          prominent
-            ? "rounded-lg border-border bg-card shadow-sm"
-            : "rounded-lg border-border bg-card"
-        }
-        data-rda-quick-fact="true"
-      >
-        <CardContent className="space-y-1.5 px-5 py-4">
-          <h2 className="rda-quick-fact-label">{section.heading}</h2>
-          <div className="rda-quick-fact-body">
-            <CourseBody body={body} links={links} />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card
-      className={
-        prominent
-          ? "rounded-lg border-border bg-card shadow-sm"
-          : "rounded-lg border-border bg-card"
-      }
-    >
-      <CardHeader className="gap-3">
-        <h2>
-          <Badge
-            className="h-auto max-w-full rounded-md border-border bg-background px-3 py-1 text-left font-heading text-base leading-snug text-foreground whitespace-normal"
-            variant="outline"
-          >
-            {section.heading}
-          </Badge>
-        </h2>
-      </CardHeader>
-      {body ? (
-        <>
-          <Separator />
-          <CardContent className="pt-1">
-            <CourseBody body={body} links={links} />
-          </CardContent>
-        </>
-      ) : null}
-    </Card>
-  );
-}
-
-function CourseSchedulePanel({ course }: { course: LiveCourseContent }) {
+function CourseSchedule({ course }: { course: LiveCourseContent }) {
   const scheduleEntries = getUpcomingCourseSchedule(course.id);
 
   if (!scheduleEntries.length) {
-    return null;
+    return <p className="ac-body">Call the office for upcoming class dates.</p>;
   }
 
   return (
-    <Card className="rounded-lg border-border bg-card shadow-sm">
-      <CardHeader className="gap-3">
-        <h2>
-          <Badge
-            className="h-auto max-w-full rounded-md border-border bg-background px-3 py-1 text-left font-heading text-base leading-snug text-foreground whitespace-normal"
-            variant="outline"
-          >
-            Upcoming Class Dates
-          </Badge>
-        </h2>
-      </CardHeader>
-      <Separator />
-      <CardContent className="grid gap-4 pt-1">
-        <div className="flex flex-wrap gap-2">
-          {scheduleEntries.map((entry) => (
-            <Badge
-              className="rda-course-date h-auto min-h-8 rounded-md border-border bg-background px-3 py-1.5 text-sm leading-snug text-foreground"
-              data-status={entry.status === "full" ? "full" : undefined}
-              key={entry.isoDate}
-              variant="outline"
-            >
-              <CalendarDays aria-hidden="true" />
-              <time dateTime={entry.isoDate}>{formatCourseDateLabel(course.id, entry.date)}</time>
-              {entry.status === "full" ? (
-                <span aria-label={`${entry.date} is full`} className="rda-course-date-flag ml-1">
-                  Full
-                </span>
-              ) : null}
-            </Badge>
-          ))}
-        </div>
-        <p className="text-sm leading-6 text-muted-foreground">{courseScheduleNote}</p>
-      </CardContent>
-    </Card>
-  );
-}
+    <ul className="ac-course-dates">
+      {scheduleEntries.map((entry) => {
+        const [, month, day] = entry.isoDate.split("-");
+        const monthLabel = new Date(Date.UTC(2026, Number(month) - 1, 1)).toLocaleDateString("en-US", {
+          month: "short",
+          timeZone: "UTC",
+        });
 
-function CourseReviewRating({ rating }: { rating: number }) {
-  return (
-    <span className="rda-course-review-rating-badge">
-      <span className="rda-review-rating-text">{rating} out of 5 stars</span>
-    </span>
+        return (
+          <li
+            className="rda-course-date ac-course-date"
+            data-status={entry.status === "full" ? "full" : undefined}
+            key={entry.isoDate}
+          >
+            <span aria-hidden="true" className="ac-schedule-date">
+              <span>{monthLabel}</span>
+              <strong>{Number(day)}</strong>
+            </span>
+            <span className="ac-course-date-copy">
+              <time dateTime={entry.isoDate}>{formatCourseDateLabel(course.id, entry.date)}</time>
+              <small>
+                {new Date(`${entry.isoDate}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long" })}
+              </small>
+            </span>
+            {entry.status === "full" ? (
+              <span aria-label={`${entry.date} is full`} className="ac-full-flag rda-course-date-flag">
+                Full
+              </span>
+            ) : (
+              <span className="ac-open-flag">Open</span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -352,46 +226,56 @@ function CourseReviews({
   return (
     <section
       aria-labelledby={`rda-course-reviews-title-${course.id}`}
-      className="rda-course-review-section"
+      className="ac-section ac-band-ink rda-course-review-section"
       data-rda-course-reviews={course.id}
     >
-      <div className="rda-course-review-inner mx-auto px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-        <div className="rda-section-heading">
-          <h2 id={`rda-course-reviews-title-${course.id}`}>{group.title}</h2>
-          <span aria-hidden="true" />
-        </div>
-        <p className="rda-review-photo-intro">{group.intro}</p>
-        <div className="rda-course-review-grid">
-          {group.reviews.map((review) => (
-            <Card
-              className="rda-google-review-card rda-course-review-card border-border bg-card"
-              key={`${course.id}-${review.name}-${review.feature}`}
-            >
-              <CardContent>
-                <p className="rda-review-photo-feature">{review.feature}</p>
-                <blockquote>&ldquo;{review.quote}&rdquo;</blockquote>
-                <div className="rda-course-review-card-footer">
-                  <div>
-                    <p className="rda-review-name">{review.name}</p>
-                    <p className="rda-review-meta">{review.meta}</p>
-                  </div>
-                  <p
-                    aria-label={`${review.rating} out of 5 stars`}
-                    className="rda-review-rating"
-                  >
-                    <CourseReviewRating rating={review.rating} />
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="rda-course-review-actions">
-          <Button asChild variant="outline">
-            <a href={googleReviewsUrl} rel="noopener noreferrer" target="_blank">
+      <div className="ac-container">
+        <div className="ac-heading-row">
+          <div className="ac-heading rda-section-heading" data-reveal="">
+            <p className="ac-eyebrow">Student reviews</p>
+            <h2 className="ac-h2" id={`rda-course-reviews-title-${course.id}`}>
+              {group.title}
+            </h2>
+            <span aria-hidden="true" />
+            <p className="ac-lede">{group.intro}</p>
+          </div>
+          <div className="ac-score-actions" data-reveal="">
+            <a className="ac-btn ac-btn-light" href={googleReviewsUrl} rel="noopener noreferrer" target="_blank">
               Open Google reviews
+              <ExternalLink aria-hidden="true" />
             </a>
-          </Button>
+            <Link className="ac-btn ac-btn-outline-light" href="/reviews">
+              All student reviews
+            </Link>
+          </div>
+        </div>
+        <div className="ac-course-review-grid">
+          {group.reviews.map((review, index) => (
+            <article
+              className="ac-course-review rda-course-review-card"
+              data-reveal=""
+              key={`${course.id}-${review.name}-${review.feature}`}
+              style={{ "--reveal-delay": index } as CSSProperties}
+            >
+              <Quote aria-hidden="true" className="ac-review-quote-mark" />
+              <p className="ac-course-review-feature">{review.feature}</p>
+              <span aria-label={`${review.rating} out of 5 stars`} className="ac-stars" role="img">
+                {Array.from({ length: 5 }, (_, starIndex) => (
+                  <Star aria-hidden="true" key={starIndex} />
+                ))}
+              </span>
+              <blockquote>&ldquo;{review.quote}&rdquo;</blockquote>
+              <p className="ac-review-author">
+                <span aria-hidden="true" className="ac-avatar-initial">
+                  {review.name.charAt(0).toUpperCase()}
+                </span>
+                <span>
+                  <strong>{review.name}</strong>
+                  <small>{review.meta}</small>
+                </span>
+              </p>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -399,107 +283,219 @@ function CourseReviews({
 }
 
 export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
-  const [hero, ...sections] = splitCourseSections(course);
-  const featureCount = course.variant === "program" ? 2 : 1;
-  const featureSections = sections.slice(0, featureCount);
-  const detailSections = sections.slice(featureCount);
+  const sections = splitCourseSections(course);
+  const [hero, ...rest] = sections;
+  const catalog = getAcademyCourse(course.id);
+  const Icon = catalog ? courseIcons[catalog.icon] : GraduationCap;
+  const price = rest.find((section) => section.heading === "Price");
+  const duration = rest.find((section) => section.heading === "Duration");
+  const detailSections = rest.filter(
+    (section) =>
+      section.heading !== "Price" &&
+      section.heading !== "Duration" &&
+      !/^Class (start )?dates?/u.test(section.heading),
+  );
+  const scheduleSection = rest.find((section) => /^Class (start )?dates?/u.test(section.heading));
   const supportingMedia = (course.supportingMedia ?? course.supportingImages ?? []).slice(0, 2);
   const reviewGroup = courseReviewHighlights[course.id];
+  const nextDate = getNextAvailableCourseDate(course.id);
+  const phoneHref = `tel:${siteContact.phone.replace(/\D/g, "")}`;
+  const title = hero ? toDisplayTitle(hero.heading) : catalog?.name ?? "";
 
   return (
-    <section className="bg-background" data-rda-live-course={course.id}>
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.78fr)] lg:items-start lg:px-8 lg:py-16">
-        <div
-          className="overflow-hidden rounded-lg bg-card shadow-sm ring-1 ring-foreground/10 lg:order-2"
-          data-rda-course-hero="true"
-        >
-          {supportingMedia.length ? (
-            <div className="grid gap-1 bg-muted max-lg:grid-cols-2 lg:aspect-[4/3] lg:grid-cols-[minmax(0,1.42fr)_minmax(0,0.82fr)]">
-              <div className="relative min-w-0 max-lg:col-span-2 max-lg:aspect-[16/10] lg:min-h-0">
-                <CourseHeroMedia loading="eager" media={course.image} />
-              </div>
-              <div className="grid min-h-0 min-w-0 gap-1 max-lg:col-span-2 max-lg:grid-cols-2 lg:grid-cols-1 lg:grid-rows-[repeat(auto-fit,minmax(0,1fr))]">
-                {supportingMedia.map((media) => (
-                  <div
-                    className="relative min-h-0 min-w-0 max-lg:aspect-[4/3]"
-                    key={media.src}
-                  >
-                    <CourseHeroMedia media={media} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <AspectRatio ratio={4 / 3}>
-              <CourseHeroMedia loading="eager" media={course.image} />
-            </AspectRatio>
-          )}
-        </div>
-
-        <div className="space-y-6 lg:order-1">
-          {hero ? (
-            <div className="space-y-5">
-              <h1 className="font-heading text-4xl leading-tight font-semibold text-foreground sm:text-5xl">
-                {hero.heading}
-              </h1>
-              {hero.body ? (
-                <Card className="rounded-lg border-border bg-card">
-                  <CardContent className="pt-4">
-                    <CourseBody body={hero.body} links={course.links} />
-                  </CardContent>
-                </Card>
+    <div className="ac-course" data-rda-live-course={course.id}>
+      <section className="ac-course-hero">
+        <div aria-hidden="true" className="ac-hero-glow" />
+        <div className="ac-container ac-course-hero-grid">
+          <div className="ac-course-hero-copy rda-home-hero-copy">
+            <nav aria-label="Breadcrumb" className="ac-breadcrumb">
+              <Link href="/">Home</Link>
+              <ChevronRight aria-hidden="true" />
+              <Link href="/#courses">Courses</Link>
+              <ChevronRight aria-hidden="true" />
+              <span aria-current="page">{catalog?.navLabel ?? title}</span>
+            </nav>
+            <div className="ac-course-chips">
+              <span className="ac-chip ac-chip-soft">
+                <Icon aria-hidden="true" />
+                {course.variant === "program" ? "Career program" : "Certification course"}
+              </span>
+              {catalog?.approval ? (
+                <span className="ac-chip">
+                  <BadgeCheck aria-hidden="true" />
+                  Board-approved · {catalog.approval.replace("DBC ", "")}
+                </span>
               ) : null}
             </div>
-          ) : null}
-          <CourseSchedulePanel course={course} />
-          <div className="grid gap-4">
-            {featureSections.map((section) => (
-              <CourseSectionCard
-                key={section.heading}
-                links={course.links}
-                prominent
-                section={section}
-              />
+            <h1 className="ac-h1">{title}</h1>
+            {hero?.body ? <p className="ac-lede">{renderTextWithLinks(hero.body, course.links)}</p> : null}
+            <dl className="ac-course-facts">
+              {price ? (
+                <div data-rda-quick-fact="true">
+                  <dt>
+                    <CircleDollarSign aria-hidden="true" />
+                    Price
+                  </dt>
+                  <dd>{catalog ? `${catalog.price}*` : addPricePolicyMarker(price.body)}</dd>
+                </div>
+              ) : null}
+              {duration ? (
+                <div data-rda-quick-fact="true">
+                  <dt>
+                    <Clock3 aria-hidden="true" />
+                    Duration
+                  </dt>
+                  <dd>{catalog?.duration.split(" · ")[0] ?? duration.body}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt>
+                  <CalendarDays aria-hidden="true" />
+                  Next class
+                </dt>
+                <dd>{nextDate ?? "Ask admissions"}</dd>
+              </div>
+            </dl>
+            <div className="ac-hero-actions">
+              <a className="ac-btn ac-btn-primary ac-btn-lg" href="#quick-sign-up">
+                Ask about this course
+                <ArrowRight aria-hidden="true" data-ac-arrow="" />
+              </a>
+              <a className="ac-btn ac-btn-secondary ac-btn-lg" data-rda-lead-source="phone" href={phoneHref}>
+                <Phone aria-hidden="true" />
+                {siteContact.phone}
+              </a>
+            </div>
+          </div>
+
+          <div
+            className={`ac-course-mosaic${supportingMedia.length ? "" : " is-single"}`}
+            data-count={supportingMedia.length + 1}
+            data-rda-course-hero="true"
+          >
+            <figure className="ac-photo ac-course-mosaic-main">
+              <CourseMedia loading="eager" media={course.image} />
+            </figure>
+            {supportingMedia.map((media, index) => (
+              <figure
+                className="ac-photo ac-course-mosaic-side"
+                data-reveal="zoom"
+                key={media.src}
+                style={{ "--reveal-delay": index + 1 } as CSSProperties}
+              >
+                <CourseMedia media={media} />
+              </figure>
             ))}
+            {duration ? (
+              <span aria-hidden="true" className="ac-hero-float ac-course-float">
+                <span className="ac-icon-tile">
+                  <Clock3 />
+                </span>
+                <span>
+                  <strong>{duration.body.replace(/\.$/u, "").split(";")[0]}</strong>
+                  <small>{catalog?.tagline}</small>
+                </span>
+              </span>
+            ) : null}
           </div>
         </div>
+      </section>
 
-      </div>
+      <section className="ac-section ac-section-tight">
+        <div className="ac-container ac-course-layout">
+          <div className="ac-course-main">
+            {detailSections.map((section, index) => {
+              const SectionIcon = sectionIcons[section.heading] ?? ClipboardList;
 
-      {detailSections.length ? (
-        <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16 lg:px-8">
-          <div className="grid gap-4 md:grid-cols-2">
-            {detailSections.map((section, index) => (
-              <CourseSectionCard
-                key={section.heading}
-                links={course.links}
-                prominent={index === detailSections.length - 1}
-                section={section}
-              />
-            ))}
+              return (
+                <article
+                  className="ac-course-section"
+                  data-reveal=""
+                  key={section.heading}
+                  style={{ "--reveal-delay": index % 2 } as CSSProperties}
+                >
+                  <span className="ac-icon-tile">
+                    <SectionIcon aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h2 className="ac-h3">{section.heading}</h2>
+                    <p className="ac-body">{renderTextWithLinks(section.body, course.links)}</p>
+                  </div>
+                </article>
+              );
+            })}
+            {hasStandaloneClinicalRequirements(course.id) ? <ClinicalRequirements /> : null}
+            {course.id === "infection-control" ? (
+              <InfectionControlRequirementNotice headingLevel="h2" />
+            ) : null}
+            {showsCertificateExpiration(course.id) ? (
+              <CertificateExpirationNotice headingLevel="h2" />
+            ) : null}
+            <p className="rda-course-policy-note ac-policy-note">
+              {course.id === "infection-control" ? <><strong>{INFECTION_CONTROL_PAYMENT_NOTE}</strong>{" "}</> : null}
+              * {CANCELLATION_POLICY_SUMMARY}{" "}
+              <Link className="ac-inline-link" href={CANCELLATION_POLICY_PATH}>
+                {CANCELLATION_POLICY_TITLE}
+              </Link>
+            </p>
           </div>
-          {hasStandaloneClinicalRequirements(course.id) ? (
-            <ClinicalRequirements className="mt-6" />
-          ) : null}
-          {course.id === "infection-control" ? (
-            <InfectionControlRequirementNotice className="mt-6" headingLevel="h2" />
-          ) : null}
-          {showsCertificateExpiration(course.id) ? (
-            <CertificateExpirationNotice className="mt-6" headingLevel="h2" />
-          ) : null}
-          <p className="rda-course-policy-note mt-5 border-t border-border pt-4 text-sm leading-6 text-muted-foreground">
-            {course.id === "infection-control" ? <><span className="font-semibold">{INFECTION_CONTROL_PAYMENT_NOTE}</span>{" "}</> : null}
-            * {CANCELLATION_POLICY_SUMMARY}{" "}
-            <Link className="font-medium text-primary underline underline-offset-4" href={CANCELLATION_POLICY_PATH}>
-              {CANCELLATION_POLICY_TITLE}
-            </Link>
-          </p>
-          {course.id === "infection-control" && studentConfig()?.mode === "live" ? (
-            <Button asChild className="mt-6"><SiteLink href="/enroll">Enroll and pay in full</SiteLink></Button>
-          ) : null}
+          <aside className="ac-course-aside">
+            <div className="ac-enroll-card">
+              <div className="ac-enroll-head">
+                <span className="ac-enroll-price">{catalog?.price ?? price?.body}</span>
+                <span className="ac-enroll-duration">{catalog?.duration}</span>
+              </div>
+              <h2 className="ac-enroll-title">
+                <CalendarDays aria-hidden="true" />
+                Upcoming Class Dates
+              </h2>
+              <CourseSchedule course={course} />
+              <p className="ac-enroll-note">{courseScheduleNote}</p>
+              {scheduleSection ? <p className="sr-only">{scheduleSection.body}</p> : null}
+              <a className="ac-btn ac-btn-primary ac-enroll-cta" href="#quick-sign-up">
+                Request course info
+                <ArrowRight aria-hidden="true" data-ac-arrow="" />
+              </a>
+              {course.id === "infection-control" && studentConfig()?.mode === "live" ? (
+                <SiteLink className="ac-btn ac-btn-primary ac-enroll-cta" href="/enroll">
+                  Enroll and pay in full
+                  <ArrowRight aria-hidden="true" data-ac-arrow="" />
+                </SiteLink>
+              ) : null}
+              <div className="ac-enroll-alt">
+                <a data-rda-lead-source="phone" href={phoneHref}>
+                  <Phone aria-hidden="true" />
+                  Call
+                </a>
+                <a
+                  data-rda-lead-source="whatsapp"
+                  data-rda-whatsapp="true"
+                  href={whatsAppUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <WhatsAppIcon />
+                  WhatsApp
+                </a>
+              </div>
+              {catalog?.approval ? (
+                <a
+                  className="ac-enroll-verify"
+                  href="https://www.dbc.ca.gov/applicants/rda_courses.shtml"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <BadgeCheck aria-hidden="true" />
+                  Verify provider {catalog.approval.replace("DBC ", "")} with the Dental Board
+                  <ExternalLink aria-hidden="true" />
+                </a>
+              ) : null}
+            </div>
+          </aside>
         </div>
-      ) : null}
+      </section>
+
       {reviewGroup ? <CourseReviews course={course} group={reviewGroup} /> : null}
-    </section>
+    </div>
   );
 }

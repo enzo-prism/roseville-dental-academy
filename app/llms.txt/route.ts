@@ -1,6 +1,7 @@
 import { getAvailableCourseDateList } from "@/lib/course-schedule";
 import { resourceArticlePath, resourceArticles } from "@/lib/resource-articles";
 import { SITE_URL } from "@/lib/site-config";
+import { googleReviewsAggregate } from "@/lib/site-data";
 
 export const dynamic = "force-static";
 
@@ -41,6 +42,7 @@ ${guidesSection}
 
 - [Home](${SITE_URL}/)
 - [Meet the Instructors](${SITE_URL}/meet-the-instructors)
+- [Student Reviews](${SITE_URL}/reviews): Every Google review from students and graduates (rated ${googleReviewsAggregate.ratingValue.toFixed(1)} from ${googleReviewsAggregate.reviewCount} reviews), searchable by topic.
 - [FAQs](${SITE_URL}/faqs-1)
 - [Photos](${SITE_URL}/photos)
 - [Contact](${SITE_URL}/contact)

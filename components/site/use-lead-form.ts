@@ -10,6 +10,7 @@ import {
   type LeadAttribution,
 } from "@/lib/lead-attribution";
 
+import { HOW_HEARD_FIELD } from "@/lib/how-heard";
 import { measurementReferenceSnapshot, type MeasurementReferenceSnapshot } from "@/lib/openai-measurement";
 
 export {
@@ -35,6 +36,8 @@ const LEAD_ANALYTICS_FIELDS = new Set([
   "Interested courses[]", "Renewal focus", "campaign_intent", "course_interest",
   "landing_page", "page_path", "lead_event_id", "ad_id", "utm_campaign",
   "utm_content", "utm_id", "utm_medium", "utm_source", "utm_source_platform", "utm_term",
+  // Categorical self-reported source only; the "please specify" free text never leaves Formspree.
+  HOW_HEARD_FIELD,
 ]);
 
 function acceptedAnalyticsFields(formData: FormData) {

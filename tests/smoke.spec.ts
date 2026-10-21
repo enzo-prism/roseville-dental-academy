@@ -1050,24 +1050,40 @@ test("front office program is retired from public access and entry points", asyn
 
 test("mobile homepage menu opens and reveals live information links", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await suppressSitePromo(page.context());
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.waitForLoadState("load").catch(() => undefined);
-  await page.waitForTimeout(6_000);
+  await page.waitForTimeout(2_000);
 
   await page.getByRole("button", { name: "Hamburger Site Navigation Icon" }).click();
   const mobileMenu = page.locator('[data-rda-mobile-menu="true"]');
-  await expect(mobileMenu.getByRole("link", { name: "Home" })).toBeVisible();
-  await expect(mobileMenu.getByRole("button", { name: "More Information" })).toBeVisible();
+  await expect(mobileMenu.getByRole("link", { name: "Home", exact: true })).toBeVisible();
 
-  await mobileMenu.getByRole("button", { name: "More Information" }).click();
+  for (const label of [
+    "Dental Assisting Program",
+    "BLS/CPR",
+    "Infection Control",
+    "Radiation Safety",
+    "Coronal Polish",
+    "Sealants",
+    "Instructors",
+    "Reviews",
+    "Photos",
+    "FAQs",
+    "Career Journey",
+    "Student & Alumni Jobs",
+    "Contact Us",
+    "Ask About Classes",
+  ]) {
+    await expect(mobileMenu.getByRole("link", { name: label }).first()).toBeVisible();
+  }
 
-  await expect(mobileMenu.getByRole("link", { name: "Meet the Instructors" })).toBeVisible();
-  await expect(mobileMenu.getByRole("link", { name: "FAQs" })).toBeVisible();
-  await expect(mobileMenu.getByRole("link", { name: "Photos" })).toBeVisible();
   await expect(mobileMenu.getByRole("link", { name: "Resume Portal DR/OMS only" })).toHaveAttribute(
     "href",
     "https://rosevilledental.godaddysites.com/m/login?r=%2Fresume-portal-dr%252Foms-only",
   );
+  await expect(mobileMenu.locator("[data-rda-social-button]")).toHaveCount(3);
+  await expect(mobileMenu.locator('[data-rda-theme-toggle="true"]')).toBeVisible();
 
   smokeSummary.push({
     route: "/",
@@ -1142,56 +1158,61 @@ test("contact us button replaces the shopping and profile utility icons", async 
 });
 
 test("desktop navigation items render distinct matching icons", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await suppressSitePromo(page.context());
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-
-  const moreButton = page.getByRole("button", { name: "More Information" });
-
   await page.waitForLoadState("load").catch(() => undefined);
+
+  const nav = page.locator(".rda-desktop-nav");
+  const moreButton = nav.getByRole("button", { name: "More" });
+  const coursesButton = nav.getByRole("button", { name: "Courses" });
+
   await expect(moreButton).toBeVisible({ timeout: 12_000 });
-  await expect(page.locator('[data-rda-nav-icon="book-open-check"]')).toBeVisible({
-    timeout: 12_000,
-  });
   await expect(async () => {
-    await moreButton.click();
-    await expect(page.locator('[data-rda-more-menu][data-open="true"]')).toBeVisible({
-      timeout: 1_500,
-    });
+    await coursesButton.click();
+    await expect(page.locator('[data-rda-courses-menu="true"]')).toBeVisible({ timeout: 1_500 });
   }).toPass({ timeout: 12_000 });
 
-  const result = await page.evaluate(() => {
-    const readItem = (item: Element) => ({
+  const readItems = (selector: string) =>
+    page.evaluate((query) => Array.from(document.querySelectorAll(query)).map((item) => ({
       href: item.getAttribute("href") || "",
       icon: item.querySelector("[data-rda-nav-icon]")?.getAttribute("data-rda-nav-icon") || "",
-      label: item.textContent?.replace(/\s+/g, " ").trim() || "",
-    });
+      label: (item.querySelector(".ac-mega-item-title")?.textContent ?? item.textContent ?? "")
+        .replace(/\s+/g, " ")
+        .trim(),
+    })), selector);
 
-    return {
-      dropdown: Array.from(document.querySelectorAll(".rda-more-menu .rda-more-link")).map(readItem),
-      topLevel: Array.from(
-        document.querySelectorAll(
-          ".rda-desktop-nav .rda-nav-link, .rda-desktop-nav .rda-contact-us-button",
-        ),
-      ).map(readItem),
-    };
-  });
+  const courses = await readItems('[data-rda-courses-menu="true"] .ac-mega-item');
+  await page.keyboard.press("Escape");
+  await expect(async () => {
+    await moreButton.click();
+    await expect(page.locator('[data-rda-more-menu][data-open="true"]')).toBeVisible({ timeout: 1_500 });
+  }).toPass({ timeout: 12_000 });
+  const dropdown = await readItems(".rda-more-menu .rda-more-link");
+  const topLevel = await readItems(
+    ".rda-desktop-nav .rda-nav-row > li > .rda-nav-link, .ac-nav-actions .rda-contact-us-button",
+  );
+  const result = { courses, dropdown, topLevel };
 
   const expected = new Map([
     ["Home", "home"],
+    ["Courses", "graduation-cap"],
+    ["Instructors", "user-round-check"],
+    ["Reviews", "message-square-heart"],
+    ["Photos", "images"],
+    ["Contact Us", "phone"],
     ["BLS/CPR", "heart-pulse"],
     ["Infection Control", "shield-check"],
-    ["Coronal Polish", "sparkles"],
     ["Radiation Safety", "radiation"],
-    ["More Information", "book-open-check"],
+    ["Coronal Polish", "sparkles"],
     ["Sealants", "badge-check"],
-    ["Contact Us", "phone"],
-    ["Dental Assisting Program", "graduation-cap"],
-    ["Meet the Instructors", "user-round-check"],
     ["FAQs", "circle-help"],
-    ["Photos", "images"],
+    ["Career Journey", "route"],
+    ["Resources", "book-open-text"],
+    ["Student & Alumni Jobs", "briefcase-business"],
     ["Resume Portal DR/OMS only", "file-user"],
   ]);
-  const allItems = [...result.topLevel, ...result.dropdown];
+  const allItems = [...topLevel, ...courses, ...dropdown];
   const portalHref = "https://rosevilledental.godaddysites.com/m/login?r=%2Fresume-portal-dr%252Foms-only";
   const mismatches: string[] = [];
 
@@ -1219,7 +1240,7 @@ test("desktop navigation items render distinct matching icons", async ({ page },
     .filter(Boolean);
 
   if (new Set(icons).size !== expected.size) {
-    mismatches.push("desktop nav icons are not unique across the top-level and dropdown items");
+    mismatches.push("desktop nav icons are not unique across the top-level, courses, and dropdown items");
   }
 
   smokeSummary.push({
@@ -1284,16 +1305,18 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
     (entry) => expectedLabels.has(entry.label) && entry.logo === entry.icon,
   );
 
-  if (profileButtons.length !== 9) {
+  // Homepage renders two sets: the social-follow section and the footer.
+  // (The header copy lives in the mobile sheet and only mounts when opened.)
+  if (profileButtons.length !== 6) {
     mismatches.push(
-      `expected 9 profile social buttons across header, contact, and footer, found ${profileButtons.length}`,
+      `expected 6 profile social buttons across the social section and footer, found ${profileButtons.length}`,
     );
   }
 
   for (const [icon, label, href] of expected) {
     const matches = profileButtons.filter((entry) => entry.icon === icon && entry.label === label);
     const navMatch = await page
-      .locator(`.rda-desktop-nav [data-rda-social-button="${icon}"]`)
+      .locator(`.rda-live-footer [data-rda-social-button="${icon}"]`)
       .first()
       .evaluate((link) => ({
         href: link.getAttribute("href") || "",
@@ -1301,8 +1324,8 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
         target: link.getAttribute("target") || "",
       }));
 
-    if (matches.length !== 3) {
-      mismatches.push(`expected 3 ${label} social buttons, found ${matches.length}`);
+    if (matches.length !== 2) {
+      mismatches.push(`expected 2 ${label} social buttons, found ${matches.length}`);
     }
 
     if (matches.some((entry) => entry.svgCount !== 1 || entry.tagName !== "a")) {
@@ -1314,7 +1337,7 @@ test("social media links render as branded buttons", async ({ page }, testInfo) 
     }
 
     if (navMatch.href !== href || navMatch.target !== "_blank" || !navMatch.rel.includes("noreferrer")) {
-      mismatches.push(`${label} header social link is not wired to open the correct page in a new tab`);
+      mismatches.push(`${label} footer social link is not wired to open the correct page in a new tab`);
     }
   }
 
@@ -1342,17 +1365,15 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
   });
   const badRefundCopy = "Due to limited space all sales are final and no refunds will be issued";
   const requiredCourseCopy = [
-    "2026 Class Schedule",
+    "Upcoming Class Schedule",
     "Dates are penciled in and may change; admissions will confirm current availability.",
-    "October 17",
-    "October 24",
     "November 20, 2026",
-    "Initial and renewal BLS/CPR training for healthcare providers",
-    "Board-approved 8-hour Infection Control training for unlicensed dental assistants",
-    "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified",
-    "12-hour Coronal Polish training for eligible dental assistants",
-    "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs",
-    "Dental Assisting is a 9-week, 210-hour training course for students age 16 and older",
+    "Initial or renewal BLS/CPR for healthcare providers",
+    "Board-approved 8-hour Infection Control course for dental assistants",
+    "32-hour Radiation Safety course",
+    "12-hour Coronal Polish course",
+    "16-hour Pit and Fissure Sealant course for eligible assistants and RDAs",
+    "prepares you for an entry-level dental assisting job in 9 weeks",
   ];
   const mismatches: string[] = [];
 
@@ -1394,7 +1415,7 @@ test("Drive-derived homepage details render without private student data", async
     viewport: { width: 1280, height: 900 },
   });
   const requiredPhrases = [
-    "Next Dental Assisting class starts Friday, Nov 20. Saturday class starts Dec 5. →",
+    "Next Dental Assisting class starts Friday, Nov 20. Saturday class starts Dec 5.",
     "Dental Board Course Details",
     "Radiation Safety X1036",
     "Infection Control IC189",
@@ -1435,97 +1456,46 @@ test("Drive-derived homepage details render without private student data", async
   expect(mismatches).toEqual([]);
 });
 
-test("homepage review photos appear directly below the hero", async ({ page }, testInfo) => {
+test("homepage review photos follow the students-in-action proof", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
+  await suppressSitePromo(page.context());
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.waitForLoadState("load").catch(() => undefined);
 
-  const hero = page.locator(".widget-introduction-introduction-1").first();
+  const hero = page.locator('[data-rda-home-hero="true"]');
+  const students = page.locator('[data-rda-home-students="true"]');
   const reviewSection = page.locator('[data-rda-home-review-highlights="true"]');
-  const tiktokFollow = page.locator('[data-rda-stable-widget="tiktok-follow"]');
   const courseSystem = page.locator('[data-rda-home-course-system="true"]');
   const reviewCards = reviewSection.locator(".rda-review-photo-card");
-  const googleReviewCards = reviewSection.locator(".rda-google-review-card");
   const mismatches: string[] = [];
 
-  await expect(reviewSection).toBeVisible({ timeout: 12_000 });
-  await expect(reviewSection.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible();
-  await expect(tiktokFollow).toBeVisible({ timeout: 12_000 });
-  await expect(tiktokFollow.getByRole("heading", { name: "Help us reach 1,000 followers." })).toBeVisible();
-  await expect(courseSystem).toBeVisible({ timeout: 12_000 });
+  await expect(reviewSection.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible({
+    timeout: 12_000,
+  });
 
-  const heroBox = await hero.boundingBox();
-  const reviewBox = await reviewSection.boundingBox();
-  const tiktokBox = await tiktokFollow.boundingBox();
-  const courseBox = await courseSystem.boundingBox();
-  const legacyCourseWidgetCount = await page
-    .locator(
-      [
-        ".widget-countdown-countdown-1",
-        '[id="2009b5dd-c84c-4596-9a42-e54428494e26"]',
-        '[id="4dc12e4b-c2cf-4fef-aa22-43ee15d1afc8"]',
-        '[id="266dc504-a138-4f78-9cc8-779377f6b972"]',
-        '[id="0c353bbb-1b60-4fa3-aed9-de2e739a4807"]',
-        '[id="db5c88e6-f24c-47cf-a362-5819da7f2ba5"]',
-      ].join(","),
-    )
-    .count();
-  const visibleCardDetails = await reviewCards.evaluateAll((cards) =>
-    cards
-      .filter((card) => {
-        const style = window.getComputedStyle(card);
-        const rect = card.getBoundingClientRect();
-
-        return (
-          style.display !== "none" &&
-          style.visibility !== "hidden" &&
-          Number.parseFloat(style.opacity || "1") > 0 &&
-          rect.width > 0 &&
-          rect.height > 0
-        );
-      })
-      .map((card) => ({
-        imageSource: card.querySelector("img")?.getAttribute("src") || "",
-      })),
+  const [heroBox, studentsBox, reviewBox, courseBox] = await Promise.all(
+    [hero, students, reviewSection, courseSystem].map((locator) => locator.boundingBox()),
   );
-  const cardCount = visibleCardDetails.length;
-  const googleReviewCardCount = await googleReviewCards.count();
-  const imageSources = visibleCardDetails.map((card) => card.imageSource);
-  const uniqueImageSources = new Set(imageSources.filter(Boolean));
+
+  if (!heroBox || !studentsBox || !reviewBox || !courseBox) {
+    mismatches.push("could not measure homepage section placement");
+  } else {
+    if (studentsBox.y < heroBox.y + heroBox.height - 4) mismatches.push("students-in-action is not below the hero");
+    if (reviewBox.y < studentsBox.y + studentsBox.height - 4) mismatches.push("reviews are not below students-in-action");
+    if (courseBox.y < reviewBox.y + reviewBox.height - 4) mismatches.push("courses rendered before reviews");
+  }
+
+  const imageSources = await reviewCards.evaluateAll((cards) =>
+    cards.map((card) => card.querySelector("img")?.getAttribute("src") || ""),
+  );
   const reviewText = (await reviewSection.textContent()) ?? "";
 
-  if (!heroBox || !reviewBox) {
-    mismatches.push("could not measure hero and review section placement");
-  } else if (reviewBox.y < heroBox.y + heroBox.height - 4) {
-    mismatches.push("review photo section is not positioned directly after the hero");
+  if (imageSources.length !== 6) {
+    mismatches.push(`expected 6 review cards, found ${imageSources.length}`);
   }
 
-  if (legacyCourseWidgetCount !== 0) {
-    mismatches.push(`homepage still renders ${legacyCourseWidgetCount} legacy course widgets`);
-  }
-
-  if (!tiktokBox || !reviewBox) {
-    mismatches.push("could not measure review and TikTok section placement");
-  } else if (tiktokBox.y < reviewBox.y + reviewBox.height - 4) {
-    mismatches.push("TikTok follow section rendered before the review photo section");
-  }
-
-  if (!courseBox || !tiktokBox) {
-    mismatches.push("could not measure TikTok and course redesign placement");
-  } else if (courseBox.y < tiktokBox.y + tiktokBox.height - 4) {
-    mismatches.push("course redesign rendered before the TikTok follow section");
-  }
-
-  if (cardCount !== 6) {
-    mismatches.push(`expected 6 review cards, found ${cardCount}`);
-  }
-
-  if (googleReviewCardCount !== 0) {
-    mismatches.push(`expected review payload to omit hidden Google cards, found ${googleReviewCardCount}`);
-  }
-
-  if (uniqueImageSources.size !== imageSources.length) {
-    mismatches.push("review cards do not use unique gallery photos");
+  if (new Set(imageSources.filter(Boolean)).size !== imageSources.length) {
+    mismatches.push("review cards do not use unique photos");
   }
 
   for (const phrase of [
@@ -1533,26 +1503,14 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
     "Selene",
     "Salvador Garcia",
     "Breana Donahue",
+    "77 Google reviews",
+    "Read all 77 reviews",
+    "Open on Google",
+    "\u201cThe 9-week program was well-structured",
   ]) {
     if (!reviewText.includes(phrase)) {
       mismatches.push(`review section missing ${phrase}`);
     }
-  }
-
-  for (const phrase of [
-    "Reviews for Google",
-    "5 out of 5 stars",
-    "77 Google reviews",
-    "Read all 77 Google reviews",
-    "Open the verified Google listing",
-  ]) {
-    if (!reviewText.includes(phrase)) {
-      mismatches.push(`review section missing Google review marker: ${phrase}`);
-    }
-  }
-
-  if (!reviewText.includes("\u201cThe 9-week program was well-structured")) {
-    mismatches.push("review section does not show visible quote marks around review text");
   }
 
   if (/\s-\s(?:\d+\s)?(?:week|weeks|month|months|year|years)\sago/i.test(reviewText)) {
@@ -1560,8 +1518,6 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
   }
 
   smokeSummary.push({
-    cardCount,
-    googleReviewCardCount,
     imageSources,
     mismatches,
     route: "/",
@@ -1570,12 +1526,7 @@ test("homepage review photos appear directly below the hero", async ({ page }, t
   });
 
   if (mismatches.length > 0) {
-    writeJsonArtifact(testInfo, "homepage-review-photos-summary.json", {
-      cardCount,
-      googleReviewCardCount,
-      imageSources,
-      mismatches,
-    });
+    writeJsonArtifact(testInfo, "homepage-review-photos-summary.json", { imageSources, mismatches });
   }
 
   expect(mismatches).toEqual([]);
@@ -1586,7 +1537,7 @@ test("homepage gallery preview shows a larger photo showcase", async ({ page }, 
   await page.goto(`${localOrigin}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
   const gallery = page.locator('[data-rda-stable-widget="gallery"][data-rda-gallery-mode="home"]');
-  const images = gallery.locator(".rda-gallery-item img");
+  const images = gallery.locator(".ac-gallery-tile img");
   const mismatches: string[] = [];
 
   await expect(gallery).toBeVisible({ timeout: 12_000 });
@@ -1868,6 +1819,7 @@ test("cookie banner is absent from rendered pages", async ({ page }, testInfo) =
 
 test("faq page uses current board-approval answers without stale mirror copy", async ({ page }, testInfo) => {
   const snapshot = await captureSnapshot(page, `${localOrigin}/faqs-1`, {
+    expandDisclosures: true,
     viewport: { width: 1280, height: 900 },
   });
   const requiredPhrases = [
@@ -1916,6 +1868,7 @@ test("faq page uses current board-approval answers without stale mirror copy", a
 
 test("Drive-derived FAQ and instructor material render on public pages", async ({ page }, testInfo) => {
   const faqSnapshot = await captureSnapshot(page, `${localOrigin}/faqs-1`, {
+    expandDisclosures: true,
     viewport: { width: 1280, height: 900 },
   });
   const instructorSnapshot = await captureSnapshot(page, `${localOrigin}/meet-the-instructors`, {

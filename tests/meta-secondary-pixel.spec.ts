@@ -55,9 +55,11 @@ async function fillSignup(form: Locator) {
   await form.locator('input[name="_replyto"]').fill(student.email);
   await form.locator('input[name="Phone"]').fill(student.phone);
   await form.locator('textarea[name="Notes"]').fill(student.notes);
+  // The redesigned forms require an interest tile and a How-did-you-hear pill.
   if (await form.getByRole("checkbox", { checked: true }).count() === 0) {
-    await form.getByRole("checkbox").first().check();
+    await form.locator(".ac-tile").first().click();
   }
+  await form.locator(".ac-pill", { hasText: "Facebook or Instagram ad" }).click();
 }
 
 function eventsFor(

@@ -41,24 +41,30 @@ export function trackGaEvent(eventName: string, params: Record<string, unknown> 
 function PageViewTracking({ measurementId }: { measurementId: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const hasSkippedInitialPageView = useRef(false);
+  // URL covered by the last page_view. The base gtag config sends the initial
+  // one, so record that URL first and only send when the URL really changes —
+  // effect re-runs (React reconnecting a boundary, Strict Mode) never count twice.
+  const lastTrackedUrl = useRef<string | null>(null);
 
   useEffect(() => {
     if (!pathname) {
       return;
     }
 
-    // The base gtag config sends the initial page_view. Only send on client
-    // navigation. Consume the skip flag before checking window.gtag — the
-    // bootstrap script can still be undefined on the first effect run.
-    if (!hasSkippedInitialPageView.current) {
-      hasSkippedInitialPageView.current = true;
+    const url = `${pathname}?${searchParams?.toString() ?? ""}`;
+
+    // Record the initial URL before checking window.gtag — the bootstrap
+    // script can still be undefined on the first effect run.
+    if (lastTrackedUrl.current === null) {
+      lastTrackedUrl.current = url;
       return;
     }
 
-    if (typeof window.gtag !== "function") {
+    if (lastTrackedUrl.current === url || typeof window.gtag !== "function") {
       return;
     }
+
+    lastTrackedUrl.current = url;
 
     const search = window.location.search || (searchParams.toString() ? `?${searchParams}` : "");
 

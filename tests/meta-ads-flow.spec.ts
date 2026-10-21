@@ -71,9 +71,11 @@ async function fillSignup(form: Locator) {
   await form.locator('input[name="_replyto"]').fill(student.email);
   await form.locator('input[name="Phone"]').fill(student.phone);
   await form.locator('textarea[name="Notes"]').fill(student.notes);
+  // The redesigned forms require an interest tile and a How-did-you-hear pill.
   if (await form.getByRole("checkbox", { checked: true }).count() === 0) {
-    await form.getByRole("checkbox").first().check();
+    await form.locator(".ac-tile").first().click();
   }
+  await form.locator(".ac-pill", { hasText: "Facebook or Instagram ad" }).click();
 }
 
 test.describe("RDA Meta ads: local intercepted lead measurement", () => {
@@ -86,6 +88,47 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       status: 201, contentType: "application/json", body: JSON.stringify({ token: "synthetic-receipt-token" }),
     }));
   });
+
+  for (const content of ["ic189_student_120249085995100567", "ic189_cert_120248882486160567"]) {
+    test(`${content} legacy tags reach accepted form and measurement after navigation`, async ({ page }) => {
+      let postedBody = "";
+      let receipt: Record<string, unknown> | null = null;
+      await page.route("https://formspree.io/**", async (route) => {
+        expect(route.request().url()).toBe("https://formspree.io/f/xzdkgaeg");
+        postedBody = route.request().postData() ?? "";
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+      });
+      await page.route("**/api/attribution/receipt", async (route) => {
+        receipt = JSON.parse(route.request().postData() ?? "null") as Record<string, unknown>;
+        await route.fulfill({ status: 202, contentType: "application/json", body: '{"ok":true}' });
+      });
+      const adId = content.split("_").at(-1)!;
+      await page.goto(`/infection-control?utm_source=facebook&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=${content}&utm_id=${campaignId}&utm_term=${adsetId}`, { waitUntil: "networkidle" });
+      await expect(page.locator('form[data-rda-signup-form="true"] input[name="ad_id"]')).toHaveValue(adId);
+      await page.goto("/contact", { waitUntil: "networkidle" });
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await fillSignup(form);
+      await form.getByRole("button", { name: "Request next steps" }).click();
+      await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
+      await expect.poll(() => receipt).not.toBeNull();
+      expect(multipartField(postedBody, "ad_id")).toBe(adId);
+      expect(multipartField(postedBody, "campaign_id")).toBe(campaignId);
+      for (const role of ["first", "conversion"]) {
+        expect(multipartField(postedBody, `${role}_touch_ad_id`)).toBe(adId);
+        expect(multipartField(postedBody, `${role}_touch_adset_id`)).toBe(adsetId);
+      }
+      const observed = await captures(page);
+      const leads = observed.meta.filter((event) => event[0] === "track" && event[1] === "Lead");
+      expect(leads).toHaveLength(1);
+      expect(leads[0][2]).toMatchObject({ ad_id: adId, utm_content: content });
+      expect(observed.ga.filter((event) => event[0] === "event" && event[1] === "generate_lead")).toHaveLength(1);
+      expect(receipt).toMatchObject({
+        firstTouch: { dimensions: { ad_id: adId, adset_id: adsetId }, consent: { marketing: false } },
+        conversionTouch: { dimensions: { ad_id: adId, adset_id: adsetId }, consent: { marketing: false } },
+      });
+      assertNoStudentData([leads, receipt]);
+    });
+  }
 
   for (const creative of attributionCases) {
     test(`${creative.name} URL preserves attribution and sends one accepted Lead`, async ({ page }) => {
@@ -105,7 +148,7 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
       await expect(courseForm.locator('input[name="utm_content"]')).toHaveValue(creative.content);
       await expect(courseForm.locator('input[name="ad_id"]')).toHaveValue(creative.expectedAdId);
-      await expect(courseForm.locator('input[name="Interested classes[]"]')).toHaveValue("Pit and Fissure Sealants");
+      await expect(courseForm.locator('input[name="Interested classes[]"]:checked')).toHaveValue("Pit and Fissure Sealants");
       expect((await captures(page)).meta).toContainEqual(["init", DEFAULT_META_PIXEL_ID]);
 
       // A clean course-info visit must retain the paid first touch.
@@ -115,7 +158,7 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
       await expect(form.locator('input[name="utm_campaign"]')).toHaveValue("rda_sealants_leads");
       await expect(form.locator('input[name="utm_content"]')).toHaveValue(creative.content);
       await expect(form.locator('input[name="ad_id"]')).toHaveValue(creative.expectedAdId);
-      await expect(form.locator('input[name="Interested classes[]"]')).toHaveValue("Dental Assisting Program");
+      await expect(form.locator('input[name="Interested classes[]"]:checked')).toHaveValue("Dental Assisting Program");
       await fillSignup(form);
       await form.getByRole("button", { name: "Request next steps" }).click();
       await expect(page.getByText("Request sent", { exact: true })).toBeVisible();
@@ -180,11 +223,11 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
     await page.goto(sealantsUrl(creatives[0].content), { waitUntil: "networkidle" });
     const form = page.locator('form[data-rda-signup-form="true"]').first();
     await fillSignup(form);
-    const originalCourse = await form.locator('input[name="Interested classes[]"]').first().inputValue();
+    const originalCourse = await form.locator('input[name="Interested classes[]"]:checked').first().inputValue();
     await form.getByRole("button", { name: "Request next steps" }).click();
     await expect.poll(() => postedBody).not.toBe("");
-    await form.getByRole("checkbox", { checked: true }).first().uncheck();
-    await expect(form.locator('input[name="Interested classes[]"]')).toHaveCount(0);
+    await form.locator(".ac-tile[data-selected=\"true\"]").first().click();
+    await expect(form.locator('input[name="Interested classes[]"]:checked')).toHaveCount(0);
     expect((await captures(page)).meta.filter((event) => event[1] === "Lead")).toHaveLength(0);
     releaseResponse?.();
     await expect(page.getByText("Request sent", { exact: true })).toBeVisible();

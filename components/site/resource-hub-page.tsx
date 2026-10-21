@@ -24,7 +24,7 @@ export function ResourceHubPage() {
       data-rda-route="resources"
       id="rda-main-content"
     >
-      <section className="relative isolate overflow-hidden bg-primary text-primary-foreground">
+      <section className="ac-ink-hero relative isolate overflow-hidden bg-primary text-primary-foreground">
         <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-primary-foreground/80">
             <BookOpenText aria-hidden="true" className="size-4" />

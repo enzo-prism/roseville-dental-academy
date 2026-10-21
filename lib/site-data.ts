@@ -852,6 +852,11 @@ export const faqItems = [
       "Reach out to the academy directly so they can help you with replacement certificate guidance.",
   },
   {
+    question: "Does Roseville Dental Academy help students and graduates find jobs?",
+    answer:
+      "Yes. We maintain a password-protected job board for our students and alumni, where dental offices post openings for our graduates. Current students and alumni can request access from the academy office, and employers are welcome to contact us to share an opening with our students and graduates.",
+  },
+  {
     question: CERTIFICATE_EXPIRATION_FAQ_QUESTION,
     answer: getCertificateExpirationAnswer(),
   },
@@ -996,6 +1001,11 @@ export const studentFaqHighlights = [
     question: "Does the academy offer financial aid?",
     answer:
       "The academy does not list traditional financial aid. Students can call admissions to ask about current payment options and timing before choosing a course date.",
+  },
+  {
+    question: "Does Roseville Dental Academy help students and graduates find jobs?",
+    answer:
+      "Yes. We maintain a password-protected job board for our students and alumni, where dental offices post openings for our graduates. Current students and alumni can request access from the academy office, and employers are welcome to contact us to share an opening with our students and graduates.",
   },
   {
     question: CERTIFICATE_EXPIRATION_FAQ_QUESTION,

@@ -44,7 +44,11 @@ The editable Roseville Dental Academy boosts audited on July 16, 2026 use this c
 
 Live Saturday Academy ads already point at `/lp/dental-assisting-enroll`. Do not change those destinations. They currently send `utm_campaign=saturday_academy_sep12` and `utm_content` prefixes `static_photo_`, `tiktok_video_`, or `static_type_` plus `{{ad.id}}`. Keep those live tags; do not rewrite them to `student_story_`.
 
-The site parses a trailing numeric Meta ad id from those known `utm_content` prefixes (`static_photo_`, `tiktok_video_`, `static_type_`, `office_compliance_ic189_`, `renewal_ready_original_copy_`, `student_story_`) into a hidden `ad_id` field, and copies `campaign_id` from `utm_id` when present. Dashboard exact-ad matching uses `ad_id` / `fbclid` / `gclid` and the other click IDs; `utm_content` alone remains tier C.
+The site parses a trailing numeric Meta ad ID from known `utm_content` prefixes (`static_photo_`, `tiktok_video_`, `static_type_`, `office_compliance_ic189_`, `renewal_ready_original_copy_`, `student_story_`, `video_sept25_clinical_`, `photo_sept18_graduation_`, `ic189_student_`, `ic189_cert_`) into a hidden `ad_id` field, and copies `campaign_id` from `utm_id` when present. The entire suffix must be 5–40 digits; arbitrary numeric suffixes and unresolved macros are not inferred. Captured native IDs and click IDs remain source-observed evidence; an exact-ad attribution claim requires a validated platform join. A click ID alone does not resolve an ad, and unparsed `utm_content` alone remains tier C.
+
+Legacy paid Meta links also put the ad-set ID in `utm_term`. The site recovers that value only when it is 5–40 digits, the creative uses a supported numeric prefix above, its parsed ad ID agrees with the effective native ad ID, and the effective platform is `meta`, `meta_ads`, `facebook`, `instagram`, `fb`, or `ig` with medium `paid_social`, `paid-social`, `paid`, `cpc`, or `ppc`. Platform precedence is explicit `platform`, then `utm_source_platform`, then `utm_source`; a conflicting non-Meta platform prevents this fallback. `fbclid` alone is insufficient. Explicit `ad_id`, `adset_id` / `ad_set_id`, and `campaign_id` take precedence. Recovery applies independently to fresh and previously stored first/conversion touches, preserving their identity, timestamps, and original tags. First-touch reporting and consent handling are unchanged.
+
+For new Meta links, prefer explicit native parameters `ad_id={{ad.id}}&adset_id={{adset.id}}&campaign_id={{campaign.id}}` alongside the existing UTMs, and read back the resolved destination before launch. Supporting old tag formats does not verify that Meta delivered the ad or accepted a conversion event.
 
 Append `{{ad.id}}` to each `utm_content` prefix. Every Meta destination also uses `utm_source={{site_source_name}}`, `utm_medium=paid`, `utm_id={{campaign.id}}`, and `utm_source_platform=meta_ads`. Keep `utm_source` dynamic so Facebook and Instagram remain distinguishable while `utm_source_platform` supplies one stable Meta rollup.
 
@@ -71,6 +75,14 @@ lead_source=whatsapp
 ```
 
 Do not append campaign, creative, or `ad_id` tags to that prefill. Public Formspree forms send the same first-touch UTM / click-ID / `ad_id` stamp plus `lead_source=website` and `how-heard=website`. `SitePageRenderer` in `components/site/site-page.tsx` is not mounted on the live shell and is not a public lead path.
+
+### "How did you hear about us?" (self-reported source)
+
+Every public lead form (course-info request, contact, and all `/lp/*` landers) asks a required **"How did you hear about us?"** question (`lib/how-heard.ts`, rendered by `HowHeardField` in `components/academy/form-kit.tsx`). Options: Facebook or Instagram ad, Google search, AI (ChatGPT, etc.), A friend told me, Other. Picking **Other** reveals a required free-text field (max 120 characters) that is removed from the form again if the visitor switches answers.
+
+- Formspree receives the answer as `How did you hear about us?` and, for Other, the detail as `How did you hear about us? (please specify)`. These human-readable names are deliberate (they read cleanly in lead emails) and are separate from the hidden attribution stamp `how-heard=website`, which still means "submitted through a website form".
+- GA4 (`generate_lead`, `lead_form_submit`) and Vercel (`lead_form_submit`) receive only the categorical answer as `self_reported_source` (`facebook_instagram_ad`, `google_search`, `ai`, `friend`, `other`). The free-text detail never leaves Formspree, and Meta's `Lead` payload is unchanged. To report on it in GA4, register `self_reported_source` as an event-scoped custom dimension.
+- The private attribution ledger and receipt are unchanged (they only accept attribution fields; see `lib/server/attribution-validation.ts`).
 
 Every accepted AJAX form request receives one non-PII UUID before submission. It is sent only as `lead_event_id`, and the same value joins Formspree payload fields, GA4, Meta, Vercel, and the pending private-ledger receipt. It is not Formspree's immutable submission `_id`. Authenticated reconciliation uses the canonical `form_id:_id` lead identity and only then verifies the matching browser `lead_event_id`. Final lead/conversion events fire only after Formspree returns an HTTP-success response; rejected or failed requests show the inline error state and are not counted as leads. A short in-flight lock also prevents rapid double-clicks from creating duplicate requests.
 
@@ -134,7 +146,7 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | Event | Type | When it fires | Key parameters |
 | --- | --- | --- | --- |
 | `ad_landing_view` | Custom | `/lp/*` landing page view | `landing_page`, `campaign_intent`, `course_interest`, `content_category`, `page_path`, UTM fields |
-| `generate_lead` | GA4 recommended | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `generate_lead` | GA4 recommended | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `self_reported_source`, UTM fields |
 | `select_content` | GA4 recommended | CTA, nav, portal, social, and file selections | `content_type`, `content_id`, `link_location`, `link_url` |
 | `file_download` | GA4 enhanced/recommended-style | Public PDF downloads | `file_name`, `file_extension`, `link_location`, `link_url` |
 | `cta_click` | Custom | Primary CTAs | `cta_id`, `cta_location`, `link_url` |
@@ -144,7 +156,7 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | `social_click` | Custom | Facebook, Instagram, or TikTok links | `method`, `social_platform`, `link_location`, `link_url` |
 | `portal_click` | Custom | Resume portal entry points | `portal`, `link_location`, `link_url` |
 | `outbound_click` | Custom | External links not otherwise categorized | `link_domain`, `link_location`, `link_url`, `outbound` |
-| `lead_form_submit` | Custom | Accepted lead paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `lead_form_submit` | Custom | Accepted lead paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `self_reported_source`, UTM fields |
 | `lead_form_invalid` | Custom | Submit blocked by required selections | `form_id`, `reason`, `selected_count` |
 
 For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `renewal_focus`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_id`, `utm_source_platform`, `utm_content`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.
