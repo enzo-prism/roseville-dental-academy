@@ -59,6 +59,9 @@ globalThis.fetch = async (input, init = {}) => {
         const offer=(await db.query("SELECT id,course_date,policy_text,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
         if (offer) {
           await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id,stripe_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,'2026-09-30',$8,$9,39500,'usd',$11,$12,$10) ON CONFLICT (id) DO NOTHING",[plant.id,offer.id,offer.course_date,plant.owner,plant.name,plant.email,plant.phone,offer.policy_hash,offer.policy_text,plant.expiresAt,plant.status ?? "reserved",plant.sessionId ?? null]);
+          if (plant.releasedAt) {
+            await db.query("UPDATE student_enrollments SET inventory_released_at=now(),inventory_released_by=$2,updated_at=now() WHERE id=$1",[plant.id,plant.releasedBy ?? "staff@example.test"]);
+          }
         }
       }
       if (control.releaseHold) {
@@ -102,7 +105,7 @@ globalThis.fetch = async (input, init = {}) => {
         const value = row[name]; if (value === null) return null;
         if (dataTypeID === 16) return value ? "t" : "f";
         if ([114,3802].includes(dataTypeID)) return JSON.stringify(value);
-        if (value instanceof Date) return dataTypeID === 1082 ? value.toISOString().slice(0,10) : value.toISOString(); return String(value);
+        if (value instanceof Date) return dataTypeID === 1082 ? value.toISOString().slice(0,10) : value.toISOString().replace("T"," ").replace("Z","+00"); return String(value);
       })) });
     } catch (error) { return Response.json({ message: error.message }, { status: 400 }); }
   }

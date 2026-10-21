@@ -451,7 +451,7 @@ test("student database enforces shared inventory, separate modes, replay, roster
     ).toContain("studentWebhookConfig()");
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
-    ).toContain("studentWebhookProcessesWhilePaymentsOff(event.type)");
+    ).toContain("studentWebhookRecordsEvent(");
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
     ).toContain("!verifyEnrollmentSignature(");
@@ -1393,6 +1393,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');
     expect(page).toContain("refundedRosterPaymentLabel");
     expect(page).toContain("r.inventory_released_at");
+    expect(page).toContain("r.inventory_released_by");
     const enroll = await readFile("app/enroll/page.tsx", "utf8");
     expect(enroll).toContain("live?.remaining");
     expect(enroll).toContain("${Math.max(0, remaining)} seats available");

@@ -122,7 +122,7 @@ export default async function StudentRoster() {
                   r.email,
                   refundedRosterPaymentLabel(
                     config?.mode,
-                    r.inventory_released_at,
+                    r.inventory_released_at || r.inventory_released_by,
                   ),
                 ].map((v, i) => (
                   <td key={i} className="border-b p-3">

@@ -1301,6 +1301,8 @@ test.describe("student enrollment isolated full stack", () => {
         sessionId,
         expiresAt,
         status: "refunded",
+        releasedAt: true,
+        releasedBy: "staff@example.test",
       },
       releaseRefundedSeat: {
         id: planted,
