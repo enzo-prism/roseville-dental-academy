@@ -33,7 +33,7 @@ Upcoming dates:
 - Dental Assisting: November 20 (Friday class); December 5 (Saturday class), 2026. October 12 is full and elapsed.
 - BLS: October 17; November 7; December 5, 2026.
 - Infection Control: November 14; December 5, 2026 (October 17, 2026 is full).
-- Radiation Safety: November 7; December 5, 2026 (October 17, 2026 is full).
+- Radiation Safety: December 5, 2026 (October 17 and November 7, 2026 are full).
 - Coronal Polish: November 14; December 12, 2026 (October 24, 2026 is full).
 - Sealants: December 12, 2026 (October 24 and November 14, 2026 are full).
 
@@ -82,6 +82,12 @@ recognize both the primary-only Meta PageView and the configured two-pixel
 The Dental Assisting announcement now promotes Friday November 20 and Saturday
 December 5 with a new dismissal key. The popup stays closed if a visitor is
 already using a lead form.
+
+October 21 update: the November 7, 2026 Radiation Safety / X-ray class is
+full. The committed development fixture now uses `full`; December 5 remains
+open. November 7 stays visible with a Full badge and is omitted from open-date
+suggestions, request-form choices, FAQ date summaries, and CourseInstance schema.
+BLS on November 7 stays open.
 
 Elapsed dates are excluded from upcoming cards, dates, forms, and CourseInstance
 schema. Sold-out (`full`) dates stay on the page with a Full badge but are omitted
