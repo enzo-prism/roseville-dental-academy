@@ -459,6 +459,67 @@ try {
     }
   });
 
+  await test("N13 released refunded seat does not block resolve enrolled", async () => {
+    const refundedId = randomUUID();
+    const expiredId = randomUUID();
+    const resolveOffer = "99999999-9999-4999-8999-999999999994";
+    await admin.query(
+      `INSERT INTO student_enrollment_offerings(
+        id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled
+      ) VALUES ($1,'test','infection-control','2099-12-16',39500,11,$2,$3,$4,now(),'resolve released open',true)`,
+      [resolveOffer, policyVersion, policyHash, policyText],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-12-16',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      [
+        refundedId,
+        resolveOffer,
+        "14".repeat(32),
+        "Released Resolve Adult",
+        "released-resolve-lock@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query("SELECT release_refunded_student_seat($1,$2)", [
+      refundedId,
+      "staff@example.test",
+    ]);
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-12-16',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      [
+        expiredId,
+        resolveOffer,
+        "15".repeat(32),
+        "Can Enroll Adult",
+        "can-enroll@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_released_open','paid_after_release')",
+      [expiredId],
+    );
+    await admin.query(
+      "SELECT resolve_student_enrollment_review($1,'cs_test_released_open','enrolled',$2)",
+      [expiredId, "staff@example.test"],
+    );
+    const enrolled = await admin.query(
+      "SELECT status FROM student_enrollments WHERE id=$1",
+      [expiredId],
+    );
+    if (enrolled.rows[0]?.status !== "paid") {
+      throw new Error(
+        "resolve enrolled must succeed after the refunded seat is released (N13)",
+      );
+    }
+  });
+
   await test("M55 already-resolved reviews cannot change resolution", async () => {
     const reviewId = randomUUID();
     await admin.query(

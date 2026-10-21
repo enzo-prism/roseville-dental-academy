@@ -226,6 +226,11 @@ test.describe("student enrollment isolated full stack", () => {
         })
       ).status(),
     ).toBe(503);
+    const lost = (await evidence()).student_enrollments.find(
+      (r: { id: string }) => r.id === data.id,
+    );
+    expect(lost?.status).toBe("reserved");
+    expect(lost?.stripe_session_id).toBeNull();
     await control({});
     const result = await request.post("/api/student-enrollment/reconcile", {
       data: { id: data.id },
@@ -1334,6 +1339,27 @@ test.describe("student enrollment isolated full stack", () => {
     expect(roster).not.toContain("TEST ONLY · refunded</");
     expect(roster).not.toContain("refunded — not sellable until released");
     expect(roster).not.toContain(`live-hold-${foreign}@example.test`);
+    const reservedHold = randomUUID();
+    const reservedEmail = `reserved-roster-${reservedHold}@example.test`;
+    await control({
+      plantSessionlessHold: {
+        id: reservedHold,
+        offeringId: december,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Reserved Roster Adult",
+        email: reservedEmail,
+        phone: "916 555 0111",
+        expiresAt,
+      },
+    });
+    const reservedRoster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(reservedRoster).toContain(reservedEmail);
+    expect(reservedRoster).toContain("unbound");
+    expect(reservedRoster).not.toContain("TEST ONLY · paid");
   });
   test("/enroll remaining matches checkout when a refunded seat still occupies", async ({
     request,
@@ -1355,6 +1381,7 @@ test.describe("student enrollment isolated full stack", () => {
     });
     const enroll = await (await request.get("/enroll")).text();
     expect(enroll).toMatch(/0 seats available/);
+    expect(enroll).not.toMatch(/12 seats available/);
     expect(
       (
         await request.post("/api/student-enrollment/checkout", {
@@ -1363,5 +1390,15 @@ test.describe("student enrollment isolated full stack", () => {
         })
       ).status(),
     ).toBe(409);
+    await control({
+      releaseRefundedSeat: {
+        id: planted,
+        actor: "staff@example.test",
+      },
+    });
+    const afterRelease = await (await request.get("/enroll")).text();
+    expect(afterRelease).toMatch(/1 seats available/);
+    expect(afterRelease).not.toMatch(/0 seats available/);
+    expect(afterRelease).not.toMatch(/12 seats available/);
   });
 });

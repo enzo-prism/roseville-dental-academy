@@ -1,7 +1,7 @@
 // Applies one source mutant at a time, runs the student suite + lock suite,
 // records that the mutant is killed, then restores the file.
 import { spawn } from "node:child_process";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -9,11 +9,19 @@ const logPath = resolve(root, "evidence/student-enrollment-mutants.log");
 
 const mutants = [
   {
+    id: "CONTROL",
+    file: "lib/student-enrollment.ts",
+    find: "export function studentConfig(): StudentConfig | null {\n  return readStudentConfig(true);\n}",
+    replace:
+      "export function studentConfig(): StudentConfig | null {\n  return readStudentConfig(true); // CONTROL no-op\n}",
+    control: true,
+  },
+  {
     id: "M24",
     file: "app/api/student-enrollment/checkout/route.ts",
     find: "          if (!recovered && !isStudentIdempotencyConflict(error))\n            await releaseUnboundStudentHold(held.id);",
     replace:
-      "          if (!recovered)\n            await releaseUnboundStudentHold(held.id);",
+      "          if (!isStudentIdempotencyConflict(error))\n            await releaseUnboundStudentHold(held.id);",
   },
   {
     id: "M26",
@@ -42,8 +50,14 @@ const mutants = [
   {
     id: "M34",
     file: "db/seeds/infection-control-offerings.test.sql",
-    find: "  IF n <> 2 THEN",
-    replace: "  IF n < 2 THEN",
+    find: "  IF n <> 2 THEN\n    RAISE EXCEPTION 'TEST offering seed verify failed: expected 2 rows, found %', n;\n  END IF;\n",
+    replace: "",
+  },
+  {
+    id: "M34L",
+    file: "db/seeds/infection-control-offerings.sql",
+    find: "  IF n <> 2 THEN\n    RAISE EXCEPTION 'Live offering seed verify failed: expected 2 rows, found %', n;\n  END IF;\n",
+    replace: "",
   },
   {
     id: "M49",
@@ -57,6 +71,12 @@ const mutants = [
     find: "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN",
     replace:
       "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND status IN ('reserved','paid'))>=offer.capacity THEN",
+  },
+  {
+    id: "M52b",
+    file: "app/enroll/page.tsx",
+    find: "              const remaining = live?.remaining;",
+    replace: "              const remaining = INFECTION_CONTROL_OFFERING_CAPACITY;",
   },
   {
     id: "M55",
@@ -111,22 +131,23 @@ const mutants = [
   {
     id: "N12",
     file: "db/migrations/005_student_enrollment.sql",
-    find: "  IF EXISTS(SELECT 1 FROM student_enrollments WHERE offering_id=OLD.id) AND\n    (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash,NEW.policy_text)\n    IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash,OLD.policy_text) THEN RAISE EXCEPTION 'Offering already has enrollments'; END IF;\n",
-    replace: "",
+    find: "    (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash,NEW.policy_text)\n    IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash,OLD.policy_text)",
+    replace:
+      "    (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash)\n    IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash)",
   },
   {
     id: "N13",
     file: "db/migrations/005_student_enrollment.sql",
     find: "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN",
     replace:
-      "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND status IN ('reserved','paid'))>=offer.capacity THEN",
+      "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND student_enrollment_occupies_seat(status,NULL))>=offer.capacity THEN",
   },
   {
     id: "N14",
     file: "lib/student-enrollment.ts",
     find: "    WHERE e.offering_id=o.id AND student_enrollment_occupies_seat(e.status,e.inventory_released_at)))::int AS remaining",
     replace:
-      "    WHERE e.offering_id=o.id AND e.status IN ('reserved','paid')))::int AS remaining",
+      "    WHERE e.offering_id=o.id AND student_enrollment_occupies_seat(e.status,NULL)))::int AS remaining",
   },
   {
     id: "N15",
@@ -159,16 +180,50 @@ const mutants = [
   {
     id: "N22",
     file: "app/enrollment-pilot/roster/page.tsx",
-    find: "    rows = roster.filter((row) => row.status === \"paid\");\n    refunded = roster.filter((row) => row.status === \"refunded\");",
-    replace:
-      "    rows = roster;\n    refunded = roster.filter((row) => row.status === \"refunded\");",
+    find: "    rows = roster.filter((row) => row.status === \"paid\");",
+    replace: "    rows = roster.filter((row) => row.status !== \"refunded\");",
   },
   {
-    id: "M52b",
-    file: "app/enroll/page.tsx",
-    find: "                  {typeof remaining === \"number\"\n                    ? ` · ${Math.max(0, remaining)} seats available`\n                    : ` · ${INFECTION_CONTROL_OFFERING_CAPACITY} seats`}",
-    replace:
-      "                  {` · ${INFECTION_CONTROL_OFFERING_CAPACITY} seats`}",
+    id: "W03",
+    file: "lib/student-enrollment-stripe.ts",
+    find: "    charge.refunded === true &&\n    charge.amount_refunded === charge.amount &&\n    charge.amount === session.amount_total",
+    replace: "    charge.amount_refunded > 0",
+  },
+  {
+    id: "W04",
+    file: "app/api/student-enrollment/webhook/route.ts",
+    find: "      if (existing?.status === \"paid\") {",
+    replace: "      if (existing) {",
+  },
+  {
+    id: "W05",
+    file: "app/api/student-enrollment/webhook/route.ts",
+    find: "  const paymentsEnabled = studentConfig() !== null;",
+    replace: "  const paymentsEnabled = true;",
+  },
+  {
+    id: "W06",
+    file: "lib/student-enrollment-stripe.ts",
+    find: "    allowExpiredOrphan: held.status === \"expired\",",
+    replace: "    allowExpiredOrphan: true,",
+  },
+  {
+    id: "W08",
+    file: "db/migrations/005_student_enrollment.sql",
+    find: "DROP FUNCTION IF EXISTS resolve_student_enrollment_review(uuid, text, text);\n",
+    replace: "",
+  },
+  {
+    id: "W09",
+    file: "app/api/student-enrollment/webhook/route.ts",
+    find: "        boundToSession,",
+    replace: "        false,",
+  },
+  {
+    id: "W10",
+    file: "app/api/student-enrollment/webhook/route.ts",
+    find: "      if (existing?.status === \"paid\") {\n        try {\n          await deliverStudentConfirmation(existing, config);\n        } catch {\n          /* Mail stays queued; payment state is already durable. */\n        }\n      }\n",
+    replace: "",
   },
 ];
 
@@ -191,6 +246,27 @@ function run(command, args, extraEnv = {}) {
       resolveExit({ code: code ?? 1, stdout, stderr });
     });
   });
+}
+
+function failingNames(stdout, stderr) {
+  const names = [];
+  for (const line of `${stdout}\n${stderr}`.split("\n")) {
+    const play = line.match(
+      /✘\s+\d+\s+.*?›\s+(.+?)(?:\s+\(\d[\d.]*\s*m?s\))?$/,
+    );
+    if (play) names.push(play[1].trim());
+    const numbered = line.match(/^\s*\d+\)\s+(?:\[.*?\]\s+›\s+)?(.+)$/);
+    if (numbered) names.push(numbered[1].trim());
+    const lock = line.match(/^Error: (.+)$/);
+    if (lock) names.push(lock[1].trim());
+  }
+  return [...new Set(names)];
+}
+
+function lockDbUnreachable(result) {
+  return /ECONNREFUSED|Connection refused|connect ENOENT|the database system is starting|must be the local CI lock database|password authentication failed|database \"rda_locks\" does not exist/i.test(
+    `${result.stdout}\n${result.stderr}`,
+  );
 }
 
 const only = process.argv.slice(2).filter((value) => !value.startsWith("-"));
@@ -218,12 +294,18 @@ process.on("SIGTERM", () => {
   restoreAll().finally(() => process.exit(1));
 });
 
+const cleanBuild = async () => {
+  await rm(resolve(root, ".next"), { recursive: true, force: true });
+  return run("bash", ["-lc", "pnpm build"]);
+};
+
 for (const mutant of selected) {
   const absolute = resolve(root, mutant.file);
   const original = await readFile(absolute, "utf8");
   if (!original.includes(mutant.find)) {
-    lines.push(`${mutant.id} SURVIVED (snippet missing in ${mutant.file})`);
+    lines.push(`${mutant.id} ERROR (snippet missing in ${mutant.file})`);
     await writeFile(logPath, `${lines.join("\n")}\n`);
+    process.exitCode = 1;
     continue;
   }
   restorers.set(absolute, original);
@@ -232,10 +314,35 @@ for (const mutant of selected) {
   const build = needsBuild
     ? await run("bash", ["-lc", "pnpm build"])
     : { code: 0, stdout: "skipped (sql mutant)", stderr: "" };
-  const suite =
-    build.code === 0
-      ? await run("bash", ["-lc", "pnpm test:student-enrollment"])
-      : { code: 1, stdout: "", stderr: "build failed; suite skipped" };
+  if (build.code !== 0) {
+    await writeFile(absolute, original);
+    restorers.delete(absolute);
+    if (needsBuild) {
+      const rebuilt = await cleanBuild();
+      if (rebuilt.code !== 0) {
+        lines.push(
+          `${mutant.id} ERROR file=${mutant.file}`,
+          `  reason=build failure after restore`,
+          `  build_exit=${build.code} restore_build_exit=${rebuilt.code}`,
+          "",
+        );
+        await writeFile(logPath, `${lines.join("\n")}\n`);
+        process.exitCode = 1;
+        continue;
+      }
+    }
+    lines.push(
+      `${mutant.id} ERROR file=${mutant.file}`,
+      `  reason=build failure`,
+      `  build_exit=${build.code}`,
+      "",
+    );
+    await writeFile(logPath, `${lines.join("\n")}\n`);
+    process.exitCode = 1;
+    console.log(`${mutant.id} ERROR`);
+    continue;
+  }
+  const suite = await run("bash", ["-lc", "pnpm test:student-enrollment"]);
   const locks = await run("bash", ["-lc", "pnpm test:student-enrollment-locks"], {
     STUDENT_LOCK_DATABASE_URL:
       process.env.STUDENT_LOCK_DATABASE_URL ??
@@ -243,7 +350,44 @@ for (const mutant of selected) {
   });
   await writeFile(absolute, original);
   restorers.delete(absolute);
+  if (needsBuild) {
+    const rebuilt = await cleanBuild();
+    if (rebuilt.code !== 0) {
+      lines.push(
+        `${mutant.id} ERROR file=${mutant.file}`,
+        `  reason=clean rebuild after restore failed`,
+        `  restore_build_exit=${rebuilt.code}`,
+        "",
+      );
+      await writeFile(logPath, `${lines.join("\n")}\n`);
+      process.exitCode = 1;
+      console.log(`${mutant.id} ERROR`);
+      continue;
+    }
+  }
+  if (lockDbUnreachable(locks)) {
+    lines.push(
+      `${mutant.id} ERROR file=${mutant.file}`,
+      `  reason=lock database unreachable`,
+      `  build_exit=${build.code} suite_exit=${suite.code} locks_exit=${locks.code}`,
+      "",
+    );
+    await writeFile(logPath, `${lines.join("\n")}\n`);
+    process.exitCode = 1;
+    console.log(`${mutant.id} ERROR`);
+    continue;
+  }
   const killed = suite.code !== 0 || locks.code !== 0;
+  const status = mutant.control
+    ? killed
+      ? "ERROR"
+      : "SURVIVED"
+    : killed
+      ? "KILLED"
+      : "SURVIVED";
+  const suiteFails = failingNames(suite.stdout, suite.stderr);
+  const lockFails = failingNames(locks.stdout, locks.stderr);
+  const failedTests = [...suiteFails, ...lockFails];
   const suiteLines = `${suite.stdout}\n${suite.stderr}`.split("\n");
   const suiteHits = suiteLines.filter((line) =>
     /✘|failed|Error:|ELIFECYCLE|expected|toContain|toBe|toHaveLength|toThrow/.test(
@@ -261,28 +405,40 @@ for (const mutant of selected) {
   const lockTail = (lockHits.length ? lockHits.slice(-12) : lockLines.slice(-8))
     .join("\n");
   lines.push(
-    `${mutant.id} ${killed ? "KILLED" : "SURVIVED"} file=${mutant.file}`,
+    `${mutant.id} ${status} file=${mutant.file}`,
     `  build_exit=${build.code} suite_exit=${suite.code} locks_exit=${locks.code}`,
+    killed
+      ? `  failed_tests: ${failedTests.length ? failedTests.join(" | ") : "(see tail)"}`
+      : "  failed_tests: none",
     `  suite_tail:\n${suiteTail}`,
     `  locks_tail:\n${lockTail}`,
     "",
   );
   await writeFile(logPath, `${lines.join("\n")}\n`);
-  console.log(`${mutant.id} ${killed ? "KILLED" : "SURVIVED"}`);
-  if (!killed) process.exitCode = 1;
+  console.log(`${mutant.id} ${status}`);
+  if (mutant.control && killed) process.exitCode = 1;
+  if (!mutant.control && !killed) process.exitCode = 1;
 }
 
 await restoreAll();
 const killedIds = selected
+  .filter((mutant) => !mutant.control)
   .map((mutant) => mutant.id)
   .filter((id) => lines.some((line) => line.startsWith(`${id} KILLED`)));
 const survivedIds = selected
+  .filter((mutant) => !mutant.control)
   .map((mutant) => mutant.id)
-  .filter((id) => !killedIds.includes(id));
+  .filter((id) => lines.some((line) => line.startsWith(`${id} SURVIVED`)));
+const errorIds = selected
+  .map((mutant) => mutant.id)
+  .filter((id) => lines.some((line) => line.startsWith(`${id} ERROR`)));
+const controlLine = lines.find((line) => line.startsWith("CONTROL "));
 lines.push(
-  `summary: ${killedIds.length}/${selected.length} KILLED, ${survivedIds.length} SURVIVED`,
+  `summary: ${killedIds.length} KILLED, ${survivedIds.length} SURVIVED, ${errorIds.length} ERROR`,
   killedIds.join(" "),
   survivedIds.length ? `survivors: ${survivedIds.join(" ")}` : "",
+  errorIds.length ? `errors: ${errorIds.join(" ")}` : "",
+  controlLine ?? "CONTROL missing",
   "reproduce: STUDENT_LOCK_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/rda_locks pnpm test:student-enrollment-mutants",
   "",
 );

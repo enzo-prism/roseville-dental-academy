@@ -316,6 +316,8 @@ export async function recordStudentSession(
     return held;
   }
   if (held.status === "reserved") {
+    if (eventType === "charge.refunded" && held.stripe_session_id == null)
+      throw new Error("Session identity conflict");
     try {
       await bindStudentSession(held, session.id);
     } catch (error) {
@@ -347,10 +349,13 @@ export async function recordStudentSession(
     case "checkout.session.completed":
     case "checkout.session.expired":
     case "checkout.session.async_payment_succeeded":
-    case "charge.refunded":
     case "reconcile":
       if (session.status === "complete" && session.payment_status === "paid")
         outcome = "paid";
+      if (session.status === "expired" && session.payment_status === "unpaid")
+        outcome = "expired";
+      break;
+    case "charge.refunded":
       if (session.status === "expired" && session.payment_status === "unpaid")
         outcome = "expired";
       break;

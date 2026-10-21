@@ -373,10 +373,15 @@ verification purchase:
    `DELETE` from `student_enrollments` to free capacity. Do this before the
    live-payments kill switch so the refund webhook can land while Checkout is
    still configured. If the kill switch was already flipped, the webhook still
-   accepts `charge.refunded` (and a fully refunded Checkout session) and still
-   drains pending paid confirmations while mail stays enabled.
+   records a paid `checkout.session.completed` or `async_payment_succeeded` for
+   a row already bound to that session, still accepts `charge.refunded` (and a
+   fully refunded Checkout session), and still queues paid confirmations even
+   when live email is off. Unbound or unverifiable paid completions return 503
+   so Stripe retries; never ACK those as ignored.
 3. Leave `RDA_STUDENT_EMAIL_LIVE_ENABLED` on until every paid confirmation has
-   left `pending`/`sending`, then unset it.
+   left `pending`/`sending`, then unset it. Later webhooks still record refunds
+   and other state changes while mail is disabled; they queue the outbox
+   instead of returning 503.
 4. Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` back to anything except `true` and
    disable the two live offerings (`enabled=false`). `/enroll` then fail-closes.
    New Checkout sessions stop. Do not delete offerings that already have

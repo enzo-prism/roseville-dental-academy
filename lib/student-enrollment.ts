@@ -99,6 +99,12 @@ export function studentWebhookConfig(): StudentConfig | null {
 export function studentWebhookProcessesWhilePaymentsOff(eventType: string) {
   return eventType === "charge.refunded";
 }
+export function studentWebhookPaidCompletionEvent(eventType: string) {
+  return (
+    eventType === "checkout.session.completed" ||
+    eventType === "checkout.session.async_payment_succeeded"
+  );
+}
 export function studentWebhookRecordsEvent(
   eventType: string,
   paymentsEnabled: boolean,
@@ -108,6 +114,17 @@ export function studentWebhookRecordsEvent(
     paymentsEnabled ||
     studentWebhookProcessesWhilePaymentsOff(eventType) ||
     fullyRefunded
+  );
+}
+export function studentWebhookShouldRecord(
+  eventType: string,
+  paymentsEnabled: boolean,
+  fullyRefunded: boolean,
+  boundToSession: boolean,
+) {
+  return (
+    studentWebhookRecordsEvent(eventType, paymentsEnabled, fullyRefunded) ||
+    (studentWebhookPaidCompletionEvent(eventType) && boundToSession)
   );
 }
 export function studentPublicEnrollCtaEnabled() {

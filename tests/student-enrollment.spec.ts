@@ -27,8 +27,10 @@ import {
   studentPublicEnrollCtaEnabled,
   studentPublicEnrollCtas,
   studentWebhookConfig,
+  studentWebhookPaidCompletionEvent,
   studentWebhookProcessesWhilePaymentsOff,
   studentWebhookRecordsEvent,
+  studentWebhookShouldRecord,
   STUDENT_POLICY_HASH,
   type StudentEnrollment,
 } from "@/lib/student-enrollment";
@@ -38,6 +40,7 @@ import {
   isStripeIdempotencyConflict,
   isStudentIdempotencyConflict,
   StudentProviderError,
+  studentSessionIsFullyRefunded,
   studentSessionParameters,
   type StudentSession,
 } from "@/lib/student-enrollment-stripe";
@@ -143,8 +146,30 @@ test("student configuration fails closed and never mixes live keys, wrong mercha
     expect(
       studentWebhookRecordsEvent("checkout.session.completed", false, true),
     ).toBe(true);
+    expect(studentWebhookPaidCompletionEvent("checkout.session.completed")).toBe(
+      true,
+    );
     expect(
-      studentWebhookRecordsEvent("checkout.session.completed", false, false),
+      studentWebhookPaidCompletionEvent(
+        "checkout.session.async_payment_succeeded",
+      ),
+    ).toBe(true);
+    expect(studentWebhookPaidCompletionEvent("charge.refunded")).toBe(false);
+    expect(
+      studentWebhookShouldRecord(
+        "checkout.session.completed",
+        false,
+        false,
+        true,
+      ),
+    ).toBe(true);
+    expect(
+      studentWebhookShouldRecord(
+        "checkout.session.completed",
+        false,
+        false,
+        false,
+      ),
     ).toBe(false);
     expect(studentPublicEnrollCtaEnabled()).toBe(false);
     expect(studentPublicEnrollCtas()).toHaveLength(0);
@@ -219,6 +244,54 @@ test("live flags without the public CTA flag render 0 Infection Control Enroll C
   } finally {
     process.env = before;
   }
+});
+test("a partial refund is never treated as a full refund", () => {
+  const charge = {
+    id: "ch_partial",
+    payment_intent: "pi_partial",
+    amount: 39500,
+    amount_refunded: 10000,
+    currency: "usd",
+    refunded: false,
+    livemode: false,
+  };
+  const session = {
+    object: "checkout.session",
+    id: "cs_test_partial",
+    livemode: false,
+    amount_total: 39500,
+    currency: "usd",
+    mode: "payment",
+    status: "complete",
+    payment_status: "paid",
+    expires_at: 1,
+    client_reference_id: "enroll",
+    metadata: {},
+    payment_intent: { id: "pi_partial", latest_charge: charge },
+  } as StudentSession;
+  expect(studentSessionIsFullyRefunded(session)).toBe(false);
+  expect(
+    studentSessionIsFullyRefunded({
+      ...session,
+      payment_intent: {
+        id: "pi_partial",
+        latest_charge: {
+          ...charge,
+          refunded: true,
+          amount_refunded: 39500,
+        },
+      },
+    }),
+  ).toBe(true);
+  expect(
+    studentSessionIsFullyRefunded({
+      ...session,
+      payment_intent: {
+        id: "pi_partial",
+        latest_charge: { ...charge, refunded: true, amount_refunded: 10000 },
+      },
+    }),
+  ).toBe(false);
 });
 test("idempotency conflicts require both HTTP 409 and idempotency_key_in_use", () => {
   expect(isStripeIdempotencyConflict(409, "idempotency_key_in_use")).toBe(true);
@@ -383,6 +456,7 @@ test("student consent and immutable checkout contract reject tampering", () => {
     { amount_total: 1 },
     { currency: "eur" },
     { expires_at: 1 },
+    { id: "cs_test_other", expires_at: 1 },
     { metadata: { ...session.metadata, course_date: "2026-11-15" } },
     { metadata: { ...session.metadata, environment: "live" } },
     { metadata: { ...session.metadata, integration: "other" } },
@@ -390,6 +464,21 @@ test("student consent and immutable checkout contract reject tampering", () => {
     expect(() =>
       assertStudentSession({ ...session, ...extra }, held, config),
     ).toThrow();
+  expect(() =>
+    assertStudentSession(
+      { ...session, expires_at: 1 },
+      { ...held, status: "reserved" } as StudentEnrollment,
+      config,
+    ),
+  ).toThrow();
+  expect(() =>
+    assertStudentSession(
+      { ...session, expires_at: 1 },
+      { ...held, status: "expired" } as StudentEnrollment,
+      config,
+      { allowExpiredOrphan: true },
+    ),
+  ).not.toThrow();
 });
 test("student database enforces shared inventory, separate modes, replay, roster and atomic mail", async () => {
   const db = await PGlite.create();
@@ -403,6 +492,9 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(migration).toContain("AND o.mode='live'");
     expect(migration).toContain("AND mode=p_mode FOR UPDATE");
     expect(migration).toContain("resolve_student_enrollment_review");
+    expect(migration).toContain(
+      "DROP FUNCTION IF EXISTS resolve_student_enrollment_review(uuid, text, text);",
+    );
     expect(migration).toContain("RAISE EXCEPTION 'Class is full'");
     expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
       "FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true",
@@ -416,6 +508,9 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     expect(lockSuite).not.toMatch(/M22b refunded/);
     expect(lockSuite).toContain("student-enrollment-locks: ${passed} passed");
+    expect(
+      await readFile("scripts/test-student-enrollment.mjs", "utf8"),
+    ).toContain("tests/student-enrollment-webhook-off.spec.ts");
     const releaseGate = await readFile(
       ".github/workflows/release-gate.yml",
       "utf8",
@@ -451,7 +546,18 @@ test("student database enforces shared inventory, separate modes, replay, roster
     ).toContain("studentWebhookConfig()");
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
-    ).toContain("studentWebhookRecordsEvent(");
+    ).toContain("studentWebhookShouldRecord(");
+    expect(
+      await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
+    ).toContain("studentWebhookPaidCompletionEvent(");
+    expect(
+      await readFile("lib/student-enrollment-stripe.ts", "utf8"),
+    ).toContain('eventType === "charge.refunded" && held.stripe_session_id == null');
+    expect(
+      await readFile("app/api/student-enrollment/checkout/route.ts", "utf8"),
+    ).toContain(
+      "if (!recovered && !isStudentIdempotencyConflict(error))",
+    );
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
     ).toContain("!verifyEnrollmentSignature(");
@@ -1189,6 +1295,38 @@ test("claimed enrollment mutants fail when applied at their source lines", async
       "SELECT 1 FROM pg_proc WHERE proname='resolve_student_enrollment_review' AND pronargs=3",
     );
     expect(threeArg.rows).toHaveLength(0);
+    await db.exec(`
+      CREATE FUNCTION resolve_student_enrollment_review(p_id uuid, p_session text, p_resolution text)
+      RETURNS boolean LANGUAGE plpgsql AS $$
+      BEGIN
+        RETURN true;
+      END;
+      $$;
+    `);
+    expect(
+      (
+        await db.query(
+          "SELECT 1 FROM pg_proc WHERE proname='resolve_student_enrollment_review' AND pronargs=3",
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await db.exec(
+      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+    );
+    expect(
+      (
+        await db.query(
+          "SELECT 1 FROM pg_proc WHERE proname='resolve_student_enrollment_review' AND pronargs=3",
+        )
+      ).rows,
+    ).toHaveLength(0);
+    expect(
+      (
+        await db.query(
+          "SELECT 1 FROM pg_proc WHERE proname='resolve_student_enrollment_review' AND pronargs=4",
+        )
+      ).rows.length,
+    ).toBeGreaterThan(0);
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,0,$2,$3,$4,now(),'mutants',true)",
       [
@@ -1229,6 +1367,22 @@ test("claimed enrollment mutants fail when applied at their source lines", async
         [offer],
       ),
     ).rejects.toThrow("Offering already has enrollments");
+    const policyChecks = (
+      await db.query<{ conname: string }>(
+        "SELECT conname FROM pg_constraint WHERE conrelid='student_enrollment_offerings'::regclass AND contype='c' AND pg_get_constraintdef(oid) ILIKE '%policy_text%'",
+      )
+    ).rows;
+    for (const check of policyChecks) {
+      await db.exec(
+        `ALTER TABLE student_enrollment_offerings DROP CONSTRAINT ${check.conname}`,
+      );
+    }
+    await expect(
+      db.query(
+        "UPDATE student_enrollment_offerings SET policy_text=$2 WHERE id=$1",
+        [offer, `${CANCELLATION_POLICY_PARAGRAPHS.join("\n\n")}\nchanged`],
+      ),
+    ).rejects.toThrow("Offering already has enrollments");
     const leftover = randomUUID();
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-10-10',39500,0,$2,$3,$4,now(),'extra leftover',true)",
@@ -1254,6 +1408,23 @@ test("claimed enrollment mutants fail when applied at their source lines", async
       "DELETE FROM student_enrollment_offerings WHERE id=$1",
       [leftover],
     );
+    const liveLeftover = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2099-02-15',39500,0,$2,$3,$4,now(),'live leftover',false)",
+      [
+        liveLeftover,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    await allowLiveOfferingSeed(db);
+    await expect(
+      applyOfferingSeed(db, "db/seeds/infection-control-offerings.sql"),
+    ).rejects.toThrow(/expected 2 rows/i);
+    await db.query("DELETE FROM student_enrollment_offerings WHERE id=$1", [
+      liveLeftover,
+    ]);
     const liveNoncanonical = randomUUID();
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2099-01-15',39500,0,$2,$3,$4,now(),'noncanonical live',true)",
@@ -1364,6 +1535,50 @@ test("claimed enrollment mutants fail when applied at their source lines", async
       refundedId,
       "staff@example.test",
     ]);
+    const afterRelease = await studentOfferings(
+      {
+        mode: "test",
+        key: "sk_test_fixture",
+        webhookSecret: "whsec_fixture",
+        origin: "http://127.0.0.1:3117",
+        account: "acct_fixture",
+      },
+      pgliteStudentDatabase(db),
+    );
+    expect(afterRelease.find((row) => row.id === remainingOffer)?.remaining).toBe(
+      1,
+    );
+    const releasedResolve = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-07-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      [
+        releasedResolve,
+        remainingOffer,
+        "25".repeat(32),
+        "Released Resolve Adult",
+        "released-resolve@example.test",
+        "916 555 0100",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_released_resolve','paid_after_release')",
+      [releasedResolve],
+    );
+    await db.query(
+      "SELECT resolve_student_enrollment_review($1,'cs_test_released_resolve','enrolled',$2)",
+      [releasedResolve, "staff@example.test"],
+    );
+    expect(
+      (
+        await db.query<{ status: string }>(
+          "SELECT status FROM student_enrollments WHERE id=$1",
+          [releasedResolve],
+        )
+      ).rows[0].status,
+    ).toBe("paid");
     const roster = await db.query<{
       inventory_released_at: string | null;
       status: string;

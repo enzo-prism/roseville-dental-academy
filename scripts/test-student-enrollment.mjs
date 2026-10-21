@@ -82,6 +82,7 @@ try {
         "tests/student-enrollment.spec.ts",
         "tests/student-enrollment-api.spec.ts",
         "tests/student-enrollment-mail.spec.ts",
+        "tests/student-enrollment-webhook-off.spec.ts",
       ],
       { cwd: root, env, stdio: "inherit" },
     );
