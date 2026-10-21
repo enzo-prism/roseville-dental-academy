@@ -78,7 +78,7 @@ async function provider(
     } catch {
       /* Status 409 is enough to recover the in-flight Checkout session. */
     }
-    if (response.status === 409 || code === "idempotency_key_in_use")
+    if (response.status === 409 && code === "idempotency_key_in_use")
       throw new StudentProviderError(
         "Payment provider idempotency conflict",
         "idempotency_key_in_use",
@@ -272,6 +272,20 @@ export async function recordStudentSession(
   if (held.status === "expired") {
     if (session.status === "complete" && session.payment_status === "paid") {
       await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'paid_after_release')`;
+      const orphanCharge =
+        typeof session.payment_intent === "object"
+          ? session.payment_intent?.latest_charge
+          : null;
+      if (
+        orphanCharge &&
+        orphanCharge.amount === held.amount &&
+        orphanCharge.currency === held.currency &&
+        orphanCharge.livemode === (config.mode === "live") &&
+        orphanCharge.refunded === true &&
+        orphanCharge.amount_refunded === held.amount
+      ) {
+        await studentDatabase()`SELECT resolve_student_enrollment_review(${held.id}::uuid,${session.id},'refunded')`;
+      }
     }
     return held;
   }

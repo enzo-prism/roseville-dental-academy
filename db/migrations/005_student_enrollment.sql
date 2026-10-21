@@ -178,11 +178,42 @@ $$;
 -- Orphan Checkout payments against released/expired rows need staff review.
 -- Re-applying this file is required so production picks up new functions/views.
 CREATE TABLE IF NOT EXISTS student_enrollment_reviews (
-  enrollment_id uuid PRIMARY KEY REFERENCES student_enrollments(id),
+  enrollment_id uuid NOT NULL REFERENCES student_enrollments(id),
   session_id text NOT NULL,
   reason text NOT NULL CHECK (reason IN ('paid_after_release')),
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  resolved_at timestamptz,
+  resolution text CHECK (resolution IS NULL OR resolution IN ('enrolled','dismissed','refunded')),
+  PRIMARY KEY (enrollment_id, session_id)
 );
+ALTER TABLE student_enrollment_reviews ADD COLUMN IF NOT EXISTS resolved_at timestamptz;
+ALTER TABLE student_enrollment_reviews ADD COLUMN IF NOT EXISTS resolution text;
+DO $reviews_pk$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='student_enrollment_reviews'::regclass
+      AND conname='student_enrollment_reviews_pkey'
+      AND array_length(conkey, 1) = 1
+  ) THEN
+    ALTER TABLE student_enrollment_reviews DROP CONSTRAINT student_enrollment_reviews_pkey;
+    ALTER TABLE student_enrollment_reviews ADD PRIMARY KEY (enrollment_id, session_id);
+  END IF;
+END
+$reviews_pk$;
+DO $reviews_resolution$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='student_enrollment_reviews'::regclass
+      AND pg_get_constraintdef(oid) ILIKE '%resolution%enrolled%dismissed%refunded%'
+  ) THEN
+    ALTER TABLE student_enrollment_reviews
+      ADD CONSTRAINT student_enrollment_reviews_resolution_check
+      CHECK (resolution IS NULL OR resolution IN ('enrolled','dismissed','refunded'));
+  END IF;
+END
+$reviews_resolution$;
 CREATE OR REPLACE FUNCTION flag_student_enrollment_review(p_id uuid,p_session text,p_reason text)
 RETURNS boolean LANGUAGE plpgsql AS $$
 DECLARE held student_enrollments;
@@ -193,10 +224,36 @@ BEGIN
   IF held.status <> 'expired' THEN RAISE EXCEPTION 'Review flag requires an expired enrollment'; END IF;
   INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason)
     VALUES(p_id,p_session,p_reason)
-    ON CONFLICT (enrollment_id) DO NOTHING;
-  IF NOT EXISTS (
-    SELECT 1 FROM student_enrollment_reviews WHERE enrollment_id=p_id AND session_id=p_session
-  ) THEN RAISE EXCEPTION 'Review identity conflict'; END IF;
+    ON CONFLICT (enrollment_id, session_id) DO NOTHING;
+  RETURN true;
+END;
+$$;
+-- Staff-only: never UPDATE student_enrollments.status='paid' by hand. This
+-- function refuses 'enrolled' when reserved+paid+refunded already fill capacity.
+CREATE OR REPLACE FUNCTION resolve_student_enrollment_review(p_id uuid,p_session text,p_resolution text)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE held student_enrollments; offer student_enrollment_offerings; review student_enrollment_reviews;
+BEGIN
+  IF p_resolution NOT IN ('enrolled','dismissed','refunded') THEN RAISE EXCEPTION 'Invalid review resolution'; END IF;
+  SELECT * INTO review FROM student_enrollment_reviews WHERE enrollment_id=p_id AND session_id=p_session FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown review'; END IF;
+  IF review.resolved_at IS NOT NULL THEN
+    IF review.resolution IS DISTINCT FROM p_resolution THEN RAISE EXCEPTION 'Review already resolved'; END IF;
+    RETURN false;
+  END IF;
+  SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
+  IF p_resolution='enrolled' THEN
+    IF held.status<>'expired' THEN RAISE EXCEPTION 'Review enroll requires an expired enrollment'; END IF;
+    SELECT * INTO offer FROM student_enrollment_offerings WHERE id=held.offering_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Unknown offering'; END IF;
+    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND status IN ('reserved','paid','refunded'))>=offer.capacity THEN
+      RAISE EXCEPTION 'Class is full';
+    END IF;
+    UPDATE student_enrollments SET status='paid',stripe_session_id=COALESCE(stripe_session_id,p_session),updated_at=now() WHERE id=p_id;
+    INSERT INTO student_enrollment_mail(enrollment_id) VALUES(p_id) ON CONFLICT DO NOTHING;
+  END IF;
+  UPDATE student_enrollment_reviews SET resolved_at=now(),resolution=p_resolution WHERE enrollment_id=p_id AND session_id=p_session;
   RETURN true;
 END;
 $$;

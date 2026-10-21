@@ -20,7 +20,8 @@ already exist unless `application_name = 'rda-student-offering-seed-on-live-data
 as an explicit opt-in. Both files verify the post-state.
 Live checkout and outbound email stay off until
 their separate flags are set. See `docs/student-payments.md` for isolation, access, launch gates,
-and the TEST-only cleanup SQL (do not run it from a coding task).
+the TEST-only cleanup SQL (reviews first, then events/mail/enrollments; do not run
+it from a coding task), and the separate `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` flag.
 
 The attribution schema stores only pseudonymous CRM identity, cryptographic contact hashes, ad touchpoints,
 reviewed lead-to-enrollment links, delivery totals, and postback state. It does not store names,

@@ -3,8 +3,8 @@
 Live payments are **disabled by default**. This release adds a separate student enrollment
 path at `/enroll`; it does not turn the staff-only pilot into a live ledger. No Stripe
 credential or email sender is created by the schema migration. The public Infection Control
-page adds an enrollment link only when valid live configuration and the explicit live flag
-are present. Existing inquiry forms remain available.
+page adds an enrollment link only when valid live configuration, the explicit live flag,
+and the separate public CTA flag are all present. Existing inquiry forms remain available.
 
 ## Confirmed sellable sessions
 
@@ -58,6 +58,12 @@ SELECT count(*) AS test_enrollments
   FROM student_enrollments e
   JOIN student_enrollment_offerings o ON o.id = e.offering_id
   WHERE o.mode = 'test';
+DELETE FROM student_enrollment_reviews
+ WHERE enrollment_id IN (
+   SELECT e.id FROM student_enrollments e
+   JOIN student_enrollment_offerings o ON o.id = e.offering_id
+   WHERE o.mode = 'test'
+ );
 DELETE FROM student_enrollment_events
  WHERE enrollment_id IN (
    SELECT e.id FROM student_enrollments e
@@ -133,9 +139,13 @@ Delayed payment failures remain held until an operator verifies final closure; t
 deliberately conservative. Review pending holds daily before opening further inventory.
 `bindStudentSession` writes a Checkout id only onto `status='reserved'` rows. After a
 409 `idempotency_key_in_use` race, checkout does not release the seat just because
-recovery is empty. A payment that arrives for an expired or released row (including an
-orphan session paid after a timeout) is inserted into `student_enrollment_reviews` for
-staff and the webhook acknowledges successfully instead of returning 503.
+recovery is empty. Only Stripe HTTP 409 responses whose error `code` is
+`idempotency_key_in_use` count as that conflict. A payment that arrives for an expired
+or released row (including an orphan session paid after a timeout) is inserted into
+`student_enrollment_reviews` for staff and the webhook acknowledges successfully
+instead of returning 503. A second paid orphan session for the same enrollment records
+its own review row and still returns 200. A later full refund on that orphan resolves
+the matching review as `refunded`.
 
 Signed webhooks retrieve current Stripe truth and validate the merchant, environment,
 amount, currency, client reference, expiry, and all binding metadata. Paid outcomes insert
@@ -161,6 +171,9 @@ are preferred, with only account-read and Checkout create/read/list/expire permi
 - `RDA_STUDENT_STRIPE_TEST_KEY`, `RDA_STUDENT_STRIPE_TEST_WEBHOOK_SECRET`: test/sandbox configuration.
 - `RDA_STUDENT_STRIPE_LIVE_KEY`, `RDA_STUDENT_STRIPE_LIVE_WEBHOOK_SECRET`: live configuration, only after separate approval.
 - `RDA_STUDENT_PAYMENTS_LIVE_ENABLED`: defaults off; only exact `true` permits live Checkout.
+- `RDA_STUDENT_PAYMENTS_PUBLIC_CTA`: defaults off; only exact `true` shows the public
+  "Enroll and pay in full" CTA on `/infection-control`. Live Checkout on `/enroll` does
+  not require this flag.
 - `RDA_STUDENT_EMAIL_LIVE_ENABLED`: separate default-off outbound-email flag.
 - `RDA_STUDENT_EMAIL_API_KEY`, `RDA_STUDENT_EMAIL_FROM`: Resend credential and verified academy sender, only after separate approval.
 
@@ -202,6 +215,31 @@ to `/api/student-enrollment/retry-confirmation`. A `review` send requires compar
 logs before any deliberate resend; do not reset its status blindly. Keep the pilot staff
 origin aligned with the deployed enrollment origin.
 
+Do not resolve an orphan review by running
+`UPDATE student_enrollments SET status='paid'`. That bypasses the seat cap and can
+push a class to 13/12. Use the capacity-capped function, which refuses `enrolled`
+when reserved + paid + refunded already fill the offering:
+
+```sql
+-- Review the class first, then choose enrolled, dismissed, or refunded.
+SELECT o.course_date, o.capacity, o.external_seats,
+  (SELECT count(*) FROM student_enrollments e
+    WHERE e.offering_id=o.id AND e.status IN ('reserved','paid','refunded')) AS counted
+FROM student_enrollment_offerings o
+JOIN student_enrollments e ON e.offering_id=o.id
+WHERE e.id = '<enrollment uuid>';
+SELECT resolve_student_enrollment_review(
+  '<enrollment uuid>'::uuid,
+  '<cs_... session id>',
+  'enrolled'  -- or 'dismissed' or 'refunded'
+);
+```
+
+`enrolled` converts that expired row to paid only when a seat remains. A full class
+raises `Class is full` and leaves the review open. Refund the charge or dismiss after
+staff review instead. `refunded` and `dismissed` only close the review; they do not
+change inventory.
+
 This code never initiates a refund or accepts a refund request. Follow the approved policy:
 student cancellations remain non-refundable, with no discretionary date transfer. For an
 academy-cancelled course, obtain the student's choice and operator authorization before
@@ -219,6 +257,10 @@ days; loss of the cookie requires staff assistance using the enrollment referenc
 
 Use Node 24 and pnpm 10.34.5. Build with `pnpm build` (or `pnpm build --webpack` on hosts
 that block Turbopack worker ports), then run `pnpm test:student-enrollment`.
+CI also runs `pnpm test:student-enrollment-locks` against a `postgres:17` service so a
+missing `FOR UPDATE` or dropped `refunded` inventory count fails; PGlite cannot see that
+race. Restore the source pins for `AND mode=p_mode FOR UPDATE` and
+`charge.refunded === true && charge.amount_refunded === held.amount` if that job is skipped.
 The runner sanitizes inherited payment variables, starts real Next handlers with isolated
 PGlite and mocked Stripe HTTP, permits loopback only, and blocks all other server egress.
 The fixtures seed fictional adult enrollments against the confirmed November 14 and
@@ -264,23 +306,28 @@ the repository.
    live environment. Do not reuse test secrets.
 8. **Re-apply** `005_student_enrollment.sql` on production even if an earlier copy
    already ran. The file is repeatable (`CREATE OR REPLACE` / `IF NOT EXISTS`) and this
-   revision adds `flag_student_enrollment_review`, `student_enrollment_reviews`, the
-   roster views, and an `amount=39500` CHECK that `CREATE TABLE IF NOT EXISTS` would
-   otherwise skip on an older table. Then set
+   revision adds `flag_student_enrollment_review`, `resolve_student_enrollment_review`,
+   `student_enrollment_reviews`, the roster views, and an `amount=39500` CHECK that
+   `CREATE TABLE IF NOT EXISTS` would otherwise skip on an older table. Then set
    `application_name = 'rda-student-offering-seed'` and apply
    `db/seeds/infection-control-offerings.sql` (`mode=live`, `enabled=false`). The
    post-seed verify must succeed.
 9. Set live mode and `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment
    so `/enroll` can take a charge. Enable the two live offerings. Outbound student
-   email is a separate flag. **Do not treat the public Infection Control "Enroll and
-   pay in full" CTA as live yet** — `/enroll` is the verification URL only.
+   email is a separate flag. **Leave `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` unset.** The
+   public Infection Control "Enroll and pay in full" CTA stays hidden on this
+   redeploy; `/enroll` is the verification URL only. Turning on live Checkout does
+   not show the CTA.
 10. Make one small real purchase on `/enroll`, confirm the roster and confirmation
     email, then refund that charge from the verified merchant dashboard and mark the
-    seat reconciled.
+    seat reconciled. This purchase can happen while the public CTA is still off.
 11. Only after that verification purchase is refunded and the seat is reconciled,
-    redeploy or announce so the public Enroll CTA on `/infection-control` goes live.
-    The CTA is compiled at build time from live configuration and will not appear
-    until that redeploy.
+    set `RDA_STUDENT_PAYMENTS_PUBLIC_CTA=true` and redeploy so the public Enroll
+    CTA on `/infection-control` appears. The CTA is compiled at build time from that
+    separate flag and will not appear until this second redeploy.
+12. If an orphan `paid_after_release` review needs to become a paid seat, use
+    `resolve_student_enrollment_review(..., 'enrolled')`. Do not raw-`UPDATE` the
+    enrollment to `paid`. The function refuses when the class is already full.
 
 Launch remains blocked until that checklist is finished. No real charges, refunds, student
 emails, bank changes, or credential creation are part of this development release. This

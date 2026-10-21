@@ -15,7 +15,10 @@
 -- explicit opt-in application_name = 'rda-student-offering-seed-on-live-data'.
 -- Never apply this file to production without that opt-in.
 -- ON CONFLICT DO NOTHING keeps unexpected existing rows, so the verify
--- block below must pass.
+-- block below must pass. The whole file runs in one transaction so a
+-- failed verify rolls back any newly inserted date (including Dec 5).
+
+BEGIN;
 
 DO $guard$
 BEGIN
@@ -127,3 +130,5 @@ BEGIN
   END IF;
 END
 $verify$;
+
+COMMIT;

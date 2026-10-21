@@ -19,6 +19,8 @@ import {
 import {
   studentConfig,
   studentInput,
+  studentPublicEnrollCtaEnabled,
+  studentPublicEnrollCtas,
   STUDENT_POLICY_HASH,
   type StudentEnrollment,
 } from "@/lib/student-enrollment";
@@ -40,6 +42,18 @@ async function allowTestOfferingSeedOnLiveData(db: PGlite) {
   await db.exec(
     "SET application_name = 'rda-student-offering-seed-on-live-data'",
   );
+}
+async function applyOfferingSeed(db: PGlite, path: string) {
+  try {
+    await db.exec(await readFile(path, "utf8"));
+  } catch (error) {
+    try {
+      await db.exec("ROLLBACK");
+    } catch {
+      /* The failed seed already aborted its transaction. */
+    }
+    throw error;
+  }
 }
 test("database course dates preserve their calendar day and reject null", () => {
   expect(enrollmentDate(new Date(2099, 10, 14))).toBe("2099-11-14");
@@ -84,9 +98,14 @@ test("student configuration fails closed and never mixes live keys, wrong mercha
       DATABASE_URL: "fixture",
     });
     delete process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED;
+    delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA;
     expect(studentConfig()).toBeNull();
+    expect(studentPublicEnrollCtaEnabled()).toBe(false);
+    expect(studentPublicEnrollCtas()).toHaveLength(0);
     process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED = "true";
     expect(studentConfig()?.mode).toBe("live");
+    expect(studentPublicEnrollCtaEnabled()).toBe(false);
+    expect(studentPublicEnrollCtas()).toHaveLength(0);
     process.env.RDA_STUDENT_STRIPE_ACCOUNT_ID = "acct_prism";
     expect(studentConfig()).toBeNull();
     process.env.RDA_STUDENT_STRIPE_ACCOUNT_ID = "acct_1UJHgLCOhHjREvRz";
@@ -95,6 +114,38 @@ test("student configuration fails closed and never mixes live keys, wrong mercha
     process.env.RDA_STUDENT_PAYMENTS_MODE = "test";
     process.env.RDA_STUDENT_STRIPE_TEST_KEY = "rk_live_wrongmode";
     expect(studentConfig()).toBeNull();
+    expect(studentPublicEnrollCtas()).toHaveLength(0);
+  } finally {
+    process.env = before;
+  }
+});
+test("live flags without the public CTA flag render 0 Infection Control Enroll CTAs", async () => {
+  const before = { ...process.env };
+  try {
+    Object.assign(process.env, {
+      RDA_STUDENT_PAYMENTS_MODE: "live",
+      RDA_STUDENT_STRIPE_LIVE_KEY: "rk_live_fixture",
+      RDA_STUDENT_STRIPE_LIVE_WEBHOOK_SECRET: "whsec_fixture",
+      RDA_STUDENT_STRIPE_ACCOUNT_ID: "acct_1UJHgLCOhHjREvRz",
+      RDA_STUDENT_PAYMENTS_ORIGIN: "https://example.test",
+      RDA_STUDENT_PAYMENTS_LIVE_ENABLED: "true",
+      DATABASE_URL: "fixture",
+    });
+    delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA;
+    expect(studentConfig()?.mode).toBe("live");
+    expect(studentPublicEnrollCtaEnabled()).toBe(false);
+    expect(studentPublicEnrollCtas()).toHaveLength(0);
+    process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA = "false";
+    expect(studentPublicEnrollCtas()).toHaveLength(0);
+    process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA = "true";
+    expect(studentPublicEnrollCtaEnabled()).toBe(true);
+    expect(studentPublicEnrollCtas()).toEqual([
+      { href: "/enroll", label: "Enroll and pay in full" },
+    ]);
+    const page = await readFile("components/site/live-course-page.tsx", "utf8");
+    expect(page).toContain("studentPublicEnrollCtas()");
+    expect(page).toContain("data-rda-student-enroll-cta");
+    expect(page).not.toContain('studentConfig()?.mode === "live"');
   } finally {
     process.env = before;
   }
@@ -186,11 +237,26 @@ test("student database enforces shared inventory, separate modes, replay, roster
     await db.exec(migration);
     await db.exec(migration);
     expect(migration).toContain("AND o.mode='live'");
+    expect(migration).toContain("AND mode=p_mode FOR UPDATE");
+    expect(migration).toContain("resolve_student_enrollment_review");
+    expect(migration).toContain("RAISE EXCEPTION 'Class is full'");
     expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
       "FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true",
     );
+    expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
+      "WHERE o.mode=${mode} AND r.resolved_at IS NULL",
+    );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       "account.id !== config.account ||",
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      "charge.refunded === true && charge.amount_refunded === held.amount",
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      'response.status === 409 && code === "idempotency_key_in_use"',
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      "WHERE id=${held.id}::uuid AND status='reserved'",
     );
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
@@ -207,34 +273,56 @@ test("student database enforces shared inventory, separate modes, replay, roster
         )
       ).rows,
     ).toHaveLength(1);
+    const amountChecks = (
+      await db.query<{ conname: string }>(
+        "SELECT conname FROM pg_constraint WHERE conrelid='student_enrollment_offerings'::regclass AND contype='c' AND pg_get_constraintdef(oid) ILIKE '%amount%39500%'",
+      )
+    ).rows;
+    for (const check of amountChecks) {
+      await db.exec(
+        `ALTER TABLE student_enrollment_offerings DROP CONSTRAINT ${check.conname}`,
+      );
+    }
+    await db.exec(migration);
+    await expect(
+      db.query(
+        "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-12-31',1,0,$2,$3,$4,now(),'amount',true)",
+        [
+          randomUUID(),
+          policy,
+          STUDENT_POLICY_HASH,
+          CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        ],
+      ),
+    ).rejects.toThrow();
+    expect(
+      (
+        await db.query(
+          "SELECT 1 FROM pg_constraint WHERE conrelid='student_enrollment_offerings'::regclass AND contype='c' AND pg_get_constraintdef(oid) ILIKE '%amount%39500%'",
+        )
+      ).rows.length,
+    ).toBeGreaterThan(0);
     expect(
       (await db.query("SELECT * FROM student_enrollment_offerings")).rows,
     ).toHaveLength(0);
     await expect(
-      db.exec(
-        await readFile("db/seeds/infection-control-offerings.sql", "utf8"),
-      ),
+      applyOfferingSeed(db, "db/seeds/infection-control-offerings.sql"),
     ).rejects.toThrow("Refusing to seed");
     await expect(
-      db.exec(
-        await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
-      ),
+      applyOfferingSeed(db, "db/seeds/infection-control-offerings.test.sql"),
     ).rejects.toThrow("Refusing to seed TEST");
     await allowLiveOfferingSeed(db);
     await expect(
-      db.exec(
-        await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
-      ),
+      applyOfferingSeed(db, "db/seeds/infection-control-offerings.test.sql"),
     ).rejects.toThrow("live-seed name is not enough");
     await allowIsolatedTestOfferingSeed(db);
-    await db.exec(
-      await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+    await applyOfferingSeed(
+      db,
+      "db/seeds/infection-control-offerings.test.sql",
     );
     await db.query("DELETE FROM student_enrollment_offerings WHERE mode='test'");
     await allowLiveOfferingSeed(db);
-    await db.exec(
-      await readFile("db/seeds/infection-control-offerings.sql", "utf8"),
-    );
+    await applyOfferingSeed(db, "db/seeds/infection-control-offerings.sql");
     const seeded = (
       await db.query<{
         course_date: string | Date;
@@ -276,22 +364,41 @@ test("student database enforces shared inventory, separate modes, replay, roster
     ]);
     await allowIsolatedTestOfferingSeed(db);
     await expect(
-      db.exec(
-        await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
-      ),
+      applyOfferingSeed(db, "db/seeds/infection-control-offerings.test.sql"),
     ).rejects.toThrow("against live/prod data");
     await allowLiveOfferingSeed(db);
     await expect(
-      db.exec(
-        await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
-      ),
+      applyOfferingSeed(db, "db/seeds/infection-control-offerings.test.sql"),
     ).rejects.toThrow("live-seed name is not enough");
-    await allowTestOfferingSeedOnLiveData(db);
-    await db.exec(
-      await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-11-14',39500,0,$2,$3,$4,now(),'stale isolated',false)",
+      [
+        "c1111111-1111-4111-8111-202611140099",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
     );
-    await db.exec(
-      await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+    await allowTestOfferingSeedOnLiveData(db);
+    await expect(
+      applyOfferingSeed(db, "db/seeds/infection-control-offerings.test.sql"),
+    ).rejects.toThrow("stale or unexpected");
+    expect(
+      (
+        await db.query(
+          "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05'",
+        )
+      ).rows,
+    ).toHaveLength(0);
+    await db.query("DELETE FROM student_enrollment_offerings WHERE mode='test'");
+    await allowTestOfferingSeedOnLiveData(db);
+    await applyOfferingSeed(
+      db,
+      "db/seeds/infection-control-offerings.test.sql",
+    );
+    await applyOfferingSeed(
+      db,
+      "db/seeds/infection-control-offerings.test.sql",
     );
     const testSeeded = (
       await db.query<{
@@ -553,17 +660,86 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(
       (
         await db.query(
-          "SELECT session_id FROM student_enrollment_reviews WHERE enrollment_id=$1",
+          "SELECT session_id FROM student_enrollment_reviews WHERE enrollment_id=$1 ORDER BY session_id",
           [unbound],
         )
       ).rows,
     ).toEqual([{ session_id: "cs_test_orphan" }]);
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_other','paid_after_release')",
+      [unbound],
+    );
+    expect(
+      (
+        await db.query(
+          "SELECT session_id FROM student_enrollment_reviews WHERE enrollment_id=$1 ORDER BY session_id",
+          [unbound],
+        )
+      ).rows,
+    ).toEqual([
+      { session_id: "cs_test_orphan" },
+      { session_id: "cs_test_other" },
+    ]);
+    await db.query(
+      "SELECT resolve_student_enrollment_review($1,'cs_test_orphan','refunded')",
+      [unbound],
+    );
+    expect(
+      (
+        await db.query<{ resolution: string }>(
+          "SELECT resolution FROM student_enrollment_reviews WHERE enrollment_id=$1 AND session_id='cs_test_orphan'",
+          [unbound],
+        )
+      ).rows[0].resolution,
+    ).toBe("refunded");
+    const fullOffer = "44444444-4444-4444-8444-444444444444";
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,12,$2,$3,$4,now(),'full resolve',true)",
+      [
+        fullOffer,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        fixtureSecondDate > fixtureFirstDate
+          ? fixtureSecondDate
+          : "2099-06-15",
+      ],
+    );
+    const fullExpired = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,$3,$4,$5,$6,$7,true,$8,$9,$10,39500,'usd','expired')",
+      [
+        fullExpired,
+        fullOffer,
+        fixtureSecondDate > fixtureFirstDate
+          ? fixtureSecondDate
+          : "2099-06-15",
+        "e".repeat(64),
+        "Full Class Adult",
+        "full-class@example.test",
+        "916 555 0199",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_full','paid_after_release')",
+      [fullExpired],
+    );
     await expect(
       db.query(
-        "SELECT flag_student_enrollment_review($1,'cs_test_other','paid_after_release')",
-        [unbound],
+        "SELECT resolve_student_enrollment_review($1,'cs_test_full','enrolled')",
+        [fullExpired],
       ),
-    ).rejects.toThrow("Review identity conflict");
+    ).rejects.toThrow("Class is full");
+    const cleanup = await readFile("docs/student-payments.md", "utf8");
+    expect(cleanup.indexOf("DELETE FROM student_enrollment_reviews")).toBeGreaterThan(
+      -1,
+    );
+    expect(cleanup.indexOf("DELETE FROM student_enrollment_reviews")).toBeLessThan(
+      cleanup.indexOf("DELETE FROM student_enrollments\n WHERE offering_id"),
+    );
     await db.query(
       "UPDATE student_enrollments SET status='expired' WHERE offering_id=$1 AND status='reserved'",
       [offer],
@@ -578,6 +754,35 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     expect(lastAllocations.filter((row) => row.rows.length)).toHaveLength(1);
     expect(lastAllocations.filter((row) => !row.rows.length).length).toBe(7);
+    await db.exec(`
+      DELETE FROM student_enrollment_reviews
+       WHERE enrollment_id IN (
+         SELECT e.id FROM student_enrollments e
+         JOIN student_enrollment_offerings o ON o.id = e.offering_id
+         WHERE o.mode = 'test'
+       );
+      DELETE FROM student_enrollment_events
+       WHERE enrollment_id IN (
+         SELECT e.id FROM student_enrollments e
+         JOIN student_enrollment_offerings o ON o.id = e.offering_id
+         WHERE o.mode = 'test'
+       );
+      DELETE FROM student_enrollment_mail
+       WHERE enrollment_id IN (
+         SELECT e.id FROM student_enrollments e
+         JOIN student_enrollment_offerings o ON o.id = e.offering_id
+         WHERE o.mode = 'test'
+       );
+      DELETE FROM student_enrollments
+       WHERE offering_id IN (SELECT id FROM student_enrollment_offerings WHERE mode = 'test');
+    `);
+    expect(
+      (
+        await db.query(
+          "SELECT 1 FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE o.mode='test'",
+        )
+      ).rows,
+    ).toHaveLength(0);
   } finally {
     await db.close();
   }

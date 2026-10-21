@@ -926,4 +926,316 @@ test.describe("student enrollment isolated full stack", () => {
     expect(roster).toContain(`released-${planted}@example.test`);
     expect(roster).toContain("paid_after_release");
   });
+  test("live flags without the public CTA flag render 0 Enroll CTAs on /infection-control", async ({
+    request,
+  }) => {
+    const html = await (await request.get("/infection-control")).text();
+    expect(html).not.toContain("data-rda-student-enroll-cta");
+    expect(html).not.toContain("Enroll and pay in full");
+  });
+  test("409 without idempotency_key_in_use is not an idempotency conflict", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Bare 409 Adult",
+        email: `bare409-${planted}@example.test`,
+        phone: "916 555 0166",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+      conflictWithoutIdempotencyCode: true,
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: {
+            id: planted,
+            offeringId: offer,
+            name: "Bare 409 Adult",
+            email: `bare409-${planted}@example.test`,
+            phone: "916 555 0166",
+            adultAccepted: true,
+            policyAccepted: true,
+            policyVersion: "2026-09-30",
+          },
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === planted,
+      ).status,
+    ).toBe("expired");
+    const other = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: other,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Other 409 Adult",
+        email: `other409-${other}@example.test`,
+        phone: "916 555 0165",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+      conflictOtherCode: true,
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: {
+            id: other,
+            offeringId: offer,
+            name: "Other 409 Adult",
+            email: `other409-${other}@example.test`,
+            phone: "916 555 0165",
+            adultAccepted: true,
+            policyAccepted: true,
+            policyVersion: "2026-09-30",
+          },
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === other,
+      ).status,
+    ).toBe("expired");
+  });
+  test("bind is reserved-only and a bind that loses the race flags review instead of 503", async ({
+    request,
+  }) => {
+    const checkoutHold = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: checkoutHold,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Expire On Bind Adult",
+        email: `expire-bind-${checkoutHold}@example.test`,
+        phone: "916 555 0155",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+      expireOnBind: checkoutHold,
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: {
+            id: checkoutHold,
+            offeringId: offer,
+            name: "Expire On Bind Adult",
+            email: `expire-bind-${checkoutHold}@example.test`,
+            phone: "916 555 0155",
+            adultAccepted: true,
+            policyAccepted: true,
+            policyVersion: "2026-09-30",
+          },
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    const checkoutRow = (await evidence()).student_enrollments.find(
+      (row: { id: string }) => row.id === checkoutHold,
+    );
+    expect(checkoutRow.status).toBe("expired");
+    expect(checkoutRow.stripe_session_id).toBeNull();
+    const raced = randomUUID();
+    const orphan = `cs_test_bindrace${raced.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: raced,
+        offeringId: offer,
+        owner: createHash("sha256").update("f".repeat(64)).digest("hex"),
+        name: "Bind Race Adult",
+        email: `bind-race-${raced}@example.test`,
+        phone: "916 555 0144",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+      plantOrphanSession: {
+        id: orphan,
+        enrollmentId: raced,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      expireOnBind: raced,
+      status: "complete",
+    });
+    expect((await webhook(request, orphan)).status()).toBe(200);
+    const state = await evidence();
+    expect(
+      state.student_enrollments.find((row: { id: string }) => row.id === raced)
+        .status,
+    ).toBe("expired");
+    expect(
+      state.student_enrollment_reviews.filter(
+        (item: { enrollment_id: string; session_id: string }) =>
+          item.enrollment_id === raced && item.session_id === orphan,
+      ),
+    ).toHaveLength(1);
+  });
+  test("a second paid orphan for the same enrollment records another review and returns 200", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    const first = `cs_test_p11b1${planted.replaceAll("-", "").slice(0, 8)}`;
+    const second = `cs_test_p11b2${planted.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("e".repeat(64)).digest("hex"),
+        name: "Second Orphan Adult",
+        email: `second-orphan-${planted}@example.test`,
+        phone: "916 555 0133",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "expired",
+      },
+      plantOrphanSession: {
+        id: first,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, first)).status()).toBe(200);
+    await control({
+      plantOrphanSession: {
+        id: second,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, second)).status()).toBe(200);
+    expect(
+      (await evidence()).student_enrollment_reviews.filter(
+        (item: { enrollment_id: string }) => item.enrollment_id === planted,
+      ),
+    ).toHaveLength(2);
+  });
+  test("a refund on an orphan resolves its review", async ({ request }) => {
+    const planted = randomUUID();
+    const orphan = `cs_test_p11a${planted.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("e".repeat(64)).digest("hex"),
+        name: "Orphan Refund Adult",
+        email: `orphan-refund-${planted}@example.test`,
+        phone: "916 555 0122",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "expired",
+      },
+      plantOrphanSession: {
+        id: orphan,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, orphan)).status()).toBe(200);
+    await control({
+      status: "complete",
+      refundedAmount: 39500,
+    });
+    expect(
+      (
+        await webhook(request, orphan, "charge.refunded", {
+          data: { object: { payment_intent: `pi_fixture${orphan.slice(8)}` } },
+        })
+      ).status(),
+    ).toBe(200);
+    const review = (await evidence()).student_enrollment_reviews.find(
+      (item: { enrollment_id: string }) => item.enrollment_id === planted,
+    );
+    expect(review.resolution).toBe("refunded");
+    expect(review.resolved_at).toBeTruthy();
+    const staff = createEnrollmentSession({
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin,
+    });
+    const roster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(roster).not.toContain(`orphan-refund-${planted}@example.test`);
+  });
+  test("staff review list is filtered by the active payment mode", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    const foreign = randomUUID();
+    const orphan = `cs_test_mode${planted.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("e".repeat(64)).digest("hex"),
+        name: "Mode Filter Adult",
+        email: `mode-filter-${planted}@example.test`,
+        phone: "916 555 0111",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "expired",
+      },
+      plantOrphanSession: {
+        id: orphan,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      plantForeignModeReview: {
+        id: foreign,
+        offeringId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        owner: "b".repeat(64),
+        name: "Live Review Adult",
+        email: `live-review-${foreign}@example.test`,
+        phone: "916 555 0110",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        sessionId: "cs_live_foreignreview",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, orphan)).status()).toBe(200);
+    const staff = createEnrollmentSession({
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin,
+    });
+    const roster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(roster).toContain(`mode-filter-${planted}@example.test`);
+    expect(roster).not.toContain(`live-review-${foreign}@example.test`);
+  });
 });

@@ -89,6 +89,17 @@ export function studentConfig(): StudentConfig | null {
   }
   return { mode, key, webhookSecret, origin, account };
 }
+export function studentPublicEnrollCtaEnabled() {
+  return (
+    studentConfig()?.mode === "live" &&
+    process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA === "true"
+  );
+}
+export function studentPublicEnrollCtas() {
+  return studentPublicEnrollCtaEnabled()
+    ? ([{ href: "/enroll" as const, label: "Enroll and pay in full" as const }])
+    : [];
+}
 export function studentDatabase() {
   if (!process.env.DATABASE_URL) throw new Error("Enrollment unavailable");
   return neon(process.env.DATABASE_URL);
@@ -136,6 +147,14 @@ export async function getStudentEnrollment(id: string) {
         course_date: enrollmentDate(rows[0].course_date),
       } as StudentEnrollment)
     : undefined;
+}
+export async function listStudentReviews(mode: StudentConfig["mode"]) {
+  return studentDatabase()`SELECT e.id,e.student_name,e.email,e.status,r.session_id,r.reason,r.created_at,r.resolved_at,r.resolution,o.course_date
+    FROM student_enrollment_reviews r
+    JOIN student_enrollments e ON e.id=r.enrollment_id
+    JOIN student_enrollment_offerings o ON o.id=e.offering_id
+    WHERE o.mode=${mode} AND r.resolved_at IS NULL
+    ORDER BY r.created_at LIMIT 500`;
 }
 export function studentInput(body: Record<string, unknown>) {
   if (

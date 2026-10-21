@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { enrollmentOwner } from "@/lib/enrollment-http";
 import { enrollmentDate } from "@/lib/enrollment-contract";
-import { studentConfig, studentDatabase } from "@/lib/student-enrollment";
+import {
+  listStudentReviews,
+  studentConfig,
+  studentDatabase,
+} from "@/lib/student-enrollment";
 
 function expireLabel(value: unknown) {
   const seconds = Number(value);
@@ -35,12 +39,7 @@ export default async function StudentRoster() {
       await studentDatabase()`SELECT e.id,e.student_name,e.email,e.stripe_session_id,e.stripe_expires_at,o.course_date
       FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id
       WHERE e.status='reserved' AND o.mode=${config.mode} ORDER BY e.created_at LIMIT 500`;
-    reviews =
-      await studentDatabase()`SELECT e.id,e.student_name,e.email,e.status,r.session_id,r.reason,r.created_at,o.course_date
-      FROM student_enrollment_reviews r
-      JOIN student_enrollments e ON e.id=r.enrollment_id
-      JOIN student_enrollment_offerings o ON o.id=e.offering_id
-      WHERE o.mode=${config.mode} ORDER BY r.created_at LIMIT 500`;
+    reviews = await listStudentReviews(config.mode);
   }
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-6 py-12">
@@ -149,7 +148,7 @@ export default async function StudentRoster() {
           </thead>
           <tbody>
             {reviews.map((r) => (
-              <tr key={String(r.id)}>
+              <tr key={`${String(r.id)}:${String(r.session_id)}`}>
                 {[
                   enrollmentDate(r.course_date),
                   r.student_name,
