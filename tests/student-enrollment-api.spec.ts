@@ -634,10 +634,13 @@ test.describe("student enrollment isolated full stack", () => {
   }) => {
     await control({ accountError: true, resetLimits: randomUUID() });
     const attempts = await Promise.all(
-      Array.from({ length: 12 }, () =>
+      Array.from({ length: 12 }, (_, index) =>
         request.post("/api/student-enrollment/checkout", {
           data: payload(),
-          headers,
+          headers: {
+            Origin: origin,
+            Cookie: `${STUDENT_COOKIE}=${(index + 200).toString(16).padStart(64, "0")}`,
+          },
         }),
       ),
     );
@@ -662,12 +665,16 @@ test.describe("student enrollment isolated full stack", () => {
     request,
   }) => {
     const data = payload();
+    const createHeaders = {
+      Origin: origin,
+      Cookie: `${STUDENT_COOKIE}=${"c".repeat(64)}`,
+    };
     await control({ createError: true });
     expect(
       (
         await request.post("/api/student-enrollment/checkout", {
           data,
-          headers,
+          headers: createHeaders,
         })
       ).status(),
     ).toBe(503);
@@ -756,11 +763,15 @@ test.describe("student enrollment isolated full stack", () => {
     request,
   }) => {
     const data = payload();
+    const staffHoldHeaders = {
+      Origin: origin,
+      Cookie: `${STUDENT_COOKIE}=${"d".repeat(64)}`,
+    };
     expect(
       (
         await request.post("/api/student-enrollment/checkout", {
           data,
-          headers,
+          headers: staffHoldHeaders,
         })
       ).status(),
     ).toBe(200);
