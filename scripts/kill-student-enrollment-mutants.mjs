@@ -244,15 +244,21 @@ for (const mutant of selected) {
   await writeFile(absolute, original);
   restorers.delete(absolute);
   const killed = suite.code !== 0 || locks.code !== 0;
-  const suiteTail = `${suite.stdout}\n${suite.stderr}`
-    .trim()
-    .split("\n")
-    .slice(-8)
+  const suiteLines = `${suite.stdout}\n${suite.stderr}`.split("\n");
+  const suiteHits = suiteLines.filter((line) =>
+    /✘|failed|Error:|ELIFECYCLE|expected|toContain|toBe|toHaveLength|toThrow/.test(
+      line,
+    ),
+  );
+  const suiteTail = (suiteHits.length ? suiteHits.slice(-12) : suiteLines.slice(-8))
     .join("\n");
-  const lockTail = `${locks.stdout}\n${locks.stderr}`
-    .trim()
-    .split("\n")
-    .slice(-8)
+  const lockLines = `${locks.stdout}\n${locks.stderr}`.split("\n");
+  const lockHits = lockLines.filter((line) =>
+    /not wait|must fail|must refuse|left a Dec|expected|Error|ELIFECYCLE/.test(
+      line,
+    ),
+  );
+  const lockTail = (lockHits.length ? lockHits.slice(-12) : lockLines.slice(-8))
     .join("\n");
   lines.push(
     `${mutant.id} ${killed ? "KILLED" : "SURVIVED"} file=${mutant.file}`,
@@ -267,5 +273,18 @@ for (const mutant of selected) {
 }
 
 await restoreAll();
+const killedIds = selected
+  .map((mutant) => mutant.id)
+  .filter((id) => lines.some((line) => line.startsWith(`${id} KILLED`)));
+const survivedIds = selected
+  .map((mutant) => mutant.id)
+  .filter((id) => !killedIds.includes(id));
+lines.push(
+  `summary: ${killedIds.length}/${selected.length} KILLED, ${survivedIds.length} SURVIVED`,
+  killedIds.join(" "),
+  survivedIds.length ? `survivors: ${survivedIds.join(" ")}` : "",
+  "reproduce: STUDENT_LOCK_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/rda_locks pnpm test:student-enrollment-mutants",
+  "",
+);
 await writeFile(logPath, `${lines.join("\n")}\n`);
 console.log(`wrote ${logPath}`);

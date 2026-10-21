@@ -1,0 +1,532 @@
+student-enrollment mutant kills 2026-10-21T22:28:13.102Z
+suite: pnpm test:student-enrollment && pnpm test:student-enrollment-locks
+
+M24 KILLED file=app/api/student-enrollment/checkout/route.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:48625) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:48625) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:48755) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:48755) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+M26 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:49152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49264) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49264) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+M27 KILLED file=lib/student-enrollment-stripe.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:49935) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49935) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:50045) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:50045) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+M30 KILLED file=lib/student-enrollment.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+    tests/student-enrollment.spec.ts:1182:5 › claimed enrollment mutants fail when applied at their source lines 
+  55 passed (19.9s)
+ ELIFECYCLE  Command failed with exit code 1.
+
+(node:50719) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:50719) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+M32 KILLED file=lib/student-enrollment.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:51483) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51483) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51595) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51595) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+M34 KILLED file=db/seeds/infection-control-offerings.test.sql
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:51994) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51994) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52101) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52101) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+M49 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:52497) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52497) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52607) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52607) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+  dataType: undefined,
+  constraint: undefined,
+  file: 'pl_exec.c',
+  line: '3897',
+  routine: 'exec_stmt_raise'
+}
+
+Node.js v24.22.1
+
+M51b KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:53023) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53023) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53134) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53134) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+
+Error: resolve enrolled must refuse when an unreleased refunded row fills capacity (M51b)
+    at file:///workspace/scripts/test-student-enrollment-locks.mjs:454:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async test (file:///workspace/scripts/test-student-enrollment-locks.mjs:47:3)
+    at async file:///workspace/scripts/test-student-enrollment-locks.mjs:407:3
+
+Node.js v24.22.1
+
+M55 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:53530) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53530) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53642) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53642) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+
+Error: A second resolve with a different resolution must fail (M55)
+    at file:///workspace/scripts/test-student-enrollment-locks.mjs:491:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async test (file:///workspace/scripts/test-student-enrollment-locks.mjs:47:3)
+    at async file:///workspace/scripts/test-student-enrollment-locks.mjs:462:3
+
+Node.js v24.22.1
+
+M56 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:54038) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54038) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54153) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54153) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+  dataType: undefined,
+  constraint: undefined,
+  file: 'pl_exec.c',
+  line: '3897',
+  routine: 'exec_stmt_raise'
+}
+
+Node.js v24.22.1
+
+M57b KILLED file=db/seeds/infection-control-offerings.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:54550) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54550) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54657) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54657) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+            ^
+
+Error: Live seed must wrap guard/insert/verify in BEGIN/COMMIT (M57b)
+    at file:///workspace/scripts/test-student-enrollment-locks.mjs:543:13
+    at async test (file:///workspace/scripts/test-student-enrollment-locks.mjs:47:3)
+    at async file:///workspace/scripts/test-student-enrollment-locks.mjs:533:3
+
+Node.js v24.22.1
+
+N01 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:55053) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:55053) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:55172) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:55172) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+
+Error: release of a paid row must fail (N01)
+    at file:///workspace/scripts/test-student-enrollment-locks.mjs:609:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async test (file:///workspace/scripts/test-student-enrollment-locks.mjs:47:3)
+    at async file:///workspace/scripts/test-student-enrollment-locks.mjs:573:3
+
+Node.js v24.22.1
+
+N02 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+  routine: undefined,
+  sourceError: undefined,
+  digest: '46314045'
+}
+(node:55678) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:55678) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+  dataType: undefined,
+  constraint: 'student_enrollment_events_pkey',
+  file: 'nbtinsert.c',
+  line: '666',
+  routine: '_bt_check_unique'
+}
+
+Node.js v24.22.1
+
+N05 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:56076) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:56076) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:56186) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:56186) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+
+Error: release must store inventory_released_by (N05)
+    at file:///workspace/scripts/test-student-enrollment-locks.mjs:663:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async test (file:///workspace/scripts/test-student-enrollment-locks.mjs:47:3)
+    at async file:///workspace/scripts/test-student-enrollment-locks.mjs:637:3
+
+Node.js v24.22.1
+
+N17 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:56585) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:56585) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:56693) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:56693) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+
+Error: resolve must store resolved_by (N17)
+    at file:///workspace/scripts/test-student-enrollment-locks.mjs:692:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async test (file:///workspace/scripts/test-student-enrollment-locks.mjs:47:3)
+    at async file:///workspace/scripts/test-student-enrollment-locks.mjs:637:3
+
+Node.js v24.22.1
+
+N11 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:57111) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57111) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57221) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57221) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+
+Error: Raising external_seats must fail while an unreleased refunded row occupies (N11)
+    at file:///workspace/scripts/test-student-enrollment-locks.mjs:723:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async test (file:///workspace/scripts/test-student-enrollment-locks.mjs:47:3)
+    at async file:///workspace/scripts/test-student-enrollment-locks.mjs:696:3
+
+Node.js v24.22.1
+
+N12 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:57730) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57730) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57747) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57747) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+N13 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:58138) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58138) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58252) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58252) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+
+Error: resolve enrolled must refuse when an unreleased refunded row fills capacity (M51b)
+    at file:///workspace/scripts/test-student-enrollment-locks.mjs:454:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async test (file:///workspace/scripts/test-student-enrollment-locks.mjs:47:3)
+    at async file:///workspace/scripts/test-student-enrollment-locks.mjs:407:3
+
+Node.js v24.22.1
+
+N14 KILLED file=lib/student-enrollment.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:58922) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58922) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:59041) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:59041) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+N15 KILLED file=lib/student-enrollment.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:59711) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:59711) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:59826) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:59826) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+N19 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=1
+  suite_tail:
+(node:60222) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60222) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60337) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60337) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+  dataType: undefined,
+  constraint: 'student_enrollment_duplicate',
+  file: 'tuplesortvariants.c',
+  line: '1361',
+  routine: 'comparetup_index_btree'
+}
+
+Node.js v24.22.1
+
+N20 KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:60832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60845) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60845) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+N21 KILLED file=lib/student-enrollment.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:61516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61629) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61629) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+N22 KILLED file=app/enrollment-pilot/roster/page.tsx
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:62299) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:62299) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:62411) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:62411) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+M52b KILLED file=app/enroll/page.tsx
+  build_exit=0 suite_exit=1 locks_exit=0
+  suite_tail:
+(node:63116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:63116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:63228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:63228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  locks_tail:
+ok 11 - M56 resolve enrolled requires an expired row
+ok 12 - M57b live seed BEGIN rolls back a leftover Dec 5
+ok 13 - N01 / N02 release refuses non-refunded rows and a second call
+ok 14 - N05 / N17 release and resolve persist the actor
+ok 15 - N11 protect_student_offering counts unreleased refunded seats
+ok 16 - N19 released refunded emails can re-enroll
+ok 17 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 17 passed
+
+summary: 25/25 KILLED, 0 SURVIVED
+M24 M26 M27 M30 M32 M34 M49 M51b M55 M56 M57b N01 N02 N05 N17 N11 N12 N13 N14 N15 N19 N20 N21 N22 M52b
+reproduce: STUDENT_LOCK_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/rda_locks pnpm test:student-enrollment-mutants
+
