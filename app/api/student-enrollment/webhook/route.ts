@@ -3,19 +3,26 @@ import {
   boundedEnrollmentText,
 } from "@/lib/enrollment-http";
 import { verifyEnrollmentSignature } from "@/lib/enrollment-contract";
-import { studentConfig } from "@/lib/student-enrollment";
+import {
+  getStudentEnrollment,
+  studentConfig,
+  studentWebhookConfig,
+  studentWebhookProcessesWhilePaymentsOff,
+} from "@/lib/student-enrollment";
 import {
   verifyStudentMerchant,
   retrieveStudentSession,
   recordStudentSession,
   studentSessionForIntent,
+  studentSessionIsFullyRefunded,
   type StudentPaymentEvent,
 } from "@/lib/student-enrollment-stripe";
 import { deliverStudentConfirmation } from "@/lib/student-enrollment-mail";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
-  const config = studentConfig();
+  const config = studentWebhookConfig();
+  const paymentsEnabled = studentConfig() !== null;
   if (!config)
     return enrollmentResponse(
       { error: "Enrollment webhook unavailable." },
@@ -65,6 +72,18 @@ export async function POST(request: Request) {
       return enrollmentResponse({ received: true, ignored: true });
     if (session.metadata?.integration !== "rda-student-v1")
       return enrollmentResponse({ received: true, ignored: true });
+    if (
+      !paymentsEnabled &&
+      !studentWebhookProcessesWhilePaymentsOff(event.type) &&
+      !studentSessionIsFullyRefunded(session)
+    ) {
+      const existing = session.metadata?.enrollment_id
+        ? await getStudentEnrollment(session.metadata.enrollment_id)
+        : undefined;
+      if (existing?.status === "paid")
+        await deliverStudentConfirmation(existing, config);
+      return enrollmentResponse({ received: true, ignored: true });
+    }
     const held = await recordStudentSession(
       session,
       config,

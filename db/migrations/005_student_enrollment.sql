@@ -172,13 +172,15 @@ BEGIN
   RETURN NEXT held;
 END;
 $$;
+DROP VIEW IF EXISTS student_enrollment_roster;
+DROP VIEW IF EXISTS student_enrollment_roster_test;
 CREATE OR REPLACE VIEW student_enrollment_roster AS
   SELECT e.id,e.student_name,e.email,e.phone,e.status,e.amount,e.currency,e.refunded_amount,e.policy_accepted_at,e.policy_version,
-    e.stripe_session_id,e.stripe_payment_intent,o.mode,o.course_id,o.course_date
+    e.stripe_session_id,e.stripe_payment_intent,e.inventory_released_at,e.inventory_released_by,o.mode,o.course_id,o.course_date
   FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.status IN ('paid','refunded') AND o.mode='live';
 CREATE OR REPLACE VIEW student_enrollment_roster_test AS
   SELECT e.id,e.student_name,e.email,e.phone,e.status,e.amount,e.currency,e.refunded_amount,e.policy_accepted_at,e.policy_version,
-    e.stripe_session_id,e.stripe_payment_intent,o.mode,o.course_id,o.course_date
+    e.stripe_session_id,e.stripe_payment_intent,e.inventory_released_at,e.inventory_released_by,o.mode,o.course_id,o.course_date
   FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.status IN ('paid','refunded') AND o.mode='test';
 
 CREATE TABLE IF NOT EXISTS student_enrollment_attempts (
@@ -248,6 +250,7 @@ BEGIN
 END;
 $$;
 ALTER TABLE student_enrollment_reviews ADD COLUMN IF NOT EXISTS resolved_by text;
+DROP FUNCTION IF EXISTS resolve_student_enrollment_review(uuid, text, text);
 -- Staff-only: never UPDATE student_enrollments.status='paid' by hand. This
 -- function refuses 'enrolled' when reserved+paid+unreleased-refunded already
 -- fill capacity. Actor is required and written onto the review and events row.

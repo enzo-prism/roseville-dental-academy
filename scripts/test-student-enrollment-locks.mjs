@@ -58,6 +58,15 @@ try {
       "utf8",
     ),
   );
+  await admin.query(`
+    TRUNCATE student_enrollment_attempts,
+      student_enrollment_mail,
+      student_enrollment_events,
+      student_enrollment_reviews,
+      student_enrollments,
+      student_enrollment_offerings
+    RESTART IDENTITY CASCADE
+  `);
   const lastSeat = "55555555-5555-4555-8555-555555555555";
   const liveOffer = "66666666-6666-4666-8666-666666666666";
   const refundOffer = "77777777-7777-4777-8777-777777777777";
@@ -324,7 +333,7 @@ try {
       try {
         await seeder.query(seed);
       } catch (error) {
-        failed = /stale or unexpected/i.test(String(error.message));
+        failed = /stale or unexpected|expected 2 rows/i.test(String(error.message));
         try {
           await seeder.query("ROLLBACK");
         } catch {
@@ -341,6 +350,427 @@ try {
       }
     } finally {
       await seeder.end();
+    }
+  });
+
+  await test("M49 resolve enrolled waits on the offering FOR UPDATE", async () => {
+    const reviewId = randomUUID();
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-03-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      [
+        reviewId,
+        lastSeat,
+        "e".repeat(64),
+        "Resolve Lock Adult",
+        "resolve-for-update@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_resolve_lock','paid_after_release')",
+      [reviewId],
+    );
+    const locker = new pg.Client({ connectionString: url });
+    const waiter = new pg.Client({ connectionString: url });
+    await Promise.all([locker.connect(), waiter.connect()]);
+    try {
+      await locker.query("BEGIN");
+      await locker.query(
+        "SELECT id FROM student_enrollment_offerings WHERE id=$1 FOR UPDATE",
+        [lastSeat],
+      );
+      await waiter.query("SET lock_timeout = '400ms'");
+      let timedOut = false;
+      try {
+        await waiter.query(
+          "SELECT resolve_student_enrollment_review($1,'cs_test_resolve_lock','enrolled',$2)",
+          [reviewId, "staff@example.test"],
+        );
+      } catch (error) {
+        timedOut = /lock timeout|canceling statement/i.test(String(error.message));
+        if (!timedOut) throw error;
+      }
+      await locker.query("ROLLBACK");
+      if (!timedOut) {
+        throw new Error(
+          "resolve_student_enrollment_review did not wait on the offering row lock (M49)",
+        );
+      }
+    } finally {
+      await Promise.all([locker.end(), waiter.end()]);
+    }
+  });
+
+  await test("M51b / N13 resolve enrolled refuses an unreleased refunded seat", async () => {
+    const refundedId = randomUUID();
+    const expiredId = randomUUID();
+    const resolveOffer = "99999999-9999-4999-8999-999999999993";
+    await admin.query(
+      `INSERT INTO student_enrollment_offerings(
+        id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled
+      ) VALUES ($1,'test','infection-control','2099-12-15',39500,11,$2,$3,$4,now(),'resolve refunded full',true)`,
+      [resolveOffer, policyVersion, policyHash, policyText],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-12-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      [
+        refundedId,
+        resolveOffer,
+        "11".repeat(32),
+        "Unreleased Resolve Adult",
+        "unreleased-resolve@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-12-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      [
+        expiredId,
+        resolveOffer,
+        "12".repeat(32),
+        "Would Enroll Adult",
+        "would-enroll@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_full_refunded','paid_after_release')",
+      [expiredId],
+    );
+    try {
+      await admin.query(
+        "SELECT resolve_student_enrollment_review($1,'cs_test_full_refunded','enrolled',$2)",
+        [expiredId, "staff@example.test"],
+      );
+      throw new Error(
+        "resolve enrolled must refuse when an unreleased refunded row fills capacity (M51b)",
+      );
+    } catch (error) {
+      if (!String(error.message).includes("Class is full")) throw error;
+    }
+  });
+
+  await test("M55 already-resolved reviews cannot change resolution", async () => {
+    const reviewId = randomUUID();
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-03-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      [
+        reviewId,
+        lastSeat,
+        "13".repeat(32),
+        "Already Resolved Adult",
+        "already-resolved@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_already','paid_after_release')",
+      [reviewId],
+    );
+    await admin.query(
+      "SELECT resolve_student_enrollment_review($1,'cs_test_already','dismissed',$2)",
+      [reviewId, "staff@example.test"],
+    );
+    try {
+      await admin.query(
+        "SELECT resolve_student_enrollment_review($1,'cs_test_already','enrolled',$2)",
+        [reviewId, "staff@example.test"],
+      );
+      throw new Error(
+        "A second resolve with a different resolution must fail (M55)",
+      );
+    } catch (error) {
+      if (!String(error.message).includes("Review already resolved")) throw error;
+    }
+  });
+
+  await test("M56 resolve enrolled requires an expired row", async () => {
+    const reservedId = randomUUID();
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-03-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','reserved')",
+      [
+        reservedId,
+        lastSeat,
+        "14".repeat(32),
+        "Still Reserved Adult",
+        "still-reserved@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason) VALUES($1,'cs_test_reserved_enroll','paid_after_release')",
+      [reservedId],
+    );
+    try {
+      await admin.query(
+        "SELECT resolve_student_enrollment_review($1,'cs_test_reserved_enroll','enrolled',$2)",
+        [reservedId, "staff@example.test"],
+      );
+      throw new Error(
+        "resolve enrolled on a reserved row must fail (M56)",
+      );
+    } catch (error) {
+      if (!String(error.message).includes("Review enroll requires an expired enrollment"))
+        throw error;
+    }
+  });
+
+  await test("M57b live seed BEGIN rolls back a leftover Dec 5", async () => {
+    await admin.query(
+      "UPDATE student_enrollment_offerings SET enabled=true, review_reference='stale live' WHERE id=$1",
+      [liveOffer],
+    );
+    const seed = await readFile(
+      new URL("../db/seeds/infection-control-offerings.sql", import.meta.url),
+      "utf8",
+    );
+    if (!/^\s*BEGIN;/m.test(seed) || !/COMMIT;\s*$/.test(seed.trim())) {
+      throw new Error("Live seed must wrap guard/insert/verify in BEGIN/COMMIT (M57b)");
+    }
+    const seeder = new pg.Client({ connectionString: url });
+    await seeder.connect();
+    try {
+      await seeder.query("SET application_name = 'rda-student-offering-seed'");
+      let failed = false;
+      try {
+        await seeder.query(seed);
+      } catch (error) {
+        failed = /stale or unexpected|expected 2 rows/i.test(String(error.message));
+        try {
+          await seeder.query("ROLLBACK");
+        } catch {
+          /* already aborted */
+        }
+        if (!failed) throw error;
+      }
+      if (!failed) throw new Error("stale live seed should fail verify (M57b)");
+      const leftover = await admin.query(
+        "SELECT 1 FROM student_enrollment_offerings WHERE mode='live' AND course_date='2026-12-05'",
+      );
+      if (leftover.rows.length) {
+        throw new Error("Failed live seed left a Dec 5 row (M57b / BEGIN removed)");
+      }
+    } finally {
+      await seeder.end();
+    }
+  });
+
+  await test("N01 / N02 release refuses non-refunded rows and a second call", async () => {
+    const paidId = randomUUID();
+    const refundedId = randomUUID();
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-04-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','paid')",
+      [
+        paidId,
+        refundOffer,
+        "15".repeat(32),
+        "Paid Release Adult",
+        "paid-release@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-04-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      [
+        refundedId,
+        refundOffer,
+        "16".repeat(32),
+        "Second Release Adult",
+        "second-release@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    try {
+      await admin.query("SELECT release_refunded_student_seat($1,$2)", [
+        paidId,
+        "staff@example.test",
+      ]);
+      throw new Error("release of a paid row must fail (N01)");
+    } catch (error) {
+      if (!String(error.message).includes("requires a refunded enrollment"))
+        throw error;
+    }
+    const first = await admin.query("SELECT release_refunded_student_seat($1,$2)", [
+      refundedId,
+      "staff@example.test",
+    ]);
+    if (first.rows[0].release_refunded_student_seat !== true) {
+      throw new Error("first audited release should return true");
+    }
+    const second = await admin.query("SELECT release_refunded_student_seat($1,$2)", [
+      refundedId,
+      "staff@example.test",
+    ]);
+    if (second.rows[0].release_refunded_student_seat !== false) {
+      throw new Error("second release must return false without a PK error (N02)");
+    }
+    const events = await admin.query(
+      "SELECT count(*)::int AS n FROM student_enrollment_events WHERE event_id=$1",
+      [`release:${refundedId}`],
+    );
+    if (events.rows[0].n !== 1) {
+      throw new Error("second release must not write another released event (N02)");
+    }
+  });
+
+  await test("N05 / N17 release and resolve persist the actor", async () => {
+    const refundedId = randomUUID();
+    const reviewId = randomUUID();
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-04-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      [
+        refundedId,
+        refundOffer,
+        "17".repeat(32),
+        "Actor Release Adult",
+        "actor-release@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query("SELECT release_refunded_student_seat($1,$2)", [
+      refundedId,
+      "roster-staff@example.test",
+    ]);
+    const released = await admin.query(
+      "SELECT inventory_released_by FROM student_enrollments WHERE id=$1",
+      [refundedId],
+    );
+    if (released.rows[0].inventory_released_by !== "roster-staff@example.test") {
+      throw new Error("release must store inventory_released_by (N05)");
+    }
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-03-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      [
+        reviewId,
+        lastSeat,
+        "18".repeat(32),
+        "Actor Resolve Adult",
+        "actor-resolve@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    await admin.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_actor','paid_after_release')",
+      [reviewId],
+    );
+    await admin.query(
+      "SELECT resolve_student_enrollment_review($1,'cs_test_actor','dismissed',$2)",
+      [reviewId, "review-staff@example.test"],
+    );
+    const resolved = await admin.query(
+      "SELECT resolved_by FROM student_enrollment_reviews WHERE enrollment_id=$1 AND session_id='cs_test_actor'",
+      [reviewId],
+    );
+    if (resolved.rows[0].resolved_by !== "review-staff@example.test") {
+      throw new Error("resolve must store resolved_by (N17)");
+    }
+  });
+
+  await test("N11 protect_student_offering counts unreleased refunded seats", async () => {
+    const protectOffer = "99999999-9999-4999-8999-999999999991";
+    await admin.query(
+      `INSERT INTO student_enrollment_offerings(
+        id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled
+      ) VALUES ($1,'test','infection-control','2099-10-15',39500,0,$2,$3,$4,now(),'protect refunded',true)`,
+      [protectOffer, policyVersion, policyHash, policyText],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-10-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      [
+        randomUUID(),
+        protectOffer,
+        "1b".repeat(32),
+        "Protect Refund Adult",
+        "protect-refund@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+      ],
+    );
+    try {
+      await admin.query(
+        "UPDATE student_enrollment_offerings SET external_seats=12 WHERE id=$1",
+        [protectOffer],
+      );
+      throw new Error(
+        "Raising external_seats must fail while an unreleased refunded row occupies (N11)",
+      );
+    } catch (error) {
+      if (!String(error.message).includes("Inventory exceeds capacity")) throw error;
+    }
+  });
+
+  await test("N19 released refunded emails can re-enroll", async () => {
+    const email = "dup-index@example.test";
+    const first = randomUUID();
+    const dupOffer = "99999999-9999-4999-8999-999999999992";
+    await admin.query(
+      `INSERT INTO student_enrollment_offerings(
+        id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled
+      ) VALUES ($1,'test','infection-control','2099-11-15',39500,0,$2,$3,$4,now(),'dup index',true)`,
+      [dupOffer, policyVersion, policyHash, policyText],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,inventory_released_at,inventory_released_by) VALUES($1,$2,'2099-11-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded',now(),$10)",
+      [
+        first,
+        dupOffer,
+        "19".repeat(32),
+        "Dup Index Adult",
+        email,
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+        "staff@example.test",
+      ],
+    );
+    const reserved = await admin.query(
+      reserveSql,
+      [
+        randomUUID(),
+        dupOffer,
+        "1a".repeat(32),
+        "Dup Index Adult",
+        email,
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        "test",
+      ],
+    );
+    if (!reserved.rows.length) {
+      throw new Error(
+        "A released refunded email must be allowed to reserve again (N19)",
+      );
     }
   });
 

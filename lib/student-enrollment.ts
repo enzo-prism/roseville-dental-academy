@@ -48,10 +48,11 @@ export type StudentEnrollment = {
   stripe_expires_at: number;
   created_at: string;
 };
-export function studentConfig(): StudentConfig | null {
+function readStudentConfig(requireLivePayments: boolean): StudentConfig | null {
   const mode = process.env.RDA_STUDENT_PAYMENTS_MODE;
   if (mode !== "test" && mode !== "live") return null;
   if (
+    requireLivePayments &&
     mode === "live" &&
     process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED !== "true"
   )
@@ -88,6 +89,15 @@ export function studentConfig(): StudentConfig | null {
     return null;
   }
   return { mode, key, webhookSecret, origin, account };
+}
+export function studentConfig(): StudentConfig | null {
+  return readStudentConfig(true);
+}
+export function studentWebhookConfig(): StudentConfig | null {
+  return readStudentConfig(false);
+}
+export function studentWebhookProcessesWhilePaymentsOff(eventType: string) {
+  return eventType === "charge.refunded";
 }
 export function studentPublicEnrollCtaEnabled() {
   return (
@@ -166,6 +176,27 @@ export async function listStudentReviews(mode: StudentConfig["mode"]) {
     JOIN student_enrollment_offerings o ON o.id=e.offering_id
     WHERE o.mode=${mode} AND r.resolved_at IS NULL
     ORDER BY r.created_at LIMIT 500`;
+}
+export async function listStudentReservedHolds(
+  mode: StudentConfig["mode"],
+  database: typeof studentDatabase = studentDatabase,
+) {
+  return database()`SELECT e.id,e.student_name,e.email,e.stripe_session_id,e.stripe_expires_at,o.course_date
+    FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id
+    WHERE e.status='reserved' AND o.mode=${mode} ORDER BY e.created_at LIMIT 500`;
+}
+export function refundedRosterPaymentLabel(
+  mode: StudentConfig["mode"] | undefined,
+  releasedAt: unknown,
+) {
+  if (releasedAt != null && releasedAt !== "") {
+    return mode === "test"
+      ? "TEST ONLY · refunded · released"
+      : "refunded — seat released";
+  }
+  return mode === "test"
+    ? "TEST ONLY · refunded"
+    : "refunded — not sellable until released";
 }
 export function studentInput(body: Record<string, unknown>) {
   if (

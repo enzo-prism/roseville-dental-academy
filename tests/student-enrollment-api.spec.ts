@@ -1241,4 +1241,122 @@ test.describe("student enrollment isolated full stack", () => {
     expect(roster).toContain(`mode-filter-${planted}@example.test`);
     expect(roster).not.toContain(`live-review-${foreign}@example.test`);
   });
+  test("async_payment_failed does not expire a paid enrollment", async ({
+    request,
+  }) => {
+    const data = payload();
+    const created = await request.post("/api/student-enrollment/checkout", {
+      data,
+      headers,
+    });
+    expect(created.status()).toBe(200);
+    const id = (await created.json()).url.split("/").at(-1);
+    expect((await webhook(request, id)).status()).toBe(200);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === data.id,
+      ).status,
+    ).toBe("paid");
+    expect(
+      (await webhook(request, id, "checkout.session.async_payment_failed")).status(),
+    ).toBe(200);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === data.id,
+      ).status,
+    ).toBe("paid");
+  });
+  test("test roster hides live reserved holds and labels released refunds", async ({
+    request,
+  }) => {
+    const data = payload();
+    const created = await request.post("/api/student-enrollment/checkout", {
+      data,
+      headers,
+    });
+    expect(created.status()).toBe(200);
+    const id = (await created.json()).url.split("/").at(-1);
+    expect((await webhook(request, id)).status()).toBe(200);
+    await control({
+      status: "complete",
+      refundedAmount: 39500,
+    });
+    expect(
+      (
+        await webhook(request, id, "charge.refunded", {
+          data: { object: { payment_intent: `pi_fixture${id.slice(8)}` } },
+        })
+      ).status(),
+    ).toBe(200);
+    const foreign = randomUUID();
+    await control({
+      releaseRefundedSeat: {
+        id: data.id,
+        actor: "staff@example.test",
+      },
+      plantForeignModeHold: {
+        id: foreign,
+        offeringId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        owner: "c".repeat(64),
+        name: "Live Hold Adult",
+        email: `live-hold-${foreign}@example.test`,
+        phone: "916 555 0109",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+    });
+    const staff = createEnrollmentSession({
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin,
+    });
+    const roster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(roster).toContain(data.email);
+    expect(roster).toContain("No verified paid enrollments");
+    expect(roster).toContain("TEST ONLY · refunded · released");
+    expect(roster).not.toContain("TEST ONLY · paid");
+    expect(roster).not.toContain("refunded — not sellable until released");
+    expect(roster).not.toContain(`live-hold-${foreign}@example.test`);
+  });
+  test("/enroll remaining matches checkout when a refunded seat still occupies", async ({
+    request,
+  }) => {
+    await control({
+      resetLimits: randomUUID(),
+      externalSeats: { [offer]: 11 },
+    });
+    const occupying = payload();
+    const created = await request.post("/api/student-enrollment/checkout", {
+      data: occupying,
+      headers,
+    });
+    expect(created.status()).toBe(200);
+    const id = (await created.json()).url.split("/").at(-1);
+    expect((await webhook(request, id)).status()).toBe(200);
+    await control({
+      status: "complete",
+      refundedAmount: 39500,
+      externalSeats: { [offer]: 11 },
+    });
+    expect(
+      (
+        await webhook(request, id, "charge.refunded", {
+          data: { object: { payment_intent: `pi_fixture${id.slice(8)}` } },
+        })
+      ).status(),
+    ).toBe(200);
+    const enroll = await (await request.get("/enroll")).text();
+    expect(enroll).toMatch(/0 seats available/);
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: payload(),
+          headers,
+        })
+      ).status(),
+    ).toBe(409);
+  });
 });

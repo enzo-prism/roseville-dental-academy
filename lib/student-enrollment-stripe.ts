@@ -133,11 +133,13 @@ export function assertStudentSession(
   session: StudentSession,
   held: StudentEnrollment,
   config: StudentConfig,
+  options?: { allowExpiredOrphan?: boolean },
 ) {
   const prefix =
     config.mode === "test"
       ? /^cs_test_[A-Za-z0-9]+$/
       : /^cs_live_[A-Za-z0-9]+$/;
+  const orphan = options?.allowExpiredOrphan === true;
   if (
     session.object !== "checkout.session" ||
     !prefix.test(session.id) ||
@@ -153,10 +155,24 @@ export function assertStudentSession(
     session.metadata?.integration !== "rda-student-v1" ||
     session.metadata?.environment !== config.mode ||
     session.metadata?.course_date !== held.course_date ||
-    session.expires_at !== Number(held.stripe_expires_at) ||
-    (held.stripe_session_id !== null && held.stripe_session_id !== session.id)
+    (!orphan && session.expires_at !== Number(held.stripe_expires_at)) ||
+    (!orphan &&
+      held.stripe_session_id !== null &&
+      held.stripe_session_id !== session.id)
   )
     throw new Error("Payment verification failed");
+}
+export function studentSessionIsFullyRefunded(session: StudentSession) {
+  const charge =
+    typeof session.payment_intent === "object"
+      ? session.payment_intent?.latest_charge
+      : null;
+  return (
+    charge != null &&
+    charge.refunded === true &&
+    charge.amount_refunded === charge.amount &&
+    charge.amount === session.amount_total
+  );
 }
 export async function retrieveStudentSession(
   id: string,
@@ -276,7 +292,9 @@ export async function recordStudentSession(
     await studentDatabase()`SELECT mode FROM student_enrollment_offerings WHERE id=${held.offering_id}::uuid`;
   if (mode[0]?.mode !== config.mode)
     throw new Error("Wrong ledger environment");
-  assertStudentSession(session, held, config);
+  assertStudentSession(session, held, config, {
+    allowExpiredOrphan: held.status === "expired",
+  });
   if (held.status === "expired") {
     if (session.status === "complete" && session.payment_status === "paid") {
       await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'paid_after_release')`;

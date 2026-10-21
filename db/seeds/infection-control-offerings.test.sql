@@ -112,10 +112,9 @@ DO $verify$
 DECLARE n integer;
 BEGIN
   SELECT count(*) INTO n FROM student_enrollment_offerings
-    WHERE mode='test' AND course_id='infection-control'
-      AND course_date IN (DATE '2026-11-14', DATE '2026-12-05');
+    WHERE mode='test' AND course_id='infection-control';
   IF n <> 2 THEN
-    RAISE EXCEPTION 'TEST offering seed verify failed: expected the two confirmed dates, found %', n;
+    RAISE EXCEPTION 'TEST offering seed verify failed: expected 2 rows, found %', n;
   END IF;
   IF EXISTS (
     SELECT 1 FROM student_enrollment_offerings

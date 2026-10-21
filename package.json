@@ -13,6 +13,7 @@
     "lint": "eslint app components lib tests next.config.ts postcss.config.mjs",
     "test:student-enrollment": "node scripts/test-student-enrollment.mjs",
     "test:student-enrollment-locks": "node scripts/test-student-enrollment-locks.mjs",
+    "test:student-enrollment-mutants": "node scripts/kill-student-enrollment-mutants.mjs",
     "preview:student-enrollment": "node scripts/test-student-enrollment.mjs --serve",
     "audit:design": "node scripts/design-audit.mjs",
     "design:lint": "design.md lint DESIGN.md",

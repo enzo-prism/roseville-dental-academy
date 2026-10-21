@@ -220,7 +220,7 @@ origin aligned with the deployed enrollment origin.
 Do not resolve an orphan review by running
 `UPDATE student_enrollments SET status='paid'`. That bypasses the seat cap and can
 push a class to 13/12. Use the capacity-capped function, which refuses `enrolled`
-when reserved + paid + refunded already fill the offering:
+when reserved + paid + unreleased refunded already fill the offering:
 
 ```sql
 -- Review the class first, then choose enrolled, dismissed, or refunded.
@@ -368,14 +368,19 @@ verification purchase:
 
 1. Unset `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` (or leave it unset) so the public CTA
    stays hidden, then redeploy.
-2. Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` back to anything except `true` and
-   disable the two live offerings (`enabled=false`). `/enroll` then fail-closes.
-   Do not delete offerings that already have enrollments.
+2. Refund any verification charge from the merchant dashboard first, then run
+   `release_refunded_student_seat` so the seat is sellable again. Never
+   `DELETE` from `student_enrollments` to free capacity. Do this before the
+   live-payments kill switch so the refund webhook can land while Checkout is
+   still configured. If the kill switch was already flipped, the webhook still
+   accepts `charge.refunded` (and a fully refunded Checkout session) and still
+   drains pending paid confirmations while mail stays enabled.
 3. Leave `RDA_STUDENT_EMAIL_LIVE_ENABLED` on until every paid confirmation has
    left `pending`/`sending`, then unset it.
-4. Refund any verification charge from the merchant dashboard, then run
-   `release_refunded_student_seat` so the seat is sellable again. Never
-   `DELETE` from `student_enrollments` to free capacity.
+4. Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` back to anything except `true` and
+   disable the two live offerings (`enabled=false`). `/enroll` then fail-closes.
+   New Checkout sessions stop. Do not delete offerings that already have
+   enrollments.
 5. Do not drop `005` objects from production as a rollback. Re-apply the file
    after review if functions are missing.
 

@@ -51,7 +51,7 @@ jobs:
           trap 'docker rm -f rda-locks-pg' EXIT
           ready=0
           for i in $(seq 1 30); do
-            if docker exec rda-locks-pg pg_isready -U postgres -d rda_locks; then
+            if docker exec rda-locks-pg pg_isready -h 127.0.0.1 -U postgres -d rda_locks; then
               ready=1
               break
             fi

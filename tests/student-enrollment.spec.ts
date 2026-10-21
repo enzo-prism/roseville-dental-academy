@@ -17,6 +17,8 @@ import {
   isCanonicalInfectionControlDate,
 } from "@/lib/student-enrollment-offerings";
 import {
+  listStudentReservedHolds,
+  refundedRosterPaymentLabel,
   studentConfig,
   studentDatabase,
   studentEnrollmentOccupiesSeat,
@@ -24,6 +26,8 @@ import {
   studentOfferings,
   studentPublicEnrollCtaEnabled,
   studentPublicEnrollCtas,
+  studentWebhookConfig,
+  studentWebhookProcessesWhilePaymentsOff,
   STUDENT_POLICY_HASH,
   type StudentEnrollment,
 } from "@/lib/student-enrollment";
@@ -119,6 +123,13 @@ test("student configuration fails closed and never mixes live keys, wrong mercha
     delete process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED;
     delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA;
     expect(studentConfig()).toBeNull();
+    expect(studentWebhookConfig()?.mode).toBe("live");
+    expect(studentWebhookProcessesWhilePaymentsOff("charge.refunded")).toBe(
+      true,
+    );
+    expect(
+      studentWebhookProcessesWhilePaymentsOff("checkout.session.completed"),
+    ).toBe(false);
     expect(studentPublicEnrollCtaEnabled()).toBe(false);
     expect(studentPublicEnrollCtas()).toHaveLength(0);
     process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED = "true";
@@ -419,6 +430,12 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       "WHERE id=${held.id}::uuid AND status='reserved'",
     );
+    expect(
+      await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
+    ).toContain("studentWebhookConfig()");
+    expect(
+      await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
+    ).toContain("studentWebhookProcessesWhilePaymentsOff(event.type)");
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
     ).toContain("!verifyEnrollmentSignature(");
@@ -1142,6 +1159,226 @@ test("each confirmed date has a 12-seat cap, blocks the 13th, and a sold-out dat
         )
       ).rows,
     ).toHaveLength(0);
+  } finally {
+    await db.close();
+  }
+});
+test("claimed enrollment mutants fail when applied at their source lines", async () => {
+  const db = await PGlite.create();
+  try {
+    await db.exec(
+      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+    );
+    const threeArg = await db.query(
+      "SELECT 1 FROM pg_proc WHERE proname='resolve_student_enrollment_review' AND pronargs=3",
+    );
+    expect(threeArg.rows).toHaveLength(0);
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,0,$2,$3,$4,now(),'mutants',true)",
+      [
+        offer,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        fixtureFirstDate,
+      ],
+    );
+    const bound = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,$3,$4,$5,$6,$7,true,$8,$9,$10,39500,'usd','reserved','cs_test_bound')",
+      [
+        bound,
+        offer,
+        fixtureFirstDate,
+        "21".repeat(32),
+        "Bound Adult",
+        "bound-mutant@example.test",
+        "916 555 0100",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    expect(
+      (
+        await db.query<{ status: string }>(
+          "SELECT status FROM release_sessionless_student_enrollment($1)",
+          [bound],
+        )
+      ).rows[0].status,
+    ).toBe("reserved");
+    await expect(
+      db.query(
+        "UPDATE student_enrollment_offerings SET policy_version='old' WHERE id=$1",
+        [offer],
+      ),
+    ).rejects.toThrow("Offering already has enrollments");
+    const leftover = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-10-10',39500,0,$2,$3,$4,now(),'extra leftover',true)",
+      [
+        leftover,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    await allowIsolatedTestOfferingSeed(db);
+    await expect(
+      applyOfferingSeed(db, "db/seeds/infection-control-offerings.test.sql"),
+    ).rejects.toThrow(/expected 2 rows/i);
+    expect(
+      (
+        await db.query(
+          "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05'",
+        )
+      ).rows,
+    ).toHaveLength(0);
+    await db.query(
+      "DELETE FROM student_enrollment_offerings WHERE id=$1",
+      [leftover],
+    );
+    const liveNoncanonical = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2099-01-15',39500,0,$2,$3,$4,now(),'noncanonical live',true)",
+      [
+        liveNoncanonical,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    const liveListed = await studentOfferings(
+      {
+        mode: "live",
+        key: "sk_live_fixture",
+        webhookSecret: "whsec_fixture",
+        origin: "https://example.test",
+        account: "acct_1UJHgLCOhHjREvRz",
+      },
+      pgliteStudentDatabase(db),
+    );
+    expect(liveListed.map((row) => row.course_date)).not.toContain("2099-01-15");
+    const liveHold = randomUUID();
+    const liveOffer = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2026-11-14',39500,0,$2,$3,$4,now(),'live holds',true)",
+      [
+        liveOffer,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2026-11-14',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','reserved')",
+      [
+        liveHold,
+        liveOffer,
+        "22".repeat(32),
+        "Live Hold Adult",
+        "live-hold@example.test",
+        "916 555 0100",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    const testHolds = await listStudentReservedHolds(
+      "test",
+      pgliteStudentDatabase(db),
+    );
+    expect(testHolds.some((row) => row.id === liveHold)).toBe(false);
+    expect(testHolds.some((row) => row.id === bound)).toBe(true);
+    const remainingOffer = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-07-15',39500,11,$2,$3,$4,now(),'remaining drift',true)",
+      [
+        remainingOffer,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    const refundedId = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-07-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      [
+        refundedId,
+        remainingOffer,
+        "23".repeat(32),
+        "Remaining Drift Adult",
+        "remaining-drift@example.test",
+        "916 555 0100",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    const listed = await studentOfferings(
+      {
+        mode: "test",
+        key: "sk_test_fixture",
+        webhookSecret: "whsec_fixture",
+        origin: "http://127.0.0.1:3117",
+        account: "acct_fixture",
+      },
+      pgliteStudentDatabase(db),
+    );
+    expect(listed.find((row) => row.id === remainingOffer)?.remaining).toBe(0);
+    expect(
+      (
+        await db.query(
+          "SELECT * FROM reserve_student_enrollment($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+          [
+            randomUUID(),
+            remainingOffer,
+            "24".repeat(32),
+            "Blocked Remaining Adult",
+            "blocked-remaining@example.test",
+            "916 555 0100",
+            policy,
+            STUDENT_POLICY_HASH,
+            "test",
+          ],
+        )
+      ).rows,
+    ).toHaveLength(0);
+    await db.query("SELECT release_refunded_student_seat($1,$2)", [
+      refundedId,
+      "staff@example.test",
+    ]);
+    const roster = await db.query<{
+      inventory_released_at: string | null;
+      status: string;
+    }>(
+      "SELECT status,inventory_released_at FROM student_enrollment_roster_test WHERE id=$1",
+      [refundedId],
+    );
+    expect(roster.rows[0].status).toBe("refunded");
+    expect(roster.rows[0].inventory_released_at).toBeTruthy();
+    expect(refundedRosterPaymentLabel("test", roster.rows[0].inventory_released_at)).toBe(
+      "TEST ONLY · refunded · released",
+    );
+    expect(refundedRosterPaymentLabel("live", null)).toBe(
+      "refunded — not sellable until released",
+    );
+    const docs = await readFile("docs/student-payments.md", "utf8");
+    expect(docs).toContain("reserved + paid + unreleased refunded");
+    expect(docs).not.toContain(
+      "when reserved + paid + refunded already fill the offering",
+    );
+    expect(docs.indexOf("Refund any verification charge")).toBeGreaterThan(-1);
+    expect(docs.indexOf("Refund any verification charge")).toBeLessThan(
+      docs.indexOf("Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` back"),
+    );
+    const page = await readFile("app/enrollment-pilot/roster/page.tsx", "utf8");
+    expect(page).toContain("listStudentReservedHolds(config.mode)");
+    expect(page).toContain("refundedRosterPaymentLabel");
+    expect(page).toContain("r.inventory_released_at");
+    const enroll = await readFile("app/enroll/page.tsx", "utf8");
+    expect(enroll).toContain("live?.remaining");
+    expect(enroll).toContain("${Math.max(0, remaining)} seats available");
   } finally {
     await db.close();
   }

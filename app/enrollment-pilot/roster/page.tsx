@@ -2,7 +2,9 @@ import Link from "next/link";
 import { enrollmentOwner } from "@/lib/enrollment-http";
 import { enrollmentDate } from "@/lib/enrollment-contract";
 import {
+  listStudentReservedHolds,
   listStudentReviews,
+  refundedRosterPaymentLabel,
   studentConfig,
   studentDatabase,
 } from "@/lib/student-enrollment";
@@ -38,10 +40,7 @@ export default async function StudentRoster() {
     LEFT JOIN student_enrollment_mail m ON m.enrollment_id=r.id WHERE r.mode=${config.mode} ORDER BY r.course_date,r.student_name LIMIT 500`;
     rows = roster.filter((row) => row.status === "paid");
     refunded = roster.filter((row) => row.status === "refunded");
-    holds =
-      await studentDatabase()`SELECT e.id,e.student_name,e.email,e.stripe_session_id,e.stripe_expires_at,o.course_date
-      FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id
-      WHERE e.status='reserved' AND o.mode=${config.mode} ORDER BY e.created_at LIMIT 500`;
+    holds = await listStudentReservedHolds(config.mode);
     reviews = await listStudentReviews(config.mode);
   }
   return (
@@ -121,9 +120,10 @@ export default async function StudentRoster() {
                   enrollmentDate(r.course_date),
                   r.student_name,
                   r.email,
-                  config?.mode === "test"
-                    ? "TEST ONLY · refunded"
-                    : "refunded — not sellable until released",
+                  refundedRosterPaymentLabel(
+                    config?.mode,
+                    r.inventory_released_at,
+                  ),
                 ].map((v, i) => (
                   <td key={i} className="border-b p-3">
                     {String(v)}
