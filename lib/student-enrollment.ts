@@ -5,6 +5,7 @@ import {
   ENROLLMENT_POLICY_VERSION,
   enrollmentDate,
 } from "@/lib/enrollment-contract";
+import { isCanonicalInfectionControlDate } from "@/lib/student-enrollment-offerings";
 
 export const STUDENT_COOKIE = "__Host-rda-student-checkout";
 export const STUDENT_POLICY_HASH = createHash("sha256")
@@ -106,10 +107,25 @@ export async function studentOfferings(
     FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true
     AND o.course_date > (now() AT TIME ZONE 'America/Los_Angeles')::date
     AND o.policy_version=${ENROLLMENT_POLICY_VERSION} AND o.policy_hash=${STUDENT_POLICY_HASH} AND o.policy_text IS NOT NULL ORDER BY o.course_date`;
-  return rows.map((row) => ({
-    ...row,
-    course_date: enrollmentDate(row.course_date),
-  })) as StudentOffering[];
+  return rows
+    .map((row) => ({
+      ...row,
+      course_date: enrollmentDate(row.course_date),
+    }))
+    .filter(
+      (row) =>
+        config.mode !== "live" || isCanonicalInfectionControlDate(row.course_date),
+    ) as StudentOffering[];
+}
+export async function releaseUnboundStudentHold(id: string) {
+  const rows =
+    await studentDatabase()`SELECT * FROM release_sessionless_student_enrollment(${id}::uuid)`;
+  return rows[0]
+    ? ({
+        ...rows[0],
+        course_date: enrollmentDate(rows[0].course_date),
+      } as StudentEnrollment)
+    : undefined;
 }
 export async function getStudentEnrollment(id: string) {
   const rows =

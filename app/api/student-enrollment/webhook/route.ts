@@ -9,6 +9,7 @@ import {
   retrieveStudentSession,
   recordStudentSession,
   studentSessionForIntent,
+  type StudentPaymentEvent,
 } from "@/lib/student-enrollment-stripe";
 import { deliverStudentConfirmation } from "@/lib/student-enrollment-mail";
 export const runtime = "nodejs";
@@ -60,9 +61,16 @@ export async function POST(request: Request) {
             config,
           )
         : await retrieveStudentSession(event.data?.object?.id, config);
+    if (!session)
+      return enrollmentResponse({ received: true, ignored: true });
     if (session.metadata?.integration !== "rda-student-v1")
       return enrollmentResponse({ received: true, ignored: true });
-    const held = await recordStudentSession(session, config, event.id);
+    const held = await recordStudentSession(
+      session,
+      config,
+      event.id,
+      event.type as StudentPaymentEvent,
+    );
     if (held?.status === "paid") await deliverStudentConfirmation(held, config);
     return enrollmentResponse({ received: true });
   } catch {

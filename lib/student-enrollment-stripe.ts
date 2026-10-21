@@ -4,6 +4,7 @@ import type {
 } from "@/lib/student-enrollment";
 import {
   getStudentEnrollment,
+  releaseUnboundStudentHold,
   studentDatabase,
 } from "@/lib/student-enrollment";
 import { INFECTION_CONTROL_CHECKOUT_POLICY } from "@/lib/academy-policies";
@@ -206,10 +207,18 @@ export async function bindStudentSession(held: StudentEnrollment, id: string) {
     WHERE id=${held.id}::uuid AND (stripe_session_id IS NULL OR stripe_session_id=${id}) RETURNING id`;
   if (!rows.length) throw new Error("Session identity conflict");
 }
+export type StudentPaymentEvent =
+  | "checkout.session.completed"
+  | "checkout.session.expired"
+  | "checkout.session.async_payment_succeeded"
+  | "checkout.session.async_payment_failed"
+  | "charge.refunded"
+  | "reconcile";
 export async function recordStudentSession(
   session: StudentSession,
   config: StudentConfig,
   eventId: string,
+  eventType: StudentPaymentEvent = "reconcile",
 ) {
   const id = session.metadata?.enrollment_id;
   if (!/^[a-f0-9-]{36}$/i.test(id ?? "")) throw new Error("Invalid enrollment");
@@ -226,15 +235,33 @@ export async function recordStudentSession(
     typeof session.payment_intent === "string"
       ? session.payment_intent
       : (session.payment_intent?.id ?? null);
-  if (session.status === "complete" && session.payment_status === "paid")
-    outcome = "paid";
-  if (session.status === "expired" && session.payment_status === "unpaid")
-    outcome = "expired";
+  switch (eventType) {
+    case "checkout.session.async_payment_failed":
+      if (held.status === "paid" || held.status === "refunded")
+        return getStudentEnrollment(id);
+      if (session.payment_status !== "paid") outcome = "expired";
+      break;
+    case "checkout.session.completed":
+    case "checkout.session.expired":
+    case "checkout.session.async_payment_succeeded":
+    case "charge.refunded":
+    case "reconcile":
+      if (session.status === "complete" && session.payment_status === "paid")
+        outcome = "paid";
+      if (session.status === "expired" && session.payment_status === "unpaid")
+        outcome = "expired";
+      break;
+    default: {
+      const _never: never = eventType;
+      throw new Error(`Unsupported payment event: ${_never}`);
+    }
+  }
   const charge =
     typeof session.payment_intent === "object"
       ? session.payment_intent?.latest_charge
       : null;
   if (
+    eventType !== "checkout.session.async_payment_failed" &&
     charge &&
     charge.amount === held.amount &&
     charge.currency === held.currency &&
@@ -265,8 +292,14 @@ export async function reconcileStudentSession(
   const session = held.stripe_session_id
     ? await retrieveStudentSession(held.stripe_session_id, config)
     : await recoverStudentSession(held, config);
-  if (!session)
+  if (!session) {
+    if (
+      !held.stripe_session_id &&
+      Number(held.stripe_expires_at) < Date.now() / 1000
+    )
+      return releaseUnboundStudentHold(held.id);
     throw new Error("Provider session not found; manual review required");
+  }
   assertStudentSession(session, held, config);
   await bindStudentSession(held, session.id);
   const verified: StudentSession =
@@ -285,20 +318,18 @@ export async function reconcileStudentSession(
   );
 }
 export async function studentSessionForIntent(
-  intent: string,
+  intent: unknown,
   config: StudentConfig,
 ) {
-  if (!/^pi_[A-Za-z0-9]+$/.test(intent))
-    throw new Error("Invalid payment intent");
+  if (typeof intent !== "string" || !/^pi_[A-Za-z0-9]+$/.test(intent))
+    return null;
   const list = await provider(
     config,
     `checkout/sessions?payment_intent=${intent}&limit=2`,
   );
-  if (
-    list.object !== "list" ||
-    list.has_more !== false ||
-    list.data?.length !== 1
-  )
+  if (list.object !== "list" || list.has_more !== false)
     throw new Error("Refund session requires review");
+  if (!list.data?.length) return null;
+  if (list.data.length !== 1) throw new Error("Refund session requires review");
   return retrieveStudentSession(list.data[0].id, config);
 }

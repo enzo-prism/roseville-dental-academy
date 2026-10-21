@@ -8,10 +8,13 @@ import {
   INFECTION_CONTROL_CHECKOUT_POLICY,
 } from "@/lib/academy-policies";
 import {
+  INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT,
   INFECTION_CONTROL_OFFERING_AMOUNT,
   INFECTION_CONTROL_OFFERING_CAPACITY,
   INFECTION_CONTROL_OFFLINE_SEATS,
   INFECTION_CONTROL_SELLABLE_SESSIONS,
+  infectionControlFixtureCourseDates,
+  isCanonicalInfectionControlDate,
 } from "@/lib/student-enrollment-offerings";
 import {
   studentConfig,
@@ -24,11 +27,18 @@ import {
   studentSessionParameters,
   type StudentSession,
 } from "@/lib/student-enrollment-stripe";
-const offer = "11111111-1111-4111-8111-111111111111",
-  policy = "2026-09-30";
+const offer = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[0],
+  policy = "2026-09-30",
+  [fixtureFirstDate, fixtureSecondDate] = infectionControlFixtureCourseDates();
+async function allowOfferingSeed(db: PGlite) {
+  await db.exec("SET application_name = 'rda-student-offering-seed'");
+}
 test("database course dates preserve their calendar day and reject null", () => {
   expect(enrollmentDate(new Date(2099, 10, 14))).toBe("2099-11-14");
   expect(enrollmentDate("2099-11-14")).toBe("2099-11-14");
+  expect(enrollmentDate(new Date("2026-11-14T00:00:00.000Z"))).toBe(
+    "2026-11-14",
+  );
   expect(() => enrollmentDate(null)).toThrow();
 });
 test("checkout inventory is only the confirmed November 14 and December 5 sessions at 39500", () => {
@@ -48,6 +58,11 @@ test("checkout inventory is only the confirmed November 14 and December 5 sessio
   expect(STUDENT_POLICY_HASH).toBe(
     "af24daa14cf51c382bcdc9cb567f2b4de29886ccd4d980d62ca1a46ee7fd53ae",
   );
+  const afterClose = infectionControlFixtureCourseDates(
+    new Date("2027-01-15T18:00:00Z"),
+  );
+  expect(afterClose[0] > "2027-01-15").toBe(true);
+  expect(afterClose[1] > afterClose[0]).toBe(true);
 });
 test("student configuration fails closed and never mixes live keys, wrong merchants or origins", () => {
   const before = { ...process.env };
@@ -147,6 +162,7 @@ test("student consent and immutable checkout contract reject tampering", () => {
     { expires_at: 1 },
     { metadata: { ...session.metadata, course_date: "2026-11-15" } },
     { metadata: { ...session.metadata, environment: "live" } },
+    { metadata: { ...session.metadata, integration: "other" } },
   ])
     expect(() =>
       assertStudentSession({ ...session, ...extra }, held, config),
@@ -161,9 +177,18 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     await db.exec(migration);
     await db.exec(migration);
+    expect(migration).toContain("AND mode=p_mode FOR UPDATE;");
+    expect(isCanonicalInfectionControlDate("2026-11-14")).toBe(true);
+    expect(isCanonicalInfectionControlDate("2026-11-07")).toBe(false);
     expect(
       (await db.query("SELECT * FROM student_enrollment_offerings")).rows,
     ).toHaveLength(0);
+    await expect(
+      db.exec(
+        await readFile("db/seeds/infection-control-offerings.sql", "utf8"),
+      ),
+    ).rejects.toThrow("Refusing to seed");
+    await allowOfferingSeed(db);
     await db.exec(
       await readFile("db/seeds/infection-control-offerings.sql", "utf8"),
     );
@@ -257,12 +282,13 @@ test("student database enforces shared inventory, separate modes, replay, roster
     ]);
     await db.query("DELETE FROM student_enrollment_offerings WHERE mode='test'");
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-11-14',39500,2,$2,$3,$4,now(),'fixture',true)",
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,2,$2,$3,$4,now(),'fixture',true)",
       [
         offer,
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        fixtureFirstDate,
       ],
     );
     const reserve = (id: string, index: number, mode = "test") =>
@@ -314,6 +340,9 @@ test("student database enforces shared inventory, separate modes, replay, roster
     await event("evt_paid", "paid");
     expect(
       (await db.query("SELECT * FROM student_enrollment_roster")).rows,
+    ).toHaveLength(0);
+    expect(
+      (await db.query("SELECT * FROM student_enrollment_roster_test")).rows,
     ).toHaveLength(1);
     expect(
       (await db.query("SELECT * FROM student_enrollment_mail")).rows,
@@ -399,6 +428,41 @@ test("student database enforces shared inventory, separate modes, replay, roster
       [ids[1]],
     );
     expect((await reserve(randomUUID(), 102)).rows).toHaveLength(1);
+    const stray = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2099-01-15',39500,0,$2,$3,$4,now(),'noncanonical',true)",
+      [
+        stray,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    await expect(
+      db.query(
+        "SELECT * FROM reserve_student_enrollment($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+        [
+          randomUUID(),
+          stray,
+          "f".repeat(64),
+          "Synthetic Adult Live",
+          "live@example.test",
+          "916 555 0100",
+          policy,
+          STUDENT_POLICY_HASH,
+          "live",
+        ],
+      ),
+    ).rejects.toThrow("Offering unavailable");
+    const unbound = ids[3];
+    expect(
+      (
+        await db.query<{ status: string }>(
+          "SELECT status FROM release_sessionless_student_enrollment($1)",
+          [unbound],
+        )
+      ).rows[0].status,
+    ).toBe("expired");
   } finally {
     await db.close();
   }
@@ -412,21 +476,23 @@ test("each confirmed date has a 12-seat cap, blocks the 13th, and a sold-out dat
       await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
     );
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-12-05',39500,0,$2,$3,$4,now(),'fixture',true)",
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,0,$2,$3,$4,now(),'fixture',true)",
       [
         december,
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        fixtureSecondDate,
       ],
     );
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-11-14',39500,12,$2,$3,$4,now(),'fixture',true)",
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,12,$2,$3,$4,now(),'fixture',true)",
       [
         soldOut,
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        fixtureFirstDate,
       ],
     );
     const reserve = (id: string, offeringId: string, index: number) =>

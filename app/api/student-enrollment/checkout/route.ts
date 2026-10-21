@@ -1,5 +1,6 @@
 import { enrollmentBody, enrollmentResponse } from "@/lib/enrollment-http";
 import {
+  releaseUnboundStudentHold,
   studentInput,
   studentDatabase,
   STUDENT_POLICY_HASH,
@@ -9,7 +10,11 @@ import {
   studentRequest,
   studentAllowance,
 } from "@/lib/student-enrollment-http";
-import { startStudentSession } from "@/lib/student-enrollment-stripe";
+import {
+  recoverStudentSession,
+  startStudentSession,
+  verifyStudentMerchant,
+} from "@/lib/student-enrollment-stripe";
 import { ENROLLMENT_POLICY_VERSION, enrollmentDate } from "@/lib/enrollment-contract";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +47,7 @@ export async function POST(request: Request) {
         },
         400,
       );
+    await verifyStudentMerchant(access.config);
     const rows =
       await studentDatabase()`SELECT * FROM reserve_student_enrollment(${input.id}::uuid,${input.offeringId}::uuid,${access.owner},${input.name},${input.email},${input.phone},${ENROLLMENT_POLICY_VERSION},${STUDENT_POLICY_HASH},${access.config.mode})`;
     const held = rows[0]
@@ -64,17 +70,29 @@ export async function POST(request: Request) {
         { error: "This enrollment is already closed. Check its status." },
         409,
       );
-    const url = await startStudentSession(held, access.config);
-    return enrollmentResponse({
-      url,
-      id: held.id,
-      testOnly: access.config.mode === "test",
-    });
+    try {
+      const url = await startStudentSession(held, access.config);
+      return enrollmentResponse({
+        url,
+        id: held.id,
+        testOnly: access.config.mode === "test",
+      });
+    } catch (error) {
+      if (!held.stripe_session_id) {
+        try {
+          const recovered = await recoverStudentSession(held, access.config);
+          if (!recovered) await releaseUnboundStudentHold(held.id);
+        } catch {
+          /* Recover/network uncertainty keeps the seat for operator review. */
+        }
+      }
+      throw error;
+    }
   } catch {
     return enrollmentResponse(
       {
         error:
-          "Checkout could not start. Check or close the saved checkout before trying again. Any reserved seat is preserved.",
+          "Checkout could not start. Check or close the saved checkout before trying again.",
       },
       503,
     );

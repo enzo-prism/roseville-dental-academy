@@ -29,6 +29,48 @@ test database. It inserts the same two dates as `mode='test'`, `enabled=true`,
 the reviewed live seed. Never apply it to production or any live database. Production
 uses the live seed (`mode='live'`, `enabled=false`) after review.
 
+Both seed files refuse to run unless the session first sets
+`application_name = 'rda-student-offering-seed'`. `ON CONFLICT DO NOTHING` will not
+overwrite a stale row with the same `(mode, course_id, course_date)`, so each file
+verifies the post-state and raises if the two confirmed dates, amount, seats, hash,
+or enabled flag do not match.
+
+## October 21 2026 preview exception
+
+By Enzo's decision on October 21, 2026, the Vercel preview for this branch used the
+production database with `db/seeds/infection-control-offerings.test.sql` applied there.
+That contradicts the isolated-database rule above. Test-mode queries stay filtered by
+`mode='test'`, but ad-hoc SQL against `student_enrollment_roster` is live-only; use
+`student_enrollment_roster_test` for TEST paid rows. Do not repeat this. After preview
+sign-off, clean TEST rows with the SQL below — **do not run it from this task**.
+
+```sql
+-- TEST-mode-only cleanup. Never delete mode='live' rows.
+-- Review the counts, then COMMIT or ROLLBACK.
+BEGIN;
+SELECT count(*) AS test_offerings FROM student_enrollment_offerings WHERE mode = 'test';
+SELECT count(*) AS test_enrollments
+  FROM student_enrollments e
+  JOIN student_enrollment_offerings o ON o.id = e.offering_id
+  WHERE o.mode = 'test';
+DELETE FROM student_enrollment_events
+ WHERE enrollment_id IN (
+   SELECT e.id FROM student_enrollments e
+   JOIN student_enrollment_offerings o ON o.id = e.offering_id
+   WHERE o.mode = 'test'
+ );
+DELETE FROM student_enrollment_mail
+ WHERE enrollment_id IN (
+   SELECT e.id FROM student_enrollments e
+   JOIN student_enrollment_offerings o ON o.id = e.offering_id
+   WHERE o.mode = 'test'
+ );
+DELETE FROM student_enrollments
+ WHERE offering_id IN (SELECT id FROM student_enrollment_offerings WHERE mode = 'test');
+DELETE FROM student_enrollment_offerings WHERE mode = 'test';
+-- COMMIT;
+```
+
 Checkout always shows the live-site policy wording:
 
 > Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.
@@ -187,11 +229,13 @@ the repository.
 
 1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
    secure form. Configure them only on the isolated test deployment and test database.
-2. Apply `005_student_enrollment.sql`. On the isolated test database only, apply
+2. Apply `005_student_enrollment.sql`. On the isolated test database only, set
+   `application_name = 'rda-student-offering-seed'` and apply
    `db/seeds/infection-control-offerings.test.sql` (mode=`test`, `enabled=true`).
    Confirm the two dates, `amount=39500`, `capacity=12`, `external_seats=0`. Never
-   apply that TEST seed to production. The live database uses
-   `db/seeds/infection-control-offerings.sql` (`enabled=false`) later.
+   apply that TEST seed to production. The live database uses the same
+   `application_name` guard with `db/seeds/infection-control-offerings.sql`
+   (`enabled=false`) later. The post-seed verify must succeed.
 3. Activate test mode (`RDA_STUDENT_PAYMENTS_MODE=test` plus matching test origin,
    account, key, and webhook secret). Leave
    `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` and `RDA_STUDENT_EMAIL_LIVE_ENABLED` unset.
@@ -204,10 +248,11 @@ the repository.
    other date must remain purchasable.
 7. After test-mode sign-off, configure live keys through the same secure form on the
    live environment. Do not reuse test secrets.
-8. Make one small real purchase, confirm the roster and confirmation email, then refund
+8. Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment and redeploy.
+   The public Enroll CTA is compiled at build time and will not appear until that
+   redeploy. Enable the two live offerings. Outbound student email is a separate flag.
+9. Make one small real purchase, confirm the roster and confirmation email, then refund
    that charge from the verified merchant dashboard and mark the seat reconciled.
-9. Only then enable the public Enroll CTA by setting `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true`
-   and enabling the two live offerings. Outbound student email is a separate flag.
 
 Launch remains blocked until that checklist is finished. No real charges, refunds, student
 emails, bank changes, or credential creation are part of this development release. This

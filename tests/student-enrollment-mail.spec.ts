@@ -240,6 +240,19 @@ test("provider failure, concurrent claims and expired retry windows preserve the
     await old.close();
   }
 });
+test("live email gate blocks provider access until the separate live email flag is set", async () => {
+  const f = await fixture();
+  try {
+    delete process.env.RDA_STUDENT_EMAIL_LIVE_ENABLED;
+    await expect(deliverStudentConfirmation(f.held, f.config)).rejects.toThrow(
+      "unavailable",
+    );
+    expect(f.calls).toHaveLength(0);
+    expect((await f.state()).status).toBe("pending");
+  } finally {
+    await f.close();
+  }
+});
 test("refund before delivery suppresses confirmation; test mode captures an immutable payload without provider access", async () => {
   const f = await fixture();
   try {

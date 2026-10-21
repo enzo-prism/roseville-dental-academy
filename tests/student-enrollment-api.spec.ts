@@ -1,4 +1,4 @@
-import { randomUUID, createHmac } from "node:crypto";
+import { randomUUID, createHmac, createHash } from "node:crypto";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import { STUDENT_COOKIE } from "@/lib/student-enrollment";
@@ -6,8 +6,15 @@ import {
   createEnrollmentSession,
   ENROLLMENT_PILOT_COOKIE,
 } from "@/lib/enrollment-auth";
+import {
+  INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT,
+  infectionControlFixtureCourseDates,
+  infectionControlSessionLabel,
+} from "@/lib/student-enrollment-offerings";
 const origin = process.env.LOCAL_ORIGIN ?? "http://127.0.0.1:3117",
-  offer = "11111111-1111-4111-8111-111111111111";
+  offer = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[0],
+  december = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[1],
+  [fixtureFirstDate] = infectionControlFixtureCourseDates();
 const cookie = `${STUDENT_COOKIE}=${"a".repeat(64)}`,
   headers = { Origin: origin, Cookie: cookie };
 const payload = () => ({
@@ -123,7 +130,7 @@ test.describe("student enrollment isolated full stack", () => {
     expect((await webhook(request, id)).status()).toBe(200);
     const state = await evidence();
     expect(
-      state.student_enrollment_roster.filter(
+      state.student_enrollment_roster_test.filter(
         (r: { id: string }) => r.id === data.id,
       ),
     ).toHaveLength(1);
@@ -134,13 +141,13 @@ test.describe("student enrollment isolated full stack", () => {
     expect(mail[0].status).toBe("captured");
     expect(mail[0].captured_body).toContain("TEST ONLY");
     expect(mail[0].captured_body).toContain(data.id);
-    expect(mail[0].captured_body).toContain("2026-11-14");
+    expect(mail[0].captured_body).toContain(fixtureFirstDate);
     const confirmation = await request.get(
       `/enroll/confirmation?enrollment=${data.id}`,
       { headers },
     );
     expect(await confirmation.text()).toContain("Payment confirmed");
-    expect(await confirmation.text()).toContain("2026-11-14");
+    expect(await confirmation.text()).toContain(fixtureFirstDate);
     expect(confirmation.headers()["cache-control"]).toContain("no-store");
     expect(
       await (
@@ -187,7 +194,7 @@ test.describe("student enrollment isolated full stack", () => {
       ).text(),
     ).toContain("Payment refunded");
     expect(
-      (await evidence()).student_enrollment_roster.find(
+      (await evidence()).student_enrollment_roster_test.find(
         (r: { id: string }) => r.id === data.id,
       ).refunded_amount,
     ).toBe(39500);
@@ -208,8 +215,8 @@ test.describe("student enrollment isolated full stack", () => {
     expect(
       (await evidence()).student_enrollments.find(
         (r: { id: string }) => r.id === data.id,
-      ).status,
-    ).toBe("reserved");
+      ),
+    ).toBeUndefined();
     await control({ lostResponse: true });
     expect(
       (
@@ -258,6 +265,33 @@ test.describe("student enrollment isolated full stack", () => {
         })
       ).status(),
     ).toBe(400);
+    const forged = JSON.stringify({
+      id: `evt_${"a".repeat(24)}`,
+      livemode: false,
+      type: "checkout.session.completed",
+      data: { object: { id } },
+    });
+    const forgedTime = Math.floor(Date.now() / 1000);
+    const forgedResponse = await request.post(
+      "/api/student-enrollment/webhook",
+      {
+        data: forged,
+        headers: {
+          "stripe-signature": `t=${forgedTime},v1=${"ab".repeat(32)}`,
+        },
+      },
+    );
+    expect(forgedResponse.status()).toBe(400);
+    expect(await forgedResponse.json()).toEqual({
+      error: "Invalid signature.",
+    });
+    expect(
+      (
+        await webhook(request, id, "checkout.session.completed", {
+          account: "acct_other",
+        })
+      ).status(),
+    ).toBe(400);
     await request.post("/api/student-enrollment/reconcile", {
       data: { id: data.id },
       headers,
@@ -284,8 +318,10 @@ test.describe("student enrollment isolated full stack", () => {
       "Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
     );
     const dateOptions = page.getByLabel("Course date and full payment");
-    await expect(dateOptions).toContainText("November 14, 2026 · $395.00 USD");
-    await expect(dateOptions).toContainText("December 5, 2026 · $395.00 USD");
+    await expect(dateOptions).toContainText(
+      `${infectionControlSessionLabel(fixtureFirstDate)} · $395.00 USD`,
+    );
+    await expect(dateOptions).toContainText("$395.00 USD");
     await expect(
       page.getByRole("button", { name: "Continue to Stripe test checkout" }),
     ).toBeEnabled();
@@ -363,7 +399,6 @@ test.describe("student enrollment isolated full stack", () => {
     expect(body).toContain(
       "Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
     );
-    const december = "22222222-2222-4222-8222-222222222222";
     await control({
       resetLimits: randomUUID(),
       externalSeats: { [december]: 12 },
@@ -384,7 +419,7 @@ test.describe("student enrollment isolated full stack", () => {
     const attempts = Array.from({ length: 13 }, (_, i) => ({
       data: {
         ...payload(),
-        offeringId: "22222222-2222-4222-8222-222222222222",
+        offeringId: december,
       },
       headers: {
         Origin: origin,
@@ -468,6 +503,10 @@ test.describe("student enrollment isolated full stack", () => {
       state.student_enrollments.find((r: { id: string }) => r.id === data.id)
         .refunded_amount,
     ).toBe(10000);
+    expect(
+      state.student_enrollments.find((r: { id: string }) => r.id === data.id)
+        .status,
+    ).toBe("paid");
     await control({ status: "complete", refundedAmount: 39500 });
     expect(
       (
@@ -511,7 +550,7 @@ test.describe("student enrollment isolated full stack", () => {
       ),
     ).toBe(false);
   });
-  test("complete unpaid checkout and actual async failure retain one seat for review; async success confirms once", async ({
+  test("complete unpaid checkout stays held, async payment failure releases the seat, and async success confirms once", async ({
     request,
   }) => {
     const data = payload(),
@@ -534,7 +573,7 @@ test.describe("student enrollment isolated full stack", () => {
     expect(
       state.student_enrollments.find((r: { id: string }) => r.id === data.id)
         .status,
-    ).toBe("reserved");
+    ).toBe("expired");
     expect(
       state.student_enrollment_mail.some(
         (r: { enrollment_id: string }) => r.enrollment_id === data.id,
@@ -579,7 +618,7 @@ test.describe("student enrollment isolated full stack", () => {
     expect(
       state.student_enrollments.find((r: { id: string }) => r.id === data.id)
         .status,
-    ).toBe("reserved");
+    ).toBe("expired");
     expect(
       state.student_enrollments.find((r: { id: string }) => r.id === next.id)
         .status,
@@ -589,5 +628,157 @@ test.describe("student enrollment isolated full stack", () => {
         (r: { enrollment_id: string }) => r.enrollment_id === next.id,
       ),
     ).toHaveLength(1);
+  });
+  test("twelve /v1/account failures create no holds and a later buyer can still purchase", async ({
+    request,
+  }) => {
+    await control({ accountError: true, resetLimits: randomUUID() });
+    const attempts = await Promise.all(
+      Array.from({ length: 12 }, () =>
+        request.post("/api/student-enrollment/checkout", {
+          data: payload(),
+          headers,
+        }),
+      ),
+    );
+    expect(attempts.every((response) => response.status() === 503)).toBe(true);
+    expect(
+      (await evidence()).student_enrollments.filter(
+        (row: { offering_id: string; status: string }) =>
+          row.offering_id === offer && row.status === "reserved",
+      ),
+    ).toHaveLength(0);
+    await control({ resetLimits: randomUUID() });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: payload(),
+          headers,
+        })
+      ).status(),
+    ).toBe(200);
+  });
+  test("session create failure after reserve releases the hold in the same request", async ({
+    request,
+  }) => {
+    const data = payload();
+    await control({ createError: true });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data,
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === data.id,
+      )?.status,
+    ).toBe("expired");
+    await control({});
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: payload(),
+          headers,
+        })
+      ).status(),
+    ).toBe(200);
+  });
+  test("reconcile expires a sessionless hold after stripe_expires_at when recovery is empty", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    await control({
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Sessionless Adult",
+        email: `sessionless-${planted}@example.test`,
+        phone: "916 555 0199",
+        expiresAt: 1,
+      },
+    });
+    const expired = await request.post("/api/student-enrollment/reconcile", {
+      data: { id: planted },
+      headers,
+    });
+    expect(expired.status()).toBe(200);
+    expect((await expired.json()).status).toBe("expired");
+    const fresh = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: fresh,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Open Sessionless Adult",
+        email: `open-sessionless-${fresh}@example.test`,
+        phone: "916 555 0198",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/reconcile", {
+          data: { id: fresh },
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === fresh,
+      ).status,
+    ).toBe("reserved");
+  });
+  test("charge.refunded without a Checkout PaymentIntent is acknowledged and ignored", async ({
+    request,
+  }) => {
+    expect(
+      (
+        await webhook(request, "ignored", "charge.refunded", {
+          data: { object: {} },
+        })
+      ).status(),
+    ).toBe(200);
+    expect(
+      (
+        await webhook(request, "ignored", "charge.refunded", {
+          data: { object: { payment_intent: "pi_not_a_checkout" } },
+        })
+      ).status(),
+    ).toBe(200);
+  });
+  test("staff roster reports pending reserved holds and hides them from anonymous browsers", async ({
+    request,
+  }) => {
+    const data = payload();
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data,
+          headers,
+        })
+      ).status(),
+    ).toBe(200);
+    expect(await (await request.get("/enrollment-pilot/roster")).text()).not.toContain(
+      data.email,
+    );
+    const staff = createEnrollmentSession({
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin,
+    });
+    const roster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(roster).toContain("Pending checkout holds");
+    expect(roster).toContain(data.email);
+    expect(roster).toContain("bound");
   });
 });

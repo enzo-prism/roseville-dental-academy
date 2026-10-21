@@ -80,7 +80,8 @@ BEGIN
   END IF;
   IF NOT offer.enabled OR offer.course_date <= (now() AT TIME ZONE 'America/Los_Angeles')::date
     OR offer.policy_version<>p_policy OR offer.policy_hash<>p_hash OR offer.policy_text IS NULL
-    OR encode(sha256(convert_to(offer.policy_text,'UTF8')),'hex')<>p_hash THEN RAISE EXCEPTION 'Offering unavailable'; END IF;
+    OR encode(sha256(convert_to(offer.policy_text,'UTF8')),'hex')<>p_hash
+    OR (p_mode='live' AND offer.course_date NOT IN (DATE '2026-11-14', DATE '2026-12-05')) THEN RAISE EXCEPTION 'Offering unavailable'; END IF;
   IF (SELECT count(*) FROM student_enrollments WHERE owner_hash=p_owner AND status='reserved')>=2 THEN RETURN; END IF;
   -- Refunded seats stay counted until academy staff explicitly reconcile inventory.
   IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=p_offering AND status IN ('reserved','paid','refunded'))>=offer.capacity THEN RETURN; END IF;
@@ -139,10 +140,27 @@ END;
 $$;
 DROP TRIGGER IF EXISTS student_mail_payload_immutable ON student_enrollment_mail;
 CREATE TRIGGER student_mail_payload_immutable BEFORE UPDATE ON student_enrollment_mail FOR EACH ROW EXECUTE FUNCTION protect_student_mail_payload();
+CREATE OR REPLACE FUNCTION release_sessionless_student_enrollment(p_id uuid)
+RETURNS SETOF student_enrollments LANGUAGE plpgsql AS $$
+DECLARE held student_enrollments;
+BEGIN
+  SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN; END IF;
+  IF held.status<>'reserved' OR held.stripe_session_id IS NOT NULL THEN
+    RETURN NEXT held; RETURN;
+  END IF;
+  UPDATE student_enrollments SET status='expired',updated_at=now() WHERE id=p_id RETURNING * INTO held;
+  RETURN NEXT held;
+END;
+$$;
 CREATE OR REPLACE VIEW student_enrollment_roster AS
   SELECT e.id,e.student_name,e.email,e.phone,e.status,e.amount,e.currency,e.refunded_amount,e.policy_accepted_at,e.policy_version,
     e.stripe_session_id,e.stripe_payment_intent,o.mode,o.course_id,o.course_date
-  FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.status IN ('paid','refunded');
+  FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.status IN ('paid','refunded') AND o.mode='live';
+CREATE OR REPLACE VIEW student_enrollment_roster_test AS
+  SELECT e.id,e.student_name,e.email,e.phone,e.status,e.amount,e.currency,e.refunded_amount,e.policy_accepted_at,e.policy_version,
+    e.stripe_session_id,e.stripe_payment_intent,o.mode,o.course_id,o.course_date
+  FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.status IN ('paid','refunded') AND o.mode='test';
 
 CREATE TABLE IF NOT EXISTS student_enrollment_attempts (
   bucket text NOT NULL, window_start timestamptz NOT NULL, attempts integer NOT NULL, PRIMARY KEY(bucket,window_start)

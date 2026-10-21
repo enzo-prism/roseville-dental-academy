@@ -20,7 +20,13 @@ if (process.env.RDA_STUDENT_PAYMENTS_MODE) {
   const source=await readFile(new URL("../lib/academy-policies.ts",import.meta.url),"utf8");
   const paragraphs=[...source.split("export const CANCELLATION_POLICY_PARAGRAPHS = [")[1].split("] as const")[0].matchAll(/"([^"\n]*)"/g)].map(m=>m[1]);
   const hash=createHash("sha256").update(paragraphs.join("\n\n")).digest("hex");
-  for (const [id,date] of [["11111111-1111-4111-8111-111111111111","2026-11-14"],["22222222-2222-4222-8222-222222222222","2026-12-05"]]) {
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Los_Angeles",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+  const part=(type)=>parts.find((item)=>item.type===type)?.value;
+  const today=`${part("year")}-${part("month")}-${part("day")}`;
+  const addDays=(iso,days)=>{const [year,month,day]=iso.split("-").map(Number);return new Date(Date.UTC(year,month-1,day+days)).toISOString().slice(0,10);};
+  const remaining=["2026-11-14","2026-12-05"].filter((date)=>date>today);
+  const dates=remaining.length>=2?remaining:remaining.length===1?[remaining[0],addDays(today,42)]:[addDays(today,21),addDays(today,42)];
+  for (const [id,date] of [["11111111-1111-4111-8111-111111111111",dates[0]],["22222222-2222-4222-8222-222222222222",dates[1]]]) {
     await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$2,39500,0,'2026-09-30',$3,$4,now(),'isolated synthetic fixture',true)",[id,date,hash,paragraphs.join("\n\n")]);
   }
 }
@@ -47,11 +53,18 @@ globalThis.fetch = async (input, init = {}) => {
           await db.query("UPDATE student_enrollment_offerings SET external_seats=$2 WHERE id=$1",[offeringId, seats]);
         }
       }
+      if (control.plantSessionlessHold) {
+        const plant=control.plantSessionlessHold;
+        const offer=(await db.query("SELECT id,course_date,policy_text,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
+        if (offer) {
+          await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,'2026-09-30',$8,$9,39500,'usd','reserved',$10) ON CONFLICT (id) DO NOTHING",[plant.id,offer.id,offer.course_date,plant.owner,plant.name,plant.email,plant.phone,offer.policy_hash,offer.policy_text,plant.expiresAt]);
+        }
+      }
       const { query, params } = JSON.parse(init.body);
       const result = await db.query(query, params);
       if (process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE) {
         const evidence={};
-        for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_roster"]) evidence[table]=(await db.query(`SELECT * FROM ${table}`)).rows;
+        for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_roster","student_enrollment_roster_test"]) evidence[table]=(await db.query(`SELECT * FROM ${table}`)).rows;
         await writeFile(process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE,JSON.stringify(evidence));
       }
       return Response.json({ ...result, rows: result.rows.map((row) => result.fields.map(({ name, dataTypeID }) => {
@@ -64,8 +77,12 @@ globalThis.fetch = async (input, init = {}) => {
   }
   if (url.hostname === "api.stripe.com") {
     const control = await fixtureControls();
-    if (url.pathname === "/v1/account") return Response.json({id:control.wrongMerchant ? "acct_wrong" : "acct_fixture",charges_enabled:true,payouts_enabled:true});
+    if (url.pathname === "/v1/account") {
+      if (control.accountError) return Response.json({error:"fixture account unavailable"},{status:500});
+      return Response.json({id:control.wrongMerchant ? "acct_wrong" : "acct_fixture",charges_enabled:true,payouts_enabled:true});
+    }
     if (init.method === "POST" && url.pathname === "/v1/checkout/sessions") {
+      if (control.createError) return Response.json({error:"fixture session create unavailable"},{status:500});
       const key = new Headers(init.headers).get("Idempotency-Key"), raw = String(init.body);
       if (keys.has(key)) {
         const existing = keys.get(key); if (existing.raw !== raw) return Response.json({ error: "idempotency conflict" }, { status: 409 });

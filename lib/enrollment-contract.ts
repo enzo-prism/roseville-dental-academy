@@ -4,8 +4,30 @@ export const ENROLLMENT_AMOUNT = 39500;
 export const ENROLLMENT_POLICY_VERSION = "2026-09-30";
 // PostgreSQL DATE parsers return local-midnight Date objects. Preserve the calendar
 // date rather than slicing Date.toString() or shifting it through UTC.
+export function academyCalendarDate(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+export function addAcademyCalendarDays(isoDate: string, days: number) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate))
+    throw new Error("Invalid enrollment course date");
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const next = new Date(Date.UTC(year, month - 1, day + days));
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
+}
 export function enrollmentDate(value: unknown) {
   if (value instanceof Date && Number.isFinite(value.getTime())) {
+    const iso = value.toISOString();
+    // PGlite and some drivers return DATE as UTC midnight. Preserve that
+    // calendar day in every process timezone.
+    if (iso.endsWith("T00:00:00.000Z")) return iso.slice(0, 10);
     return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
   }
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;

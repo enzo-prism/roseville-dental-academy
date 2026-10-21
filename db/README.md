@@ -13,8 +13,11 @@ Confirmed Infection Control sessions (November 14 and December 5, 2026; 12 seats
 39500 USD) are defined in `lib/student-enrollment-offerings.ts` and inserted disabled by
 `db/seeds/infection-control-offerings.sql`. `db/seeds/infection-control-offerings.test.sql`
 inserts the same dates as enabled TEST-mode offerings for an isolated preview/test database
-only — never production. Live checkout and outbound email stay off until
-their separate flags are set. See `docs/student-payments.md` for isolation, access, and launch gates.
+only — never production. Both seed files require
+`SET application_name = 'rda-student-offering-seed'` and verify the post-state.
+Live checkout and outbound email stay off until
+their separate flags are set. See `docs/student-payments.md` for isolation, access, launch gates,
+and the TEST-only cleanup SQL (do not run it from a coding task).
 
 The attribution schema stores only pseudonymous CRM identity, cryptographic contact hashes, ad touchpoints,
 reviewed lead-to-enrollment links, delivery totals, and postback state. It does not store names,

@@ -6,6 +6,17 @@
 --
 -- policy_hash must remain the SHA-256 of policy_text (the approved paragraphs
 -- joined by two newlines). Recompute the hash if academy-policies.ts changes.
+--
+-- Guard: SET application_name = 'rda-student-offering-seed' first. ON CONFLICT
+-- DO NOTHING keeps unexpected existing rows, so the verify block below must pass.
+
+DO $guard$
+BEGIN
+  IF current_setting('application_name', true) IS DISTINCT FROM 'rda-student-offering-seed' THEN
+    RAISE EXCEPTION 'Refusing to seed student offerings. SET application_name = ''rda-student-offering-seed'' only on an isolated reviewed database. Never run this file against production casually.';
+  END IF;
+END
+$guard$;
 
 INSERT INTO student_enrollment_offerings (
   id,
@@ -72,3 +83,26 @@ By submitting payment, the student confirms that they have read, understood, and
     false
   )
 ON CONFLICT (mode, course_id, course_date) DO NOTHING;
+
+DO $verify$
+DECLARE n integer;
+BEGIN
+  SELECT count(*) INTO n FROM student_enrollment_offerings
+    WHERE mode='live' AND course_id='infection-control';
+  IF n <> 2 THEN
+    RAISE EXCEPTION 'Live offering seed verify failed: expected 2 rows, found %', n;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM student_enrollment_offerings
+    WHERE mode='live' AND course_id='infection-control'
+      AND NOT (
+        (course_date = DATE '2026-11-14' AND amount=39500 AND capacity=12 AND external_seats=0 AND enabled=false
+          AND policy_hash='af24daa14cf51c382bcdc9cb567f2b4de29886ccd4d980d62ca1a46ee7fd53ae')
+        OR (course_date = DATE '2026-12-05' AND amount=39500 AND capacity=12 AND external_seats=0 AND enabled=false
+          AND policy_hash='af24daa14cf51c382bcdc9cb567f2b4de29886ccd4d980d62ca1a46ee7fd53ae')
+      )
+  ) THEN
+    RAISE EXCEPTION 'Live offering seed verify failed: stale or unexpected rows remain';
+  END IF;
+END
+$verify$;
