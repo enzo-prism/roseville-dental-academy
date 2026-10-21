@@ -10,11 +10,25 @@ type AttributionModule = typeof import("@/lib/lead-attribution");
 
 // Load the actual browser module in a fresh browser-like context per test, so
 // persisted visits and module-memory fallback are exercised without a network.
-function browserAttribution(options: { blockedStorage?: boolean; cookies?: string; local?: Map<string, string>; session?: Map<string, string> } = {}) {
+function browserAttribution(options: {
+  blockedStorage?: boolean;
+  consent?: "granted" | "denied";
+  cookies?: string;
+  dnt?: string;
+  gpc?: boolean;
+  local?: Map<string, string>;
+  session?: Map<string, string>;
+} = {}) {
   const cookies = new Map<string, string>();
   const local = options.local ?? new Map<string, string>();
   const session = options.session ?? new Map<string, string>();
-  for (const cookie of (options.cookies ?? "").split(";")) {
+  const consentCookie =
+    options.consent === "granted"
+      ? "rda_attribution_consent=granted"
+      : options.consent === "denied"
+        ? "rda_attribution_consent=denied"
+        : "";
+  for (const cookie of [options.cookies, consentCookie].filter(Boolean).join(";").split(";")) {
     const [name, ...value] = cookie.trim().split("=");
     if (name) cookies.set(name, value.join("="));
   }
@@ -46,7 +60,10 @@ function browserAttribution(options: { blockedStorage?: boolean; cookies?: strin
     Date,
     document,
     DOMException,
-    navigator: { doNotTrack: "0" },
+    navigator: {
+      doNotTrack: options.dnt ?? "0",
+      ...(options.gpc === true ? { globalPrivacyControl: true } : {}),
+    },
     URL,
     URLSearchParams,
     window,
@@ -109,7 +126,7 @@ test("Google then Meta keeps complete first touch immutable and each campaign co
 });
 
 test("Meta then Google does not inherit an earlier Meta click or fbc cookie", () => {
-  const browser = browserAttribution();
+  const browser = browserAttribution({ consent: "granted" });
   const initial = browser.visit(META, FIRST);
   browser.cookies.set("_fbc", "fb.1.123.meta_click");
   browser.cookies.set("_fbp", "fb.1.123.browser");
@@ -134,7 +151,7 @@ test("Meta then Google does not inherit an earlier Meta click or fbc cookie", ()
 });
 
 test("a second click on the same platform gets its own touch instead of filling first-touch gaps", () => {
-  const browser = browserAttribution();
+  const browser = browserAttribution({ consent: "granted" });
   const initial = browser.visit(META, FIRST);
   browser.cookies.set("_fbc", "fb.1.123.meta_click");
   const later = browser.visit(META.replace("meta_click", "different_click"), SECOND);
@@ -148,7 +165,7 @@ test("a second click on the same platform gets its own touch instead of filling 
 });
 
 test("same-visit late browser IDs fill gaps without replacing touch identity or campaign", () => {
-  const browser = browserAttribution();
+  const browser = browserAttribution({ consent: "granted" });
   const initial = browser.visit(META, FIRST);
   browser.cookies.set("_fbc", "fb.1.123.meta_click");
   browser.cookies.set("_fbp", "fb.1.123.browser");
@@ -163,9 +180,10 @@ test("same-visit late browser IDs fill gaps without replacing touch identity or 
 });
 
 test("a later document load with the same campaign cannot replace the original first-touch campaign", () => {
-  const firstBrowser = browserAttribution();
+  const firstBrowser = browserAttribution({ consent: "granted" });
   const initial = firstBrowser.visit(META, FIRST);
   const laterBrowser = browserAttribution({
+    consent: "granted",
     local: firstBrowser.local,
     session: firstBrowser.session,
     cookies: "_fbc=fb.1.123.meta_click; _ga=GA1.1.123.456",
@@ -182,7 +200,7 @@ test("a later document load with the same campaign cannot replace the original f
 });
 
 test("direct navigation retains the paid conversion touch without enriching an earlier page", () => {
-  const browser = browserAttribution();
+  const browser = browserAttribution({ consent: "granted" });
   const initial = browser.visit(META, FIRST);
   browser.cookies.set("_fbc", "fb.1.123.meta_click");
   const later = browser.visit("/contact", SECOND);
@@ -268,7 +286,7 @@ test("compact stamp cookie and session copy survive a wiped localStorage documen
 });
 
 test("late Meta browser IDs fill a stored lander after the visitor opens a clean course page", () => {
-  const browser = browserAttribution();
+  const browser = browserAttribution({ consent: "granted" });
   const initial = browser.visit(META, FIRST);
   expect(initial.firstTouch.clickIds.fbp).toBe("");
   browser.cookies.set("_fbc", "fb.1.123.meta_click");
@@ -421,4 +439,115 @@ test("malformed IC189 suffixes and unresolved dynamic macros never become inferr
     const query = new URL(infectionControlUrl(IC_CAMPAIGNS[0].content).replace(IC_ADSET, term), "https://example.test").search;
     expect(api.parseAttributionTouch(query, "", "https://example.test", "/").dimensions.adset_id).toBe("");
   }
+});
+
+const META_UTM_ONLY =
+  "/lp/dental-assisting-enroll?utm_source=facebook&utm_medium=paid_social&utm_campaign=meta_second";
+const META_COOKIES = "_fbc=fb.1.123.meta_click; _fbp=fb.1.123.browser";
+const GBP = "/contact?utm_source=google&utm_medium=gmb&utm_campaign=roseville";
+const ORGANIC_IG = "/contact?utm_source=ig&utm_medium=social";
+
+function expectEmptyBrowserIds(stamp: Record<string, string>) {
+  expect(stamp.fbp).toBe("");
+  expect(stamp.fbc).toBe("");
+  expect(stamp.first_touch_fbp).toBe("");
+  expect(stamp.first_touch_fbc).toBe("");
+  expect(stamp.conversion_touch_fbp).toBe("");
+  expect(stamp.conversion_touch_fbc).toBe("");
+}
+
+test("denied consent never sends or persists cookie fbp/fbc, even with a Meta UTM", () => {
+  const browser = browserAttribution({ consent: "denied", cookies: META_COOKIES });
+  const attribution = browser.visit(META_UTM_ONLY, FIRST);
+  expect(attribution.consentState).toBe("restricted");
+  expectEmptyBrowserIds(browser.api.getLeadAttributionFormFields(attribution));
+  expect(browser.local.size).toBe(0);
+  expect(browser.cookies.get("rda_lead_attribution_stamp_v1") ?? "").not.toContain("fb.1.123.browser");
+});
+
+test("denied consent with an fbclid still leaves fbp/fbc empty", () => {
+  const browser = browserAttribution({ consent: "denied", cookies: META_COOKIES });
+  const attribution = browser.visit(META, FIRST);
+  expect(attribution.consentState).toBe("restricted");
+  const stamp = browser.api.getLeadAttributionFormFields(attribution);
+  expect(stamp.fbclid).toBe("meta_click");
+  expectEmptyBrowserIds(stamp);
+});
+
+test("absent consent does not read _fbp on a Meta UTM visit", () => {
+  const browser = browserAttribution({ cookies: META_COOKIES });
+  const attribution = browser.visit(META_UTM_ONLY, FIRST);
+  expect(attribution.consentState).toBe("unknown");
+  expectEmptyBrowserIds(browser.api.getLeadAttributionFormFields(attribution));
+});
+
+test("GPC restricts consent and leaves cookie fbp/fbc empty", () => {
+  const browser = browserAttribution({ cookies: META_COOKIES, gpc: true });
+  const attribution = browser.visit(META, FIRST);
+  expect(attribution.consentState).toBe("restricted");
+  const stamp = browser.api.getLeadAttributionFormFields(attribution);
+  expect(stamp.fbclid).toBe("meta_click");
+  expectEmptyBrowserIds(stamp);
+});
+
+test("unknown consent does not persist _fbp in the stamp cookie or back-fill stored visits", () => {
+  const browser = browserAttribution({ cookies: META_COOKIES });
+  const initial = browser.visit(META, FIRST);
+  expect(initial.consentState).toBe("unknown");
+  expectEmptyBrowserIds(browser.api.getLeadAttributionFormFields(initial));
+  const stampCookie = decodeURIComponent(browser.cookies.get("rda_lead_attribution_stamp_v1") ?? "");
+  expect(stampCookie).toContain("meta_click");
+  expect(stampCookie).not.toContain("fb.1.123.browser");
+  expect(stampCookie).not.toMatch(/"fbp"/);
+  const stored = JSON.parse(browser.local.get("rda_lead_attribution_v2")!);
+  expect(stored.firstTouch.clickIds.fbp).toBe("");
+  expect(stored.conversionTouch.clickIds.fbp).toBe("");
+  const later = browser.visit("/infection-control", SECOND);
+  expectEmptyBrowserIds(browser.api.getLeadAttributionFormFields(later));
+});
+
+test("granted consent reads _fbp/_fbc and builds fbc from fbclid when the cookie is missing", () => {
+  const browser = browserAttribution({
+    consent: "granted",
+    cookies: "_fbp=fb.1.123.browser",
+  });
+  const attribution = browser.visit(META, FIRST);
+  expect(attribution.consentState).toBe("granted");
+  const stamp = browser.api.getLeadAttributionFormFields(attribution);
+  expect(stamp.fbp).toBe("fb.1.123.browser");
+  expect(stamp.first_touch_fbp).toBe("fb.1.123.browser");
+  expect(stamp.conversion_touch_fbp).toBe("fb.1.123.browser");
+  expect(stamp.fbc).toBe(`fb.1.${Date.parse(FIRST)}.meta_click`);
+  const stampCookie = decodeURIComponent(browser.cookies.get("rda_lead_attribution_stamp_v1") ?? "");
+  expect(stampCookie).toContain("meta_click");
+  expect(stampCookie).not.toContain("fb.1.123.browser");
+  expect(stampCookie).not.toMatch(/"fbc"|"fbp"|"ttp"/);
+});
+
+test("a later GBP visit does not drop a Meta fbclid or ad_id from the top-level stamp", () => {
+  const browser = browserAttribution();
+  browser.visit(META, FIRST);
+  const later = browser.visit(GBP, SECOND);
+  expect(later.conversionTouch.utm.utm_source).toBe("google");
+  expect(later.conversionTouch.utm.utm_medium).toBe("gmb");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.utm_medium).toBe("paid_social");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.ad_id).toBe("120000222");
+  expect(stamp.conversion_touch_utm_source).toBe("google");
+  expect(stamp.first_touch_fbclid).toBe("meta_click");
+});
+
+test("a later organic ig/social visit does not drop a Meta fbclid or ad_id from the top-level stamp", () => {
+  const browser = browserAttribution();
+  browser.visit(META, FIRST);
+  const later = browser.visit(ORGANIC_IG, SECOND);
+  expect(later.conversionTouch.utm.utm_source).toBe("ig");
+  expect(later.conversionTouch.utm.utm_medium).toBe("social");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.ad_id).toBe("120000222");
+  expect(stamp.conversion_touch_utm_source).toBe("ig");
 });
