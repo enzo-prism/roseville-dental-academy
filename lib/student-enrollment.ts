@@ -95,6 +95,16 @@ export function studentPublicEnrollCtaEnabled() {
     process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA === "true"
   );
 }
+export function studentEnrollmentOccupiesSeat(
+  status: StudentEnrollment["status"],
+  releasedAt: unknown,
+) {
+  return (
+    status === "reserved" ||
+    status === "paid" ||
+    (status === "refunded" && releasedAt == null)
+  );
+}
 export function studentPublicEnrollCtas() {
   return studentPublicEnrollCtaEnabled()
     ? ([{ href: "/enroll" as const, label: "Enroll and pay in full" as const }])
@@ -111,10 +121,11 @@ export function studentOwner(token: string | undefined) {
 }
 export async function studentOfferings(
   config: StudentConfig,
+  database: typeof studentDatabase = studentDatabase,
 ): Promise<StudentOffering[]> {
   const rows =
-    await studentDatabase()`SELECT o.*, (o.capacity-o.external_seats-(SELECT count(*) FROM student_enrollments e
-    WHERE e.offering_id=o.id AND e.status IN ('reserved','paid','refunded')))::int AS remaining
+    await database()`SELECT o.*, (o.capacity-o.external_seats-(SELECT count(*) FROM student_enrollments e
+    WHERE e.offering_id=o.id AND student_enrollment_occupies_seat(e.status,e.inventory_released_at)))::int AS remaining
     FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true
     AND o.course_date > (now() AT TIME ZONE 'America/Los_Angeles')::date
     AND o.policy_version=${ENROLLMENT_POLICY_VERSION} AND o.policy_hash=${STUDENT_POLICY_HASH} AND o.policy_text IS NOT NULL ORDER BY o.course_date`;

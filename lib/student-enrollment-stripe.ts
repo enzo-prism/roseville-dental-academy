@@ -35,7 +35,7 @@ export type StudentSession = {
   url?: string;
 };
 const API_VERSION = "2026-08-26.dahlia";
-class StudentProviderError extends Error {
+export class StudentProviderError extends Error {
   constructor(
     message: string,
     readonly code?: string,
@@ -43,6 +43,9 @@ class StudentProviderError extends Error {
     super(message);
     this.name = "StudentProviderError";
   }
+}
+export function isStripeIdempotencyConflict(status: number, code?: string) {
+  return status === 409 && code === "idempotency_key_in_use";
 }
 export function isStudentIdempotencyConflict(error: unknown) {
   return (
@@ -78,7 +81,7 @@ async function provider(
     } catch {
       /* Status 409 is enough to recover the in-flight Checkout session. */
     }
-    if (response.status === 409 && code === "idempotency_key_in_use")
+    if (isStripeIdempotencyConflict(response.status, code))
       throw new StudentProviderError(
         "Payment provider idempotency conflict",
         "idempotency_key_in_use",
@@ -240,9 +243,14 @@ export async function startStudentSession(
   if (session.status !== "open") throw new Error("Session closed");
   return safeTestCheckoutUrl(session.url);
 }
-export async function bindStudentSession(held: StudentEnrollment, id: string) {
+export async function bindStudentSession(
+  held: StudentEnrollment,
+  id: string,
+  database: typeof studentDatabase = studentDatabase,
+) {
+  if (held.status !== "reserved") throw new Error("Session identity conflict");
   const rows =
-    await studentDatabase()`UPDATE student_enrollments SET stripe_session_id=${id},updated_at=now()
+    await database()`UPDATE student_enrollments SET stripe_session_id=${id},updated_at=now()
     WHERE id=${held.id}::uuid AND status='reserved'
       AND (stripe_session_id IS NULL OR stripe_session_id=${id}) RETURNING id`;
   if (!rows.length) throw new Error("Session identity conflict");
@@ -284,7 +292,7 @@ export async function recordStudentSession(
         orphanCharge.refunded === true &&
         orphanCharge.amount_refunded === held.amount
       ) {
-        await studentDatabase()`SELECT resolve_student_enrollment_review(${held.id}::uuid,${session.id},'refunded')`;
+        await studentDatabase()`SELECT resolve_student_enrollment_review(${held.id}::uuid,${session.id},'refunded','stripe-charge-refunded')`;
       }
     }
     return held;

@@ -4,7 +4,9 @@ Live payments are **disabled by default**. This release adds a separate student 
 path at `/enroll`; it does not turn the staff-only pilot into a live ledger. No Stripe
 credential or email sender is created by the schema migration. The public Infection Control
 page adds an enrollment link only when valid live configuration, the explicit live flag,
-and the separate public CTA flag are all present. Existing inquiry forms remain available.
+and the separate public CTA flag are all present. `/enroll` itself is reachable by URL
+whenever Checkout is configured; the CTA flag does not hide that route. Existing inquiry
+forms remain available.
 
 ## Confirmed sellable sessions
 
@@ -224,21 +226,35 @@ when reserved + paid + refunded already fill the offering:
 -- Review the class first, then choose enrolled, dismissed, or refunded.
 SELECT o.course_date, o.capacity, o.external_seats,
   (SELECT count(*) FROM student_enrollments e
-    WHERE e.offering_id=o.id AND e.status IN ('reserved','paid','refunded')) AS counted
+    WHERE e.offering_id=o.id AND student_enrollment_occupies_seat(e.status,e.inventory_released_at)) AS counted
 FROM student_enrollment_offerings o
 JOIN student_enrollments e ON e.offering_id=o.id
 WHERE e.id = '<enrollment uuid>';
 SELECT resolve_student_enrollment_review(
   '<enrollment uuid>'::uuid,
   '<cs_... session id>',
-  'enrolled'  -- or 'dismissed' or 'refunded'
+  'enrolled',  -- or 'dismissed' or 'refunded'
+  'staff@rosevilledentalacademy.com'
 );
 ```
 
 `enrolled` converts that expired row to paid only when a seat remains. A full class
 raises `Class is full` and leaves the review open. Refund the charge or dismiss after
 staff review instead. `refunded` and `dismissed` only close the review; they do not
-change inventory.
+change inventory. The fourth argument is the staff actor and is written onto the
+review and a `student_enrollment_events` row.
+
+Refunded enrollments still occupy a seat until staff run the audited release:
+
+```sql
+SELECT release_refunded_student_seat(
+  '<enrollment uuid>'::uuid,
+  'staff@rosevilledentalacademy.com'
+);
+```
+
+That function refuses non-refunded rows, records the actor on the enrollment, and
+inserts a `released` event. Do not `UPDATE` inventory by hand.
 
 This code never initiates a refund or accepts a refund request. Follow the approved policy:
 student cancellations remain non-refundable, with no discretionary date transfer. For an
@@ -313,21 +329,55 @@ the repository.
    `db/seeds/infection-control-offerings.sql` (`mode=live`, `enabled=false`). The
    post-seed verify must succeed.
 9. Set live mode and `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment
-   so `/enroll` can take a charge. Enable the two live offerings. Outbound student
-   email is a separate flag. **Leave `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` unset.** The
-   public Infection Control "Enroll and pay in full" CTA stays hidden on this
-   redeploy; `/enroll` is the verification URL only. Turning on live Checkout does
-   not show the CTA.
-10. Make one small real purchase on `/enroll`, confirm the roster and confirmation
-    email, then refund that charge from the verified merchant dashboard and mark the
-    seat reconciled. This purchase can happen while the public CTA is still off.
-11. Only after that verification purchase is refunded and the seat is reconciled,
+   so `/enroll` can take a charge. Enable the two live offerings. **Before any live
+   purchase**, also set `RDA_STUDENT_EMAIL_LIVE_ENABLED=true` plus
+   `RDA_STUDENT_EMAIL_API_KEY` and `RDA_STUDENT_EMAIL_FROM`. A paid live webhook
+   otherwise throws in confirmation delivery and Stripe retries get 503 forever.
+   **Leave `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` unset.** The public Infection Control
+   "Enroll and pay in full" CTA stays hidden on this redeploy. `/enroll` stays
+   reachable by direct URL during this CTA-off window and is the verification URL
+   only. Turning on live Checkout does not show the CTA.
+10. Make one **$395** verification purchase on `/enroll` using a **staff-owned**
+    email address (not a student). Confirm the paid roster row and confirmation
+    email, then refund that charge from the verified merchant dashboard. Refunded
+    rows still occupy a seat. Reconcile inventory only with:
+
+    ```sql
+    SELECT release_refunded_student_seat(
+      '<verification enrollment uuid>'::uuid,
+      'staff@rosevilledentalacademy.com'
+    );
+    ```
+
+    Confirm 12 sellable seats remain on that date before continuing. This purchase
+    can happen while the public CTA is still off; open `/enroll` by URL.
+11. Only after that verification purchase is refunded and
+    `release_refunded_student_seat` has recorded the actor and `released` event,
     set `RDA_STUDENT_PAYMENTS_PUBLIC_CTA=true` and redeploy so the public Enroll
     CTA on `/infection-control` appears. The CTA is compiled at build time from that
     separate flag and will not appear until this second redeploy.
 12. If an orphan `paid_after_release` review needs to become a paid seat, use
-    `resolve_student_enrollment_review(..., 'enrolled')`. Do not raw-`UPDATE` the
-    enrollment to `paid`. The function refuses when the class is already full.
+    `resolve_student_enrollment_review(..., 'enrolled', '<staff actor>')`. Do not
+    raw-`UPDATE` the enrollment to `paid`. The function refuses when the class is
+    already full and writes the actor onto the review and events row.
+
+## Rollback
+
+If live Checkout must be taken down after step 9 and before or after the
+verification purchase:
+
+1. Unset `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` (or leave it unset) so the public CTA
+   stays hidden, then redeploy.
+2. Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` back to anything except `true` and
+   disable the two live offerings (`enabled=false`). `/enroll` then fail-closes.
+   Do not delete offerings that already have enrollments.
+3. Leave `RDA_STUDENT_EMAIL_LIVE_ENABLED` on until every paid confirmation has
+   left `pending`/`sending`, then unset it.
+4. Refund any verification charge from the merchant dashboard, then run
+   `release_refunded_student_seat` so the seat is sellable again. Never
+   `DELETE` from `student_enrollments` to free capacity.
+5. Do not drop `005` objects from production as a rollback. Re-apply the file
+   after review if functions are missing.
 
 Launch remains blocked until that checklist is finished. No real charges, refunds, student
 emails, bank changes, or credential creation are part of this development release. This

@@ -74,7 +74,7 @@ globalThis.fetch = async (input, init = {}) => {
         }
       }
       const { query, params } = JSON.parse(init.body);
-      if (control.expireOnBind && typeof query==="string" && query.includes("UPDATE student_enrollments SET stripe_session_id") && query.includes("status='reserved'")) {
+      if (control.expireOnBind && typeof query==="string" && query.includes("UPDATE student_enrollments SET stripe_session_id")) {
         await db.query("UPDATE student_enrollments SET status='expired',updated_at=now() WHERE id=$1",[control.expireOnBind]);
       }
       const result = await db.query(query, params);

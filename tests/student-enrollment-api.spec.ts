@@ -932,6 +932,9 @@ test.describe("student enrollment isolated full stack", () => {
     const html = await (await request.get("/infection-control")).text();
     expect(html).not.toContain("data-rda-student-enroll-cta");
     expect(html).not.toContain("Enroll and pay in full");
+    const enroll = await request.get("/enroll");
+    expect(enroll.status()).toBe(200);
+    expect(await enroll.text()).toContain("Infection Control enrollment");
   });
   test("409 without idempotency_key_in_use is not an idempotency conflict", async ({
     request,

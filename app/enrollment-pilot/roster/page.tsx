@@ -26,15 +26,18 @@ export default async function StudentRoster() {
       </main>
     );
   let rows: Record<string, unknown>[] = [];
+  let refunded: Record<string, unknown>[] = [];
   let holds: Record<string, unknown>[] = [];
   let reviews: Record<string, unknown>[] = [];
   if (config) {
-    rows =
+    const roster =
       config.mode === "test"
         ? await studentDatabase()`SELECT r.*,m.status AS confirmation_status FROM student_enrollment_roster_test r
     LEFT JOIN student_enrollment_mail m ON m.enrollment_id=r.id WHERE r.mode=${config.mode} ORDER BY r.course_date,r.student_name LIMIT 500`
         : await studentDatabase()`SELECT r.*,m.status AS confirmation_status FROM student_enrollment_roster r
     LEFT JOIN student_enrollment_mail m ON m.enrollment_id=r.id WHERE r.mode=${config.mode} ORDER BY r.course_date,r.student_name LIMIT 500`;
+    rows = roster.filter((row) => row.status === "paid");
+    refunded = roster.filter((row) => row.status === "refunded");
     holds =
       await studentDatabase()`SELECT e.id,e.student_name,e.email,e.stripe_session_id,e.stripe_expires_at,o.course_date
       FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id
@@ -48,9 +51,11 @@ export default async function StudentRoster() {
       </h1>
       <p>
         {config?.mode === "test"
-          ? "TEST ONLY — synthetic enrollment records."
+          ? "TEST ONLY — synthetic enrollment records. Test rows are labeled and are not live students."
           : "Private staff records."}{" "}
-        Only verified payments appear below. Refunded seats require staff review.
+        Only verified paid enrollments appear in the main table. Refunded seats
+        are listed separately until staff run{" "}
+        <code>release_refunded_student_seat</code>.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -79,7 +84,7 @@ export default async function StudentRoster() {
                   r.student_name,
                   r.email,
                   r.phone,
-                  r.status,
+                  config?.mode === "test" ? "TEST ONLY · paid" : "paid",
                   (Number(r.refunded_amount) / 100).toFixed(2),
                   r.confirmation_status ?? "pending",
                 ].map((v, i) => (
@@ -92,7 +97,44 @@ export default async function StudentRoster() {
           </tbody>
         </table>
       </div>
-      {!rows.length && <p>No verified enrollments.</p>}
+      {!rows.length && <p>No verified paid enrollments.</p>}
+      <h2 className="font-heading text-2xl">Refunded seats</h2>
+      <p>
+        These rows are not verified students. They still occupy inventory until
+        staff run <code>release_refunded_student_seat</code>.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr>
+              {["Date", "Student", "Email", "Payment"].map((h) => (
+                <th key={h} className="border-b p-3">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {refunded.map((r) => (
+              <tr key={String(r.id)}>
+                {[
+                  enrollmentDate(r.course_date),
+                  r.student_name,
+                  r.email,
+                  config?.mode === "test"
+                    ? "TEST ONLY · refunded"
+                    : "refunded — not sellable until released",
+                ].map((v, i) => (
+                  <td key={i} className="border-b p-3">
+                    {String(v)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {!refunded.length && <p>No refunded seats awaiting release.</p>}
       <h2 className="font-heading text-2xl">Pending checkout holds</h2>
       <p>
         Reserved seats waiting for Stripe. Sessionless rows expire after{" "}
