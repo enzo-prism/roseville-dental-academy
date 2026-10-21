@@ -211,7 +211,7 @@ Formspree read-only reporting credentials are operational secrets, not website e
 
 ## CI And Preview Verification
 
-- `.github/workflows/release-gate.yml` runs the local production gate on pull requests and pushes to `main`. The required `release-gate` job includes `pnpm test:student-enrollment-locks` against a `postgres:17` service.
+- `.github/workflows/release-gate.yml` runs the local production gate on pull requests and pushes to `main`. The required `release-gate` job starts `postgres:17` only for the `pnpm test:student-enrollment-locks` step so the Playwright suites do not share that service.
 - `pnpm test:student-enrollment-locks` prints `student-enrollment-locks: N passed` after the real-Postgres seat/lock proofs.
 - `.github/workflows/vercel-preview-verify.yml` runs smoke, course-dates, interactions, parity, UX, and visual checks against successful Vercel preview deployment URLs.
 - Both workflows upload Playwright/test artifacts on failure.
