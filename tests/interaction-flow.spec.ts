@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { adLandingPages, PAID_TRAFFIC_LANDER_SLUGS } from "@/lib/ad-landing-pages";
+import { HOW_HEARD_OPTIONS } from "@/lib/how-heard";
 import { activeSitePromo } from "@/lib/site-promo";
 import {
   blockOpenAIAdsPixelNetwork,
@@ -66,7 +67,12 @@ async function submitAbortedContactForm(page: import("@playwright/test").Page) {
   }
 
   await expect(form).toBeVisible();
+  // Chairside contact forms require name, email, message, and How-heard.
+  // Skipping any of those blocks submit before Formspree is reached.
+  await form.locator('input[name="name"]').fill("Attribution Journey");
   await form.locator('input[name="_replyto"]').fill("attribution-journey@example.com");
+  await form.locator('textarea[name="message"]').fill("Checking last-paid-click attribution.");
+  await form.locator(".ac-pill", { hasText: HOW_HEARD_OPTIONS[1].label }).click();
   await form.getByRole("button", { name: "Send" }).click();
 }
 
@@ -1921,6 +1927,89 @@ test.describe("live-style interaction flows", () => {
       expect(payload.fbclid ?? "").toBe("");
       expect(payload.ad_id ?? "").toBe("");
       expect(payload.landing_page).toBe("/contact");
+    });
+
+    test("Meta ad then a bare gclid-only touch takes the newer paid click on submit", async ({
+      page,
+    }) => {
+      const formspree = await abortFormspree(page);
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&fbclid=meta_ad_click",
+      );
+      await gotoSettled(page, "/contact?gclid=newer_gclid_only");
+
+      const stored = await readStoredAttribution(page);
+      expect(stored).toMatchObject({
+        conversionTouch: {
+          clickIds: { gclid: "newer_gclid_only" },
+          pagePath: "/contact",
+          utm: { utm_medium: "" },
+        },
+        firstTouch: {
+          clickIds: { fbclid: "meta_ad_click" },
+          utm: { utm_medium: "paid_social", utm_source: "meta" },
+        },
+      });
+
+      await submitAbortedContactForm(page);
+      await expect.poll(() => formspree.aborted).toBe(true);
+      const payload = parseSubmittedFormBody(formspree.body);
+      expect(payload.gclid).toBe("newer_gclid_only");
+      expect(payload.utm_source ?? "").toBe("");
+      expect(payload.utm_medium ?? "").toBe("");
+      expect(payload.fbclid ?? "").toBe("");
+      expect(payload.ad_id ?? "").toBe("");
+      expect(payload.landing_page).toBe("/contact");
+      expect(payload.first_touch_fbclid).toBe("meta_ad_click");
+    });
+
+    test("Google then Meta then organic Instagram fbclid keeps the Meta paid stamp on submit", async ({
+      page,
+    }) => {
+      const formspree = await abortFormspree(page);
+      await gotoSettled(
+        page,
+        "/lp/dental-assisting-enroll?utm_source=google&utm_medium=cpc&utm_campaign=google_first&gclid=google_click",
+      );
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&utm_id=120249084101080567&utm_source_platform=meta_ads&fbclid=meta_ad_click",
+      );
+      await gotoSettled(
+        page,
+        "/?utm_source=ig&utm_medium=social&fbclid=organic_ig_fbclid",
+      );
+      await gotoSettled(page, "/contact");
+
+      const stored = await readStoredAttribution(page);
+      expect(stored).toMatchObject({
+        conversionTouch: {
+          clickIds: { fbclid: "organic_ig_fbclid" },
+          utm: { utm_medium: "social", utm_source: "ig" },
+        },
+        firstTouch: {
+          clickIds: { gclid: "google_click" },
+          utm: { utm_campaign: "google_first", utm_medium: "cpc", utm_source: "google" },
+        },
+        lastPaidTouch: {
+          clickIds: { fbclid: "meta_ad_click" },
+          pagePath: "/infection-control",
+          utm: { utm_medium: "paid_social", utm_source: "meta" },
+        },
+      });
+
+      await submitAbortedContactForm(page);
+      await expect.poll(() => formspree.aborted).toBe(true);
+      const payload = parseSubmittedFormBody(formspree.body);
+      expect(payload.utm_source).toBe("meta");
+      expect(payload.utm_medium).toBe("paid_social");
+      expect(payload.utm_campaign).toBe("ic189_oct17");
+      expect(payload.ad_id).toBe("120249085995100567");
+      expect(payload.fbclid).toBe("meta_ad_click");
+      expect(payload.landing_page).toBe("/infection-control");
+      expect(payload.conversion_touch_fbclid).toBe("organic_ig_fbclid");
+      expect(payload.first_touch_gclid).toBe("google_click");
     });
 
     test("first-touch Saturday tags and parsed ad_id stamp both Formspree forms", async ({

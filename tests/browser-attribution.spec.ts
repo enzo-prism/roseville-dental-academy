@@ -627,3 +627,109 @@ test("Meta ad then Google ad still takes the newer paid touch", () => {
   expect(stamp.first_touch_utm_source).toBe("facebook");
   expect(stamp.first_touch_ad_id).toBe("120000222");
 });
+
+test("paid and unpaid utm medium lists stay locked to the documented definition", () => {
+  const browser = browserAttribution();
+  expect([...browser.api.PAID_UTM_MEDIUMS]).toEqual([
+    "cpc",
+    "ppc",
+    "paid",
+    "paid_social",
+    "paid-social",
+  ]);
+  expect([...browser.api.UNPAID_UTM_MEDIUMS]).toEqual([
+    "social",
+    "organic",
+    "gmb",
+    "gbp",
+    "google_business_profile",
+  ]);
+
+  const emptyUtm = Object.fromEntries(
+    browser.api.UTM_FIELDS.map((field) => [field, ""]),
+  ) as LeadAttribution["utm"];
+  const emptyClickIds = Object.fromEntries(
+    browser.api.AD_CLICK_ID_FIELDS.map((field) => [field, ""]),
+  ) as LeadAttribution["clickIds"];
+
+  for (const medium of browser.api.PAID_UTM_MEDIUMS) {
+    expect(
+      browser.api.hasPaidTouch({
+        clickIds: emptyClickIds,
+        utm: { ...emptyUtm, utm_medium: medium },
+      }),
+      medium,
+    ).toBe(true);
+  }
+
+  for (const medium of browser.api.UNPAID_UTM_MEDIUMS) {
+    expect(
+      browser.api.hasPaidTouch({
+        clickIds: { ...emptyClickIds, fbclid: "organic_fbclid" },
+        utm: { ...emptyUtm, utm_medium: medium },
+      }),
+      medium,
+    ).toBe(false);
+  }
+
+  expect(
+    browser.api.hasPaidTouch({
+      clickIds: { ...emptyClickIds, gclid: "bare_gclid" },
+      utm: emptyUtm,
+    }),
+  ).toBe(true);
+  expect(
+    browser.api.hasPaidTouch({
+      clickIds: { ...emptyClickIds, fbclid: "bare_fbclid" },
+      utm: emptyUtm,
+    }),
+  ).toBe(true);
+  expect(browser.api.hasPaidTouch({ clickIds: emptyClickIds, utm: emptyUtm })).toBe(false);
+});
+
+test("Meta ad then a bare gclid-only touch takes the newer paid click", () => {
+  const browser = browserAttribution();
+  browser.visit(META, FIRST);
+  const later = browser.visit("/contact?gclid=newer_gclid_only", SECOND);
+  expect(later.conversionTouch.clickIds.gclid).toBe("newer_gclid_only");
+  expect(later.conversionTouch.utm.utm_medium).toBe("");
+  expect(later.lastPaidTouch.clickIds.gclid).toBe("newer_gclid_only");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.gclid).toBe("newer_gclid_only");
+  expect(stamp.utm_source).toBe("");
+  expect(stamp.utm_medium).toBe("");
+  expect(stamp.fbclid).toBe("");
+  expect(stamp.ad_id).toBe("");
+  expect(stamp.landing_page).toBe("/contact");
+  expect(stamp.first_touch_utm_source).toBe("facebook");
+  expect(stamp.first_touch_fbclid).toBe("meta_click");
+});
+
+test("Google then Meta then organic Instagram fbclid keeps the Meta paid stamp", () => {
+  const browser = browserAttribution();
+  const third = "2026-09-29T10:20:00.000Z";
+  browser.visit(GOOGLE, FIRST);
+  browser.visit(
+    "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&utm_id=120249084101080567&utm_source_platform=meta_ads&fbclid=meta_ad_click",
+    SECOND,
+  );
+  const later = browser.visit(`${ORGANIC_IG}&fbclid=organic_ig_fbclid`, third);
+  expect(later.firstTouch.utm.utm_source).toBe("google");
+  expect(later.conversionTouch.utm.utm_medium).toBe("social");
+  expect(later.conversionTouch.clickIds.fbclid).toBe("organic_ig_fbclid");
+  expect(later.lastPaidTouch.utm.utm_source).toBe("meta");
+  expect(later.lastPaidTouch.clickIds.fbclid).toBe("meta_ad_click");
+  const stored = JSON.parse(browser.local.get("rda_lead_attribution_v2")!) as {
+    lastPaidTouch: { clickIds: { fbclid: string } };
+  };
+  expect(stored.lastPaidTouch.clickIds.fbclid).toBe("meta_ad_click");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("meta");
+  expect(stamp.utm_medium).toBe("paid_social");
+  expect(stamp.utm_campaign).toBe("ic189_oct17");
+  expect(stamp.fbclid).toBe("meta_ad_click");
+  expect(stamp.ad_id).toBe("120249085995100567");
+  expect(stamp.landing_page).toBe("/infection-control");
+  expect(stamp.conversion_touch_fbclid).toBe("organic_ig_fbclid");
+  expect(stamp.first_touch_utm_source).toBe("google");
+});
