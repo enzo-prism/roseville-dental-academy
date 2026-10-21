@@ -206,6 +206,56 @@ test("student database enforces shared inventory, separate modes, replay, roster
         enabled: false,
       },
     ]);
+    await db.exec(
+      await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+    );
+    await db.exec(
+      await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+    );
+    const testSeeded = (
+      await db.query<{
+        course_date: string | Date;
+        amount: number;
+        capacity: number;
+        external_seats: number;
+        enabled: boolean | string;
+        mode: string;
+        policy_hash: string;
+      }>(
+        "SELECT mode, course_date, amount, capacity, external_seats, enabled, policy_hash FROM student_enrollment_offerings WHERE mode='test' ORDER BY course_date",
+      )
+    ).rows;
+    expect(
+      testSeeded.map((row) => ({
+        mode: row.mode,
+        course_date: enrollmentDate(row.course_date),
+        amount: Number(row.amount),
+        capacity: Number(row.capacity),
+        external_seats: Number(row.external_seats),
+        enabled: row.enabled === true || row.enabled === "t",
+        policy_hash: row.policy_hash,
+      })),
+    ).toEqual([
+      {
+        mode: "test",
+        course_date: "2026-11-14",
+        amount: 39500,
+        capacity: 12,
+        external_seats: 0,
+        enabled: true,
+        policy_hash: STUDENT_POLICY_HASH,
+      },
+      {
+        mode: "test",
+        course_date: "2026-12-05",
+        amount: 39500,
+        capacity: 12,
+        external_seats: 0,
+        enabled: true,
+        policy_hash: STUDENT_POLICY_HASH,
+      },
+    ]);
+    await db.query("DELETE FROM student_enrollment_offerings WHERE mode='test'");
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-11-14',39500,2,$2,$3,$4,now(),'fixture',true)",
       [

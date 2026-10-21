@@ -19,8 +19,15 @@ Payment is in full. No other Infection Control date is sellable. November 7 was 
 the public schedule earlier and must not be seeded or offered at checkout.
 
 Canonical config: `lib/student-enrollment-offerings.ts`.
-Reviewed insert (disabled offerings only): `db/seeds/infection-control-offerings.sql`.
+Reviewed insert (disabled live offerings only): `db/seeds/infection-control-offerings.sql`.
+Isolated TEST-mode insert (enabled offerings): `db/seeds/infection-control-offerings.test.sql`.
 Schema only, zero offerings: `db/migrations/005_student_enrollment.sql`.
+
+`db/seeds/infection-control-offerings.test.sql` is **only** for an isolated preview or
+test database. It inserts the same two dates as `mode='test'`, `enabled=true`,
+`amount=39500`, `capacity=12`, `external_seats=0`, and the same policy text/hash as
+the reviewed live seed. Never apply it to production or any live database. Production
+uses the live seed (`mode='live'`, `enabled=false`) after review.
 
 Checkout always shows the live-site policy wording:
 
@@ -50,7 +57,9 @@ No application API creates or enables offerings.
 Apply migration `005_student_enrollment.sql` using the filename-order migrator only against
 the verified RDA database after review. It is repeatable and seeds zero offerings. Then apply
 `db/seeds/infection-control-offerings.sql` to insert the two disabled live offerings. Enable
-an offering only after the go-live checklist below.
+an offering only after the go-live checklist below. On an isolated preview or test database
+only, `db/seeds/infection-control-offerings.test.sql` can insert the same two dates as
+enabled TEST-mode offerings. Never apply that file to production.
 
 ## Flow and integrity
 
@@ -178,11 +187,13 @@ the repository.
 
 1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
    secure form. Configure them only on the isolated test deployment and test database.
-2. Apply `005_student_enrollment.sql`, then `db/seeds/infection-control-offerings.sql`.
-   Confirm the two dates, `amount=39500`, `capacity=12`, `external_seats=0`, and
-   `enabled=false`.
+2. Apply `005_student_enrollment.sql`. On the isolated test database only, apply
+   `db/seeds/infection-control-offerings.test.sql` (mode=`test`, `enabled=true`).
+   Confirm the two dates, `amount=39500`, `capacity=12`, `external_seats=0`. Never
+   apply that TEST seed to production. The live database uses
+   `db/seeds/infection-control-offerings.sql` (`enabled=false`) later.
 3. Activate test mode (`RDA_STUDENT_PAYMENTS_MODE=test` plus matching test origin,
-   account, key, and webhook secret). Enable the two test offerings. Leave
+   account, key, and webhook secret). Leave
    `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` and `RDA_STUDENT_EMAIL_LIVE_ENABLED` unset.
 4. Complete a Stripe test-card purchase (`4242 4242 4242 4242`, any future expiry and
    CVC) for one date. Confirm the paid roster row, captured confirmation, and $395 charge

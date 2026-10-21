@@ -11,7 +11,9 @@ verified payment events, and confirmation outbox. Unlike the attribution schema,
 schema stores private names, emails, and phone numbers. The schema migration seeds no offerings.
 Confirmed Infection Control sessions (November 14 and December 5, 2026; 12 seats; 0 offline;
 39500 USD) are defined in `lib/student-enrollment-offerings.ts` and inserted disabled by
-`db/seeds/infection-control-offerings.sql`. Live checkout and outbound email stay off until
+`db/seeds/infection-control-offerings.sql`. `db/seeds/infection-control-offerings.test.sql`
+inserts the same dates as enabled TEST-mode offerings for an isolated preview/test database
+only — never production. Live checkout and outbound email stay off until
 their separate flags are set. See `docs/student-payments.md` for isolation, access, and launch gates.
 
 The attribution schema stores only pseudonymous CRM identity, cryptographic contact hashes, ad touchpoints,
