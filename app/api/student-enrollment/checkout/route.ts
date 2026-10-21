@@ -11,6 +11,7 @@ import {
   studentAllowance,
 } from "@/lib/student-enrollment-http";
 import {
+  isStudentIdempotencyConflict,
   recoverStudentSession,
   startStudentSession,
   verifyStudentMerchant,
@@ -81,7 +82,8 @@ export async function POST(request: Request) {
       if (!held.stripe_session_id) {
         try {
           const recovered = await recoverStudentSession(held, access.config);
-          if (!recovered) await releaseUnboundStudentHold(held.id);
+          if (!recovered && !isStudentIdempotencyConflict(error))
+            await releaseUnboundStudentHold(held.id);
         } catch {
           /* Recover/network uncertainty keeps the seat for operator review. */
         }

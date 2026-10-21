@@ -13,8 +13,11 @@ Confirmed Infection Control sessions (November 14 and December 5, 2026; 12 seats
 39500 USD) are defined in `lib/student-enrollment-offerings.ts` and inserted disabled by
 `db/seeds/infection-control-offerings.sql`. `db/seeds/infection-control-offerings.test.sql`
 inserts the same dates as enabled TEST-mode offerings for an isolated preview/test database
-only — never production. Both seed files require
-`SET application_name = 'rda-student-offering-seed'` and verify the post-state.
+only — never production. The live seed requires
+`SET application_name = 'rda-student-offering-seed'`. The TEST seed requires the distinct
+`rda-student-offering-seed-isolated` name, and refuses if live offerings or enrollments
+already exist unless `application_name = 'rda-student-offering-seed-on-live-data'` is set
+as an explicit opt-in. Both files verify the post-state.
 Live checkout and outbound email stay off until
 their separate flags are set. See `docs/student-payments.md` for isolation, access, launch gates,
 and the TEST-only cleanup SQL (do not run it from a coding task).

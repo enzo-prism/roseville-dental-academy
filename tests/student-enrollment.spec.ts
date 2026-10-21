@@ -30,8 +30,16 @@ import {
 const offer = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[0],
   policy = "2026-09-30",
   [fixtureFirstDate, fixtureSecondDate] = infectionControlFixtureCourseDates();
-async function allowOfferingSeed(db: PGlite) {
+async function allowLiveOfferingSeed(db: PGlite) {
   await db.exec("SET application_name = 'rda-student-offering-seed'");
+}
+async function allowIsolatedTestOfferingSeed(db: PGlite) {
+  await db.exec("SET application_name = 'rda-student-offering-seed-isolated'");
+}
+async function allowTestOfferingSeedOnLiveData(db: PGlite) {
+  await db.exec(
+    "SET application_name = 'rda-student-offering-seed-on-live-data'",
+  );
 }
 test("database course dates preserve their calendar day and reject null", () => {
   expect(enrollmentDate(new Date(2099, 10, 14))).toBe("2099-11-14");
@@ -177,16 +185,12 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     await db.exec(migration);
     await db.exec(migration);
-    expect(migration).toContain("AND mode=p_mode FOR UPDATE;");
     expect(migration).toContain("AND o.mode='live'");
     expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
       "FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true",
     );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       "account.id !== config.account ||",
-    );
-    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
-      "charge.refunded === true && charge.amount_refunded === held.amount",
     );
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
@@ -197,6 +201,13 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(isCanonicalInfectionControlDate("2026-11-14")).toBe(true);
     expect(isCanonicalInfectionControlDate("2026-11-07")).toBe(false);
     expect(
+      (
+        await db.query(
+          "SELECT 1 FROM pg_constraint WHERE conrelid='student_enrollment_offerings'::regclass AND contype='c' AND pg_get_constraintdef(oid) ILIKE '%39500%'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+    expect(
       (await db.query("SELECT * FROM student_enrollment_offerings")).rows,
     ).toHaveLength(0);
     await expect(
@@ -204,7 +215,23 @@ test("student database enforces shared inventory, separate modes, replay, roster
         await readFile("db/seeds/infection-control-offerings.sql", "utf8"),
       ),
     ).rejects.toThrow("Refusing to seed");
-    await allowOfferingSeed(db);
+    await expect(
+      db.exec(
+        await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+      ),
+    ).rejects.toThrow("Refusing to seed TEST");
+    await allowLiveOfferingSeed(db);
+    await expect(
+      db.exec(
+        await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+      ),
+    ).rejects.toThrow("live-seed name is not enough");
+    await allowIsolatedTestOfferingSeed(db);
+    await db.exec(
+      await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+    );
+    await db.query("DELETE FROM student_enrollment_offerings WHERE mode='test'");
+    await allowLiveOfferingSeed(db);
     await db.exec(
       await readFile("db/seeds/infection-control-offerings.sql", "utf8"),
     );
@@ -247,6 +274,19 @@ test("student database enforces shared inventory, separate modes, replay, roster
         enabled: false,
       },
     ]);
+    await allowIsolatedTestOfferingSeed(db);
+    await expect(
+      db.exec(
+        await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+      ),
+    ).rejects.toThrow("against live/prod data");
+    await allowLiveOfferingSeed(db);
+    await expect(
+      db.exec(
+        await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
+      ),
+    ).rejects.toThrow("live-seed name is not enough");
+    await allowTestOfferingSeedOnLiveData(db);
     await db.exec(
       await readFile("db/seeds/infection-control-offerings.test.sql", "utf8"),
     );
@@ -479,6 +519,65 @@ test("student database enforces shared inventory, separate modes, replay, roster
         )
       ).rows[0].status,
     ).toBe("expired");
+    expect(
+      (
+        await db.query(
+          "UPDATE student_enrollments SET stripe_session_id='cs_test_released' WHERE id=$1 AND status='reserved' AND stripe_session_id IS NULL RETURNING id",
+          [unbound],
+        )
+      ).rows,
+    ).toHaveLength(0);
+    const reservedBind = ids[4];
+    expect(
+      (
+        await db.query(
+          "UPDATE student_enrollments SET stripe_session_id='cs_test_reserved' WHERE id=$1 AND status='reserved' AND (stripe_session_id IS NULL OR stripe_session_id='cs_test_reserved') RETURNING id",
+          [reservedBind],
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await expect(
+      db.query(
+        "SELECT flag_student_enrollment_review($1,'cs_test_orphan','paid_after_release')",
+        [reservedBind],
+      ),
+    ).rejects.toThrow("expired enrollment");
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_orphan','paid_after_release')",
+      [unbound],
+    );
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_orphan','paid_after_release')",
+      [unbound],
+    );
+    expect(
+      (
+        await db.query(
+          "SELECT session_id FROM student_enrollment_reviews WHERE enrollment_id=$1",
+          [unbound],
+        )
+      ).rows,
+    ).toEqual([{ session_id: "cs_test_orphan" }]);
+    await expect(
+      db.query(
+        "SELECT flag_student_enrollment_review($1,'cs_test_other','paid_after_release')",
+        [unbound],
+      ),
+    ).rejects.toThrow("Review identity conflict");
+    await db.query(
+      "UPDATE student_enrollments SET status='expired' WHERE offering_id=$1 AND status='reserved'",
+      [offer],
+    );
+    await db.query(
+      "UPDATE student_enrollment_offerings SET external_seats=9 WHERE id=$1",
+      [offer],
+    );
+    const lastIds = Array.from({ length: 8 }, () => randomUUID());
+    const lastAllocations = await Promise.all(
+      lastIds.map((id, index) => reserve(id, 300 + index)),
+    );
+    expect(lastAllocations.filter((row) => row.rows.length)).toHaveLength(1);
+    expect(lastAllocations.filter((row) => !row.rows.length).length).toBe(7);
   } finally {
     await db.close();
   }

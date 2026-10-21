@@ -1,22 +1,40 @@
 -- Isolated TEST-mode Infection Control inventory for student checkout.
--- NEVER apply this file to production or any live database.
--- Use only on an isolated preview/test database after reading
--- docs/student-payments.md. Live payments and live email remain off until
--- their separate flags are set. Production uses
+-- NEVER apply this file to production or any live database without the
+-- explicit live-data opt-in. Use only on an isolated preview/test database
+-- after reading docs/student-payments.md. Live payments and live email remain
+-- off until their separate flags are set. Production uses
 -- db/seeds/infection-control-offerings.sql (mode=live, enabled=false).
 -- Confirmed Oct 21 2026: Nov 14 and Dec 5, 12 seats each, 0 offline, $395.
 --
 -- policy_hash must remain the SHA-256 of policy_text (the approved paragraphs
 -- joined by two newlines). Recompute the hash if academy-policies.ts changes.
 --
--- Guard: SET application_name = 'rda-student-offering-seed' first. Never apply
--- this file to production. ON CONFLICT DO NOTHING keeps unexpected existing
--- rows, so the verify block below must pass.
+-- Guard: SET application_name = 'rda-student-offering-seed-isolated' first.
+-- That name is distinct from the live seed on purpose. If this database
+-- already has mode='live' offerings or enrollments, also require the
+-- explicit opt-in application_name = 'rda-student-offering-seed-on-live-data'.
+-- Never apply this file to production without that opt-in.
+-- ON CONFLICT DO NOTHING keeps unexpected existing rows, so the verify
+-- block below must pass.
 
 DO $guard$
 BEGIN
-  IF current_setting('application_name', true) IS DISTINCT FROM 'rda-student-offering-seed' THEN
-    RAISE EXCEPTION 'Refusing to seed TEST student offerings. SET application_name = ''rda-student-offering-seed'' only on an isolated preview/test database. Never production.';
+  IF current_setting('application_name', true) NOT IN (
+    'rda-student-offering-seed-isolated',
+    'rda-student-offering-seed-on-live-data'
+  ) THEN
+    RAISE EXCEPTION 'Refusing to seed TEST student offerings. SET application_name = ''rda-student-offering-seed-isolated'' only on an isolated preview/test database. The live-seed name is not enough. To run against a database that already has live data, SET application_name = ''rda-student-offering-seed-on-live-data'' as an explicit opt-in. Never production.';
+  END IF;
+  IF EXISTS (SELECT 1 FROM student_enrollment_offerings WHERE mode='live')
+    OR EXISTS (
+      SELECT 1 FROM student_enrollments e
+      JOIN student_enrollment_offerings o ON o.id=e.offering_id
+      WHERE o.mode='live'
+    )
+  THEN
+    IF current_setting('application_name', true) IS DISTINCT FROM 'rda-student-offering-seed-on-live-data' THEN
+      RAISE EXCEPTION 'Refusing to seed TEST student offerings against live/prod data. SET application_name = ''rda-student-offering-seed-on-live-data'' only as an explicit opt-in.';
+    END IF;
   END IF;
 END
 $guard$;

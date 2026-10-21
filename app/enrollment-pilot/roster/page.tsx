@@ -23,6 +23,7 @@ export default async function StudentRoster() {
     );
   let rows: Record<string, unknown>[] = [];
   let holds: Record<string, unknown>[] = [];
+  let reviews: Record<string, unknown>[] = [];
   if (config) {
     rows =
       config.mode === "test"
@@ -34,6 +35,12 @@ export default async function StudentRoster() {
       await studentDatabase()`SELECT e.id,e.student_name,e.email,e.stripe_session_id,e.stripe_expires_at,o.course_date
       FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id
       WHERE e.status='reserved' AND o.mode=${config.mode} ORDER BY e.created_at LIMIT 500`;
+    reviews =
+      await studentDatabase()`SELECT e.id,e.student_name,e.email,e.status,r.session_id,r.reason,r.created_at,o.course_date
+      FROM student_enrollment_reviews r
+      JOIN student_enrollments e ON e.id=r.enrollment_id
+      JOIN student_enrollment_offerings o ON o.id=e.offering_id
+      WHERE o.mode=${config.mode} ORDER BY r.created_at LIMIT 500`;
   }
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-6 py-12">
@@ -123,6 +130,43 @@ export default async function StudentRoster() {
         </table>
       </div>
       {!holds.length && <p>No pending checkout holds.</p>}
+      <h2 className="font-heading text-2xl">Payments needing staff review</h2>
+      <p>
+        Paid Checkout sessions that arrived after the seat was released or
+        expired. Do not treat these as verified enrollments until staff
+        reconciles the charge.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr>
+              {["Date", "Student", "Email", "Status", "Reason"].map((h) => (
+                <th key={h} className="border-b p-3">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {reviews.map((r) => (
+              <tr key={String(r.id)}>
+                {[
+                  enrollmentDate(r.course_date),
+                  r.student_name,
+                  r.email,
+                  r.status,
+                  r.reason,
+                ].map((v, i) => (
+                  <td key={i} className="border-b p-3">
+                    {String(v)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {!reviews.length && <p>No orphan payments awaiting review.</p>}
     </main>
   );
 }

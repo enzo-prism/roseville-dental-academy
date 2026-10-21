@@ -175,3 +175,42 @@ BEGIN
   RETURN hits<=20;
 END;
 $$;
+-- Orphan Checkout payments against released/expired rows need staff review.
+-- Re-applying this file is required so production picks up new functions/views.
+CREATE TABLE IF NOT EXISTS student_enrollment_reviews (
+  enrollment_id uuid PRIMARY KEY REFERENCES student_enrollments(id),
+  session_id text NOT NULL,
+  reason text NOT NULL CHECK (reason IN ('paid_after_release')),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE OR REPLACE FUNCTION flag_student_enrollment_review(p_id uuid,p_session text,p_reason text)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE held student_enrollments;
+BEGIN
+  IF p_reason <> 'paid_after_release' THEN RAISE EXCEPTION 'Invalid review reason'; END IF;
+  SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
+  IF held.status <> 'expired' THEN RAISE EXCEPTION 'Review flag requires an expired enrollment'; END IF;
+  INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason)
+    VALUES(p_id,p_session,p_reason)
+    ON CONFLICT (enrollment_id) DO NOTHING;
+  IF NOT EXISTS (
+    SELECT 1 FROM student_enrollment_reviews WHERE enrollment_id=p_id AND session_id=p_session
+  ) THEN RAISE EXCEPTION 'Review identity conflict'; END IF;
+  RETURN true;
+END;
+$$;
+-- CREATE TABLE IF NOT EXISTS will not add CHECKs to an older offerings table.
+DO $amount_check$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='student_enrollment_offerings'::regclass
+      AND contype='c'
+      AND pg_get_constraintdef(oid) ILIKE '%amount%39500%'
+  ) THEN
+    ALTER TABLE student_enrollment_offerings
+      ADD CONSTRAINT student_enrollment_offerings_amount_39500 CHECK (amount=39500);
+  END IF;
+END
+$amount_check$;

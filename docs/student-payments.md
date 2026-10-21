@@ -29,8 +29,13 @@ test database. It inserts the same two dates as `mode='test'`, `enabled=true`,
 the reviewed live seed. Never apply it to production or any live database. Production
 uses the live seed (`mode='live'`, `enabled=false`) after review.
 
-Both seed files refuse to run unless the session first sets
-`application_name = 'rda-student-offering-seed'`. `ON CONFLICT DO NOTHING` will not
+The live seed refuses to run unless the session first sets
+`application_name = 'rda-student-offering-seed'`. The TEST seed uses a **different**
+name, `rda-student-offering-seed-isolated`, so applying the live-seed guard cannot
+accidentally insert TEST rows. If the database already has `mode='live'` offerings
+or enrollments, the TEST seed also refuses unless the session sets
+`application_name = 'rda-student-offering-seed-on-live-data'` as an explicit
+opt-in. Do not use that opt-in on production. `ON CONFLICT DO NOTHING` will not
 overwrite a stale row with the same `(mode, course_id, course_date)`, so each file
 verifies the post-state and raises if the two confirmed dates, amount, seats, hash,
 or enabled flag do not match.
@@ -97,11 +102,16 @@ in `policy_text`. Each reservation copies that accepted policy snapshot. The rev
 inserts both dates with `external_seats=0`, `amount=39500`, `capacity=12`, and `enabled=false`.
 No application API creates or enables offerings.
 Apply migration `005_student_enrollment.sql` using the filename-order migrator only against
-the verified RDA database after review. It is repeatable and seeds zero offerings. Then apply
+the verified RDA database after review. It is repeatable and seeds zero offerings. If
+production already applied an earlier copy of `005`, **re-apply the current file** so
+it picks up new functions (`flag_student_enrollment_review`, roster views) and the
+offerings `amount=39500` CHECK. Then apply
 `db/seeds/infection-control-offerings.sql` to insert the two disabled live offerings. Enable
 an offering only after the go-live checklist below. On an isolated preview or test database
 only, `db/seeds/infection-control-offerings.test.sql` can insert the same two dates as
-enabled TEST-mode offerings. Never apply that file to production.
+enabled TEST-mode offerings after
+`SET application_name = 'rda-student-offering-seed-isolated'`. Never apply that file to
+production. The live-seed `application_name` is not an opt-in for the TEST file.
 
 ## Flow and integrity
 
@@ -121,6 +131,11 @@ bounded provider search, then explicitly expired or verified paid. Missing/ambig
 provider evidence requires operator reconciliation, never deleting a hold to free capacity.
 Delayed payment failures remain held until an operator verifies final closure; this is
 deliberately conservative. Review pending holds daily before opening further inventory.
+`bindStudentSession` writes a Checkout id only onto `status='reserved'` rows. After a
+409 `idempotency_key_in_use` race, checkout does not release the seat just because
+recovery is empty. A payment that arrives for an expired or released row (including an
+orphan session paid after a timeout) is inserted into `student_enrollment_reviews` for
+staff and the webhook acknowledges successfully instead of returning 503.
 
 Signed webhooks retrieve current Stripe truth and validate the merchant, environment,
 amount, currency, client reference, expiry, and all binding metadata. Paid outcomes insert
@@ -229,13 +244,12 @@ the repository.
 
 1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
    secure form. Configure them only on the isolated test deployment and test database.
-2. Apply `005_student_enrollment.sql`. On the isolated test database only, set
-   `application_name = 'rda-student-offering-seed'` and apply
+2. Apply `005_student_enrollment.sql` on the isolated test database. Then set
+   `application_name = 'rda-student-offering-seed-isolated'` and apply
    `db/seeds/infection-control-offerings.test.sql` (mode=`test`, `enabled=true`).
    Confirm the two dates, `amount=39500`, `capacity=12`, `external_seats=0`. Never
-   apply that TEST seed to production. The live database uses the same
-   `application_name` guard with `db/seeds/infection-control-offerings.sql`
-   (`enabled=false`) later. The post-seed verify must succeed.
+   apply that TEST seed to production. The live-seed name
+   `rda-student-offering-seed` is not accepted by the TEST file.
 3. Activate test mode (`RDA_STUDENT_PAYMENTS_MODE=test` plus matching test origin,
    account, key, and webhook secret). Leave
    `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` and `RDA_STUDENT_EMAIL_LIVE_ENABLED` unset.
@@ -248,11 +262,25 @@ the repository.
    other date must remain purchasable.
 7. After test-mode sign-off, configure live keys through the same secure form on the
    live environment. Do not reuse test secrets.
-8. Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment and redeploy.
-   The public Enroll CTA is compiled at build time and will not appear until that
-   redeploy. Enable the two live offerings. Outbound student email is a separate flag.
-9. Make one small real purchase, confirm the roster and confirmation email, then refund
-   that charge from the verified merchant dashboard and mark the seat reconciled.
+8. **Re-apply** `005_student_enrollment.sql` on production even if an earlier copy
+   already ran. The file is repeatable (`CREATE OR REPLACE` / `IF NOT EXISTS`) and this
+   revision adds `flag_student_enrollment_review`, `student_enrollment_reviews`, the
+   roster views, and an `amount=39500` CHECK that `CREATE TABLE IF NOT EXISTS` would
+   otherwise skip on an older table. Then set
+   `application_name = 'rda-student-offering-seed'` and apply
+   `db/seeds/infection-control-offerings.sql` (`mode=live`, `enabled=false`). The
+   post-seed verify must succeed.
+9. Set live mode and `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment
+   so `/enroll` can take a charge. Enable the two live offerings. Outbound student
+   email is a separate flag. **Do not treat the public Infection Control "Enroll and
+   pay in full" CTA as live yet** — `/enroll` is the verification URL only.
+10. Make one small real purchase on `/enroll`, confirm the roster and confirmation
+    email, then refund that charge from the verified merchant dashboard and mark the
+    seat reconciled.
+11. Only after that verification purchase is refunded and the seat is reconciled,
+    redeploy or announce so the public Enroll CTA on `/infection-control` goes live.
+    The CTA is compiled at build time from live configuration and will not appear
+    until that redeploy.
 
 Launch remains blocked until that checklist is finished. No real charges, refunds, student
 emails, bank changes, or credential creation are part of this development release. This

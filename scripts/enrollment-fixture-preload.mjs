@@ -57,14 +57,17 @@ globalThis.fetch = async (input, init = {}) => {
         const plant=control.plantSessionlessHold;
         const offer=(await db.query("SELECT id,course_date,policy_text,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
         if (offer) {
-          await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,'2026-09-30',$8,$9,39500,'usd','reserved',$10) ON CONFLICT (id) DO NOTHING",[plant.id,offer.id,offer.course_date,plant.owner,plant.name,plant.email,plant.phone,offer.policy_hash,offer.policy_text,plant.expiresAt]);
+          await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,'2026-09-30',$8,$9,39500,'usd',$11,$10) ON CONFLICT (id) DO NOTHING",[plant.id,offer.id,offer.course_date,plant.owner,plant.name,plant.email,plant.phone,offer.policy_hash,offer.policy_text,plant.expiresAt,plant.status ?? "reserved"]);
         }
+      }
+      if (control.releaseHold) {
+        await db.query("UPDATE student_enrollments SET status='expired',stripe_session_id=NULL,updated_at=now() WHERE id=$1",[control.releaseHold]);
       }
       const { query, params } = JSON.parse(init.body);
       const result = await db.query(query, params);
       if (process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE) {
         const evidence={};
-        for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_roster","student_enrollment_roster_test"]) evidence[table]=(await db.query(`SELECT * FROM ${table}`)).rows;
+        for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_reviews","student_enrollment_roster","student_enrollment_roster_test"]) evidence[table]=(await db.query(`SELECT * FROM ${table}`)).rows;
         await writeFile(process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE,JSON.stringify(evidence));
       }
       return Response.json({ ...result, rows: result.rows.map((row) => result.fields.map(({ name, dataTypeID }) => {
@@ -77,15 +80,33 @@ globalThis.fetch = async (input, init = {}) => {
   }
   if (url.hostname === "api.stripe.com") {
     const control = await fixtureControls();
+    if (control.plantOrphanSession) {
+      const plant=control.plantOrphanSession;
+      const offer=(await db.query("SELECT course_date,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
+      if (offer && !sessions.has(plant.id)) {
+        const courseDate=offer.course_date instanceof Date && offer.course_date.toISOString().endsWith("T00:00:00.000Z")
+          ? offer.course_date.toISOString().slice(0,10) : String(offer.course_date).slice(0,10);
+        sessions.set(plant.id,{
+          id:plant.id,object:"checkout.session",livemode:false,mode:"payment",amount_total:39500,currency:"usd",
+          status:plant.status ?? "open",payment_status:plant.paymentStatus ?? "unpaid",
+          expires_at:plant.expiresAt ?? Math.floor(Date.now()/1000)+3600,
+          url:`https://checkout.stripe.com/c/pay/${plant.id}`,client_reference_id:plant.enrollmentId,payment_intent:null,
+          metadata:{enrollment_id:plant.enrollmentId,offering_id:plant.offeringId,policy_version:"2026-09-30",
+            policy_hash:offer.policy_hash,integration:"rda-student-v1",environment:"test",course_date:courseDate},
+        });
+        if (plant.idempotencyKey) keys.set(plant.idempotencyKey,{id:plant.id,raw:plant.raw ?? "orphan"});
+      }
+    }
     if (url.pathname === "/v1/account") {
       if (control.accountError) return Response.json({error:"fixture account unavailable"},{status:500});
       return Response.json({id:control.wrongMerchant ? "acct_wrong" : "acct_fixture",charges_enabled:true,payouts_enabled:true});
     }
     if (init.method === "POST" && url.pathname === "/v1/checkout/sessions") {
       if (control.createError) return Response.json({error:"fixture session create unavailable"},{status:500});
+      if (control.idempotencyConflict) return Response.json({error:{code:"idempotency_key_in_use",message:"fixture in-flight idempotency key"}},{status:409});
       const key = new Headers(init.headers).get("Idempotency-Key"), raw = String(init.body);
       if (keys.has(key)) {
-        const existing = keys.get(key); if (existing.raw !== raw) return Response.json({ error: "idempotency conflict" }, { status: 409 });
+        const existing = keys.get(key); if (existing.raw !== raw) return Response.json({ error: { code: "idempotency_key_in_use", message: "idempotency conflict" } }, { status: 409 });
         return Response.json(sessions.get(existing.id));
       }
       const params = new URLSearchParams(raw); const id = `cs_test_fixture${sessions.size + 1}`;
