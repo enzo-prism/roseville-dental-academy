@@ -1,0 +1,7 @@
+# Visual parity references
+
+All PNGs here were captured on Linux (GitHub Actions `ubuntu-latest`, Playwright 1.59.0 / Chromium 147) by
+`.github/workflows/capture-visual-baselines.yml` from the production build of the 2026-10-21 "Chairside" redesign
+(PR #53), with reduced motion, the seasonal layer off, and the site promo suppressed. They match the Release Gate's
+Linux runner; macOS renders differ by large pixel counts, so recapture through the workflow rather than locally.
+See docs/release-qa.md ("Capturing baselines on Linux").
