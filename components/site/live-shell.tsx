@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import type { LiveRoute } from "@/lib/live-route-data";
 import { activeSeasonalTheme } from "@/lib/site-seasonal";
 
-import { HomeHeroCarouselController } from "./home-hero-carousel-controller";
 import { LiveFooter } from "./live-footer";
 import { LiveHeader } from "./live-header";
 import { SitePromoDialog } from "./site-promo-dialog";
@@ -32,7 +31,6 @@ export function LiveShell({ children, route }: LiveShellProps) {
       <LiveHeader currentRoute={route.route} seasonal={seasonal} />
       {route.shellVariant === "public" ? <SitePromoDialog /> : null}
       {children}
-      <HomeHeroCarouselController enabled={route.route === "/"} />
       <LiveFooter seasonal={seasonal} />
     </div>
   );

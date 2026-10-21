@@ -91,23 +91,29 @@ export function trackMetaPixelEvent(
 function MetaPageViewTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const hasSkippedInitialPageView = useRef(false);
+  // The bootstrap sends the first PageView, so remember the URL it covered and
+  // only send again when the URL really changes. Keying on the URL (rather than
+  // a "skip once" flag) keeps effect re-runs (React reconnecting a boundary,
+  // Strict Mode) from double-counting the same page.
+  const lastTrackedUrl = useRef<string | null>(null);
 
   useEffect(() => {
     if (!pathname) {
       return;
     }
 
-    // The bootstrap sends the first PageView. Only send on client navigation.
-    if (!hasSkippedInitialPageView.current) {
-      hasSkippedInitialPageView.current = true;
+    const url = `${pathname}?${searchParams?.toString() ?? ""}`;
+
+    if (lastTrackedUrl.current === null) {
+      lastTrackedUrl.current = url;
       return;
     }
 
-    if (typeof window.fbq !== "function") {
+    if (lastTrackedUrl.current === url || typeof window.fbq !== "function") {
       return;
     }
 
+    lastTrackedUrl.current = url;
     trackMetaPixelEvent("PageView");
   }, [pathname, searchParams]);
 

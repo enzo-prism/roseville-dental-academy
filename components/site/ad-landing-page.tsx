@@ -1,13 +1,16 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useId } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   BadgeCheck,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
+  LoaderCircle,
   Mail,
+  MessageSquareText,
   Phone,
   Quote,
   Send,
@@ -16,6 +19,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+import { FloatField, HowHeardField, validateFormControls } from "@/components/academy/form-kit";
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
 import { trackGaEvent } from "@/components/site/google-analytics";
 import { trackSiteEvent } from "@/components/site/interaction-analytics";
@@ -28,8 +32,6 @@ import {
   useLeadFormSubmit,
 } from "@/components/site/use-lead-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   isPaidTrafficLanderSlug,
   type AdLandingPage as AdLandingPageData,
@@ -153,6 +155,9 @@ function AdLandingLeadForm({
   page: AdLandingPageData;
   status: ReturnType<typeof useLeadFormSubmit>["status"];
 }) {
+  const [attempted, setAttempted] = useState(false);
+  const [howHeardComplete, setHowHeardComplete] = useState(false);
+
   return (
     <aside className="rda-ad-form-panel" aria-labelledby={`${formId}-form-title`}>
       <div className="rda-ad-form-heading">
@@ -174,13 +179,21 @@ function AdLandingLeadForm({
       ) : (
         <form
           action={page.formspreeEndpoint ?? siteContact.formspreeEndpoint}
-          className="rda-ad-form"
+          className="rda-ad-form ac-form"
           data-rda-form-id="ad_landing_lead"
           data-rda-landing-form="true"
           data-rda-signup-form="true"
           id="ad-lead-form"
           method="post"
-          onSubmit={onSubmit}
+          noValidate
+          onSubmit={(event) => {
+            setAttempted(true);
+            if (!validateFormControls(event.currentTarget)) {
+              event.preventDefault();
+              return;
+            }
+            onSubmit(event);
+          }}
         >
           <input name="_subject" type="hidden" value={`RDA landing page lead: ${page.slug}`} />
           <input name="Source page" type="hidden" value={page.metaTitle} />
@@ -202,80 +215,96 @@ function AdLandingLeadForm({
             <input key={interest} name="Interested classes[]" type="hidden" value={interest} />
           ))}
 
-          <label>
-            <span>
-              <UserRound aria-hidden="true" />
-              Name
-            </span>
-            <Input autoComplete="name" name="Name" placeholder="Name" required type="text" />
-          </label>
-          <label>
-            <span>
-              <Mail aria-hidden="true" />
-              Email
-            </span>
-            <Input
+          <div className="ac-field-grid">
+            <FloatField
+              autoComplete="name"
+              className="ac-span-2"
+              icon={UserRound}
+              label="Full name"
+              name="Name"
+              required
+              type="text"
+            />
+            <FloatField
               autoComplete="email"
+              icon={Mail}
+              inputMode="email"
+              label="Email"
               name="_replyto"
-              placeholder="Email"
               required
               type="email"
             />
-          </label>
-          <label>
-            <span>
-              <Phone aria-hidden="true" />
-              Phone
-            </span>
-            <Input autoComplete="tel" name="Phone" placeholder="Phone" required type="tel" />
-          </label>
+            <FloatField
+              autoComplete="tel"
+              icon={Phone}
+              inputMode="tel"
+              label="Phone"
+              name="Phone"
+              pattern={"\\D*(\\d\\D*){10,15}"}
+              required
+              type="tel"
+            />
+          </div>
           {page.leadSelects?.map((field) => {
             const Icon = field.icon ? SELECT_ICONS[field.icon] : null;
 
             return (
-              <label key={field.name}>
-                <span>
+              <label className="ac-select-field" key={field.name}>
+                <span className="ac-select-label">
                   {Icon ? <Icon aria-hidden="true" /> : null}
                   {field.label}
                 </span>
-                <select
-                  defaultValue={field.required ? "" : field.options[0]}
-                  name={field.name}
-                  required={field.required}
-                >
-                  {field.required ? (
-                    <option disabled value="">
-                      Select one
-                    </option>
-                  ) : null}
-                  {field.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                <span className="ac-select-wrap">
+                  <select
+                    className="ac-select"
+                    defaultValue={field.required ? "" : field.options[0]}
+                    name={field.name}
+                    required={field.required}
+                  >
+                    {field.required ? (
+                      <option disabled value="">
+                        Select one
+                      </option>
+                    ) : null}
+                    {field.options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown aria-hidden="true" />
+                </span>
               </label>
             );
           })}
-          <label>
-            <span>Questions or timing notes</span>
-            <Textarea
-              name="Notes"
-              placeholder="Best times, current certifications, or class questions"
-              rows={4}
-            />
-          </label>
+          <HowHeardField
+            invalid={attempted && !howHeardComplete}
+            onAnswer={(_, complete) => setHowHeardComplete(complete)}
+          />
+          <FloatField
+            icon={MessageSquareText}
+            label="Questions or timing notes"
+            multiline
+            name="Notes"
+            optional
+            rows={3}
+          />
           {page.consent ? (
-            <label className="rda-ad-form-consent">
+            <label className="ac-check rda-ad-form-consent">
               <input name={page.consent.name} required type="checkbox" value="Yes" />
+              <span aria-hidden="true" className="ac-check-box" />
               <span>{page.consent.label}</span>
             </label>
           ) : null}
           {status === "error" ? <LeadFormError /> : null}
-          <Button disabled={status === "submitting"} type="submit">
+          <button
+            className="ac-btn ac-btn-primary ac-btn-lg ac-submit ac-submit-block"
+            disabled={status === "submitting"}
+            type="submit"
+          >
             {status === "submitting" ? "Sending..." : page.primaryCtaLabel}
-            <Send aria-hidden="true" />
-          </Button>
+            {status === "submitting" ? <LoaderCircle aria-hidden="true" className="ac-spin" /> : <Send aria-hidden="true" />}
+          </button>
           <p className="rda-ad-form-note">
             This request does not reserve a seat or collect payment. Admissions will
             confirm the right next step directly.

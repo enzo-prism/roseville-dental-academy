@@ -1,22 +1,24 @@
 # Roseville Dental Academy
 
-This repo is a production-ready, live-faithful Next.js rebuild of [rosevilledentalacademy.com](https://www.rosevilledentalacademy.com).
+This repo is the production Next.js site for [rosevilledentalacademy.com](https://www.rosevilledentalacademy.com).
 
-The current runtime is a shell-first hybrid:
+Since the October 2026 redesign ("Chairside", see `DESIGN.md`) the site is React-owned end to end:
 
-- React owns the shared shell: header, navigation, mobile menu, footer, contact blocks, and the WhatsApp click-to-chat button. There is no cookie banner (consent state lives in pixel/consent modules, and the interaction suite asserts the banner is absent) and no ElevenLabs chat widget.
-- Sanitized frozen snapshots provide page-specific content and imagery.
-- Stable React replacements handle widgets that were unstable in the original GoDaddy runtime.
-- Snapshot files remain the visual/content reference and QA baseline, not the long-term source for shared shell behavior.
+- A photo-led design built around students in action, the instructor team, and real Google reviews, with light and dark mode (system default plus a header toggle), scroll motion, and a date-gated Halloween layer.
+- React owns the shell (header with Courses mega menu, mobile sheet, footer, WhatsApp click-to-chat button) and every public page: home, course pages, instructors, photos, the `/reviews` page, contact, FAQs, journey, resources, and ad landers. There is no cookie banner and no ElevenLabs chat widget.
+- Only the `/m/*` account screens still render sanitized GoDaddy snapshot HTML from `snapshot/live/`.
+- All public lead forms share one form kit, including the required "How did you hear about us?" question.
 
 ## How It Works
 
 - `app/[[...slug]]/page.tsx` renders public and utility routes through the App Router.
 - `lib/live-route-data.ts` decorates `snapshot/live/manifest.json` into the typed route registry.
-- `components/site/live-*.tsx` contains the reusable live-faithful shell and stable widget replacements.
-- `app/globals.css` contains shell CSS variables and scoped snapshot compatibility styles.
+- `components/academy/` is the redesign: `home/home-page.tsx` (homepage sections), `pages/*` (instructors, photos, reviews, contact, FAQs), `form-kit.tsx` (floating fields, How-did-you-hear pills, progress, validation), `photo-lightbox.tsx`, `lazy-video.tsx`, `page-hero.tsx`, `theme-provider.tsx` / `theme-toggle.tsx`, and `motion-observer.tsx` (scroll reveals + count-ups).
+- `components/site/live-*.tsx` is the shell (header, footer, shell wrapper), the course page, and the shared signup/contact forms.
+- `app/academy.css` holds the design tokens (light + `.dark`) and all redesign styles; `app/globals.css` keeps Tailwind/shadcn setup, stacking variables, the WhatsApp FAB, lander/journey/resource styles, and the seasonal layer.
+- `lib/academy-catalog.ts` (courses: prices, hours, DBC numbers, photos), `lib/academy-instructors.ts` (team + student quotes), `lib/how-heard.ts` (the How-did-you-hear options and field names), and `lib/reviews-route.ts` (`/reviews`).
 - `components/site/whatsapp-fab.tsx` renders the global WhatsApp click-to-chat floating button (mounted once in `app/layout.tsx`, pinned bottom-right); `components/site/whatsapp-icon.tsx` holds the official WhatsApp logo glyph (sourced via svgl). The number, prefilled message, label, and pre-built `wa.me` link live in `siteContact` / `whatsAppUrl` in `lib/site-data.ts`. Inline "Message Us on WhatsApp" CTAs appear in the footer, contact section, and non-paid ad landing heroes. Paid Meta landers omit the floating button.
-- `snapshot/live/html/*.html` contains frozen source pages used for sanitized page bodies.
+- `snapshot/live/html/*.html` contains frozen source pages; only the `/m/*` utility screens still render from them.
 - `public/__live/` and `public/assets/live/` contain mirrored live assets.
 - `tests/baselines/live/` contains committed content and visual baselines.
 - `lib/site-seasonal.ts` + `components/site/seasonal-*.tsx` are the date-gated seasonal decoration layer (Halloween, October 1–31 Pacific). A `<head>` script switches it on and off by the academy's calendar day without a redeploy; rules live in the "Seasonal Layer" section of `DESIGN.md`, and `pnpm test:seasonal` covers it.
@@ -32,7 +34,7 @@ For any UI, shell, styling, widget, navigation, or layout task:
 1. Read `AGENTS.md`.
 2. Read `DESIGN.md`.
 3. Use `.agents/skills/ui-design-system/SKILL.md` for the repeatable UI workflow.
-4. Prefer existing `rda-*` shell classes and design tokens before creating new patterns.
+4. Prefer the `ac-*` primitives in `app/academy.css` (sections, headings, buttons, chips, cards, photos, reveals) and design tokens before creating new patterns. Check every change in light and dark mode and with reduced motion.
 
 Design tooling:
 

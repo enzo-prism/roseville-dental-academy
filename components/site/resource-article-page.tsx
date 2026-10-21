@@ -47,7 +47,7 @@ export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
       data-rda-route={`resources-${article.slug}`}
       id="rda-main-content"
     >
-      <section className="relative isolate overflow-hidden bg-primary text-primary-foreground">
+      <section className="ac-ink-hero relative isolate overflow-hidden bg-primary text-primary-foreground">
         <Image
           alt={article.heroImage.alt}
           className="absolute inset-0 -z-20 size-full object-cover opacity-25"
@@ -176,7 +176,7 @@ export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
           </div>
         </section>
 
-        <section className="rounded-2xl bg-primary px-6 py-8 text-primary-foreground sm:px-8 sm:py-10">
+        <section className="ac-ink-hero rounded-2xl bg-primary px-6 py-8 text-primary-foreground sm:px-8 sm:py-10">
           <div className="flex flex-col gap-5">
             <div className="space-y-2">
               <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-primary-foreground/80">

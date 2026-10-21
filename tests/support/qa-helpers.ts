@@ -601,8 +601,11 @@ export async function settleMirrorPage(page: Page) {
         const reviewsReady = !reviews || /Read full review/i.test(reviewsText);
         const appointmentsReady =
           !appointments || /New services are coming soon/i.test(appointmentsText);
+        // GoDaddy-era contact forms rendered collapsed; the React contact form
+        // (data-rda-contact-form) is intentionally open on /contact.
         const contactFormReady =
           !contactForm ||
+          contactForm.querySelector("[data-rda-contact-form]") !== null ||
           window.getComputedStyle(contactForm).display === "none" ||
           !contactFormRect ||
           contactFormRect.width === 0 ||
@@ -629,13 +632,13 @@ export async function waitForFontsReady(page: Page) {
         (async () => {
           await document.fonts.ready;
           const rootStyle = getComputedStyle(document.documentElement);
-          const bodyFamily = rootStyle.getPropertyValue("--font-noto-sans").split(",")[0].trim();
-          const headingFamily = rootStyle.getPropertyValue("--font-playfair-display").split(",")[0].trim();
+          const bodyFamily = rootStyle.getPropertyValue("--font-jakarta-sans").split(",")[0].trim();
+          const headingFamily = rootStyle.getPropertyValue("--font-fraunces").split(",")[0].trim();
           if (!bodyFamily || !headingFamily) {
             throw new Error("Required Next font variables are missing");
           }
           const requiredFaces = [
-            { font: `600 14px ${bodyFamily}`, text: "Home BLS/CPR Infection Control More Information" },
+            { font: `600 14px ${bodyFamily}`, text: "Home Courses Instructors Reviews Photos More" },
             { font: `400 40px ${headingFamily}`, text: "Photo Gallery Begin Your Career" },
             { font: `600 40px ${headingFamily}`, text: "Photo Gallery Begin Your Career" },
           ];
@@ -724,7 +727,7 @@ async function captureVisualFontDiagnostics(page: Page): Promise<VisualFontDiagn
     browserState,
     platformFonts,
     usesExpectedNavFont: !browserState.nav || platformFonts.some((font) =>
-      font.isCustomFont && /Noto Sans/iu.test(font.familyName) && font.glyphCount > 0,
+      font.isCustomFont && /Plus Jakarta Sans/iu.test(font.familyName) && font.glyphCount > 0,
     ),
   };
 }
@@ -846,6 +849,12 @@ export async function scanUi(page: Page): Promise<UiScan> {
           /(hidden|clip|auto|scroll)/i.test(style.overflowX) ||
           /(hidden|clip|auto|scroll)/i.test(style.overflow);
 
+        // Swipe rails (horizontal scroll containers) intentionally show a
+        // partial next card; anything inside one is reachable by scrolling.
+        if (/(auto|scroll)/i.test(style.overflowX) && parent.scrollWidth > parent.clientWidth + 1) {
+          return true;
+        }
+
         if (
           overflowClips &&
           (rect.right <= parentRect.left + 1 || rect.left >= parentRect.right - 1)
@@ -861,7 +870,8 @@ export async function scanUi(page: Page): Promise<UiScan> {
 
     const viewportWidth = window.innerWidth;
     const headerControls = Array.from(
-      document.querySelectorAll<HTMLElement>("header a, header button, header [role='button'], nav a, nav button"),
+      // Header controls only: breadcrumb and footer navs are not primary navigation.
+      document.querySelectorAll<HTMLElement>("header a, header button, header [role='button']"),
     );
 
     const visibleHeaderLabels = headerControls
@@ -971,6 +981,8 @@ export async function captureSnapshot(
   page: Page,
   url: string,
   options?: {
+    /** Open every native <details> (e.g. the FAQ accordion) before reading text. */
+    expandDisclosures?: boolean;
     settle?: boolean;
     viewport?: { height: number; width: number };
   },
@@ -980,12 +992,23 @@ export async function captureSnapshot(
   }
 
   await suppressSitePromo(page.context());
+  // Same as scripts/refresh-live-baselines.mjs: reduced motion shows every
+  // scroll reveal and freezes the carousel, count-ups, and marquees.
+  await page.emulateMedia({ reducedMotion: "reduce" });
 
   const runtime = createRuntimeDiagnostics(page);
   const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
   if (options?.settle !== false) {
     await settleMirrorPage(page);
+  }
+
+  if (options?.expandDisclosures) {
+    await page.evaluate(() => {
+      document.querySelectorAll("details").forEach((details) => {
+        details.open = true;
+      });
+    });
   }
 
   const ui = await scanUi(page);
@@ -1084,7 +1107,8 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
     )
       .filter((field) => isVisible(field))
       .filter((field) => !isAdditiveParityElement(field))
-      .map((field) => field.getAttribute("placeholder") || field.getAttribute("aria-label") || "")
+      // Floating-label fields use a single-space placeholder purely for CSS.
+      .map((field) => (field.getAttribute("placeholder") || "").trim() || field.getAttribute("aria-label") || "")
       .filter(Boolean);
 
     const visibleButtons = Array.from(
@@ -1154,12 +1178,9 @@ export async function captureVisual(
 ) {
   await page.setViewportSize(viewport);
   await suppressSitePromo(page.context());
-  // Homepage hero auto-advances every 7s unless reduced motion is set.
-  // Pin it to slide 1 so home baselines are not mid-carousel lottery.
-  const pathname = new URL(url).pathname;
-  if (pathname === "/" || pathname === "") {
-    await page.emulateMedia({ reducedMotion: "reduce" });
-  }
+  // Reduced motion pins the hero to slide 1, shows every scroll reveal, and
+  // keeps count-ups, marquees, and clips still, matching baseline capture.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   const runtime = createRuntimeDiagnostics(page);
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await settleMirrorPage(page);
