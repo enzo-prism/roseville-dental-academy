@@ -26,6 +26,50 @@ async function gotoSettled(
   await page.waitForTimeout(2_000);
 }
 
+function parseSubmittedFormBody(body: string) {
+  const fields: Record<string, string> = {};
+  const params = new URLSearchParams(body);
+  if ([...params.keys()].length > 0 && !body.includes("name=\"")) {
+    return Object.fromEntries(params);
+  }
+
+  for (const match of body.matchAll(
+    /name="([^"]+)"[\s\S]*?\r?\n\r?\n([\s\S]*?)(?:\r?\n--)/g,
+  )) {
+    fields[match[1]] = match[2];
+  }
+
+  return fields;
+}
+
+async function abortFormspree(page: import("@playwright/test").Page) {
+  const captured = { aborted: false, body: "" };
+  await page.route("https://formspree.io/f/**", async (route) => {
+    captured.body = route.request().postData() ?? "";
+    captured.aborted = true;
+    await route.abort();
+  });
+  return captured;
+}
+
+async function readStoredAttribution(page: import("@playwright/test").Page) {
+  return page.evaluate(() => {
+    const raw = window.localStorage.getItem("rda_lead_attribution_v2");
+    return raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+  });
+}
+
+async function submitAbortedContactForm(page: import("@playwright/test").Page) {
+  const form = page.locator('form[data-rda-contact-form="true"]');
+  if (!(await form.isVisible())) {
+    await page.locator('[data-rda-contact-form-toggle="true"]').click();
+  }
+
+  await expect(form).toBeVisible();
+  await form.locator('input[name="_replyto"]').fill("attribution-journey@example.com");
+  await form.getByRole("button", { name: "Send" }).click();
+}
+
 test.describe("live-style interaction flows", () => {
   // Covers the allowPromo paths too, which skip suppressSitePromo.
   test.beforeEach(async ({ context }) => {
@@ -1599,6 +1643,286 @@ test.describe("live-style interaction flows", () => {
       );
     });
 
+    test("Meta lander tags survive a later infection-control course form", async ({
+      page,
+    }) => {
+      const landingPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&utm_id=120249084101080567&utm_source_platform=meta_ads&fbclid=course_page_meta_click`,
+      );
+      await gotoSettled(page, "/infection-control");
+
+      const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(courseForm.locator('input[name="utm_source"]')).toHaveValue("meta");
+      await expect(courseForm.locator('input[name="utm_campaign"]')).toHaveValue("ic189_oct17");
+      await expect(courseForm.locator('input[name="fbclid"]')).toHaveValue(
+        "course_page_meta_click",
+      );
+      await expect(courseForm.locator('input[name="ad_id"]')).toHaveValue(
+        "120249085995100567",
+      );
+      await expect(courseForm.locator('input[name="landing_page"]')).toHaveValue(
+        landingPage.path,
+      );
+    });
+
+    test("lead_source stays website on a Meta-tagged course form", async ({
+      page,
+    }) => {
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&fbclid=TEST_SAMPLE",
+      );
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(form.locator('input[name="utm_source"]')).toHaveValue("meta");
+      await expect(form.locator('input[name="fbclid"]')).toHaveValue("TEST_SAMPLE");
+      await expect(form.locator('input[name="lead_source"]')).toHaveValue("website");
+      await expect(form.locator('input[name="how-heard"]')).toHaveValue("website");
+      await expect(form.locator('input[name="landing_page"]')).toHaveValue("/infection-control");
+    });
+
+    test("newer Meta click updates landing_page after an older coronal visit", async ({
+      page,
+    }) => {
+      await gotoSettled(page, "/coronal-polish?fbclid=testcheck123");
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_TEST&fbclid=TEST_SAMPLE",
+      );
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(form.locator('input[name="utm_source"]')).toHaveValue("meta");
+      await expect(form.locator('input[name="fbclid"]')).toHaveValue("TEST_SAMPLE");
+      await expect(form.locator('input[name="landing_page"]')).toHaveValue("/infection-control");
+      await expect(form.locator('input[name="lead_source"]')).toHaveValue("website");
+    });
+
+    test("Instagram referrer first visit still stamps a later Meta click", async ({
+      page,
+    }) => {
+      await suppressSitePromo(page.context());
+      await page.goto(`${localOrigin}/`, {
+        referer: "https://www.instagram.com/",
+        timeout: 120_000,
+        waitUntil: "domcontentloaded",
+      });
+      await page.waitForLoadState("load").catch(() => undefined);
+      await page.waitForTimeout(2_000);
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&fbclid=ig_then_meta_click",
+      );
+      await gotoSettled(page, "/radiation-safety");
+
+      const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(courseForm.locator('input[name="utm_source"]')).toHaveValue("meta");
+      await expect(courseForm.locator('input[name="fbclid"]')).toHaveValue("ig_then_meta_click");
+      await expect(courseForm.locator('input[name="ad_id"]')).toHaveValue(
+        "120249085995100567",
+      );
+    });
+
+    test("t1 Meta ad then IG organic with fbclid keeps the ad stamp on submit", async ({
+      page,
+    }) => {
+      const formspree = await abortFormspree(page);
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&utm_id=120249084101080567&utm_source_platform=meta_ads&fbclid=meta_ad_click",
+      );
+      await gotoSettled(
+        page,
+        "/contact?utm_source=ig&utm_medium=social&fbclid=organic_ig_fbclid",
+      );
+
+      const stored = await readStoredAttribution(page);
+      expect(stored).toMatchObject({
+        conversionTouch: {
+          clickIds: { fbclid: "organic_ig_fbclid" },
+          utm: { utm_medium: "social", utm_source: "ig" },
+        },
+        firstTouch: {
+          clickIds: { fbclid: "meta_ad_click" },
+          dimensions: { ad_id: "120249085995100567" },
+          pagePath: "/infection-control",
+          utm: {
+            utm_campaign: "ic189_oct17",
+            utm_medium: "paid_social",
+            utm_source: "meta",
+          },
+        },
+      });
+
+      await submitAbortedContactForm(page);
+      await expect.poll(() => formspree.aborted).toBe(true);
+      const payload = parseSubmittedFormBody(formspree.body);
+      expect(payload.utm_source).toBe("meta");
+      expect(payload.utm_medium).toBe("paid_social");
+      expect(payload.utm_campaign).toBe("ic189_oct17");
+      expect(payload.ad_id).toBe("120249085995100567");
+      expect(payload.fbclid).toBe("meta_ad_click");
+      expect(payload.landing_page).toBe("/infection-control");
+      expect(payload.conversion_touch_fbclid).toBe("organic_ig_fbclid");
+    });
+
+    test("t2 Meta ad then GBP with fbclid keeps the ad stamp on submit", async ({
+      page,
+    }) => {
+      const formspree = await abortFormspree(page);
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&fbclid=meta_ad_click",
+      );
+      await gotoSettled(
+        page,
+        "/contact?utm_source=google&utm_medium=gmb&utm_campaign=roseville&fbclid=gbp_fbclid",
+      );
+
+      const stored = await readStoredAttribution(page);
+      expect(stored).toMatchObject({
+        conversionTouch: {
+          clickIds: { fbclid: "gbp_fbclid" },
+          utm: { utm_medium: "gmb", utm_source: "google" },
+        },
+        firstTouch: {
+          clickIds: { fbclid: "meta_ad_click" },
+          dimensions: { ad_id: "120249085995100567" },
+          pagePath: "/infection-control",
+          utm: { utm_medium: "paid_social", utm_source: "meta" },
+        },
+      });
+
+      await submitAbortedContactForm(page);
+      await expect.poll(() => formspree.aborted).toBe(true);
+      const payload = parseSubmittedFormBody(formspree.body);
+      expect(payload.utm_source).toBe("meta");
+      expect(payload.utm_medium).toBe("paid_social");
+      expect(payload.utm_campaign).toBe("ic189_oct17");
+      expect(payload.ad_id).toBe("120249085995100567");
+      expect(payload.fbclid).toBe("meta_ad_click");
+      expect(payload.landing_page).toBe("/infection-control");
+      expect(payload.conversion_touch_fbclid).toBe("gbp_fbclid");
+    });
+
+    test("t4 Google ad then IG organic with fbclid keeps the Google ad on submit", async ({
+      page,
+    }) => {
+      const formspree = await abortFormspree(page);
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=google&utm_medium=cpc&utm_campaign=google_first&gclid=google_ad_click",
+      );
+      await gotoSettled(
+        page,
+        "/contact?utm_source=ig&utm_medium=social&fbclid=organic_ig_after_google",
+      );
+
+      const stored = await readStoredAttribution(page);
+      expect(stored).toMatchObject({
+        conversionTouch: {
+          clickIds: { fbclid: "organic_ig_after_google" },
+          utm: { utm_medium: "social", utm_source: "ig" },
+        },
+        firstTouch: {
+          clickIds: { gclid: "google_ad_click" },
+          pagePath: "/infection-control",
+          utm: { utm_campaign: "google_first", utm_medium: "cpc", utm_source: "google" },
+        },
+      });
+
+      await submitAbortedContactForm(page);
+      await expect.poll(() => formspree.aborted).toBe(true);
+      const payload = parseSubmittedFormBody(formspree.body);
+      expect(payload.utm_source).toBe("google");
+      expect(payload.utm_medium).toBe("cpc");
+      expect(payload.utm_campaign).toBe("google_first");
+      expect(payload.gclid).toBe("google_ad_click");
+      expect(payload.fbclid ?? "").toBe("");
+      expect(payload.landing_page).toBe("/infection-control");
+      expect(payload.conversion_touch_fbclid).toBe("organic_ig_after_google");
+    });
+
+    test("a bare fbclid with no medium still counts as paid on submit", async ({
+      page,
+    }) => {
+      const formspree = await abortFormspree(page);
+      await gotoSettled(page, "/contact?fbclid=bare_fbclid");
+
+      const stored = await readStoredAttribution(page);
+      expect(stored).toMatchObject({
+        conversionTouch: { clickIds: { fbclid: "bare_fbclid" }, utm: { utm_medium: "" } },
+        firstTouch: { clickIds: { fbclid: "bare_fbclid" }, pagePath: "/contact" },
+      });
+
+      await submitAbortedContactForm(page);
+      await expect.poll(() => formspree.aborted).toBe(true);
+      const payload = parseSubmittedFormBody(formspree.body);
+      expect(payload.fbclid).toBe("bare_fbclid");
+      expect(payload.utm_medium ?? "").toBe("");
+      expect(payload.landing_page).toBe("/contact");
+    });
+
+    test("a bare gclid with no medium still counts as paid on submit", async ({
+      page,
+    }) => {
+      const formspree = await abortFormspree(page);
+      await gotoSettled(page, "/contact?gclid=bare_gclid");
+
+      const stored = await readStoredAttribution(page);
+      expect(stored).toMatchObject({
+        conversionTouch: { clickIds: { gclid: "bare_gclid" }, utm: { utm_medium: "" } },
+        firstTouch: { clickIds: { gclid: "bare_gclid" }, pagePath: "/contact" },
+      });
+
+      await submitAbortedContactForm(page);
+      await expect.poll(() => formspree.aborted).toBe(true);
+      const payload = parseSubmittedFormBody(formspree.body);
+      expect(payload.gclid).toBe("bare_gclid");
+      expect(payload.utm_medium ?? "").toBe("");
+      expect(payload.landing_page).toBe("/contact");
+    });
+
+    test("Meta ad then Google ad still takes the newer paid touch on submit", async ({
+      page,
+    }) => {
+      const formspree = await abortFormspree(page);
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&fbclid=meta_ad_click",
+      );
+      await gotoSettled(
+        page,
+        "/contact?utm_source=google&utm_medium=cpc&utm_campaign=google_second&gclid=newer_google_click",
+      );
+
+      const stored = await readStoredAttribution(page);
+      expect(stored).toMatchObject({
+        conversionTouch: {
+          clickIds: { gclid: "newer_google_click" },
+          pagePath: "/contact",
+          utm: { utm_campaign: "google_second", utm_medium: "cpc", utm_source: "google" },
+        },
+        firstTouch: {
+          clickIds: { fbclid: "meta_ad_click" },
+          utm: { utm_medium: "paid_social", utm_source: "meta" },
+        },
+      });
+
+      await submitAbortedContactForm(page);
+      await expect.poll(() => formspree.aborted).toBe(true);
+      const payload = parseSubmittedFormBody(formspree.body);
+      expect(payload.utm_source).toBe("google");
+      expect(payload.utm_medium).toBe("cpc");
+      expect(payload.utm_campaign).toBe("google_second");
+      expect(payload.gclid).toBe("newer_google_click");
+      expect(payload.fbclid ?? "").toBe("");
+      expect(payload.ad_id ?? "").toBe("");
+      expect(payload.landing_page).toBe("/contact");
+    });
+
     test("first-touch Saturday tags and parsed ad_id stamp both Formspree forms", async ({
       page,
     }) => {
@@ -1853,7 +2177,7 @@ test.describe("live-style interaction flows", () => {
       );
       await expect(
         page.locator('form[data-rda-landing-form="true"] input[name="utm_campaign"]'),
-      ).toHaveValue("first_campaign");
+      ).toHaveValue("conversion_campaign");
 
       const storedAttribution = await page.evaluate(() => {
         const raw = window.localStorage.getItem("rda_lead_attribution_v2");
