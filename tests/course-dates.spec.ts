@@ -38,15 +38,15 @@ test("reviewed schedule excludes elapsed dates without inventing sold-out histor
   expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-11-14")?.status).toBe("available");
   expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-12-05")?.status).toBe("available");
   expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-11-07")?.status).toBe("available");
-  expect(getCourseSchedule("radiation-safety").find((entry) => entry.isoDate === "2026-11-07")?.status).toBe("available");
-  expect(getAvailableCourseDates("radiation-safety")).toEqual(["November 7, 2026", "December 5, 2026"]);
-  expect(getNextAvailableCourseDate("radiation-safety", "2026-10-18")).toBe("November 7, 2026");
+  expect(getCourseSchedule("radiation-safety").find((entry) => entry.isoDate === "2026-11-07")?.status).toBe("full");
+  expect(getAvailableCourseDates("radiation-safety")).toEqual(["December 5, 2026"]);
+  expect(getNextAvailableCourseDate("radiation-safety", "2026-10-18")).toBe("December 5, 2026");
   expect(getNextAvailableCourseDate("radiation-safety", "2026-12-06")).toBeUndefined();
   expect(getAvailableCourseDates("coronal-polish")).toEqual(["November 14, 2026", "December 12, 2026"]);
   expect(getAvailableCourseDates("sealants")).toEqual(["December 12, 2026"]);
   expect(getNextAvailableCourseDate("dental-assisting-program", "2026-09-12")).toBe("November 20, 2026");
   expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-17")).toBe("October 17, 2026");
-  expect(getNextAvailableCourseDate("radiation-safety", "2026-10-17")).toBe("November 7, 2026");
+  expect(getNextAvailableCourseDate("radiation-safety", "2026-10-17")).toBe("December 5, 2026");
   expect(getNextAvailableCourseDate("sealants", "2026-10-24")).toBe("December 12, 2026");
   expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-08-01")?.status).toBe("available");
   expect(getCourseSchedule("sealants").find((entry) => entry.isoDate === "2026-10-24")?.status).toBe("full");
@@ -188,6 +188,34 @@ test.beforeEach(async ({ context }) => {
 });
 
 for (const width of [390, 1280]) {
+  test(`Radiation Safety sold-out November 7 stays full across public surfaces at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/radiation-safety");
+    const course = page.locator('[data-rda-live-course="radiation-safety"]');
+    const november = course.locator('.rda-course-date').filter({
+      has: page.locator('time[datetime="2026-11-07"]'),
+    });
+    await expect(november).toHaveAttribute("data-status", "full");
+    await expect(november.getByText("Full", { exact: true })).toBeVisible();
+    await expect(course).toContainText("Next available date: December 5, 2026");
+    const radiationChoice = page.locator(".rda-interest-option").filter({ hasText: "Radiation Safety" });
+    await expect(radiationChoice).toContainText("Next open date: December 5, 2026");
+    await expect(radiationChoice).not.toContainText("November 7, 2026");
+    const schema = JSON.parse(await page.locator("#rda-ld-course-radiation-safety").textContent() ?? "{}");
+    expect(schema.hasCourseInstance.map((entry: { startDate: string }) => entry.startDate)).toEqual(["2026-12-05"]);
+
+    await page.goto("/");
+    const row = page.locator(".rda-home-schedule-date-row").filter({ has: page.locator('time[datetime="2026-11-07"]') });
+    const radiation = row.locator(".rda-home-schedule-course-wrap").filter({ has: page.getByRole("link", { name: "X-rays / Radiation Safety", exact: true }) });
+    await expect(radiation).toHaveAttribute("data-status", "full");
+    await expect(radiation.getByText("Full", { exact: true })).toBeVisible();
+    await expect(row.getByRole("link", { name: "BLS / CPR", exact: true })).toBeVisible();
+
+    await page.goto("/faqs-1");
+    await expect(page.locator("body")).toContainText("X-rays / Radiation Safety: December 5, 2026");
+    await expect(page.locator("body")).not.toContainText("X-rays / Radiation Safety: November 7, 2026");
+  });
+
   test(`Coronal Polish sold-out date stays full across public surfaces at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/coronal-polish");
@@ -225,7 +253,8 @@ for (const width of [390, 1280]) {
       "2026-10-17", "2026-10-24", "2026-11-07", "2026-11-14", "2026-11-20", "2026-12-05", "2026-12-12",
     ]);
     await expect(page.getByText("Next open date: October 17, 2026", { exact: true })).toHaveCount(1);
-    await expect(page.getByText("Next open date: November 7, 2026", { exact: true })).toHaveCount(1);
+    await expect(page.getByText("Next open date: November 7, 2026", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Next open date: December 5, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: October 24, 2026", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Next open date: November 14, 2026", { exact: true })).toHaveCount(2);
     await expect(page.getByText("Next open date: November 20, 2026", { exact: true })).toHaveCount(1);
@@ -240,7 +269,9 @@ for (const width of [390, 1280]) {
       has: page.locator('time[datetime="2026-11-07"]'),
     });
     await expect(novemberSeven.getByRole("link", { name: "BLS / CPR" })).toBeVisible();
-    await expect(novemberSeven.getByRole("link", { name: "X-rays / Radiation Safety" })).toBeVisible();
+    await expect(novemberSeven.locator('.rda-home-schedule-course-wrap[data-status="full"]').filter({
+      has: page.getByRole("link", { name: "X-rays / Radiation Safety", exact: true }),
+    }).getByText("Full", { exact: true })).toBeVisible();
     await expect(novemberSeven.getByRole("link", { name: "Infection Control" })).toHaveCount(0);
     const novemberFourteen = schedule.locator(".rda-home-schedule-date-row").filter({
       has: page.locator('time[datetime="2026-11-14"]'),
@@ -317,8 +348,9 @@ test("course JSON-LD omits sold-out instances", async ({ page }) => {
   ) as { hasCourseInstance?: Array<{ startDate?: string; eventStatus?: string }> };
   const radiationDates = (radiationSchema.hasCourseInstance ?? []).map((entry) => entry.startDate);
 
-  expect(radiationDates).toEqual(["2026-11-07", "2026-12-05"]);
+  expect(radiationDates).toEqual(["2026-12-05"]);
   expect(radiationDates).not.toContain("2026-10-17");
+  expect(radiationDates).not.toContain("2026-11-07");
 
   await page.goto("/sealants");
   const sealantsSchema = JSON.parse(
