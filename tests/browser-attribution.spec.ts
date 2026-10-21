@@ -39,7 +39,13 @@ function browserAttribution(options: {
     },
     set cookie(value: string) {
       if (options.blockedStorage) throw new DOMException("Blocked", "SecurityError");
+      const attributes = value.split(";").slice(1).map((part) => part.trim().toLowerCase());
       const [name, ...parts] = value.split(";", 1)[0].split("=");
+      if (!name) return;
+      if (attributes.some((part) => part === "max-age=0")) {
+        cookies.delete(name);
+        return;
+      }
       cookies.set(name, parts.join("="));
     },
   };
@@ -685,6 +691,30 @@ test("paid and unpaid utm medium lists stay locked to the documented definition"
     }),
   ).toBe(true);
   expect(browser.api.hasPaidTouch({ clickIds: emptyClickIds, utm: emptyUtm })).toBe(false);
+  expect(
+    browser.api.hasPaidTouch({
+      clickIds: emptyClickIds,
+      utm: { ...emptyUtm, utm_medium: "Paid_Social" },
+    }),
+  ).toBe(true);
+  expect(
+    browser.api.hasPaidTouch({
+      clickIds: emptyClickIds,
+      utm: { ...emptyUtm, utm_medium: "CPC" },
+    }),
+  ).toBe(true);
+  expect(
+    browser.api.hasPaidTouch({
+      clickIds: { ...emptyClickIds, fbclid: "organic_fbclid" },
+      utm: { ...emptyUtm, utm_medium: " GMB " },
+    }),
+  ).toBe(false);
+  expect(
+    browser.api.hasPaidTouch({
+      clickIds: { ...emptyClickIds, fbclid: "organic_fbclid" },
+      utm: { ...emptyUtm, utm_medium: " Social " },
+    }),
+  ).toBe(false);
 });
 
 test("Meta ad then a bare gclid-only touch takes the newer paid click", () => {
@@ -732,4 +762,230 @@ test("Google then Meta then organic Instagram fbclid keeps the Meta paid stamp",
   expect(stamp.landing_page).toBe("/infection-control");
   expect(stamp.conversion_touch_fbclid).toBe("organic_ig_fbclid");
   expect(stamp.first_touch_utm_source).toBe("google");
+});
+
+const META_IC =
+  "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&utm_id=120249084101080567&utm_source_platform=meta_ads&fbclid=meta_ad_click";
+const ORGANIC_IG_HOME = "/?utm_source=ig&utm_medium=social&fbclid=organic_ig_fbclid";
+const THIRD = "2026-09-29T10:20:00.000Z";
+const FOURTH = "2026-09-30T10:00:00.000Z";
+
+function cookieHeader(
+  source: ReturnType<typeof browserAttribution>,
+  names?: string[],
+) {
+  return [...source.cookies]
+    .filter(([name]) => !names || names.includes(name))
+    .map(([name, value]) => `${name}=${value}`)
+    .join("; ");
+}
+
+function encodedFullCookieLength(source: ReturnType<typeof browserAttribution>) {
+  return (source.cookies.get("rda_lead_attribution_v2") ?? "").length;
+}
+
+test("cookie-only restore after Meta then organic Instagram keeps the IG conversion", () => {
+  const firstBrowser = browserAttribution();
+  firstBrowser.visit(META_IC, FIRST);
+  const afterIg = firstBrowser.visit(ORGANIC_IG_HOME, SECOND);
+  expect(afterIg.conversionTouch.utm.utm_source).toBe("ig");
+  expect(afterIg.conversionTouch.pagePath).toBe("/");
+  expect(afterIg.lastPaidTouch.utm.utm_source).toBe("meta");
+  expect(encodedFullCookieLength(firstBrowser)).toBeGreaterThan(0);
+  expect(encodedFullCookieLength(firstBrowser)).toBeLessThan(firstBrowser.api.MAX_COOKIE_LENGTH);
+  const stored = JSON.parse(decodeURIComponent(
+    firstBrowser.cookies.get("rda_lead_attribution_v2")!,
+  )) as { lastPaidTouch?: unknown };
+  expect(stored.lastPaidTouch).toBeUndefined();
+
+  const laterBrowser = browserAttribution({ cookies: cookieHeader(firstBrowser) });
+  const later = laterBrowser.visit("/contact", THIRD);
+  expect(later.firstTouch.utm.utm_source).toBe("meta");
+  expect(later.conversionTouch.utm.utm_source).toBe("ig");
+  expect(later.conversionTouch.pagePath).toBe("/");
+  expect(later.lastPaidTouch.utm.utm_source).toBe("meta");
+  const stamp = laterBrowser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("meta");
+  expect(stamp.fbclid).toBe("meta_ad_click");
+  expect(stamp.conversion_touch_utm_source).toBe("ig");
+  expect(stamp.conversion_landing_page).toBe("/");
+  expect(stamp.landing_page).toBe("/infection-control");
+});
+
+test("cookie-only restore after Google then Meta then organic Instagram keeps Meta last-paid", () => {
+  const firstBrowser = browserAttribution();
+  firstBrowser.visit(GOOGLE, FIRST);
+  firstBrowser.visit(META_IC, SECOND);
+  const afterIg = firstBrowser.visit(ORGANIC_IG_HOME, THIRD);
+  expect(afterIg.firstTouch.utm.utm_source).toBe("google");
+  expect(afterIg.conversionTouch.utm.utm_source).toBe("ig");
+  expect(afterIg.lastPaidTouch.utm.utm_source).toBe("meta");
+  const encodedLength = encodedFullCookieLength(firstBrowser);
+  expect(
+    encodedLength,
+    `G→M→IG full cookie ${encodedLength}B must stay under ${firstBrowser.api.MAX_COOKIE_LENGTH}`,
+  ).toBeLessThan(firstBrowser.api.MAX_COOKIE_LENGTH);
+  if (encodedLength > 0) {
+    const stored = JSON.parse(decodeURIComponent(
+      firstBrowser.cookies.get("rda_lead_attribution_v2")!,
+    )) as { lastPaidTouch?: { utm?: { utm_source?: string } } };
+    expect(stored.lastPaidTouch?.utm?.utm_source).toBe("meta");
+  } else {
+    expect(decodeURIComponent(
+      firstBrowser.cookies.get("rda_lead_attribution_stamp_v1") ?? "",
+    )).toMatch(/"p":\{/);
+  }
+
+  const laterBrowser = browserAttribution({ cookies: cookieHeader(firstBrowser) });
+  const later = laterBrowser.visit("/contact", FOURTH);
+  expect(later.firstTouch.utm.utm_source).toBe("google");
+  expect(later.conversionTouch.utm.utm_source).toBe("ig");
+  expect(later.conversionTouch.pagePath).toBe("/");
+  expect(later.lastPaidTouch.utm.utm_source).toBe("meta");
+  const stamp = laterBrowser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("meta");
+  expect(stamp.fbclid).toBe("meta_ad_click");
+  expect(stamp.conversion_touch_utm_source).toBe("ig");
+  expect(stamp.conversion_landing_page).toBe("/");
+  expect(stamp.landing_page).toBe("/infection-control");
+  expect(stamp.first_touch_utm_source).toBe("google");
+});
+
+test("compact stamp p cookie restores last-paid Meta when the full cookie is gone", () => {
+  const firstBrowser = browserAttribution();
+  firstBrowser.visit(GOOGLE, FIRST);
+  firstBrowser.visit(META_IC, SECOND);
+  firstBrowser.visit(ORGANIC_IG_HOME, THIRD);
+  const stampRaw = decodeURIComponent(
+    firstBrowser.cookies.get("rda_lead_attribution_stamp_v1") ?? "",
+  );
+  expect(stampRaw).toMatch(/"p":\{/);
+  expect(stampRaw).toContain("meta_ad_click");
+
+  const laterBrowser = browserAttribution({
+    cookies: cookieHeader(firstBrowser, ["rda_lead_attribution_stamp_v1"]),
+  });
+  expect(laterBrowser.cookies.get("rda_lead_attribution_v2")).toBeUndefined();
+  const later = laterBrowser.visit("/contact", FOURTH);
+  expect(later.firstTouch.utm.utm_source).toBe("google");
+  expect(later.conversionTouch.utm.utm_source).toBe("ig");
+  expect(later.lastPaidTouch.utm.utm_source).toBe("meta");
+  const stamp = laterBrowser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("meta");
+  expect(stamp.fbclid).toBe("meta_ad_click");
+  expect(stamp.landing_page).toBe("/infection-control");
+  expect(stamp.conversion_touch_utm_source).toBe("ig");
+  expect(stamp.conversion_landing_page).toBe("/");
+});
+
+test("an oversized full-cookie write expires the stale v2 cookie so the stamp wins", () => {
+  const firstBrowser = browserAttribution();
+  firstBrowser.visit(GOOGLE, FIRST);
+  const long = "x".repeat(400);
+  firstBrowser.visit(
+    `/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=${long}&utm_content=video_sept25_clinical_${long}&utm_id=${long}&utm_term=${long}&utm_source_platform=meta_ads&fbclid=${long}`,
+    SECOND,
+  );
+  firstBrowser.visit(
+    `/?utm_source=ig&utm_medium=social&utm_campaign=${long}&utm_content=${long}&fbclid=organic_${long}`,
+    THIRD,
+  );
+  expect(firstBrowser.cookies.get("rda_lead_attribution_v2")).toBeUndefined();
+  const stampRaw = decodeURIComponent(
+    firstBrowser.cookies.get("rda_lead_attribution_stamp_v1") ?? "",
+  );
+  expect(stampRaw).toMatch(/"p":\{/);
+
+  const laterBrowser = browserAttribution({
+    cookies: cookieHeader(firstBrowser, ["rda_lead_attribution_stamp_v1"]),
+  });
+  const later = laterBrowser.visit("/contact", FOURTH);
+  expect(later.conversionTouch.utm.utm_source).toBe("ig");
+  expect(later.lastPaidTouch.utm.utm_source).toBe("meta");
+  const stamp = laterBrowser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("meta");
+  expect(stamp.conversion_touch_utm_source).toBe("ig");
+});
+
+test("a malformed lastPaidTouch in localStorage is ignored and derived", () => {
+  const browser = browserAttribution();
+  browser.visit(GOOGLE, FIRST);
+  const stored = JSON.parse(browser.local.get("rda_lead_attribution_v2")!) as {
+    lastPaidTouch: unknown;
+  };
+  stored.lastPaidTouch = {
+    capturedAt: 5,
+    clickIds: { fbclid: 5 },
+    dimensions: { ad_id: 5 },
+    utm: { utm_medium: 5, utm_source: "meta" },
+  };
+  browser.local.set("rda_lead_attribution_v2", JSON.stringify(stored));
+  const later = browser.visit(ORGANIC_IG_HOME, SECOND);
+  expect(later.firstTouch.utm.utm_source).toBe("google");
+  expect(later.conversionTouch.utm.utm_source).toBe("ig");
+  expect(later.lastPaidTouch.utm.utm_source).toBe("google");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("google");
+  expect(stamp.gclid).toBe("google_click");
+  expect(stamp.first_touch_utm_source).toBe("google");
+});
+
+test("withdrawn consent does not send lastPaid Meta fbc/fbp at the top level", () => {
+  const browser = browserAttribution({ consent: "granted", cookies: META_COOKIES });
+  browser.visit(GOOGLE, FIRST);
+  browser.visit(META, SECOND);
+  browser.visit(`${ORGANIC_IG}&fbclid=organic_ig_fbclid`, THIRD);
+  const granted = browser.api.getLeadAttributionFormFields(
+    browser.api.resolveLeadAttribution({ capturedAt: THIRD }, false),
+  );
+  expect(granted.fbc).toBe("fb.1.123.meta_click");
+  expect(granted.fbp).toBe("fb.1.123.browser");
+  browser.cookies.set("rda_attribution_consent", "denied");
+  const later = browser.visit("/contact", FOURTH);
+  expect(later.consentState).toBe("restricted");
+  expect(later.lastPaidTouch.utm.utm_source).toBe("facebook");
+  expect(later.lastPaidTouch.clickIds.fbc).toBe("");
+  expect(later.lastPaidTouch.clickIds.fbp).toBe("");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.fbc).toBe("");
+  expect(stamp.fbp).toBe("");
+});
+
+test("granted consent back-fills lastPaid Meta browser IDs from late cookies", () => {
+  const browser = browserAttribution({ consent: "granted" });
+  browser.visit(GOOGLE, FIRST);
+  const meta = browser.visit(META, SECOND);
+  expect(meta.lastPaidTouch.clickIds.fbp).toBe("");
+  browser.cookies.set("_fbc", "fb.1.123.meta_click");
+  browser.cookies.set("_fbp", "fb.1.123.browser");
+  const later = browser.visit("/infection-control", THIRD);
+  expect(later.lastPaidTouch.utm.utm_source).toBe("facebook");
+  expect(later.lastPaidTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
+  expect(later.lastPaidTouch.clickIds.fbp).toBe("fb.1.123.browser");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.fbc).toBe("fb.1.123.meta_click");
+  expect(stamp.fbp).toBe("fb.1.123.browser");
+});
+
+test("Paid_Social medium is paid and a padded GMB medium stays unpaid", () => {
+  const browser = browserAttribution();
+  const paid = browser.visit(
+    "/?utm_source=facebook&utm_medium=Paid_Social&utm_campaign=case&fbclid=case_click",
+    FIRST,
+  );
+  expect(browser.api.hasPaidTouch(paid.conversionTouch)).toBe(true);
+  expect(browser.api.getLeadAttributionFormFields(paid).utm_medium).toBe("Paid_Social");
+  const later = browser.visit(
+    "/contact?utm_source=google&utm_medium=%20GMB%20&utm_campaign=gbp&fbclid=gbp_click",
+    SECOND,
+  );
+  expect(later.conversionTouch.utm.utm_medium).toBe("GMB");
+  expect(browser.api.hasPaidTouch(later.conversionTouch)).toBe(false);
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.utm_medium).toBe("Paid_Social");
+  expect(stamp.fbclid).toBe("case_click");
 });

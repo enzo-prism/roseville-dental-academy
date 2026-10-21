@@ -75,7 +75,7 @@ const LEGACY_ATTRIBUTION_STORAGE_KEY = "rda_lead_attribution_v1";
 const SESSION_ID_KEY = "rda_attribution_session_id_v1";
 const MAX_ATTRIBUTION_AGE_MS = 90 * 24 * 60 * 60 * 1_000;
 const MAX_ATTRIBUTION_VALUE_LENGTH = 512;
-const MAX_COOKIE_LENGTH = 3_800;
+export const MAX_COOKIE_LENGTH = 3_800;
 
 const EMPTY_UTM = Object.fromEntries(
   UTM_FIELDS.map((field) => [field, ""]),
@@ -451,12 +451,20 @@ function nextLastPaidTouch(
   return touchForRole(currentTouch, "conversion");
 }
 
+function bareTouchId(touchId: string) {
+  return touchId.replace(/^(?:first|conversion):/u, "");
+}
+
+function sameAttributionTouch(left: AttributionTouch, right: AttributionTouch) {
+  return Boolean(left.touchId) && bareTouchId(left.touchId) === bareTouchId(right.touchId);
+}
+
 function distinctLastPaidTouch(record: StoredAttributionRecord) {
   const lastPaid = record.lastPaidTouch;
   if (
     !hasPaidTouch(lastPaid) ||
-    lastPaid.touchId === record.firstTouch.touchId ||
-    lastPaid.touchId === record.conversionTouch.touchId
+    sameAttributionTouch(lastPaid, record.firstTouch) ||
+    sameAttributionTouch(lastPaid, record.conversionTouch)
   ) {
     return undefined;
   }
@@ -477,6 +485,22 @@ function isMetaTouch(touch: Pick<AttributionTouch, "clickIds" | "dimensions" | "
 function buildFbcFromFbclid(fbclid: string, capturedAt: string) {
   const timestamp = Date.parse(capturedAt);
   return `fb.1.${Number.isFinite(timestamp) ? timestamp : Date.now()}.${fbclid}`;
+}
+
+function withoutRestrictedBrowserIds(touch: AttributionTouch): AttributionTouch {
+  if (!touch.clickIds.fbc && !touch.clickIds.fbp && !touch.clickIds.ttp) {
+    return touch;
+  }
+
+  return {
+    ...touch,
+    clickIds: {
+      ...touch.clickIds,
+      fbc: "",
+      fbp: "",
+      ttp: "",
+    },
+  };
 }
 
 function enrichMetaBrowserIds(
@@ -559,6 +583,18 @@ function writeStorage(storage: BrowserStorage, key: string, value: string) {
     return true;
   } catch {
     return false;
+  }
+}
+
+function expireCookie(name: string) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  try {
+    document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax; Secure`;
+  } catch {
+    return;
   }
 }
 
@@ -722,9 +758,14 @@ function parseStoredRecord(raw: string, now: Date): StoredAttributionRecord | nu
 
       const firstTouch = normalizeTouch(parsed.firstTouch);
       const conversionTouch = normalizeTouch(parsed.conversionTouch);
-      const lastPaidTouch = parsed.lastPaidTouch
-        ? normalizeTouch(parsed.lastPaidTouch)
-        : deriveLastPaidTouch(firstTouch, conversionTouch);
+      let lastPaidTouch: AttributionTouch;
+      try {
+        lastPaidTouch = parsed.lastPaidTouch
+          ? normalizeTouch(parsed.lastPaidTouch)
+          : deriveLastPaidTouch(firstTouch, conversionTouch);
+      } catch {
+        lastPaidTouch = deriveLastPaidTouch(firstTouch, conversionTouch);
+      }
       return {
         anonymousId: compactAttributionValue(parsed.anonymousId) || createId(),
         conversionTouch: firstTouch.touchId === conversionTouch.touchId
@@ -880,6 +921,9 @@ function persistRecord(record: StoredAttributionRecord, consentState: Attributio
 
   const storedLocally = writeStorage("localStorage", ATTRIBUTION_STORAGE_KEY, serialized);
   const storedInCookie = writeCookie(ATTRIBUTION_STORAGE_KEY, serialized);
+  if (!storedInCookie) {
+    expireCookie(ATTRIBUTION_STORAGE_KEY);
+  }
   writeCompactStampCookie(record);
 
   if (storedLocally || storedInCookie) {
@@ -961,6 +1005,9 @@ export function resolveLeadAttribution(input?: {
       ...(stored.lastPaidTouch ?? emptyTouch()),
       sessionId: stored.lastPaidTouch?.sessionId || sessionId,
     }, consentState);
+    if (consentState !== "granted") {
+      stored.lastPaidTouch = withoutRestrictedBrowserIds(stored.lastPaidTouch);
+    }
   }
 
   const search = input?.search ?? window.location.search;
