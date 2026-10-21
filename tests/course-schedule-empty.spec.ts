@@ -46,7 +46,13 @@ test("an intentionally empty feed renders no stale dates or CourseInstances", as
     }, { timeout: 90_000 }).toBe(200);
 
     const status = await (await request.get(`${origin}/api/course-schedule-status`)).json();
-    expect(status).toMatchObject({ source: "dashboard", revision: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945" });
+    expect(status).toMatchObject({
+      source: "dashboard",
+      revision: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      upcomingRevision: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      upcoming: [],
+      empty: true,
+    });
     await page.route("https://formspree.io/**", (route) => route.abort());
     await page.goto(origin);
     await expect(page.locator("[data-rda-promo-banner='true']")).toHaveCount(0);

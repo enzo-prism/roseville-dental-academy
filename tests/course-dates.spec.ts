@@ -7,8 +7,13 @@ import {
   getNextAvailableCourseDate,
   getUpcomingScheduleMonths,
 } from "../lib/course-schedule";
-import { adLandingPages } from "../lib/ad-landing-pages";
 import { suppressSitePromo } from "./support/qa-helpers";
+import {
+  COURSE_DATE_PATHS,
+  assertServedScheduleContract,
+  collectServedScheduleSnapshot,
+  courseInstanceStartDates,
+} from "./support/course-schedule-contract";
 import { execFile } from "node:child_process";
 import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
@@ -186,9 +191,19 @@ test("publication status describes bundled schedule without caching or credentia
     revision: published.source === "dashboard"
       ? expect.stringMatching(/^[0-9a-f]{64}$/u)
       : scheduleRevision(courseScheduleData.entries),
+    upcomingRevision: expect.stringMatching(/^[0-9a-f]{64}$/u),
     reviewedOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/u),
     source: expect.stringMatching(/^(committed|dashboard)$/u),
+    upcoming: expect.any(Array),
+    empty: expect.any(Boolean),
   });
+  expect(published.upcomingRevision).toBe(scheduleRevision(published.upcoming));
+  // Release-gate and local builds have no PREVIEW_URL and must serve the fixture.
+  // verify-preview sets PREVIEW_URL and may hit either branch; log which one.
+  console.log(`[course-dates] schedule branch: ${published.source}`);
+  if (!process.env.PREVIEW_URL?.trim()) {
+    expect(published.source).toBe("committed");
+  }
   // Production refreshes the academy-local cutoff daily from the dashboard;
   // unconfigured previews and local builds retain the committed cutoff.
   if (published.source === "dashboard") {
@@ -275,16 +290,21 @@ for (const width of [390, 1280]) {
   });
 }
 
-for (const path of ["/bls-cpr-1", "/infection-control", "/radiation-safety", "/coronal-polish", "/sealants", "/dental-assisting-program", "/faqs-1", "/contact", ...adLandingPages.map((page) => page.path)]) {
-  test(`current dates across ${path}`, async ({ page }) => {
+test("public date surfaces cover all 17 pages", () => {
+  expect(COURSE_DATE_PATHS).toHaveLength(17);
+});
+
+for (const path of COURSE_DATE_PATHS) {
+  test(`current dates across ${path}`, async ({ page, request }) => {
+    const { reviewedOn } = await (await request.get("/api/course-schedule-status")).json();
+    expect(reviewedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
     await page.goto(path);
     const body = await page.locator("body").innerText();
     expect(body).not.toMatch(/(?:June|July|August|September) \d/);
     expect(body).not.toContain("next available date is August");
-    const schemaDates = await page.locator('script[type="application/ld+json"]').allTextContents();
-    for (const schema of schemaDates) {
-      for (const match of schema.matchAll(/"startDate":"([^"]+)"/g)) {
-        expect(match[1] >= COURSE_SCHEDULE_REVIEWED_ON).toBe(true);
+    for (const schema of await page.locator('script[type="application/ld+json"]').allTextContents()) {
+      for (const date of courseInstanceStartDates(schema)) {
+        expect(date >= reviewedOn).toBe(true);
       }
     }
   });
@@ -392,21 +412,9 @@ test("AI discovery dates match the reviewed course schedule", async ({ request }
   expect(text).not.toMatch(/(?:June|July|August|September) \d/);
 });
 
-// Date-relative: holds for the committed fixture and for any day's dashboard schedule.
-test("served schedule shows no class before its reviewed-on cutoff", async ({ page, request }) => {
-  const { reviewedOn } = await (await request.get("/api/course-schedule-status")).json();
-  expect(reviewedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
-  await page.goto("/");
-  const homeDates = await page
-    .locator('[data-rda-home-course-block="schedule"] time')
-    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("datetime") ?? ""));
-  for (const date of homeDates) expect(date >= reviewedOn).toBe(true);
-  for (const path of ["/infection-control", "/radiation-safety", "/bls-cpr-1"]) {
-    await page.goto(path);
-    for (const schema of await page.locator('script[type="application/ld+json"]').allTextContents()) {
-      for (const match of schema.matchAll(/"startDate":"([^"]+)"/g)) {
-        expect(match[1] >= reviewedOn).toBe(true);
-      }
-    }
-  }
+// Date-relative and cross-surface consistency: holds for the committed fixture
+// and for any day's dashboard schedule. Does not pin October 17 or the fixture hash.
+test("served schedule matches the published upcoming revision", async ({ page, request }) => {
+  const snapshot = await collectServedScheduleSnapshot(page, request);
+  assertServedScheduleContract(snapshot);
 });
