@@ -19,7 +19,7 @@ const studentVideos = [
   },
   {
     label: "Today our class learned about HVE placement",
-    poster: "/assets/social/tiktok/11-7603905059830762766.jpg",
+    poster: "/assets/social/tiktok/11-7603905059830762766-frame.jpg",
     src: "/assets/social/tiktok/11-7603905059830762766.mp4",
   },
   {
