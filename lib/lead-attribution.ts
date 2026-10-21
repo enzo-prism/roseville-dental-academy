@@ -50,6 +50,7 @@ export type LeadAttribution = {
   consentState: AttributionConsentState;
   conversionTouch: AttributionTouch;
   firstTouch: AttributionTouch;
+  lastPaidTouch: AttributionTouch;
   policyVersion: string;
   referrer: string;
   sessionId: string;
@@ -62,6 +63,7 @@ type StoredAttributionRecord = {
   conversionTouch: AttributionTouch;
   expiresAt: string;
   firstTouch: AttributionTouch;
+  lastPaidTouch: AttributionTouch;
   policyVersion: string;
   version: 2;
 };
@@ -73,7 +75,7 @@ const LEGACY_ATTRIBUTION_STORAGE_KEY = "rda_lead_attribution_v1";
 const SESSION_ID_KEY = "rda_attribution_session_id_v1";
 const MAX_ATTRIBUTION_AGE_MS = 90 * 24 * 60 * 60 * 1_000;
 const MAX_ATTRIBUTION_VALUE_LENGTH = 512;
-const MAX_COOKIE_LENGTH = 3_800;
+export const MAX_COOKIE_LENGTH = 3_800;
 
 const EMPTY_UTM = Object.fromEntries(
   UTM_FIELDS.map((field) => [field, ""]),
@@ -384,14 +386,90 @@ function hasCampaignTouch(touch: AttributionTouch) {
 }
 
 // Keep these lists identical to RDA-Dashboard src/lib/attribution-quality.ts.
-const PAID_UTM_MEDIUM = /^(cpc|ppc|paid|paid_social|paid-social)$/iu;
-const UNPAID_UTM_MEDIUM = /^(social|organic|gmb|gbp|google_business_profile)$/iu;
+// Paid means: a paid UTM medium, or a click id with no unpaid medium.
+// Unpaid mediums stay unpaid even when Meta appends fbclid to an IG post,
+// bio link, or GBP share. A bare click id (no medium) still counts as paid.
+export const PAID_UTM_MEDIUMS = [
+  "cpc",
+  "ppc",
+  "paid",
+  "paid_social",
+  "paid-social",
+] as const;
 
-function hasPaidTouch(touch: Pick<AttributionTouch, "clickIds" | "utm">) {
+export const UNPAID_UTM_MEDIUMS = [
+  "social",
+  "organic",
+  "gmb",
+  "gbp",
+  "google_business_profile",
+] as const;
+
+const PAID_UTM_MEDIUM = new RegExp(`^(${PAID_UTM_MEDIUMS.join("|")})$`, "iu");
+const UNPAID_UTM_MEDIUM = new RegExp(`^(${UNPAID_UTM_MEDIUMS.join("|")})$`, "iu");
+
+export function hasPaidTouch(touch: Pick<AttributionTouch, "clickIds" | "utm">) {
   const medium = touch.utm.utm_medium.trim();
   if (PAID_UTM_MEDIUM.test(medium)) return true;
   if (UNPAID_UTM_MEDIUM.test(medium)) return false;
   return hasExplicitClickId(touch);
+}
+
+function deriveLastPaidTouch(
+  firstTouch: AttributionTouch,
+  conversionTouch: AttributionTouch,
+  storedLastPaid?: AttributionTouch | null,
+): AttributionTouch {
+  if (storedLastPaid && hasPaidTouch(storedLastPaid)) {
+    return storedLastPaid;
+  }
+  if (hasPaidTouch(conversionTouch)) {
+    return conversionTouch;
+  }
+  if (hasPaidTouch(firstTouch)) {
+    return firstTouch;
+  }
+  return emptyTouch();
+}
+
+function nextLastPaidTouch(
+  stored: StoredAttributionRecord | null,
+  currentTouch: AttributionTouch,
+): AttributionTouch {
+  const storedLastPaid = stored
+    ? deriveLastPaidTouch(stored.firstTouch, stored.conversionTouch, stored.lastPaidTouch)
+    : emptyTouch();
+
+  if (!hasPaidTouch(currentTouch)) {
+    return storedLastPaid;
+  }
+
+  if (hasPaidTouch(storedLastPaid) && isSameVisit(storedLastPaid, currentTouch)) {
+    return fillTouchGaps(storedLastPaid, currentTouch);
+  }
+
+  return touchForRole(currentTouch, "conversion");
+}
+
+function bareTouchId(touchId: string) {
+  return touchId.replace(/^(?:first|conversion):/u, "");
+}
+
+function sameAttributionTouch(left: AttributionTouch, right: AttributionTouch) {
+  return Boolean(left.touchId) && bareTouchId(left.touchId) === bareTouchId(right.touchId);
+}
+
+function distinctLastPaidTouch(record: StoredAttributionRecord) {
+  const lastPaid = record.lastPaidTouch;
+  if (
+    !hasPaidTouch(lastPaid) ||
+    sameAttributionTouch(lastPaid, record.firstTouch) ||
+    sameAttributionTouch(lastPaid, record.conversionTouch)
+  ) {
+    return undefined;
+  }
+
+  return lastPaid;
 }
 
 function isMetaTouch(touch: Pick<AttributionTouch, "clickIds" | "dimensions" | "utm">) {
@@ -407,6 +485,22 @@ function isMetaTouch(touch: Pick<AttributionTouch, "clickIds" | "dimensions" | "
 function buildFbcFromFbclid(fbclid: string, capturedAt: string) {
   const timestamp = Date.parse(capturedAt);
   return `fb.1.${Number.isFinite(timestamp) ? timestamp : Date.now()}.${fbclid}`;
+}
+
+function withoutRestrictedBrowserIds(touch: AttributionTouch): AttributionTouch {
+  if (!touch.clickIds.fbc && !touch.clickIds.fbp && !touch.clickIds.ttp) {
+    return touch;
+  }
+
+  return {
+    ...touch,
+    clickIds: {
+      ...touch.clickIds,
+      fbc: "",
+      fbp: "",
+      ttp: "",
+    },
+  };
 }
 
 function enrichMetaBrowserIds(
@@ -492,6 +586,18 @@ function writeStorage(storage: BrowserStorage, key: string, value: string) {
   }
 }
 
+function expireCookie(name: string) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  try {
+    document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax; Secure`;
+  } catch {
+    return;
+  }
+}
+
 function writeCookie(name: string, value: string, maxEncodedLength = MAX_COOKIE_LENGTH) {
   const encoded = encodeURIComponent(value);
   if (encoded.length > maxEncodedLength) {
@@ -527,6 +633,7 @@ type CompactStampCookie = {
   c?: CompactStampTouch;
   exp?: string;
   f?: CompactStampTouch;
+  p?: CompactStampTouch;
   v?: 1;
 };
 
@@ -560,11 +667,13 @@ function expandStampTouch(value: CompactStampTouch | undefined): AttributionTouc
 }
 
 function writeCompactStampCookie(record: StoredAttributionRecord) {
+  const lastPaidTouch = distinctLastPaidTouch(record);
   writeCookie(ATTRIBUTION_STAMP_COOKIE, JSON.stringify({
     a: record.anonymousId,
     c: compactStampTouch(record.conversionTouch),
     exp: record.expiresAt,
     f: compactStampTouch(record.firstTouch),
+    ...(lastPaidTouch ? { p: compactStampTouch(lastPaidTouch) } : {}),
     v: 1,
   } satisfies CompactStampCookie));
 }
@@ -578,6 +687,9 @@ function parseCompactStampCookie(raw: string, now: Date): StoredAttributionRecor
 
     const firstTouch = expandStampTouch(parsed.f);
     const conversionTouch = expandStampTouch(parsed.c);
+    const lastPaidTouch = parsed.p
+      ? expandStampTouch(parsed.p)
+      : deriveLastPaidTouch(firstTouch, conversionTouch);
     return {
       anonymousId: compactAttributionValue(parsed.a) || createId(),
       conversionTouch: firstTouch.touchId === conversionTouch.touchId
@@ -585,6 +697,7 @@ function parseCompactStampCookie(raw: string, now: Date): StoredAttributionRecor
       expiresAt: parsed.exp,
       firstTouch: firstTouch.touchId === conversionTouch.touchId
         ? touchForRole(firstTouch, "first") : firstTouch,
+      lastPaidTouch,
       policyVersion: ATTRIBUTION_POLICY_VERSION,
       version: 2,
     };
@@ -645,6 +758,14 @@ function parseStoredRecord(raw: string, now: Date): StoredAttributionRecord | nu
 
       const firstTouch = normalizeTouch(parsed.firstTouch);
       const conversionTouch = normalizeTouch(parsed.conversionTouch);
+      let lastPaidTouch: AttributionTouch;
+      try {
+        lastPaidTouch = parsed.lastPaidTouch
+          ? normalizeTouch(parsed.lastPaidTouch)
+          : deriveLastPaidTouch(firstTouch, conversionTouch);
+      } catch {
+        lastPaidTouch = deriveLastPaidTouch(firstTouch, conversionTouch);
+      }
       return {
         anonymousId: compactAttributionValue(parsed.anonymousId) || createId(),
         conversionTouch: firstTouch.touchId === conversionTouch.touchId
@@ -652,6 +773,7 @@ function parseStoredRecord(raw: string, now: Date): StoredAttributionRecord | nu
         expiresAt: parsed.expiresAt,
         firstTouch: firstTouch.touchId === conversionTouch.touchId
           ? touchForRole(firstTouch, "first") : firstTouch,
+        lastPaidTouch,
         policyVersion: compactAttributionValue(parsed.policyVersion) || ATTRIBUTION_POLICY_VERSION,
         version: 2,
       };
@@ -664,12 +786,15 @@ function parseStoredRecord(raw: string, now: Date): StoredAttributionRecord | nu
         referrer: parsed.referrer,
         utm: parsed.utm,
       });
+      const firstTouch = touchForRole(migratedTouch, "first");
+      const conversionTouch = touchForRole(migratedTouch, "conversion");
 
       return {
         anonymousId: createId(),
-        conversionTouch: touchForRole(migratedTouch, "conversion"),
+        conversionTouch,
         expiresAt: new Date(now.getTime() + MAX_ATTRIBUTION_AGE_MS).toISOString(),
-        firstTouch: touchForRole(migratedTouch, "first"),
+        firstTouch,
+        lastPaidTouch: deriveLastPaidTouch(firstTouch, conversionTouch),
         policyVersion: ATTRIBUTION_POLICY_VERSION,
         version: 2,
       };
@@ -741,11 +866,14 @@ function createRecord(
   anonymousId: string,
 ): StoredAttributionRecord {
   if (!stored) {
+    const firstTouch = touchForRole(currentTouch, "first");
+    const conversionTouch = touchForRole(currentTouch, "conversion");
     return {
       anonymousId,
-      conversionTouch: touchForRole(currentTouch, "conversion"),
+      conversionTouch,
       expiresAt: new Date(now.getTime() + MAX_ATTRIBUTION_AGE_MS).toISOString(),
-      firstTouch: touchForRole(currentTouch, "first"),
+      firstTouch,
+      lastPaidTouch: nextLastPaidTouch(null, currentTouch),
       policyVersion: ATTRIBUTION_POLICY_VERSION,
       version: 2,
     };
@@ -766,12 +894,41 @@ function createRecord(
     firstTouch: isSameVisit(stored.firstTouch, currentTouch)
       ? fillTouchGaps(stored.firstTouch, currentTouch)
       : stored.firstTouch,
+    lastPaidTouch: nextLastPaidTouch(stored, currentTouch),
     policyVersion: ATTRIBUTION_POLICY_VERSION,
   };
 }
 
+function compactStoredTouch(touch: AttributionTouch) {
+  const clickIds = compactNonEmptyRecord(touch.clickIds);
+  const dimensions = compactNonEmptyRecord(touch.dimensions);
+  const utm = compactNonEmptyRecord(touch.utm);
+  return {
+    capturedAt: touch.capturedAt || undefined,
+    clickIds: Object.keys(clickIds).length ? clickIds : undefined,
+    dimensions: Object.keys(dimensions).length ? dimensions : undefined,
+    gaClientId: touch.gaClientId || undefined,
+    gaSessionId: touch.gaSessionId || undefined,
+    pagePath: touch.pagePath || undefined,
+    referrer: touch.referrer || undefined,
+    sessionId: touch.sessionId || undefined,
+    touchId: touch.touchId || undefined,
+    utm: Object.keys(utm).length ? utm : undefined,
+  };
+}
+
 function persistRecord(record: StoredAttributionRecord, consentState: AttributionConsentState) {
-  const serialized = JSON.stringify(record);
+  const lastPaidTouch = distinctLastPaidTouch(record);
+  const serialized = JSON.stringify({
+    ...record,
+    lastPaidTouch,
+  });
+  const cookieSerialized = JSON.stringify({
+    ...record,
+    conversionTouch: compactStoredTouch(record.conversionTouch),
+    firstTouch: compactStoredTouch(record.firstTouch),
+    lastPaidTouch: lastPaidTouch ? compactStoredTouch(lastPaidTouch) : undefined,
+  });
   memoryRecord = serialized;
 
   if (typeof window === "undefined") {
@@ -787,7 +944,10 @@ function persistRecord(record: StoredAttributionRecord, consentState: Attributio
   }
 
   const storedLocally = writeStorage("localStorage", ATTRIBUTION_STORAGE_KEY, serialized);
-  const storedInCookie = writeCookie(ATTRIBUTION_STORAGE_KEY, serialized);
+  const storedInCookie = writeCookie(ATTRIBUTION_STORAGE_KEY, cookieSerialized);
+  if (!storedInCookie) {
+    expireCookie(ATTRIBUTION_STORAGE_KEY);
+  }
   writeCompactStampCookie(record);
 
   if (storedLocally || storedInCookie) {
@@ -841,6 +1001,7 @@ export function resolveLeadAttribution(input?: {
       consentState: "unknown",
       conversionTouch: blank,
       firstTouch: blank,
+      lastPaidTouch: blank,
       policyVersion: ATTRIBUTION_POLICY_VERSION,
       referrer: "",
       sessionId: "",
@@ -864,6 +1025,13 @@ export function resolveLeadAttribution(input?: {
       ...stored.conversionTouch,
       sessionId: stored.conversionTouch.sessionId || sessionId,
     }, consentState);
+    stored.lastPaidTouch = enrichMetaBrowserIds({
+      ...(stored.lastPaidTouch ?? emptyTouch()),
+      sessionId: stored.lastPaidTouch?.sessionId || sessionId,
+    }, consentState);
+    if (consentState !== "granted") {
+      stored.lastPaidTouch = withoutRestrictedBrowserIds(stored.lastPaidTouch);
+    }
   }
 
   const search = input?.search ?? window.location.search;
@@ -898,6 +1066,7 @@ export function resolveLeadAttribution(input?: {
     consentState,
     conversionTouch: record.conversionTouch,
     firstTouch: record.firstTouch,
+    lastPaidTouch: record.lastPaidTouch,
     policyVersion: ATTRIBUTION_POLICY_VERSION,
     referrer: record.conversionTouch.referrer,
     sessionId,
@@ -923,7 +1092,9 @@ export type LeadAttributionStamp = {
 };
 
 export function getLeadAttributionStamp(
-  attribution: Pick<LeadAttribution, "conversionTouch" | "firstTouch">,
+  attribution: Pick<LeadAttribution, "conversionTouch" | "firstTouch"> & {
+    lastPaidTouch?: AttributionTouch;
+  },
 ): LeadAttributionStamp {
   const first = attribution.firstTouch;
   const conversion = attribution.conversionTouch;
@@ -932,15 +1103,22 @@ export function getLeadAttributionStamp(
   // (cpc/ppc/paid/paid_social/paid-social) wins; unpaid mediums (social,
   // organic, gmb, gbp, google_business_profile) are not paid even with a
   // click id — Meta adds fbclid to organic IG/GBP links too; otherwise a
-  // click id with no non-paid medium means paid. First-touch identity stays
+  // click id with no non-paid medium means paid. Only paid visits update
+  // lastPaidTouch, so an organic IG/GBP fbclid cannot hide a later Meta
+  // click that is no longer first or conversion. First-touch identity stays
   // in first_touch_* and is never overwritten.
-  const touch = hasPaidTouch(conversion)
-    ? conversion
-    : hasPaidTouch(first)
-      ? first
-      : hasMeaningfulAttribution(first)
+  const lastPaid = attribution.lastPaidTouch && hasPaidTouch(attribution.lastPaidTouch)
+    ? attribution.lastPaidTouch
+    : undefined;
+  const touch = lastPaid
+    ? lastPaid
+    : hasPaidTouch(conversion)
+      ? conversion
+      : hasPaidTouch(first)
         ? first
-        : conversion;
+        : hasMeaningfulAttribution(first)
+          ? first
+          : conversion;
   const utm = { ...touch.utm };
   const clickIds = { ...touch.clickIds };
 
