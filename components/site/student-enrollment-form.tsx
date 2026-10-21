@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 type Offering = {
   id: string;
   course_date: string;
+  label?: string;
   amount: number;
   remaining: number;
 };
@@ -156,7 +157,7 @@ export function StudentEnrollmentForm({
           <option value="">Choose an available date</option>
           {offerings.map((o) => (
             <option key={o.id} value={o.id} disabled={o.remaining <= 0}>
-              {o.course_date} · ${(o.amount / 100).toFixed(2)} USD ·{" "}
+              {o.label ?? o.course_date} · ${(o.amount / 100).toFixed(2)} USD ·{" "}
               {Math.max(0, o.remaining)} seats available
             </option>
           ))}

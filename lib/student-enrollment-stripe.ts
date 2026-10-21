@@ -6,6 +6,7 @@ import {
   getStudentEnrollment,
   studentDatabase,
 } from "@/lib/student-enrollment";
+import { INFECTION_CONTROL_CHECKOUT_POLICY } from "@/lib/academy-policies";
 import { safeTestCheckoutUrl } from "@/lib/enrollment-contract";
 
 type Charge = {
@@ -90,8 +91,7 @@ export function studentSessionParameters(
     expires_at: String(held.stripe_expires_at),
     success_url: `${config.origin}/enroll/confirmation?enrollment=${held.id}`,
     cancel_url: `${config.origin}/enroll?cancelled=1`,
-    "custom_text[submit][message]":
-      "Payment in full. Course fees are non-refundable except if the academy cancels. Student enrollment cannot be moved to another date.",
+    "custom_text[submit][message]": INFECTION_CONTROL_CHECKOUT_POLICY,
   });
 }
 export function assertStudentSession(

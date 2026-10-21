@@ -20,7 +20,7 @@ if (process.env.RDA_STUDENT_PAYMENTS_MODE) {
   const source=await readFile(new URL("../lib/academy-policies.ts",import.meta.url),"utf8");
   const paragraphs=[...source.split("export const CANCELLATION_POLICY_PARAGRAPHS = [")[1].split("] as const")[0].matchAll(/"([^"\n]*)"/g)].map(m=>m[1]);
   const hash=createHash("sha256").update(paragraphs.join("\n\n")).digest("hex");
-  for (const [id,date] of [["11111111-1111-4111-8111-111111111111","2099-11-14"],["22222222-2222-4222-8222-222222222222","2099-12-05"]]) {
+  for (const [id,date] of [["11111111-1111-4111-8111-111111111111","2026-11-14"],["22222222-2222-4222-8222-222222222222","2026-12-05"]]) {
     await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$2,39500,0,'2026-09-30',$3,$4,now(),'isolated synthetic fixture',true)",[id,date,hash,paragraphs.join("\n\n")]);
   }
 }
@@ -37,7 +37,16 @@ globalThis.fetch = async (input, init = {}) => {
   if (["db.fixture.neon.tech", "api.fixture.neon.tech"].includes(url.hostname)) {
     try {
       const control=await fixtureControls();
-      if (control.resetLimits && control.resetLimits !== resetLimits) {await db.exec("TRUNCATE student_enrollment_attempts");resetLimits=control.resetLimits;}
+      if (control.resetLimits && control.resetLimits !== resetLimits) {
+        await db.exec("TRUNCATE student_enrollment_attempts");
+        await db.exec("UPDATE student_enrollment_offerings SET external_seats=0");
+        resetLimits=control.resetLimits;
+      }
+      if (control.externalSeats) {
+        for (const [offeringId, seats] of Object.entries(control.externalSeats)) {
+          await db.query("UPDATE student_enrollment_offerings SET external_seats=$2 WHERE id=$1",[offeringId, seats]);
+        }
+      }
       const { query, params } = JSON.parse(init.body);
       const result = await db.query(query, params);
       if (process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE) {

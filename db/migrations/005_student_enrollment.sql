@@ -1,10 +1,12 @@
--- Separate from the staff pilot. No live offering or inventory is seeded here.
+-- Separate from the staff pilot. This schema migration seeds no offerings.
+-- Confirmed Infection Control dates/seats/price live in
+-- lib/student-enrollment-offerings.ts and db/seeds/infection-control-offerings.sql.
 CREATE TABLE IF NOT EXISTS student_enrollment_offerings (
   id uuid PRIMARY KEY,
   mode text NOT NULL CHECK (mode IN ('test','live')),
   course_id text NOT NULL CHECK (course_id = 'infection-control'),
   course_date date NOT NULL,
-  amount integer NOT NULL CHECK (amount > 0 AND amount <= 1000000),
+  amount integer NOT NULL CHECK (amount = 39500),
   currency text NOT NULL DEFAULT 'usd' CHECK (currency = 'usd'),
   capacity integer NOT NULL DEFAULT 12 CHECK (capacity = 12),
   external_seats integer NOT NULL CHECK (external_seats BETWEEN 0 AND 12),

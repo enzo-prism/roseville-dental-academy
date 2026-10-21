@@ -134,13 +134,13 @@ test.describe("student enrollment isolated full stack", () => {
     expect(mail[0].status).toBe("captured");
     expect(mail[0].captured_body).toContain("TEST ONLY");
     expect(mail[0].captured_body).toContain(data.id);
-    expect(mail[0].captured_body).toContain("2099-11-14");
+    expect(mail[0].captured_body).toContain("2026-11-14");
     const confirmation = await request.get(
       `/enroll/confirmation?enrollment=${data.id}`,
       { headers },
     );
     expect(await confirmation.text()).toContain("Payment confirmed");
-    expect(await confirmation.text()).toContain("2099-11-14");
+    expect(await confirmation.text()).toContain("2026-11-14");
     expect(confirmation.headers()["cache-control"]).toContain("no-store");
     expect(
       await (
@@ -275,6 +275,17 @@ test.describe("student enrollment isolated full stack", () => {
       } else await route.continue();
     });
     await page.goto("/enroll");
+    const sessions = page.locator("[data-rda-ic-sessions]");
+    await expect(sessions).toContainText("November 14, 2026");
+    await expect(sessions).toContainText("December 5, 2026");
+    await expect(sessions).toContainText("$395.00 USD");
+    await expect(sessions).not.toContainText("November 7");
+    await expect(page.locator("[data-rda-checkout-policy]")).toContainText(
+      "Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
+    );
+    const dateOptions = page.getByLabel("Course date and full payment");
+    await expect(dateOptions).toContainText("November 14, 2026 · $395.00 USD");
+    await expect(dateOptions).toContainText("December 5, 2026 · $395.00 USD");
     await expect(
       page.getByRole("button", { name: "Continue to Stripe test checkout" }),
     ).toBeEnabled();
@@ -338,6 +349,35 @@ test.describe("student enrollment isolated full stack", () => {
         /facebook|google-analytics|vercel|formspree|openai/.test(h),
       ),
     ).toHaveLength(0);
+  });
+  test("both confirmed dates are offered at 39500 and a sold-out date cannot be purchased", async ({
+    request,
+    page,
+  }) => {
+    const pageResponse = await page.goto("/enroll");
+    expect(pageResponse?.status()).toBe(200);
+    const body = await page.text();
+    expect(body).toContain("November 14, 2026");
+    expect(body).toContain("December 5, 2026");
+    expect(body).toContain("$395.00 USD");
+    expect(body).not.toContain("November 7, 2026");
+    expect(body).toContain(
+      "Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
+    );
+    const december = "22222222-2222-4222-8222-222222222222";
+    await control({
+      resetLimits: randomUUID(),
+      externalSeats: { [december]: 12 },
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: { ...payload(), offeringId: december },
+          headers,
+        })
+      ).status(),
+    ).toBe(409);
+    await control({ externalSeats: { [december]: 0 } });
   });
   test("actual checkout API permits exactly 12 concurrent seats and releases only a verified unpaid expiry", async ({
     request,

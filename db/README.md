@@ -8,8 +8,11 @@ durable capacity checks, webhook verification, and conservative hold reconciliat
 
 `005_student_enrollment.sql` adds a separate student roster, explicit offering inventory,
 verified payment events, and confirmation outbox. Unlike the attribution schema, this student
-schema stores private names, emails, and phone numbers. It seeds no real offerings or students;
-live activation remains disabled. See `docs/student-payments.md` for isolation, access, and launch gates.
+schema stores private names, emails, and phone numbers. The schema migration seeds no offerings.
+Confirmed Infection Control sessions (November 14 and December 5, 2026; 12 seats; 0 offline;
+39500 USD) are defined in `lib/student-enrollment-offerings.ts` and inserted disabled by
+`db/seeds/infection-control-offerings.sql`. Live checkout and outbound email stay off until
+their separate flags are set. See `docs/student-payments.md` for isolation, access, and launch gates.
 
 The attribution schema stores only pseudonymous CRM identity, cryptographic contact hashes, ad touchpoints,
 reviewed lead-to-enrollment links, delivery totals, and postback state. It does not store names,

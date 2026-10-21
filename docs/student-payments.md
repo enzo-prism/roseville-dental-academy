@@ -1,33 +1,56 @@
 # Infection Control student payments — development release
 
 Live payments are **disabled by default**. This release adds a separate student enrollment
-path at `/enroll`; it does not turn the staff-only pilot into a live ledger. No real offering,
-student, remaining-seat count, Stripe credential, or email sender is created by the migration.
-The public Infection Control page adds an enrollment link only when valid live configuration
-and the explicit live flag are present. Existing inquiry forms remain available.
+path at `/enroll`; it does not turn the staff-only pilot into a live ledger. No Stripe
+credential or email sender is created by the schema migration. The public Infection Control
+page adds an enrollment link only when valid live configuration and the explicit live flag
+are present. Existing inquiry forms remain available.
+
+## Confirmed sellable sessions
+
+Confirmed October 21, 2026 against the live `/infection-control` page:
+
+| Course date | ISO date | Price | Capacity | Offline seats already taken |
+| --- | --- | --- | --- | --- |
+| November 14, 2026 | `2026-11-14` | $395 (39500 cents, USD) | 12 | 0 |
+| December 5, 2026 | `2026-12-05` | $395 (39500 cents, USD) | 12 | 0 |
+
+Payment is in full. No other Infection Control date is sellable. November 7 was removed from
+the public schedule earlier and must not be seeded or offered at checkout.
+
+Canonical config: `lib/student-enrollment-offerings.ts`.
+Reviewed insert (disabled offerings only): `db/seeds/infection-control-offerings.sql`.
+Schema only, zero offerings: `db/migrations/005_student_enrollment.sql`.
+
+Checkout always shows the live-site policy wording:
+
+> Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.
+
+That line is `INFECTION_CONTROL_CHECKOUT_POLICY` in `lib/academy-policies.ts` (payment note plus
+the cancellation summary). The full approved paragraphs are shown on `/enroll` and snapshotted
+onto each reservation.
 
 ## Business sources and activation review
 
-At base commit `fa532697abf5553184aa349abf3c76592dffb1d7`, `lib/live-course-content.ts`
-and `lib/site-data.ts` show $395. The committed schedule was reviewed October 14, 2026
-and lists November 14 and December 5 as open Infection Control dates. These are source
-observations, **not fresh confirmation of dates, pricing, or remaining seats**.
+`lib/live-course-content.ts`, `lib/academy-catalog.ts`, and `lib/site-data.ts` show $395.
+The committed schedule lists November 14 and December 5 as the open Infection Control dates.
 The public [course page](https://www.rosevilledentalacademy.com/infection-control) and
-[policy page](https://www.rosevilledentalacademy.com/cancellation-policy), checked October 18,
-show the same price, dates, full-payment requirement and policy. The course page explicitly
-says dates may change and admissions must confirm availability.
-`lib/academy-policies.ts` records Jessica and Dr. Narodovich's September 30 policy approval,
-full payment, and the 12-student cap. The policy has no discretionary student rescheduling;
-only academy cancellation gives the stated transfer/refund options.
+[policy page](https://www.rosevilledentalacademy.com/cancellation-policy) show the same price,
+dates, full-payment requirement, and policy. The course page still says dates may change and
+admissions must confirm availability.
+`lib/academy-policies.ts` records the September 30 policy approval, full payment, and the
+12-student cap. The policy has no discretionary student rescheduling; only academy cancellation
+gives the stated transfer/refund options.
 
-Before creating a live offering, academy staff must confirm the price/date and reconcile
-existing offline enrollments. Set `external_seats` to the already allocated seat count;
-never assume that all 12 seats remain. Each offering needs a review timestamp, a nonempty
-review reference, the current policy version and SHA-256 of the exact policy paragraphs
-joined by two newlines, and those exact paragraphs in `policy_text`. Each reservation
-copies that accepted policy snapshot. Offerings start disabled. No application API creates or enables them.
+Each offering needs a review timestamp, a nonempty review reference, the current policy version
+and SHA-256 of the exact policy paragraphs joined by two newlines, and those exact paragraphs
+in `policy_text`. Each reservation copies that accepted policy snapshot. The reviewed seed
+inserts both dates with `external_seats=0`, `amount=39500`, `capacity=12`, and `enabled=false`.
+No application API creates or enables offerings.
 Apply migration `005_student_enrollment.sql` using the filename-order migrator only against
-the verified RDA database after review. It is repeatable and seeds zero offerings.
+the verified RDA database after review. It is repeatable and seeds zero offerings. Then apply
+`db/seeds/infection-control-offerings.sql` to insert the two disabled live offerings. Enable
+an offering only after the go-live checklist below.
 
 ## Flow and integrity
 
@@ -132,7 +155,9 @@ Use Node 24 and pnpm 10.34.5. Build with `pnpm build` (or `pnpm build --webpack`
 that block Turbopack worker ports), then run `pnpm test:student-enrollment`.
 The runner sanitizes inherited payment variables, starts real Next handlers with isolated
 PGlite and mocked Stripe HTTP, permits loopback only, and blocks all other server egress.
-The fixtures seed fictional adult enrollments on 2099 dates, never real course inventory.
+The fixtures seed fictional adult enrollments against the confirmed November 14 and
+December 5, 2026 inventory (12 seats, 0 offline, 39500 USD). They never enable live
+payments or outbound email.
 It runs both the existing pilot and new student suites. Evidence is saved under
 `dogfood-output/student-enrollment/` and responsive screenshots under `test-results/`.
 `pnpm preview:student-enrollment` serves the synthetic UI at `http://127.0.0.1:3117/enroll`.
@@ -143,10 +168,36 @@ that blocks every non-fixture request. It simulates provider acceptance followed
 timeout, temporary errors, concurrent claims, retry leases and the manual-review cutoff.
 It never uses real mail credentials, sends external email, or enables a deployment flag.
 
-Fixture proof is not an actual Stripe test-mode transaction. Before launch, complete the
-verified RDA sandbox/test Checkout, validate signed delivery and persistent paid roster,
-verify expired/full/retried sessions, captured emails, refund observation and mobile/desktop
-confirmation. Confirm the exact deployment, database migration, reviewed offerings,
-offline-seat reconciliation, mail sender and monitoring. Then obtain separate explicit
-approval to enable live checkout and outbound student emails. No such activation is part
-of this development release.
+Fixture proof is not an actual Stripe test-mode transaction.
+
+## Go-live checklist
+
+Complete these steps in order. Live payments and live email stay off until their flags
+are set after the test-mode purchase. Do not put keys in chat, tickets, screenshots, or
+the repository.
+
+1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
+   secure form. Configure them only on the isolated test deployment and test database.
+2. Apply `005_student_enrollment.sql`, then `db/seeds/infection-control-offerings.sql`.
+   Confirm the two dates, `amount=39500`, `capacity=12`, `external_seats=0`, and
+   `enabled=false`.
+3. Activate test mode (`RDA_STUDENT_PAYMENTS_MODE=test` plus matching test origin,
+   account, key, and webhook secret). Enable the two test offerings. Leave
+   `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` and `RDA_STUDENT_EMAIL_LIVE_ENABLED` unset.
+4. Complete a Stripe test-card purchase (`4242 4242 4242 4242`, any future expiry and
+   CVC) for one date. Confirm the paid roster row, captured confirmation, and $395 charge
+   in the RDA test merchant.
+5. Abandon a second checkout and reconcile it. The unpaid seat must return to inventory
+   only after Stripe reports expired + unpaid.
+6. Seat-cap test: hold or pay 12 seats on one date and confirm the 13th is blocked. The
+   other date must remain purchasable.
+7. After test-mode sign-off, configure live keys through the same secure form on the
+   live environment. Do not reuse test secrets.
+8. Make one small real purchase, confirm the roster and confirmation email, then refund
+   that charge from the verified merchant dashboard and mark the seat reconciled.
+9. Only then enable the public Enroll CTA by setting `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true`
+   and enabling the two live offerings. Outbound student email is a separate flag.
+
+Launch remains blocked until that checklist is finished. No real charges, refunds, student
+emails, bank changes, or credential creation are part of this development release. This
+branch does not replace the separate staff pilot documented in `docs/enrollment-pilot.md`.
