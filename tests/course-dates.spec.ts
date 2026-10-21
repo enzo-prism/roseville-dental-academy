@@ -7,7 +7,7 @@ import {
   getNextAvailableCourseDate,
   getUpcomingScheduleMonths,
 } from "../lib/course-schedule";
-import { adLandingPages } from "../lib/ad-landing-pages";
+import { adLandingPages, getAdLandingPage } from "../lib/ad-landing-pages";
 import { suppressSitePromo } from "./support/qa-helpers";
 import { execFile } from "node:child_process";
 import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -214,6 +214,59 @@ for (const width of [390, 1280]) {
     await page.goto("/lp/coronal-polish-office-awareness");
     await expect(page.locator(".rda-ad-date-list")).toContainText("November 14, 2026");
     await expect(page.locator(".rda-ad-date-list")).not.toContainText("October 24, 2026");
+  });
+}
+
+test("combined renewal landers keep Sealants November 14 full and show the next open date", () => {
+  for (const slug of ["coronal-sealants-renewal", "rda-renewal-ready"] as const) {
+    const page = getAdLandingPage(slug);
+    expect(page?.facts.find((fact) => fact.label === "Next date")?.value).toBe(
+      "Coronal Polish: November 14, 2026; Sealants: December 12, 2026",
+    );
+    const coronal = page?.dateGroups?.find((group) => group.courseId === "coronal-polish");
+    const sealants = page?.dateGroups?.find((group) => group.courseId === "sealants");
+    expect(coronal?.entries.find((entry) => entry.isoDate === "2026-11-14")?.status).toBe("available");
+    expect(sealants?.entries.find((entry) => entry.isoDate === "2026-11-14")?.status).toBe("full");
+    expect(sealants?.entries.find((entry) => entry.isoDate === "2026-12-12")?.status).toBe("available");
+  }
+
+  const renewal = getAdLandingPage("coronal-sealants-renewal");
+  expect(renewal?.leadSelects?.find((field) => field.name === "Preferred class date")?.options).toEqual([
+    "I'm flexible",
+    "Coronal Polish: November 14, 2026",
+    "Coronal Polish: December 12, 2026",
+    "Sealants: December 12, 2026",
+  ]);
+});
+
+for (const width of [390, 1280]) {
+  test(`coronal-sealants lander shows Full Sealants November 14 at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/lp/coronal-sealants-renewal");
+
+    const nextDate = page.locator(".rda-ad-fact").filter({ hasText: "Next date" });
+    await expect(nextDate).toContainText("Coronal Polish: November 14, 2026");
+    await expect(nextDate).toContainText("Sealants: December 12, 2026");
+
+    const coronalGroup = page.locator(".rda-ad-date-group").filter({ hasText: "Coronal Polish" });
+    const sealantsGroup = page.locator(".rda-ad-date-group").filter({ hasText: /^Sealants/ });
+    const coronalNovember = coronalGroup.locator("span").filter({
+      has: page.locator('time[datetime="2026-11-14"]'),
+    });
+    const sealantsNovember = sealantsGroup.locator("span").filter({
+      has: page.locator('time[datetime="2026-11-14"]'),
+    });
+
+    await expect(coronalNovember).not.toHaveAttribute("data-status", "full");
+    await expect(sealantsNovember).toHaveAttribute("data-status", "full");
+    await expect(sealantsNovember.getByText("Full", { exact: true })).toBeVisible();
+    await expect(sealantsGroup.getByText("December 12, 2026")).toBeVisible();
+
+    const dateSelect = page.locator('select[name="Preferred class date"]');
+    await expect(dateSelect.locator("option", { hasText: "Coronal Polish: November 14, 2026" })).toHaveCount(1);
+    await expect(dateSelect.locator("option", { hasText: "Sealants: December 12, 2026" })).toHaveCount(1);
+    await expect(dateSelect.locator("option", { hasText: "Sealants: November 14, 2026" })).toHaveCount(0);
+    await expect(page.locator("#rda-ld-course-sealants")).toHaveCount(0);
   });
 
   test(`homepage schedule, cards, and request choices agree at ${width}px`, async ({ page }) => {

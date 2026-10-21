@@ -1,9 +1,11 @@
 import {
+  courseScheduleCourseDetails,
   formatCourseDateLabel,
   getUpcomingCourseSchedule,
   getAvailableCourseDateList,
   getNextAvailableCourseDate,
   type CourseScheduleId,
+  type CourseScheduleStatus,
 } from "@/lib/course-schedule";
 import { siteImages } from "@/lib/site-data";
 
@@ -69,6 +71,18 @@ export type AdLandingConsent = {
   name: string;
 };
 
+export type AdLandingDateEntry = {
+  isoDate: string;
+  label: string;
+  status: CourseScheduleStatus;
+};
+
+export type AdLandingDateGroup = {
+  courseId: CourseScheduleId;
+  entries: AdLandingDateEntry[];
+  label: string;
+};
+
 export type AdLandingPage = {
   audience: string;
   campaignIntent: string;
@@ -77,6 +91,9 @@ export type AdLandingPage = {
   contentCategory: string;
   courseInterests: string[];
   dates: string[];
+  // Per-course upcoming dates with Full status, used when one lander covers
+  // more than one schedule so a shared "next date" cannot hide a Full class.
+  dateGroups?: AdLandingDateGroup[];
   eyebrow: string;
   facts: AdLandingPageStat[];
   gallery?: AdLandingPageGalleryImage[];
@@ -133,14 +150,46 @@ function firstAvailableDate(courseId: CourseScheduleId) {
   return getNextAvailableCourseDate(courseId) ?? "Ask admissions";
 }
 
+function landerCourseLabel(courseId: CourseScheduleId) {
+  return courseId === "sealants" ? "Sealants" : courseScheduleCourseDetails[courseId].label;
+}
+
+function scheduleDateGroup(courseId: CourseScheduleId): AdLandingDateGroup {
+  return {
+    courseId,
+    label: landerCourseLabel(courseId),
+    entries: getUpcomingCourseSchedule(courseId).map((entry) => ({
+      isoDate: entry.isoDate,
+      label: formatCourseDateLabel(courseId, entry.date),
+      status: entry.status,
+    })),
+  };
+}
+
+function nextOpenDateSummary(courseIds: CourseScheduleId[]) {
+  return courseIds
+    .map((courseId) => `${landerCourseLabel(courseId)}: ${firstAvailableDate(courseId)}`)
+    .join("; ");
+}
+
+function preferredCourseDateOptions(courseIds: CourseScheduleId[]) {
+  return [
+    "I'm flexible",
+    ...courseIds.flatMap((courseId) =>
+      availableDates(courseId).map((date) => `${landerCourseLabel(courseId)}: ${date}`),
+    ),
+  ];
+}
+
 const dentalAssistingDates = availableDates("dental-assisting-program");
 const infectionControlDates = availableDates("infection-control");
 const coronalPolishDates = availableDates("coronal-polish");
 const sealantsDates = availableDates("sealants");
-const availableSealantsDateSet = new Set(sealantsDates);
-const coronalSealantsDates = coronalPolishDates.filter((date) =>
-  availableSealantsDateSet.has(date),
-);
+const coronalSealantsDateGroups = [
+  scheduleDateGroup("coronal-polish"),
+  scheduleDateGroup("sealants"),
+];
+const coronalSealantsCourseIds = ["coronal-polish", "sealants"] as const satisfies CourseScheduleId[];
 
 function optionalFormspreeEndpoint(name: string, value: string | undefined) {
   const endpoint = value?.trim();
@@ -342,13 +391,14 @@ export const adLandingPages: AdLandingPage[] = [
     campaignIntent: "rda_renewal_bundle",
     contentCategory: "rda_certification_courses",
     courseInterests: ["Coronal Polish", "Pit and Fissure Sealants"],
-    dates: coronalSealantsDates,
+    dateGroups: coronalSealantsDateGroups,
+    dates: availableDates("sealants"),
     eyebrow: "RDA renewal-ready courses",
     facts: [
       { label: "Coronal Polish", value: "CP148" },
       { label: "Sealants", value: "PF186" },
       { label: "Combined price", value: "$1,050" },
-      { label: "Next date", value: firstAvailableDate("coronal-polish") },
+      { label: "Next date", value: nextOpenDateSummary([...coronalSealantsCourseIds]) },
     ],
     hero: {
       badge: "Coronal Polish + Sealants",
@@ -856,13 +906,14 @@ export const adLandingPages: AdLandingPage[] = [
     },
     contentCategory: "rda_certification_courses",
     courseInterests: ["Coronal Polish", "Pit and Fissure Sealants"],
-    dates: coronalSealantsDates,
+    dateGroups: coronalSealantsDateGroups,
+    dates: availableDates("sealants"),
     eyebrow: "Stay renewal-ready",
     facts: [
       { label: "Coronal Polish", value: "CP148" },
       { label: "Sealants", value: "PF186" },
       { label: "Combined price", value: "$1,050" },
-      { label: "Next date", value: firstAvailableDate("coronal-polish") },
+      { label: "Next date", value: nextOpenDateSummary([...coronalSealantsCourseIds]) },
     ],
     // The shared inbox has the verified live Google Sheets connection. Keep the
     // original dedicated form ID as form_key so CRM attribution remains exact.
@@ -915,7 +966,7 @@ export const adLandingPages: AdLandingPage[] = [
         icon: "calendar",
         label: "Preferred class date",
         name: "Preferred class date",
-        options: ["I'm flexible", ...coronalSealantsDates],
+        options: preferredCourseDateOptions([...coronalSealantsCourseIds]),
       },
     ],
     metaDescription:
