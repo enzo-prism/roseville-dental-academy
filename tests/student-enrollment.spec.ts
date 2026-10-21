@@ -411,7 +411,10 @@ test("student database enforces shared inventory, separate modes, replay, roster
       "charge.refunded === true && charge.amount_refunded === held.amount",
     );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
-      'response.status === 409 && code === "idempotency_key_in_use"',
+      'status === 409 && code === "idempotency_key_in_use"',
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      "isStripeIdempotencyConflict(response.status, code)",
     );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       "WHERE id=${held.id}::uuid AND status='reserved'",
