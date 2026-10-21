@@ -72,9 +72,11 @@ function browserAttribution(options: { blockedStorage?: boolean; cookies?: strin
   return {
     api,
     cookies,
+    document,
     local,
     session,
-    visit(path: string, capturedAt: string): LeadAttribution {
+    visit(path: string, capturedAt: string, referrer = ""): LeadAttribution {
+      document.referrer = referrer;
       window.location = new URL(path, "https://rosevilledentalacademy.com");
       return api.resolveLeadAttribution({ capturedAt });
     },
@@ -98,9 +100,11 @@ test("Google then Meta keeps complete first touch immutable and each campaign co
   expect(later.conversionTouch.dimensions.ad_id).toBe("120000222");
   expect(later.conversionTouch.touchId).not.toBe(initial.conversionTouch.touchId);
   const stamp = browser.api.getLeadAttributionFormFields(later);
-  expect(stamp.utm_source).toBe("google");
-  expect(stamp.fbclid).toBe("");
-  expect(stamp.ad_id).toBe("");
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.ad_id).toBe("120000222");
+  expect(stamp.first_touch_utm_source).toBe("google");
+  expect(stamp.conversion_touch_utm_source).toBe("facebook");
   expect(stamp.conversion_touch_ad_id).toBe("120000222");
 });
 
@@ -110,16 +114,23 @@ test("Meta then Google does not inherit an earlier Meta click or fbc cookie", ()
   browser.cookies.set("_fbc", "fb.1.123.meta_click");
   browser.cookies.set("_fbp", "fb.1.123.browser");
   const later = browser.visit(GOOGLE, SECOND);
-  expect(later.firstTouch).toEqual(initial.firstTouch);
+  expect(later.firstTouch.touchId).toBe(initial.firstTouch.touchId);
+  expect(later.firstTouch.utm).toEqual(initial.firstTouch.utm);
+  expect(later.firstTouch.clickIds.fbclid).toBe("meta_click");
+  expect(later.firstTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
+  expect(later.firstTouch.clickIds.fbp).toBe("fb.1.123.browser");
   expect(later.conversionTouch.clickIds.gclid).toBe("google_click");
   expect(later.conversionTouch.clickIds.fbclid).toBe("");
   expect(later.conversionTouch.clickIds.fbc).toBe("");
   expect(later.conversionTouch.clickIds.fbp).toBe("");
   expect(later.conversionTouch.dimensions.ad_id).toBe("");
   const stamp = browser.api.getLeadAttributionFormFields(later);
-  expect(stamp.utm_source).toBe("facebook");
-  expect(stamp.gclid).toBe("");
-  expect(stamp.ad_id).toBe("120000222");
+  expect(stamp.utm_source).toBe("google");
+  expect(stamp.gclid).toBe("google_click");
+  expect(stamp.fbclid).toBe("");
+  expect(stamp.ad_id).toBe("");
+  expect(stamp.first_touch_utm_source).toBe("facebook");
+  expect(stamp.first_touch_ad_id).toBe("120000222");
 });
 
 test("a second click on the same platform gets its own touch instead of filling first-touch gaps", () => {
@@ -127,7 +138,10 @@ test("a second click on the same platform gets its own touch instead of filling 
   const initial = browser.visit(META, FIRST);
   browser.cookies.set("_fbc", "fb.1.123.meta_click");
   const later = browser.visit(META.replace("meta_click", "different_click"), SECOND);
-  expect(later.firstTouch).toEqual(initial.firstTouch);
+  expect(later.firstTouch.touchId).toBe(initial.firstTouch.touchId);
+  expect(later.firstTouch.utm).toEqual(initial.firstTouch.utm);
+  expect(later.firstTouch.clickIds.fbclid).toBe("meta_click");
+  expect(later.firstTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
   expect(later.conversionTouch.clickIds.fbclid).toBe("different_click");
   expect(later.conversionTouch.clickIds.fbc).toBe("");
   expect(later.conversionTouch.touchId).not.toBe(initial.conversionTouch.touchId);
@@ -148,7 +162,7 @@ test("same-visit late browser IDs fill gaps without replacing touch identity or 
   expect(later.firstTouch.utm).toEqual(initial.firstTouch.utm);
 });
 
-test("a later document load with the same campaign cannot enrich the original first touch", () => {
+test("a later document load with the same campaign cannot replace the original first-touch campaign", () => {
   const firstBrowser = browserAttribution();
   const initial = firstBrowser.visit(META, FIRST);
   const laterBrowser = browserAttribution({
@@ -157,7 +171,11 @@ test("a later document load with the same campaign cannot enrich the original fi
     cookies: "_fbc=fb.1.123.meta_click; _ga=GA1.1.123.456",
   });
   const later = laterBrowser.visit(META, SECOND);
-  expect(later.firstTouch).toEqual(initial.firstTouch);
+  expect(later.firstTouch.touchId).toBe(initial.firstTouch.touchId);
+  expect(later.firstTouch.capturedAt).toBe(FIRST);
+  expect(later.firstTouch.utm).toEqual(initial.firstTouch.utm);
+  expect(later.firstTouch.clickIds.fbclid).toBe(initial.firstTouch.clickIds.fbclid);
+  expect(later.firstTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
   expect(later.conversionTouch.touchId).not.toBe(initial.conversionTouch.touchId);
   expect(later.conversionTouch.capturedAt).toBe(SECOND);
   expect(later.conversionTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
@@ -168,8 +186,98 @@ test("direct navigation retains the paid conversion touch without enriching an e
   const initial = browser.visit(META, FIRST);
   browser.cookies.set("_fbc", "fb.1.123.meta_click");
   const later = browser.visit("/contact", SECOND);
-  expect(later.firstTouch).toEqual(initial.firstTouch);
-  expect(later.conversionTouch).toEqual(initial.conversionTouch);
+  expect(later.firstTouch.touchId).toBe(initial.firstTouch.touchId);
+  expect(later.conversionTouch.touchId).toBe(initial.conversionTouch.touchId);
+  expect(later.firstTouch.utm).toEqual(initial.firstTouch.utm);
+  expect(later.conversionTouch.utm).toEqual(initial.conversionTouch.utm);
+  expect(later.firstTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
+  expect(later.conversionTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
+});
+
+test("a referrer-only Instagram first visit does not hide a later Meta click", () => {
+  const browser = browserAttribution();
+  const initial = browser.visit("/", FIRST, "https://www.instagram.com/");
+  expect(initial.firstTouch.referrer).toBe("https://www.instagram.com/");
+  expect(initial.firstTouch.utm.utm_source).toBe("");
+  const later = browser.visit(META, SECOND);
+  expect(later.firstTouch.utm.utm_source).toBe("");
+  expect(later.conversionTouch.clickIds.fbclid).toBe("meta_click");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.ad_id).toBe("120000222");
+  expect(browser.api.getLeadAttributionStamp(later).landing_page).toBe(
+    "/lp/dental-assisting-enroll",
+  );
+  expect(stamp.first_touch_utm_source).toBe("");
+  expect(stamp.conversion_touch_utm_source).toBe("facebook");
+});
+
+test("a newer paid Meta click wins the top-level stamp over an older test click", () => {
+  const browser = browserAttribution();
+  const initial = browser.visit("/coronal-polish?fbclid=testcheck123", FIRST);
+  expect(initial.firstTouch.pagePath).toBe("/coronal-polish");
+  const later = browser.visit(
+    "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_TEST&utm_id=TEST&utm_source_platform=meta_ads&fbclid=TEST_SAMPLE",
+    SECOND,
+  );
+  expect(later.firstTouch.pagePath).toBe("/coronal-polish");
+  expect(later.firstTouch.clickIds.fbclid).toBe("testcheck123");
+  expect(later.conversionTouch.pagePath).toBe("/infection-control");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("meta");
+  expect(stamp.fbclid).toBe("TEST_SAMPLE");
+  expect(stamp.first_touch_fbclid).toBe("testcheck123");
+  expect(stamp.landing_page).toBe("/infection-control");
+  expect(stamp.conversion_landing_page).toBe("/infection-control");
+  expect(stamp.conversion_touch_page_path).toBe("/infection-control");
+  expect(stamp.first_touch_page_path).toBe("/coronal-polish");
+  expect(browser.api.getLeadAttributionStamp(later).landing_page).toBe("/infection-control");
+});
+
+test("Meta click then a clean course page still stamps the later form as Meta", () => {
+  const browser = browserAttribution();
+  browser.visit(META, FIRST);
+  const later = browser.visit("/infection-control", SECOND);
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.ad_id).toBe("120000222");
+  expect(browser.api.getLeadAttributionStamp(later).landing_page).toBe(
+    "/lp/dental-assisting-enroll",
+  );
+});
+
+test("compact stamp cookie and session copy survive a wiped localStorage document", () => {
+  const firstBrowser = browserAttribution();
+  firstBrowser.visit(META, FIRST);
+  expect(firstBrowser.session.get("rda_lead_attribution_session_v2")).toContain("meta_click");
+  expect(firstBrowser.cookies.get("rda_lead_attribution_stamp_v1")).toBeTruthy();
+  const laterBrowser = browserAttribution({
+    cookies: [...firstBrowser.cookies]
+      .filter(([name]) => name === "rda_lead_attribution_stamp_v1")
+      .map(([name, value]) => `${name}=${value}`)
+      .join("; "),
+    session: firstBrowser.session,
+  });
+  const later = laterBrowser.visit("/infection-control", SECOND);
+  const stamp = laterBrowser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.ad_id).toBe("120000222");
+});
+
+test("late Meta browser IDs fill a stored lander after the visitor opens a clean course page", () => {
+  const browser = browserAttribution();
+  const initial = browser.visit(META, FIRST);
+  expect(initial.firstTouch.clickIds.fbp).toBe("");
+  browser.cookies.set("_fbc", "fb.1.123.meta_click");
+  browser.cookies.set("_fbp", "fb.1.123.browser");
+  const later = browser.visit("/infection-control", SECOND);
+  expect(later.firstTouch.clickIds.fbc).toBe("fb.1.123.meta_click");
+  expect(later.firstTouch.clickIds.fbp).toBe("fb.1.123.browser");
+  expect(later.firstTouch.utm.utm_source).toBe("facebook");
+  expect(later.conversionTouch.clickIds.fbclid).toBe("meta_click");
 });
 
 test("denial wins across every consent cookie regardless of earlier grant", () => {
@@ -259,7 +367,9 @@ test("old persisted IC189 touches recover only their own native dimensions", () 
   expect(later.conversionTouch.dimensions).toMatchObject({
     ad_id: IC_CAMPAIGNS[1].adId, adset_id: "120249111111111567",
   });
-  expect(reloaded.api.getLeadAttributionFormFields(later).ad_id).toBe(IC_CAMPAIGNS[0].adId);
+  const stamp = reloaded.api.getLeadAttributionFormFields(later);
+  expect(stamp.ad_id).toBe(IC_CAMPAIGNS[1].adId);
+  expect(stamp.first_touch_ad_id).toBe(IC_CAMPAIGNS[0].adId);
 });
 
 test("explicit conflicting native IDs win over legacy IC189 tags before and after reload", () => {

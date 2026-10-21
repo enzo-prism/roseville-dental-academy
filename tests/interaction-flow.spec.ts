@@ -1726,6 +1726,88 @@ test.describe("live-style interaction flows", () => {
       );
     });
 
+    test("Meta lander tags survive a later infection-control course form", async ({
+      page,
+    }) => {
+      const landingPage =
+        adLandingPages.find((candidate) => candidate.slug === "dental-assisting-enroll") ??
+        adLandingPages[0];
+
+      await gotoSettled(
+        page,
+        `${landingPage.path}?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&utm_id=120249084101080567&utm_source_platform=meta_ads&fbclid=course_page_meta_click`,
+      );
+      await gotoSettled(page, "/infection-control");
+
+      const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(courseForm.locator('input[name="utm_source"]')).toHaveValue("meta");
+      await expect(courseForm.locator('input[name="utm_campaign"]')).toHaveValue("ic189_oct17");
+      await expect(courseForm.locator('input[name="fbclid"]')).toHaveValue(
+        "course_page_meta_click",
+      );
+      await expect(courseForm.locator('input[name="ad_id"]')).toHaveValue(
+        "120249085995100567",
+      );
+      await expect(courseForm.locator('input[name="landing_page"]')).toHaveValue(
+        landingPage.path,
+      );
+    });
+
+    test("lead_source stays website on a Meta-tagged course form", async ({
+      page,
+    }) => {
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&fbclid=TEST_SAMPLE",
+      );
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(form.locator('input[name="utm_source"]')).toHaveValue("meta");
+      await expect(form.locator('input[name="fbclid"]')).toHaveValue("TEST_SAMPLE");
+      await expect(form.locator('input[name="lead_source"]')).toHaveValue("website");
+      await expect(form.locator('input[name="how-heard"]')).toHaveValue("website");
+      await expect(form.locator('input[name="landing_page"]')).toHaveValue("/infection-control");
+    });
+
+    test("newer Meta click updates landing_page after an older coronal visit", async ({
+      page,
+    }) => {
+      await gotoSettled(page, "/coronal-polish?fbclid=testcheck123");
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_TEST&fbclid=TEST_SAMPLE",
+      );
+      const form = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(form.locator('input[name="utm_source"]')).toHaveValue("meta");
+      await expect(form.locator('input[name="fbclid"]')).toHaveValue("TEST_SAMPLE");
+      await expect(form.locator('input[name="landing_page"]')).toHaveValue("/infection-control");
+      await expect(form.locator('input[name="lead_source"]')).toHaveValue("website");
+    });
+
+    test("Instagram referrer first visit still stamps a later Meta click", async ({
+      page,
+    }) => {
+      await suppressSitePromo(page.context());
+      await page.goto(`${localOrigin}/`, {
+        referer: "https://www.instagram.com/",
+        timeout: 120_000,
+        waitUntil: "domcontentloaded",
+      });
+      await page.waitForLoadState("load").catch(() => undefined);
+      await page.waitForTimeout(2_000);
+      await gotoSettled(
+        page,
+        "/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=ic189_oct17&utm_content=ic189_student_120249085995100567&fbclid=ig_then_meta_click",
+      );
+      await gotoSettled(page, "/radiation-safety");
+
+      const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
+      await expect(courseForm.locator('input[name="utm_source"]')).toHaveValue("meta");
+      await expect(courseForm.locator('input[name="fbclid"]')).toHaveValue("ig_then_meta_click");
+      await expect(courseForm.locator('input[name="ad_id"]')).toHaveValue(
+        "120249085995100567",
+      );
+    });
+
     test("first-touch Saturday tags and parsed ad_id stamp both Formspree forms", async ({
       page,
     }) => {
@@ -1979,7 +2061,7 @@ test.describe("live-style interaction flows", () => {
       );
       await expect(
         page.locator('form[data-rda-landing-form="true"] input[name="utm_campaign"]'),
-      ).toHaveValue("first_campaign");
+      ).toHaveValue("conversion_campaign");
 
       const storedAttribution = await page.evaluate(() => {
         const raw = window.localStorage.getItem("rda_lead_attribution_v2");
