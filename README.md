@@ -9,6 +9,10 @@ Since the October 2026 redesign ("Chairside", see `DESIGN.md`) the site is React
 - Only the `/m/*` account screens still render sanitized GoDaddy snapshot HTML from `snapshot/live/`.
 - All public lead forms share one form kit, including the required "How did you hear about us?" question.
 
+Student payment development and activation gates are documented in [docs/student-payments.md](docs/student-payments.md).
+Live checkout and outbound enrollment emails default to disabled. `pnpm test:student-enrollment`
+runs the isolated pilot/student fixture suites; `pnpm preview:student-enrollment` opens a local synthetic preview after building.
+
 ## How It Works
 
 - `app/[[...slug]]/page.tsx` renders public and utility routes through the App Router.
@@ -126,6 +130,7 @@ pnpm exec playwright install chromium
 - `pnpm test:attribution-db`: ledger migrations and triggers in an isolated in-memory Postgres (also in Release Gate CI; see `db/README.md`).
 - `pnpm test:release`: `lint` + `build`, then parity-visual, smoke, course-dates, interactions, parity-content, and UX against a local production server (`pnpm start` on port 3100 by default).
 - `pnpm test:preview`: the same six suites against a Vercel preview (`PREVIEW_URL` is required, no webserver is started, no lint/build).
+- `pnpm test:student-enrollment`: isolated Infection Control student checkout, roster, and confirmation-outbox fixtures (PGlite + mocked Stripe; live payments stay off).
 
 Changing course dates or any visible page copy drifts the committed content baselines and must be
 refreshed in the same commit; see

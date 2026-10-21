@@ -6,6 +6,8 @@ const DISALLOWED_PATHS = [
   "/m/",
   "/student-jobs",
   "/enrollment-pilot",
+  "/enroll",
+  "/api/student-enrollment",
   "/api/student-jobs/",
   "/api/enrollment/",
   "/resume-portal-dr/",

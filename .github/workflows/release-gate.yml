@@ -70,6 +70,9 @@ jobs:
       - name: Verify attribution database integrity
         run: pnpm test:attribution-db
 
+      - name: Verify isolated student enrollment and pilot fixtures
+        run: pnpm test:student-enrollment
+
       - name: Verify paid-media measurement
         env:
           CI: "true"

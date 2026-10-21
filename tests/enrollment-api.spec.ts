@@ -1,5 +1,7 @@
 import { randomUUID, createHmac } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { createEnrollmentSession, ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
 import { availableTestDates } from "@/lib/enrollment-http";
@@ -39,6 +41,7 @@ test.describe("isolated Next.js API plus Stripe fixtures and real PostgreSQL eng
     for (let attempt=0; attempt<2; attempt++) expect((await request.post("/api/enrollment/webhook", { data: raw, headers: { "stripe-signature": `t=${t},v1=${signature}` } })).status()).toBe(200);
     confirmation = await request.get(`/enrollment-pilot/confirmation?hold=${data.holdId}`, { headers }); expect(await confirmation.text()).toContain("Test payment verified");
     expect(await confirmation.text()).toContain("No real money was charged");
+    expect(await confirmation.text()).toContain(data.date!);
     expect(await (await request.get(`/enrollment-pilot/confirmation?hold=${randomUUID()}`, { headers })).text()).toContain("Test payment not verified");
     expect((await request.post("/api/enrollment/webhook", { data: `${raw} `, headers: { "stripe-signature": `t=${t},v1=${signature}` } })).status()).toBe(400);
   });
@@ -83,7 +86,7 @@ test.describe("isolated Next.js API plus Stripe fixtures and real PostgreSQL eng
   test("configured staff checkout stays readable and usable at mobile, tablet and desktop", async ({ page }) => {
     await suppressSeasonalTheme(page.context());
     await page.context().addCookies([{ name: ENROLLMENT_PILOT_COOKIE, value: createEnrollmentSession(auth), domain: new URL(origin).hostname, path: "/", secure: true, httpOnly: true, sameSite: "Strict" }]);
-    const folder="/Users/enzo/Documents/Codex/2026-09-30/anal-2/work/rda-enrollment-fixture/screenshots"; await mkdir(folder,{recursive:true});
+    const folder=process.env.RDA_ENROLLMENT_FIXTURE_SCREENSHOT_DIR ?? join(tmpdir(), "rda-enrollment-fixture-screenshots"); await mkdir(folder,{recursive:true});
     for(const width of [375,768,1280]) {
       await page.setViewportSize({width,height:900}); await page.goto("/enrollment-pilot");
       await expect(page.getByRole("button",{name:"Continue to Stripe test checkout"})).toBeEnabled();

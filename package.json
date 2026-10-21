@@ -11,6 +11,8 @@
     "build": "node scripts/pull-course-schedule.mjs && next build",
     "start": "next start",
     "lint": "eslint app components lib tests next.config.ts postcss.config.mjs",
+    "test:student-enrollment": "node scripts/test-student-enrollment.mjs",
+    "preview:student-enrollment": "node scripts/test-student-enrollment.mjs --serve",
     "audit:design": "node scripts/design-audit.mjs",
     "design:lint": "design.md lint DESIGN.md",
     "design:sync": "node scripts/sync-design-tokens.mjs",
