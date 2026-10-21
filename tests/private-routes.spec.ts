@@ -18,7 +18,7 @@ test.beforeEach(async ({ page, context }) => {
   });
 });
 
-for (const path of ["/student-jobs", "/enrollment-pilot", "/enrollment-pilot/confirmation?hold=00000000-0000-4000-8000-000000000000"]) {
+for (const path of ["/student-jobs", "/enroll", "/enroll/confirmation?enrollment=00000000-0000-4000-8000-000000000000", "/enrollment-pilot/roster", "/enrollment-pilot", "/enrollment-pilot/confirmation?hold=00000000-0000-4000-8000-000000000000"]) {
   test(`${path} initial document has no tracking scripts, globals or network requests`, async ({ page }) => {
     const requests: string[] = [];
     page.on("request", (request) => { if (measurementUrl(request.url())) requests.push(request.url()); });
@@ -63,6 +63,20 @@ test("private to public navigation and browser Back preserve an isolated private
   await expect(page).toHaveURL(/\/student-jobs$/);
   await expect(page.locator("#rda-google-analytics, #rda-meta-pixel, #rda-hotjar-analytics")).toHaveCount(0);
   expect(await page.evaluate(() => ["gtag", "fbq", "hj"].filter((key) => (window as unknown as Record<string, unknown>)[key] !== undefined))).toEqual([]);
+});
+
+test("unavailable enrollment exits with a fresh document and Back restores tracking isolation", async ({ page }) => {
+  await page.goto("/enroll");
+  await page.evaluate(() => { (window as unknown as Record<string,unknown>).__rdaEnrollmentDocument = true; });
+  const documentRequest = page.waitForRequest(request => request.isNavigationRequest() && new URL(request.url()).pathname === "/contact");
+  await page.getByRole("link",{name:"Contact Roseville Dental Academy",exact:true}).click();
+  expect((await documentRequest).resourceType()).toBe("document");
+  await expect(page).toHaveURL(/\/contact$/);
+  expect(await page.evaluate(() => (window as unknown as Record<string,unknown>).__rdaEnrollmentDocument)).toBeUndefined();
+  await expect(page.locator("#rda-google-analytics")).toHaveCount(1);
+  await page.goBack(); await expect(page).toHaveURL(/\/enroll$/);
+  await expect(page.locator("#rda-google-analytics, #rda-meta-pixel, #rda-hotjar-analytics")).toHaveCount(0);
+  expect(await page.evaluate(() => ["gtag","fbq","hj","_hjSettings","dataLayer"].filter(k => (window as unknown as Record<string,unknown>)[k] !== undefined))).toEqual([]);
 });
 
 test("Stripe cross-site return can retry verification with the original Strict private cookie", async ({ page, context, baseURL }) => {

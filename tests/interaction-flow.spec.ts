@@ -66,7 +66,10 @@ async function submitAbortedContactForm(page: import("@playwright/test").Page) {
   }
 
   await expect(form).toBeVisible();
+  await form.locator('input[name="name"]').fill("Attribution Journey");
   await form.locator('input[name="_replyto"]').fill("attribution-journey@example.com");
+  await form.locator('textarea[name="message"]').fill("Checking paid-click stamps on submit.");
+  await form.locator(".ac-pill", { hasText: "Facebook or Instagram ad" }).click();
   await form.getByRole("button", { name: "Send" }).click();
 }
 

@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
       { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
       { key: "Referrer-Policy", value: "no-referrer" },
     ];
-    return ["/student-jobs/:path*", "/api/student-jobs/:path*", "/enrollment-pilot/:path*", "/api/enrollment/:path*"].map(
+    return ["/student-jobs/:path*", "/api/student-jobs/:path*", "/enrollment-pilot/:path*", "/api/enrollment/:path*", "/enroll/:path*", "/api/student-enrollment/:path*"].map(
       (source) => ({ source, headers }),
     );
   },

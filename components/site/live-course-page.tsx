@@ -24,8 +24,10 @@ import { LazyVideo } from "@/components/academy/lazy-video";
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { ClinicalRequirements } from "@/components/site/clinical-requirements";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
+import { SiteLink } from "@/components/site/site-link";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { showsCertificateExpiration } from "@/lib/certificate-expiration";
+import { studentConfig } from "@/lib/student-enrollment";
 import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE, hasStandaloneClinicalRequirements, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
 import { getAcademyCourse } from "@/lib/academy-catalog";
 import { courseScheduleNote, formatCourseDateLabel, getNextAvailableCourseDate, getUpcomingCourseSchedule } from "@/lib/course-schedule";
@@ -437,7 +439,6 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               </Link>
             </p>
           </div>
-
           <aside className="ac-course-aside">
             <div className="ac-enroll-card">
               <div className="ac-enroll-head">
@@ -455,6 +456,12 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
                 Request course info
                 <ArrowRight aria-hidden="true" data-ac-arrow="" />
               </a>
+              {course.id === "infection-control" && studentConfig()?.mode === "live" ? (
+                <SiteLink className="ac-btn ac-btn-primary ac-enroll-cta" href="/enroll">
+                  Enroll and pay in full
+                  <ArrowRight aria-hidden="true" data-ac-arrow="" />
+                </SiteLink>
+              ) : null}
               <div className="ac-enroll-alt">
                 <a data-rda-lead-source="phone" href={phoneHref}>
                   <Phone aria-hidden="true" />

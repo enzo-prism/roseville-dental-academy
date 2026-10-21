@@ -18,6 +18,7 @@ export const CANCELLATION_POLICY_SUMMARY =
 
 export const INFECTION_CONTROL_PAYMENT_NOTE = "Payment in full required.";
 export const INFECTION_CONTROL_SEAT_CAPACITY = 12;
+export const INFECTION_CONTROL_CHECKOUT_POLICY = `${INFECTION_CONTROL_PAYMENT_NOTE} ${CANCELLATION_POLICY_SUMMARY}`;
 
 export const cancellationPolicyRoute: LiveRoute = {
   aliases: [],

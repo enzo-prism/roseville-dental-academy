@@ -1,0 +1,114 @@
+import { SiteLink } from "@/components/site/site-link";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { StudentEnrollmentForm } from "@/components/site/student-enrollment-form";
+import {
+  CANCELLATION_POLICY_PARAGRAPHS,
+  CANCELLATION_POLICY_TITLE,
+  INFECTION_CONTROL_CHECKOUT_POLICY,
+} from "@/lib/academy-policies";
+import { ENROLLMENT_POLICY_VERSION } from "@/lib/enrollment-contract";
+import {
+  formatEnrollmentAmount,
+  INFECTION_CONTROL_OFFERING_AMOUNT,
+  INFECTION_CONTROL_OFFERING_CAPACITY,
+  INFECTION_CONTROL_SELLABLE_SESSIONS,
+  infectionControlSessionLabel,
+} from "@/lib/student-enrollment-offerings";
+import {
+  studentConfig,
+  studentOfferings,
+  type StudentOffering,
+} from "@/lib/student-enrollment";
+
+export default async function EnrollmentPage() {
+  const config = studentConfig();
+  let offerings: StudentOffering[] = [];
+  if (config) {
+    try {
+      offerings = await studentOfferings(config);
+    } catch {
+      /* Fail closed on unavailable inventory. */
+    }
+  }
+  const checkoutOpen = Boolean(config && offerings.length);
+  return (
+    <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+      {config?.mode === "test" && (
+        <Badge variant="outline">TEST ONLY · NO REAL ENROLLMENT</Badge>
+      )}
+      <h1 className="font-heading text-3xl">Infection Control enrollment</h1>
+      <p data-rda-checkout-policy="">
+        {INFECTION_CONTROL_CHECKOUT_POLICY} Each class has a maximum of{" "}
+        {INFECTION_CONTROL_OFFERING_CAPACITY} students.
+      </p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Upcoming Infection Control dates</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul data-rda-ic-sessions="" className="space-y-2">
+            {INFECTION_CONTROL_SELLABLE_SESSIONS.map((session) => {
+              const live = offerings.find(
+                (offering) => offering.course_date === session.courseDate,
+              );
+              const remaining = live?.remaining;
+              return (
+                <li key={session.courseDate}>
+                  {session.label} · {formatEnrollmentAmount(live?.amount ?? INFECTION_CONTROL_OFFERING_AMOUNT)}
+                  {typeof remaining === "number"
+                    ? ` · ${Math.max(0, remaining)} seats available`
+                    : ` · ${INFECTION_CONTROL_OFFERING_CAPACITY} seats`}
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>{CANCELLATION_POLICY_TITLE}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {CANCELLATION_POLICY_PARAGRAPHS.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+        </CardContent>
+      </Card>
+      {!checkoutOpen ? (
+        <Card>
+          <CardContent className="pt-6">
+            <p>
+              Online enrollment is currently unavailable. Please contact the
+              academy to confirm course dates and availability.
+            </p>
+            <SiteLink href="/contact" className="text-primary underline">
+              Contact Roseville Dental Academy
+            </SiteLink>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Student details and payment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StudentEnrollmentForm
+              offerings={offerings.map(
+                ({ id, course_date, amount, remaining }) => ({
+                  id,
+                  course_date,
+                  label: infectionControlSessionLabel(course_date) ?? course_date,
+                  amount,
+                  remaining,
+                }),
+              )}
+              policyVersion={ENROLLMENT_POLICY_VERSION}
+              testOnly={config?.mode === "test"}
+            />
+          </CardContent>
+        </Card>
+      )}
+    </main>
+  );
+}
