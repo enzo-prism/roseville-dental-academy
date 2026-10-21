@@ -26,7 +26,7 @@ test.beforeEach(async ({ context }) => {
 
 test("font readiness rejects a loaded font set that lacks required webfont faces", async ({ page }) => {
   await page.setContent(`<!doctype html><style>
-    :root { --font-noto-sans: "Missing QA Body Font"; --font-playfair-display: "Missing QA Heading Font"; }
+    :root { --font-jakarta-sans: "Missing QA Body Font"; --font-fraunces: "Missing QA Heading Font"; }
   </style><p>Home</p>`);
   expect(await page.evaluate(() => document.fonts.status)).toBe("loaded");
   await expect(waitForFontsReady(page)).rejects.toThrow("Required webfont did not load");
@@ -60,7 +60,7 @@ for (const route of visualMappings) {
       visualParitySummary.push(result);
       writeJsonArtifact(testInfo, `${sanitizeLabel(route.label)}-${viewportLabel}-font-diagnostics.json`, localVisual.fontDiagnostics);
       expect(localVisual.fontDiagnostics.usesExpectedNavFont,
-        "Visible desktop navigation must render with the custom Noto Sans webfont",
+        "Visible desktop navigation must render with the custom Plus Jakarta Sans webfont",
       ).toBe(true);
 
       if (differingPixels > VISUAL_DIFF_TOLERANCE) {

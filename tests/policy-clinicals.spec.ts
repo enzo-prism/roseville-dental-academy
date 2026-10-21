@@ -59,7 +59,8 @@ test("FAQ visible answers and structured data include the approved cancellation 
   const faqSchema = structured.find((item) => item["@type"] === "FAQPage");
   expect(faqSchema).toBeTruthy();
   const schemaAnswer = faqSchema.mainEntity.find((item: { name: string }) => item.name === "What is the cancellation and refund policy?").acceptedAnswer.text;
-  expect(schemaAnswer).toBe((await cancellation.locator("p").innerText()).trim());
+  // Answers live in native <details>; compare their text whether or not the item is expanded.
+  expect(schemaAnswer).toBe(((await cancellation.locator("p").textContent()) ?? "").trim());
   const clinicalSchemaAnswer = faqSchema.mainEntity.find((item: { name: string }) => item.name === "Where do I complete clinical training for X-ray, Coronal Polish, and Sealants?").acceptedAnswer.text;
-  expect(clinicalSchemaAnswer).toBe((await clinicalLocation.locator("p").innerText()).trim());
+  expect(clinicalSchemaAnswer).toBe(((await clinicalLocation.locator("p").textContent()) ?? "").trim());
 });

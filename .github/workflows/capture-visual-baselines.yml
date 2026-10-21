@@ -1,0 +1,65 @@
+name: Capture visual baselines
+
+# Visual parity baselines must come from the same Linux + Chromium build the
+# Release Gate uses. Add the `capture-visual-baselines` label to a pull request
+# (or run this workflow manually on a branch) to capture fresh PNGs from that
+# branch's production build. Download the `visual-baselines` artifact, review
+# every image, and commit it to tests/baselines/live/visual/.
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'capture-visual-baselines')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build
+        env:
+          CI: "true"
+        run: pnpm build
+
+      - name: Capture visual baselines from the local production build
+        env:
+          CI: "true"
+          BASELINE_CAPTURE_ONLY: visual
+          BASELINE_CAPTURE_ORIGIN: http://127.0.0.1:3100
+        run: |
+          pnpm start --hostname 127.0.0.1 --port 3100 &
+          npx --yes wait-on@8.0.1 --timeout 120000 http://127.0.0.1:3100/manifest.webmanifest
+          node scripts/refresh-live-baselines.mjs
+
+      - name: Upload baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: |
+            tests/baselines/live/visual
+            tests/baselines/live/refresh-summary.json

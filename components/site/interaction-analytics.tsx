@@ -9,6 +9,7 @@ import {
   LEAD_FORM_SUCCESS_EVENT,
   type LeadFormSuccessDetail,
 } from "@/components/site/use-lead-form";
+import { HOW_HEARD_FIELD, howHeardAnalyticsValue } from "@/lib/how-heard";
 import { CONTACT_CHANNEL_SOURCE, type ContactChannelSource } from "@/lib/site-data";
 
 type AnalyticsValue = boolean | number | string | null | undefined;
@@ -546,8 +547,13 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
     renewal_focus: optionalSlugValue(getFormValue(formData, "Renewal focus")),
   };
 
+  // Self-reported "How did you hear about us?" answer, as a fixed slug (never free text).
+  // Sent to Vercel and GA only; Meta keeps its minimal lead payload.
+  const selfReportedSource = howHeardAnalyticsValue(getFormValue(formData, HOW_HEARD_FIELD));
+
   trackSiteEvent("lead_form_submit", {
     ...campaignContext,
+    self_reported_source: selfReportedSource,
     form_id: formId,
     selected_count: selectedItems.length || undefined,
     selected_items: summarizeSelectedItems(selectedItems),
@@ -555,6 +561,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
   });
   trackSafeGaEvent("generate_lead", {
     ...campaignContext,
+    self_reported_source: selfReportedSource,
     form_id: formId,
     form_name: getLeadFormName(formId),
     lead_source: leadSource,
@@ -565,6 +572,7 @@ function trackLeadSubmit(formId: string, formData: FormData, selectedItems: stri
   });
   trackSafeGaEvent("lead_form_submit", {
     ...campaignContext,
+    self_reported_source: selfReportedSource,
     form_id: formId,
     lead_source: leadSource,
     lead_type: formId,

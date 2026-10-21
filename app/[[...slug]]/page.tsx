@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { preload } from "react-dom";
 
 import {
   BreadcrumbStructuredData,
@@ -8,13 +7,16 @@ import {
   CourseStructuredData,
   FaqStructuredData,
 } from "@/components/site/structured-data";
-import { HomepageSignupPortal } from "@/components/site/homepage-signup-portal";
+import { HomePage } from "@/components/academy/home/home-page";
+import { ContactPage } from "@/components/academy/pages/contact-page";
+import { FaqsPage } from "@/components/academy/pages/faqs-page";
+import { InstructorsPage } from "@/components/academy/pages/instructors-page";
+import { PhotosPage } from "@/components/academy/pages/photos-page";
 import { LiveCoursePage } from "@/components/site/live-course-page";
 import { LiveShell } from "@/components/site/live-shell";
 import { LiveStableWidgets } from "@/components/site/live-stable-widgets";
 import { getLiveCourseContent } from "@/lib/live-course-content";
 import {
-  HOMEPAGE_HERO_LCP_IMAGE,
   fetchLiveMirrorDocument,
   getLiveRouteForSlug,
   getStaticRouteParams,
@@ -63,10 +65,6 @@ export default async function LiveRoutePage({ params }: PageProps) {
     notFound();
   }
 
-  if (route.route === "/") {
-    preload(HOMEPAGE_HERO_LCP_IMAGE, { as: "image", fetchPriority: "high" });
-  }
-
   const canonicalPath =
     route.route === "/" ? "/" : route.aliases?.[0] ?? route.route;
   const breadcrumbItems =
@@ -76,6 +74,38 @@ export default async function LiveRoutePage({ params }: PageProps) {
           { name: "Home", path: "/" },
           { name: getBreadcrumbName(route), path: canonicalPath },
         ];
+
+  if (route.route === "/") {
+    return (
+      <LiveShell route={route}>
+        <CourseStructuredData path={canonicalPath} />
+        <CourseListStructuredData />
+        <main className="rda-live-main" data-rda-route={route.id} id="rda-main-content">
+          <HomePage sourceLabel={route.title} />
+        </main>
+      </LiveShell>
+    );
+  }
+
+  const reactPage =
+    route.route === "/contact" ? <ContactPage sourceLabel={route.title} /> :
+    route.route === "/faqs-1" ? <FaqsPage sourceLabel={route.title} /> :
+    route.route === "/meet-the-instructors" ? <InstructorsPage sourceLabel={route.title} /> :
+    route.route === "/photos" ? <PhotosPage sourceLabel={route.title} /> :
+    null;
+
+  if (reactPage) {
+    return (
+      <LiveShell route={route}>
+        <CourseStructuredData path={canonicalPath} />
+        {route.route === "/faqs-1" ? <FaqStructuredData /> : null}
+        <BreadcrumbStructuredData items={breadcrumbItems} />
+        <main className="rda-live-main" data-rda-route={route.id} id="rda-main-content">
+          {reactPage}
+        </main>
+      </LiveShell>
+    );
+  }
 
   const course = getLiveCourseContent(route.id);
 
@@ -97,7 +127,6 @@ export default async function LiveRoutePage({ params }: PageProps) {
   return (
     <LiveShell route={route}>
       <CourseStructuredData path={canonicalPath} />
-      {route.route === "/" ? <CourseListStructuredData /> : null}
       {route.route === "/faqs-1" ? <FaqStructuredData /> : null}
       <BreadcrumbStructuredData items={breadcrumbItems} />
       {document.headStylesHtml ? (
@@ -108,7 +137,6 @@ export default async function LiveRoutePage({ params }: PageProps) {
           className="rda-snapshot-content"
           dangerouslySetInnerHTML={{ __html: document.bodyHtml }}
         />
-        {route.route === "/" ? <HomepageSignupPortal sourceLabel={route.title} /> : null}
         <LiveStableWidgets route={route} />
       </main>
     </LiveShell>

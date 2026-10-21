@@ -17,6 +17,10 @@ import {
 } from "./live-clone-shared.mjs";
 
 const CAPTURE_ORIGIN = process.env.BASELINE_CAPTURE_ORIGIN ?? LIVE_ORIGIN;
+// "content" or "visual" limits a refresh to one baseline kind. Visual baselines
+// must be captured on Linux (CI) to match the release gate; see
+// .github/workflows/capture-visual-baselines.yml and docs/release-qa.md.
+const CAPTURE_ONLY = process.env.BASELINE_CAPTURE_ONLY ?? "";
 
 async function settlePage(page) {
   await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => undefined);
@@ -275,7 +279,8 @@ async function captureContentSnapshot(page, url, assetMap) {
     )
       .filter((field) => isVisible(field))
       .filter((field) => !isAdditiveParityElement(field))
-      .map((field) => field.getAttribute("placeholder") || field.getAttribute("aria-label") || "")
+      // Floating-label fields use a single-space placeholder purely for CSS.
+      .map((field) => (field.getAttribute("placeholder") || "").trim() || field.getAttribute("aria-label") || "")
       .filter(Boolean);
 
     const buttons = Array.from(
@@ -369,10 +374,6 @@ async function waitForFontsReady(page) {
 
 async function captureVisualBaseline(page, url, maskSelectors, viewport) {
   await page.setViewportSize(viewport);
-  const pathname = new URL(url).pathname;
-  if (pathname === "/" || pathname === "") {
-    await page.emulateMedia({ reducedMotion: "reduce" });
-  }
   await page.goto(url, {
     timeout: 120_000,
     waitUntil: "domcontentloaded",
@@ -398,7 +399,11 @@ async function main() {
 
   try {
     for (const route of manifest.routes) {
+      // Reduced motion keeps captures deterministic: every scroll reveal is
+      // shown, count-ups and marquees hold still, and the hero carousel stays
+      // on slide 1. Mirrors the QA comparison context in qa-helpers.ts.
       const page = await browser.newPage({
+        reducedMotion: "reduce",
         viewport: { width: 1280, height: 900 },
       });
       // Mirrors suppressSeasonalTheme in tests/support/qa-helpers.ts.
@@ -406,10 +411,12 @@ async function main() {
 
       try {
         const url = `${CAPTURE_ORIGIN}${route.sourcePath}`;
-        const content = await captureContentSnapshot(page, url, assetMap);
-        await writeJson(route.contentBaselinePath, content);
+        if (CAPTURE_ONLY !== "visual") {
+          const content = await captureContentSnapshot(page, url, assetMap);
+          await writeJson(route.contentBaselinePath, content);
+        }
 
-        for (const [viewportLabel, viewport] of Object.entries(route.visualBaselines ?? {})) {
+        for (const [viewportLabel, viewport] of Object.entries(CAPTURE_ONLY === "content" ? {} : route.visualBaselines ?? {})) {
           const targetPath = route.visualBaselines[viewportLabel];
 
           if (!targetPath) {
@@ -439,7 +446,9 @@ async function main() {
   }
 
   await writeJson(`${BASELINE_DIR}/refresh-summary.json`, {
+    captureOnly: CAPTURE_ONLY || "all",
     captureOrigin: CAPTURE_ORIGIN,
+    platform: process.platform,
     generatedAt: new Date().toISOString(),
     liveOrigin: LIVE_ORIGIN,
     results: summary,

@@ -199,6 +199,26 @@ gh run watch <run-id> --repo enzo-prism/roseville-dental-academy --exit-status -
 
 For the full production push checklist, use [production-runbook.md](production-runbook.md).
 
+### Capturing baselines on Linux (preferred for redesigns)
+
+macOS renders text and images differently enough from the Linux CI runner that a Mac-captured PNG can differ from CI by six figures of pixels on a clean branch. For any change that redraws whole pages, capture on CI instead:
+
+1. Open a pull request and add the `capture-visual-baselines` label (or run **Capture visual baselines** manually with `workflow_dispatch` on the branch). `.github/workflows/capture-visual-baselines.yml` builds the branch, starts it on `127.0.0.1:3100`, and runs `BASELINE_CAPTURE_ONLY=visual node scripts/refresh-live-baselines.mjs`.
+2. Download the `visual-baselines` artifact: `gh run download <run-id> -n visual-baselines -D /tmp/visual-baselines`.
+3. Review every PNG, copy them over `tests/baselines/live/visual/`, and delete any stale per-platform overrides in `tests/baselines/live/visual/linux/` (`getVisualBaseline` prefers `visual/<platform>/` when present).
+4. Push; the Release Gate's visual stage now compares against Linux-native baselines.
+
+All captures run with `reducedMotion: "reduce"` so scroll reveals are shown, count-ups/marquees hold still, clips stay on their poster frames, and the hero carousel stays on slide 1.
+
+## 2026-10-21 Chairside Redesign Re-baseline
+
+The October 2026 redesign replaced the GoDaddy-era snapshot pages with React pages (`components/academy/`), new fonts (Plus Jakarta Sans + Fraunces), light/dark themes, and scroll motion. Consequences for this gate:
+
+- **Content baselines** (`tests/baselines/live/content/*.json`) were re-captured from a local production build with `BASELINE_CAPTURE_ONLY=content BASELINE_CAPTURE_ORIGIN=http://127.0.0.1:3100 node scripts/refresh-live-baselines.mjs`. They now guard the redesigned copy; refresh them in the same commit as any intended copy or schedule change.
+- **Visual baselines** were re-captured on Linux through the capture workflow above, and the old `visual/linux/` overrides were removed.
+- `waitForFontsReady()` now checks the `--font-jakarta-sans` / `--font-fraunces` variables, and the nav-font diagnostic expects Plus Jakarta Sans.
+- Many interaction/smoke/UX assertions that encoded the old GoDaddy markup (`.widget-*`, `data-aid` hooks, exact radii, old column counts) were rewritten against the new markup; functional contracts (Formspree endpoints, hidden attribution fields, analytics privacy, WhatsApp FAB placement, seasonal gating, schedule truthfulness) are unchanged. `tests/redesign.spec.ts` adds coverage for the How-did-you-hear field, theming, `/reviews`, reduced motion, and overflow in both themes.
+
 ## Known 2026-07-31 Resolution
 
 September 29 Meta-readiness follow-up: only the home desktop/mobile, infection-control desktop, and photos desktop visual baselines were refreshed after screenshot/trace review. Current self-hosted fonts and navigation metrics differ from the older baselines; course-page preselection is intentional. All images/fonts loaded, with no overflow or header overlap. Geometry checks now use instant scroll and rendered footer text ranges, and the analytics fixture follows the accepted-request snapshot contract. Visual tolerances and masks remain unchanged. Repeated production visual checks and the release suites validate these baselines.

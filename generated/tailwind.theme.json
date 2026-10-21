@@ -3,51 +3,93 @@
     "extend": {
       "colors": {
         "primary": "#2472a9",
-        "primary-deep": "#16344f",
-        "primary-soft": "#8ec5e8",
-        "background": "#fbfaf8",
-        "foreground": "#282522",
-        "card": "#fffefd",
-        "muted": "#eee9e2",
-        "muted-foreground": "#766d63",
-        "accent": "#8ec5e8",
-        "accent-foreground": "#16344f",
+        "primary-hover": "#1c5f8f",
+        "primary-deep": "#0e3a5c",
+        "primary-soft": "#dcecf8",
+        "primary-foreground": "#ffffff",
+        "background": "#f7f4ee",
+        "background-raised": "#fbf9f5",
+        "foreground": "#13202b",
+        "card": "#ffffff",
+        "muted": "#eee8de",
+        "muted-foreground": "#5b6670",
+        "secondary": "#ebe5da",
+        "secondary-foreground": "#13202b",
+        "accent": "#dcecf8",
+        "accent-foreground": "#0e3a5c",
+        "border": "#e2dace",
+        "border-strong": "#cfc5b6",
+        "input": "#d8cfc1",
+        "ring": "#2472a9",
+        "popover": "#ffffff",
+        "popover-foreground": "#13202b",
+        "ink": "#0d2235",
+        "ink-raised": "#14304a",
+        "ink-foreground": "#eef5fb",
+        "ink-muted": "#a9bfd2",
+        "brand-sky": "#8ec5e8",
+        "star": "#f2b33d",
+        "success": "#2f8a69",
+        "destructive": "#c2412d",
+        "dark-background": "#0a1118",
+        "dark-card": "#111b25",
+        "dark-foreground": "#e8eef3",
+        "dark-muted-foreground": "#96a5b2",
+        "dark-primary": "#5eb0e8",
+        "dark-primary-foreground": "#04131f",
+        "dark-border": "#22303d",
         "whatsapp": "#25d366",
         "whatsapp-foreground": "#ffffff",
         "seasonal-pumpkin": "#e8862e",
         "seasonal-pumpkin-deep": "#c2621a",
         "seasonal-stem": "#5f7a3a",
-        "seasonal-candle": "#ffd27a",
-        "secondary": "#eee9e2",
-        "secondary-foreground": "#282522",
-        "border": "#d8d0c4",
-        "input": "#d8d0c4",
-        "ring": "#2472a9",
-        "popover": "#fffefd",
-        "popover-foreground": "#282522",
-        "primary-foreground": "#ffffff"
+        "seasonal-candle": "#ffd27a"
       },
       "fontFamily": {
-        "body": [
-          "Noto Sans, Arial, sans-serif"
-        ],
-        "body-sm": [
-          "Noto Sans, Arial, sans-serif"
+        "display": [
+          "Fraunces, Georgia, serif"
         ],
         "heading-lg": [
-          "Playfair Display, Georgia, serif"
+          "Fraunces, Georgia, serif"
         ],
         "heading-md": [
-          "Playfair Display, Georgia, serif"
+          "Fraunces, Georgia, serif"
+        ],
+        "body": [
+          "Plus Jakarta Sans, system-ui, sans-serif"
+        ],
+        "body-sm": [
+          "Plus Jakarta Sans, system-ui, sans-serif"
         ],
         "nav-label": [
-          "Noto Sans, Arial, sans-serif"
+          "Plus Jakarta Sans, system-ui, sans-serif"
         ],
-        "utility-label": [
-          "Noto Sans, Arial, sans-serif"
+        "eyebrow": [
+          "Plus Jakarta Sans, system-ui, sans-serif"
         ]
       },
       "fontSize": {
+        "display": [
+          "80px",
+          {
+            "letterSpacing": "-0.02em",
+            "fontWeight": "560"
+          }
+        ],
+        "heading-lg": [
+          "48px",
+          {
+            "letterSpacing": "-0.02em",
+            "fontWeight": "560"
+          }
+        ],
+        "heading-md": [
+          "24px",
+          {
+            "letterSpacing": "-0.01em",
+            "fontWeight": "560"
+          }
+        ],
         "body": [
           "16px",
           {
@@ -56,54 +98,41 @@
           }
         ],
         "body-sm": [
-          "13px",
-          {
-            "letterSpacing": "0px",
-            "fontWeight": "400"
-          }
-        ],
-        "heading-lg": [
-          "44px",
-          {
-            "letterSpacing": "0px",
-            "fontWeight": "600"
-          }
-        ],
-        "heading-md": [
-          "28px",
-          {
-            "letterSpacing": "0px",
-            "fontWeight": "600"
-          }
-        ],
-        "nav-label": [
           "14px",
           {
             "letterSpacing": "0px",
-            "fontWeight": "600"
+            "fontWeight": "500"
           }
         ],
-        "utility-label": [
-          "13px",
+        "nav-label": [
+          "15px",
           {
             "letterSpacing": "0px",
             "fontWeight": "600"
+          }
+        ],
+        "eyebrow": [
+          "12px",
+          {
+            "letterSpacing": "0.14em",
+            "fontWeight": "700"
           }
         ]
       },
       "borderRadius": {
-        "none": "0px",
-        "sm": "4px",
-        "md": "6px",
-        "lg": "8px"
+        "sm": "8px",
+        "md": "14px",
+        "lg": "20px",
+        "xl": "28px",
+        "pill": "999px"
       },
       "spacing": {
         "xs": "4px",
         "sm": "8px",
         "md": "16px",
         "lg": "24px",
-        "xl": "42px",
-        "section": "56px"
+        "xl": "48px",
+        "section": "120px"
       }
     }
   }

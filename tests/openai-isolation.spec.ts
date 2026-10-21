@@ -202,7 +202,9 @@ for (const outcome of ["new-click", "withdraw-and-regrant", "rejected"] as const
     await form.locator('input[name="Name"]').fill("Local QA Fixture");
     await form.locator('input[name="_replyto"]').fill("canary-rda@example.test");
     await form.locator('input[name="Phone"]').fill("12125550199");
-    await form.locator('input[type="checkbox"]').check();
+    await form.locator(".ac-pill", { hasText: "Google search" }).click();
+    await form.locator("label.ac-check").click();
+    await expect(form.locator('input[type="checkbox"]')).toBeChecked();
     await form.locator('button[type="submit"]').click();
     await expect.poll(() => submitted).toBe(true);
     if (outcome === "withdraw-and-regrant") {

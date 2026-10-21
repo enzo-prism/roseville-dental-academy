@@ -402,7 +402,7 @@ export function JourneyPage() {
       data-rda-route="journey"
       id="rda-main-content"
     >
-      <section className="relative isolate overflow-hidden bg-primary text-primary-foreground">
+      <section className="ac-ink-hero relative isolate overflow-hidden bg-primary text-primary-foreground">
         <Image
           alt="Roseville Dental Academy students gathered in scrubs after hands-on training."
           className="absolute inset-0 -z-20 size-full object-cover opacity-35"

@@ -78,7 +78,7 @@
       "localPath": "/bls%2Fcpr-1",
       "expectedStatus": 200,
       "expectedTitle": "BLS/CPR Certification for Healthcare Providers | Roseville Dental Academy",
-      "smokeText": "BLS CERTIFICATION COURSE - INITIAL OR RENEWAL"
+      "smokeText": "BLS CERTIFICATION COURSE"
     },
     {
       "label": "infection-control",
@@ -238,10 +238,10 @@
   },
   "primaryNavLabels": [
     "Home",
-    "BLS/CPR",
-    "Infection Control",
-    "Coronal Polish",
-    "Radiation Safety"
+    "Courses",
+    "Instructors",
+    "Reviews",
+    "Photos"
   ],
   "coreWarmRoutes": [
     "/",

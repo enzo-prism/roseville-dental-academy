@@ -76,6 +76,14 @@ lead_source=whatsapp
 
 Do not append campaign, creative, or `ad_id` tags to that prefill. Public Formspree forms send the same first-touch UTM / click-ID / `ad_id` stamp plus `lead_source=website` and `how-heard=website`. `SitePageRenderer` in `components/site/site-page.tsx` is not mounted on the live shell and is not a public lead path.
 
+### "How did you hear about us?" (self-reported source)
+
+Every public lead form (course-info request, contact, and all `/lp/*` landers) asks a required **"How did you hear about us?"** question (`lib/how-heard.ts`, rendered by `HowHeardField` in `components/academy/form-kit.tsx`). Options: Facebook or Instagram ad, Google search, AI (ChatGPT, etc.), A friend told me, Other. Picking **Other** reveals a required free-text field (max 120 characters) that is removed from the form again if the visitor switches answers.
+
+- Formspree receives the answer as `How did you hear about us?` and, for Other, the detail as `How did you hear about us? (please specify)`. These human-readable names are deliberate (they read cleanly in lead emails) and are separate from the hidden attribution stamp `how-heard=website`, which still means "submitted through a website form".
+- GA4 (`generate_lead`, `lead_form_submit`) and Vercel (`lead_form_submit`) receive only the categorical answer as `self_reported_source` (`facebook_instagram_ad`, `google_search`, `ai`, `friend`, `other`). The free-text detail never leaves Formspree, and Meta's `Lead` payload is unchanged. To report on it in GA4, register `self_reported_source` as an event-scoped custom dimension.
+- The private attribution ledger and receipt are unchanged (they only accept attribution fields; see `lib/server/attribution-validation.ts`).
+
 Every accepted AJAX form request receives one non-PII UUID before submission. It is sent only as `lead_event_id`, and the same value joins Formspree payload fields, GA4, Meta, Vercel, and the pending private-ledger receipt. It is not Formspree's immutable submission `_id`. Authenticated reconciliation uses the canonical `form_id:_id` lead identity and only then verifies the matching browser `lead_event_id`. Final lead/conversion events fire only after Formspree returns an HTTP-success response; rejected or failed requests show the inline error state and are not counted as leads. A short in-flight lock also prevents rapid double-clicks from creating duplicate requests.
 
 The site starts a best-effort request for a short-lived, server-signed receipt token bound to that
@@ -138,7 +146,7 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | Event | Type | When it fires | Key parameters |
 | --- | --- | --- | --- |
 | `ad_landing_view` | Custom | `/lp/*` landing page view | `landing_page`, `campaign_intent`, `course_interest`, `content_category`, `page_path`, UTM fields |
-| `generate_lead` | GA4 recommended | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `generate_lead` | GA4 recommended | Formspree accepts a valid sign-up, contact, or registration request | `form_id`, `form_name`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `self_reported_source`, UTM fields |
 | `select_content` | GA4 recommended | CTA, nav, portal, social, and file selections | `content_type`, `content_id`, `link_location`, `link_url` |
 | `file_download` | GA4 enhanced/recommended-style | Public PDF downloads | `file_name`, `file_extension`, `link_location`, `link_url` |
 | `cta_click` | Custom | Primary CTAs | `cta_id`, `cta_location`, `link_url` |
@@ -148,7 +156,7 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 | `social_click` | Custom | Facebook, Instagram, or TikTok links | `method`, `social_platform`, `link_location`, `link_url` |
 | `portal_click` | Custom | Resume portal entry points | `portal`, `link_location`, `link_url` |
 | `outbound_click` | Custom | External links not otherwise categorized | `link_domain`, `link_location`, `link_url`, `outbound` |
-| `lead_form_submit` | Custom | Accepted lead paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, UTM fields |
+| `lead_form_submit` | Custom | Accepted lead paired with `generate_lead` | `form_id`, `lead_source`, `lead_type`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `self_reported_source`, UTM fields |
 | `lead_form_invalid` | Custom | Submit blocked by required selections | `form_id`, `reason`, `selected_count` |
 
 For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `renewal_focus`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_id`, `utm_source_platform`, `utm_content`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.

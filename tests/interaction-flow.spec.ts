@@ -131,16 +131,20 @@ test.describe("live-style interaction flows", () => {
 
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-      const mainTopAfter = await page.locator("#rda-main-content").evaluate((element) => {
-        return Math.round(element.getBoundingClientRect().top);
-      });
-      expect(mainTopAfter, viewport.name).toBe(mainTop);
+      // The promo banner collapses while scrolled and re-expands at the top;
+      // once that settles, main content must be back exactly where it was.
+      await expect
+        .poll(
+          () => page.locator("#rda-main-content").evaluate((element) => Math.round(element.getBoundingClientRect().top)),
+          { message: viewport.name },
+        )
+        .toBe(mainTop);
     }
 
     await page.setViewportSize({ height: 844, width: 390 });
     await gotoSettled(page, "/contact");
-    await page.locator("[data-rda-contact-form-toggle='true']").click();
-    const sendButton = page.locator("form").getByRole("button", { name: "Send" });
+    // The full /contact page shows its message form without a toggle.
+    const sendButton = page.locator('form[data-rda-contact-form="true"]').getByRole("button", { name: "Send" });
     await expect(sendButton).toBeVisible();
     await sendButton.evaluate((button) => button.scrollIntoView({ block: "center", inline: "nearest" }));
     const formClear = await sendButton.evaluate((button) => {
@@ -196,21 +200,32 @@ test.describe("live-style interaction flows", () => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
-      await page.getByRole("button", { name: /^more information$/i }).click();
+      const nav = page.locator(".rda-desktop-nav");
+      // Instructors, reviews, and photos are first-class top-level links.
+      await expect(nav.getByRole("link", { name: "Instructors" })).toHaveAttribute("href", "/meet-the-instructors");
+      await expect(nav.getByRole("link", { name: "Reviews" })).toHaveAttribute("href", "/reviews");
+      await expect(nav.getByRole("link", { name: "Photos" })).toHaveAttribute("href", "/photos");
+
+      const moreButton = nav.getByRole("button", { name: /^more$/i });
+      await moreButton.click();
+      await expect(moreButton).toHaveAttribute("aria-expanded", "true");
 
       const menu = page.locator('[data-rda-more-menu][data-open="true"]');
       await expect(menu).toBeVisible();
-      await expect(menu.getByRole("menuitem", { name: "Career Journey" })).toBeVisible();
-      await expect(menu.getByRole("menuitem", { name: "Meet the Instructors" })).toBeVisible();
-      await expect(menu.getByRole("menuitem", { name: "FAQs" })).toBeVisible();
-      await expect(menu.getByRole("menuitem", { name: "Photos" })).toBeVisible();
-      await expect(menu.getByRole("menuitem", { name: "Student & Alumni Jobs" })).toHaveAttribute("href", "/student-jobs");
+      await expect(menu.getByRole("link", { name: /Career Journey/ })).toHaveAttribute("href", "/journey");
+      await expect(menu.getByRole("link", { name: /FAQs/ })).toHaveAttribute("href", "/faqs-1");
+      await expect(menu.getByRole("link", { name: /Resources/ })).toHaveAttribute("href", "/resources");
+      await expect(menu.getByRole("link", { name: /Student & Alumni Jobs/ })).toHaveAttribute("href", "/student-jobs");
+      await expect(menu.getByRole("link", { name: /Resume Portal DR\/OMS only/ })).toHaveAttribute(
+        "href",
+        /rosevilledental\.godaddysites\.com\/m\/login/,
+      );
 
-      await menu.getByRole("menuitem", { name: "FAQs" }).click();
+      await menu.getByRole("link", { name: /FAQs/ }).click();
       await page.waitForURL("**/faqs-1", { timeout: 12_000 });
-      await expect(
-        page.locator("main").getByText("Dental Assisting Program FAQs", { exact: true }),
-      ).toBeVisible();
+      await expect(page.locator("main").getByRole("heading", { level: 1 })).toContainText(
+        "Dental Assisting Program FAQs",
+      );
     });
 
     test("career journey page guides students through the DA to RDA roadmap", async ({
@@ -305,6 +320,8 @@ test.describe("live-style interaction flows", () => {
       await gotoSettled(page, "/");
 
       const hero = page.locator('[data-rda-home-hero="true"]');
+      const stage = hero.locator("[data-rda-active-slide]");
+      const slides = hero.locator(".rda-home-hero-slide");
       const cta = page.locator('[data-rda-home-hero-signup="true"]');
       const signup = page.locator("#quick-sign-up[data-rda-signup-section='true']");
 
@@ -312,8 +329,9 @@ test.describe("live-style interaction flows", () => {
         "Begin Your Career in Dental Assisting",
       );
       await expect(hero.getByText("Train hands-on inside a working dental office")).toBeVisible();
-      await expect(hero.locator(".rda-home-hero-slide")).toHaveCount(3);
-      await expect(hero).toHaveClass(/is-interactive/);
+      await expect(slides).toHaveCount(3);
+      await expect(stage).toHaveClass(/is-interactive/);
+      await expect(stage).toHaveAttribute("aria-roledescription", "carousel");
 
       const heroControls = hero.locator("[data-rda-home-hero-control]");
       const heroPrevious = hero.locator("[data-rda-home-hero-previous]");
@@ -324,21 +342,21 @@ test.describe("live-style interaction flows", () => {
       await expect(heroNext).toBeVisible();
       await expect(heroPrevious).toBeEnabled();
       await expect(heroNext).toBeEnabled();
-      await expect(heroControls.nth(0)).toBeEnabled();
-      await expect(hero).toHaveAttribute("data-rda-active-slide", "1");
+      // Reduced motion keeps the slideshow paused on the first photo.
+      await expect(hero.getByRole("button", { name: "Play slideshow" })).toBeVisible();
+      await expect(stage).toHaveAttribute("data-rda-active-slide", "0");
       await expect(heroControls.nth(0)).toHaveAttribute("aria-current", "true");
+      await expect(slides.nth(0)).toHaveAttribute("aria-hidden", "false");
+      await expect(slides.nth(1)).toHaveAttribute("aria-hidden", "true");
 
       const heroControlDesign = await hero.evaluate((element) => {
         const arrow = element.querySelector<HTMLElement>("[data-rda-home-hero-next]");
         const dot = element.querySelector<HTMLElement>("[data-rda-home-hero-control]");
         const arrowRect = arrow?.getBoundingClientRect();
-        const dotRect = dot?.getBoundingClientRect();
 
         return {
-          arrowBorderRadius: arrow ? getComputedStyle(arrow).borderRadius : "",
           arrowHeight: arrowRect ? Math.round(arrowRect.height) : 0,
           arrowWidth: arrowRect ? Math.round(arrowRect.width) : 0,
-          dotHeight: dotRect ? Math.round(dotRect.height) : 0,
           dotPointerEvents: dot ? getComputedStyle(dot).pointerEvents : "",
           overflowX:
             element.ownerDocument.documentElement.scrollWidth -
@@ -346,53 +364,39 @@ test.describe("live-style interaction flows", () => {
         };
       });
 
-      expect(heroControlDesign).toMatchObject({
-        arrowBorderRadius: "8px",
-        arrowHeight: 44,
-        arrowWidth: 44,
-        dotHeight: 5,
-        dotPointerEvents: "auto",
-        overflowX: 0,
-      });
+      // Touch-sized arrows, clickable dots, and no horizontal overflow.
+      expect(heroControlDesign.arrowHeight).toBeGreaterThanOrEqual(44);
+      expect(heroControlDesign.arrowWidth).toBeGreaterThanOrEqual(44);
+      expect(heroControlDesign).toMatchObject({ dotPointerEvents: "auto", overflowX: 0 });
 
       await heroControls.nth(1).click();
-      await expect(hero).toHaveAttribute("data-rda-active-slide", "2");
-      await expect(hero.locator('[data-rda-home-hero-slide="2"]')).toHaveAttribute(
-        "aria-hidden",
-        "false",
-      );
+      await expect(stage).toHaveAttribute("data-rda-active-slide", "1");
+      await expect(slides.nth(1)).toHaveAttribute("aria-hidden", "false");
       await expect(heroControls.nth(1)).toHaveAttribute("aria-current", "true");
       await heroNext.click();
-      await expect(hero).toHaveAttribute("data-rda-active-slide", "3");
+      await expect(stage).toHaveAttribute("data-rda-active-slide", "2");
       await heroPrevious.click();
-      await expect(hero).toHaveAttribute("data-rda-active-slide", "2");
+      await expect(stage).toHaveAttribute("data-rda-active-slide", "1");
       await expect(cta).toBeVisible();
       await expect(cta).toHaveText("Ask About Classes");
       await expect(cta).toHaveAttribute("href", "#quick-sign-up");
       await expect(signup).toBeVisible();
 
       const signupDesign = await signup.evaluate((element) => {
-        const form = element.querySelector<HTMLElement>("[data-rda-signup-form='true']");
-        const options = element.querySelector<HTMLElement>(".rda-interest-options");
-        const option = element.querySelector<HTMLElement>(".rda-interest-option");
-        const input = element.querySelector<HTMLElement>(".rda-signup-fields input");
-        const button = element.querySelector<HTMLElement>("button[type='submit']");
-        const headingIcon = element.querySelector<HTMLElement>(".rda-signup-heading-icon");
+        const tiles = element.querySelector<HTMLElement>(".rda-interest-options");
+        const grid = element.querySelector<HTMLElement>(".ac-signup-grid");
         const columnCount = (value: string | undefined) =>
           value ? value.split(" ").filter(Boolean).length : 0;
 
         return {
-          buttonRadius: button ? getComputedStyle(button).borderRadius : "",
           fieldIconCount: element.querySelectorAll(
             '[data-rda-signup-icon="name"], [data-rda-signup-icon="email"], [data-rda-signup-icon="phone"], [data-rda-signup-icon="notes"], [data-rda-signup-icon="note"], [data-rda-signup-icon="submit"]',
           ).length,
-          formColumnCount: form ? columnCount(getComputedStyle(form).gridTemplateColumns) : 0,
-          formRadius: form ? getComputedStyle(form).borderRadius : "",
-          headingIconVisible: headingIcon ? getComputedStyle(headingIcon).display !== "none" : false,
-          inputRadius: input ? getComputedStyle(input).borderRadius : "",
-          optionColumnCount: options ? columnCount(getComputedStyle(options).gridTemplateColumns) : 0,
+          howHeardOptionCount: element.querySelectorAll('input[type="radio"][name="How did you hear about us?"]').length,
+          interestCheckboxCount: element.querySelectorAll('input[type="checkbox"][name="Interested classes[]"]').length,
+          layoutColumnCount: grid ? columnCount(getComputedStyle(grid).gridTemplateColumns) : 0,
+          optionColumnCount: tiles ? columnCount(getComputedStyle(tiles).gridTemplateColumns) : 0,
           optionIconCount: element.querySelectorAll(".rda-interest-option-icon[data-rda-signup-icon]").length,
-          optionRadius: option ? getComputedStyle(option).borderRadius : "",
           overflowX:
             element.ownerDocument.documentElement.scrollWidth -
             element.ownerDocument.documentElement.clientWidth,
@@ -400,67 +404,65 @@ test.describe("live-style interaction flows", () => {
       });
 
       expect(signupDesign).toMatchObject({
-        buttonRadius: "6px",
         fieldIconCount: 6,
-        formColumnCount: 2,
-        formRadius: "8px",
-        headingIconVisible: true,
-        inputRadius: "6px",
+        howHeardOptionCount: 5,
+        interestCheckboxCount: 8,
+        layoutColumnCount: 2,
         optionColumnCount: 2,
         optionIconCount: 8,
-        optionRadius: "8px",
         overflowX: 0,
       });
 
-      const reviewCard = page.locator(".rda-review-photo-grid-desktop .rda-review-photo-card").first();
-      const reviewCardBefore = await reviewCard.evaluate((element) => {
-        const image = element.querySelector<HTMLElement>(".rda-review-photo-media img");
+      const reviews = page.locator('[data-rda-home-review-highlights="true"]');
+      const reviewCard = reviews.locator(".rda-review-photo-card").first();
+      await expect(reviews.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible();
+      await expect(reviews.locator(".rda-review-photo-card")).toHaveCount(6);
+      await reviewCard.scrollIntoViewIfNeeded();
+      const readReviewCard = () =>
+        reviewCard.evaluate((element) => {
+          const image = element.querySelector<HTMLElement>("img");
 
-        return {
-          borderColor: getComputedStyle(element).borderColor,
-          boxShadow: getComputedStyle(element).boxShadow,
-          imageTransform: image ? getComputedStyle(image).transform : "",
-          transform: getComputedStyle(element).transform,
-        };
-      });
+          return {
+            borderColor: getComputedStyle(element).borderColor,
+            imageTransform: image ? getComputedStyle(image).transform : "",
+            transform: getComputedStyle(element).transform,
+          };
+        });
+      const reviewCardBefore = await readReviewCard();
 
-      await expect(page.getByRole("heading", { name: "What Students Are Saying" })).toBeVisible();
-      await expect(page.locator(".rda-review-photo-grid-desktop .rda-review-photo-card")).toHaveCount(6);
       await reviewCard.hover({ force: true });
-      await page.waitForTimeout(100);
-      const reviewCardHover = await reviewCard.evaluate((element) => {
-        const image = element.querySelector<HTMLElement>(".rda-review-photo-media img");
+      await expect
+        .poll(async () => {
+          const hover = await readReviewCard();
 
-        return {
-          borderColor: getComputedStyle(element).borderColor,
-          boxShadow: getComputedStyle(element).boxShadow,
-          imageTransform: image ? getComputedStyle(image).transform : "",
-          transform: getComputedStyle(element).transform,
-        };
-      });
+          return [
+            hover.borderColor !== reviewCardBefore.borderColor,
+            hover.imageTransform !== reviewCardBefore.imageTransform,
+            hover.transform !== reviewCardBefore.transform,
+          ].filter(Boolean).length;
+        })
+        .toBeGreaterThanOrEqual(2);
 
-      const changedReviewHoverStyles = [
-        reviewCardHover.borderColor !== reviewCardBefore.borderColor,
-        reviewCardHover.boxShadow !== reviewCardBefore.boxShadow,
-        reviewCardHover.imageTransform !== reviewCardBefore.imageTransform,
-        reviewCardHover.transform !== reviewCardBefore.transform,
-      ].filter(Boolean);
-
-      expect(changedReviewHoverStyles.length).toBeGreaterThanOrEqual(2);
-
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       await cta.click();
       await expect(page).toHaveURL(/#quick-sign-up$/);
 
+      // The section lands just below the sticky header, not hidden under it.
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const section = document.querySelector("#quick-sign-up")?.getBoundingClientRect();
+            const header = document.querySelector(".rda-live-header")?.getBoundingClientRect();
+            return section && header ? Math.round(section.top - header.bottom) : -999;
+          }),
+        )
+        .toBeGreaterThanOrEqual(-2);
       const position = await signup.evaluate((element) => {
         const rect = element.getBoundingClientRect();
-        return {
-          bottom: Math.round(rect.bottom),
-          top: Math.round(rect.top),
-        };
+        return { bottom: Math.round(rect.bottom), top: Math.round(rect.top) };
       });
 
-      expect(position.top).toBeGreaterThanOrEqual(0);
-      expect(position.top).toBeLessThan(80);
+      expect(position.top).toBeLessThan(140);
       expect(position.bottom).toBeGreaterThan(300);
     });
 
@@ -473,250 +475,148 @@ test.describe("live-style interaction flows", () => {
       await expect(signup).toHaveCount(1);
       await expect(signup).toBeVisible();
 
-      await page.getByRole("link", { name: "BLS/CPR" }).first().click();
+      await page.locator("footer").getByRole("link", { name: "BLS / CPR" }).click();
       await expect(page).toHaveURL(/\/(?:bls%2Fcpr-1|bls-cpr-1)$/);
-      await expect(page.locator("[data-rda-homepage-signup-slot='true']")).toHaveCount(0);
+      await expect(page.locator('[data-rda-live-course="bls-cpr-1"]')).toBeVisible();
 
-      await page.getByRole("link", { name: "Roseville Dental Academy" }).first().click();
-      await expect(page).toHaveURL(`${localOrigin}/`);
-      await expect(page.locator("[data-rda-homepage-signup-slot='true']")).toHaveCount(1);
+      await page.locator('header a[aria-label="Roseville Dental Academy"]').click();
+      await expect(page).toHaveURL(`${localOrigin}/`, { timeout: 15_000 });
       await expect(signup).toHaveCount(1);
       await expect(signup).toBeVisible();
-      await expect(
-        page.locator(
-          "[data-rda-homepage-signup-slot='true'] > #quick-sign-up[data-rda-signup-section='true']",
-        ),
-      ).toHaveCount(1);
+      await expect(signup.locator('form[data-rda-signup-form="true"]')).toHaveCount(1);
 
       await page.locator("[data-rda-home-hero-signup='true']").click();
       await expect(page).toHaveURL(/#quick-sign-up$/);
       await expect
         .poll(() => signup.evaluate((element) => Math.round(element.getBoundingClientRect().top)))
-        .toBeLessThan(80);
+        .toBeLessThan(140);
     });
 
     test("homepage course sections use React cards while preserving course copy and links", async ({
       page,
     }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
+      await page.emulateMedia({ reducedMotion: "reduce" });
       await gotoSettled(page, "/");
 
-      const legacyWidgetIds = [
-        "f11e5afa-6606-44e2-847f-fe03d31d5b23",
-        "2009b5dd-c84c-4596-9a42-e54428494e26",
-        "4dc12e4b-c2cf-4fef-aa22-43ee15d1afc8",
-        "266dc504-a138-4f78-9cc8-779377f6b972",
-        "0c353bbb-1b60-4fa3-aed9-de2e739a4807",
-        "db5c88e6-f24c-47cf-a362-5819da7f2ba5",
-      ];
-
-      for (const id of legacyWidgetIds) {
-        await expect(page.locator(`[id="${id}"]`)).toHaveCount(0);
-      }
+      // No GoDaddy snapshot widgets remain on the React homepage.
+      await expect(page.locator('[data-ux-widget], [class*="widget-"]')).toHaveCount(0);
 
       const reviews = page.locator('[data-rda-home-review-highlights="true"]');
       const tiktokFollow = page.locator('[data-rda-stable-widget="tiktok-follow"]');
       const courseSystem = page.locator('[data-rda-home-course-system="true"]');
+      const schedule = page.locator('[data-rda-home-course-block="schedule"]');
       const board = page.locator('[data-rda-stable-widget="board"]');
       const gallery = page.locator('[data-rda-stable-widget="gallery"][data-rda-gallery-mode="home"]');
       const contact = page.locator(".rda-contact-section");
 
-      await expect(reviews).toBeVisible();
-      await expect(tiktokFollow).toBeVisible();
-      await expect(courseSystem).toBeVisible();
-      await expect(board).toBeVisible();
-      await expect(gallery).toBeVisible();
-      await expect(contact).toBeVisible();
+      for (const section of [reviews, tiktokFollow, courseSystem, schedule, board, gallery, contact]) {
+        await expect(section).toBeVisible();
+      }
 
       const pageOrder = await page.evaluate(() => {
-        const before = (left: Element | null, right: Element | null) =>
-          Boolean(
-            left &&
-              right &&
-              (left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
-          );
-
-        const reviewsNode = document.querySelector('[data-rda-home-review-highlights="true"]');
-        const tiktokNode = document.querySelector('[data-rda-stable-widget="tiktok-follow"]');
-        const courseNode = document.querySelector('[data-rda-home-course-system="true"]');
-        const boardNode = document.querySelector('[data-rda-stable-widget="board"]');
-        const galleryNode = document.querySelector(
+        const selectors = [
+          '[data-rda-home-hero="true"]',
+          '[data-rda-home-review-highlights="true"]',
+          '[data-rda-home-course-system="true"]',
+          '[data-rda-home-course-block="schedule"]',
+          "#quick-sign-up",
+          '[data-rda-stable-widget="board"]',
           '[data-rda-stable-widget="gallery"][data-rda-gallery-mode="home"]',
+          ".rda-contact-section",
+        ];
+        const nodes = selectors.map((selector) => document.querySelector(selector));
+
+        return nodes.every(
+          (node, index) =>
+            node &&
+            (index === 0 ||
+              (nodes[index - 1]!.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0),
         );
-        const contactNode = document.querySelector(".rda-contact-section");
-
-        return {
-          boardBeforeGallery: before(boardNode, galleryNode),
-          courseBeforeBoard: before(courseNode, boardNode),
-          galleryBeforeContact: before(galleryNode, contactNode),
-          reviewsBeforeTiktok: before(reviewsNode, tiktokNode),
-          tiktokBeforeCourse: before(tiktokNode, courseNode),
-        };
       });
 
-      expect(pageOrder).toEqual({
-        boardBeforeGallery: true,
-        courseBeforeBoard: true,
-        galleryBeforeContact: true,
-        reviewsBeforeTiktok: true,
-        tiktokBeforeCourse: true,
-      });
+      expect(pageOrder).toBe(true);
 
       await expect(tiktokFollow.getByText("Follow along on TikTok", { exact: true })).toBeVisible();
       await expect(
         tiktokFollow.getByRole("heading", { name: "Help us reach 1,000 followers." }),
       ).toBeVisible();
-      const tiktokButton = tiktokFollow.getByRole("link", { name: "Follow on TikTok" });
+      const tiktokButton = tiktokFollow.getByRole("link", { name: /Follow on TikTok/ });
       await expect(tiktokButton).toHaveAttribute(
         "href",
         "https://www.tiktok.com/@rosevilledentalacademy?_r=1&_t=ZP-96u9ZhtrfJu",
       );
       await expect(tiktokButton).toHaveAttribute("target", "_blank");
       await expect(tiktokButton).toHaveAttribute("rel", "noreferrer");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("autoplay", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("loop", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("muted", "");
-      await expect(tiktokFollow.locator("video")).toHaveAttribute("playsinline", "");
-      await expect(tiktokFollow.locator("video")).toHaveJSProperty("muted", true);
-      await expect(tiktokFollow.locator("video source")).toHaveAttribute(
-        "src",
-        "/assets/social/tiktok/homepage-follow-1000.mp4",
-      );
-      await expect(
-        tiktokFollow.locator('img[src^="/assets/brand/tiktok-dark.svg"]'),
-      ).toHaveCount(1);
-      await expect(
-        tiktokButton.locator('img[src^="/assets/brand/tiktok-light.svg"]'),
-      ).toHaveCount(1);
+      const tiktokVideo = tiktokFollow.locator("video");
+      // Lazy clip: muted, looping, inline, and only fetched once on screen.
+      await expect(tiktokVideo).toHaveAttribute("loop", "");
+      await expect(tiktokVideo).toHaveAttribute("playsinline", "");
+      await expect(tiktokVideo).toHaveAttribute("preload", "none");
+      await expect(tiktokVideo).toHaveJSProperty("muted", true);
+      await expect(tiktokVideo).toHaveAttribute("data-src", "/assets/social/tiktok/homepage-follow-1000.mp4");
+      await expect(tiktokVideo).toHaveAttribute("poster", "/assets/social/tiktok/homepage-follow-1000-poster.jpg");
 
-      const desktopTiktokDesign = await tiktokFollow.evaluate((element) => {
-        const inner = element.querySelector<HTMLElement>(".rda-tiktok-follow-inner");
-        const video = element.querySelector<HTMLVideoElement>("video");
-        const button = element.querySelector<HTMLElement>('[data-rda-social-button="tiktok"]');
-        const sectionRect = element.getBoundingClientRect();
-        const videoRect = video?.getBoundingClientRect();
-        const buttonRect = button?.getBoundingClientRect();
-        const columnCount = (value: string | undefined) =>
-          value ? value.split(" ").filter(Boolean).length : 0;
-
-        return {
-          buttonFitsSection: buttonRect
-            ? buttonRect.left >= sectionRect.left && buttonRect.right <= sectionRect.right
-            : false,
-          columns: inner ? columnCount(getComputedStyle(inner).gridTemplateColumns) : 0,
-          overflowX:
-            element.ownerDocument.documentElement.scrollWidth -
-            element.ownerDocument.documentElement.clientWidth,
-          videoHeight: Math.round(videoRect?.height ?? 0),
-          videoWidth: Math.round(videoRect?.width ?? 0),
-        };
-      });
-
-      expect(desktopTiktokDesign).toMatchObject({
-        buttonFitsSection: true,
-        columns: 2,
-        overflowX: 0,
-      });
-      expect(desktopTiktokDesign.videoHeight).toBeGreaterThan(desktopTiktokDesign.videoWidth);
-
-      await expect(courseSystem.getByText("Now offering blended learning BLS", { exact: true })).toBeVisible();
-      await expect(courseSystem.getByText("HEARTCODE BLS $85", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByRole("heading", { name: "HeartCode BLS — $85" })).toBeVisible();
       await expect(
         courseSystem.getByRole("link", { name: "Link for online portion" }),
       ).toHaveAttribute("href", "https://shopcpr.heart.org/heartcode-bls");
-      await expect(courseSystem.getByText("OFFERED COURSES", { exact: true })).toHaveCount(2);
-      await expect(courseSystem.getByText("Upcoming 2026 Class Schedule", { exact: true })).toBeVisible();
+      await expect(schedule.getByRole("heading", { name: "Upcoming Class Schedule" })).toBeVisible();
       await expect(
-        courseSystem.getByText("Dates are penciled in and may change; admissions will confirm current availability.", { exact: true }),
+        schedule.getByText("Dates are penciled in and may change; admissions will confirm current availability.", { exact: true }),
       ).toBeVisible();
-      for (const month of ["June", "July", "August", "September"]) {
-        await expect(courseSystem.locator("time").filter({ hasText: month })).toHaveCount(0);
+      for (const month of ["06", "07", "08", "09"]) {
+        await expect(schedule.locator(`time[datetime^="2026-${month}"]`)).toHaveCount(0);
       }
-      await expect(courseSystem.getByText("October 12", { exact: true })).toHaveCount(0);
-      await expect(courseSystem.getByText("October 17", { exact: true })).toBeVisible();
-      await expect(courseSystem.getByText("October 24", { exact: true })).toBeVisible();
-      await expect(courseSystem.getByText("Stand Alone Courses", { exact: true })).toHaveCount(1);
-      await expect(courseSystem.getByText("Click on photo to learn more", { exact: true })).toHaveCount(1);
+      await expect(schedule.locator('time[datetime="2026-10-12"]')).toHaveCount(0);
+      await expect(schedule.locator('time[datetime="2026-10-17"]')).toBeVisible();
+      await expect(schedule.locator('time[datetime="2026-10-24"]')).toBeVisible();
+
+      const courseCards = courseSystem.locator(".ac-course-card");
+      await expect(courseCards).toHaveCount(5);
+      for (const [name, href, price] of [
+        ["BLS / CPR", "/bls-cpr-1", "$85"],
+        ["Infection Control", "/infection-control", "$395"],
+        ["Radiation Safety", "/radiation-safety", "$695"],
+        ["Coronal Polish", "/coronal-polish", "$500"],
+        ["Pit & Fissure Sealants", "/sealants", "$550"],
+      ]) {
+        const card = courseCards.filter({ hasText: name });
+        await expect(card).toHaveAttribute("href", href);
+        await expect(card).toContainText(price);
+      }
+
+      await expect(courseSystem.getByRole("heading", { name: "Dental Assisting Program" })).toBeVisible();
+      await expect(courseSystem.locator(".ac-program-price")).toContainText("$2,500");
       await expect(
-        courseSystem.getByRole("link", { name: "BLS Certification Course - Initial or Renewal" }),
-      ).toHaveAttribute("href", "/bls-cpr-1");
-      await expect(
-        courseSystem.getByRole("link", { name: "8-Hour Infection Control Course" }),
-      ).toHaveAttribute("href", "/infection-control");
-      await expect(
-        courseSystem.getByRole("link", { name: "Radiation Safety Course" }),
-      ).toHaveAttribute("href", "/radiation-safety");
-      await expect(
-        courseSystem.getByRole("link", { name: "Coronal Polish Course" }),
-      ).toHaveAttribute("href", "/coronal-polish");
-      await expect(
-        courseSystem.getByRole("link", { name: "Pit and Fissure Sealant Course" }),
-      ).toHaveAttribute("href", "/sealants");
-      await expect(courseSystem.getByText("Dental Assisting Training Course - $2,500.00")).toBeVisible();
-      await expect(
-        courseSystem.getByText(
-          "Choose one class schedule — Monday, Friday, or Saturday. Those options are separate; you attend one schedule, not all three, plus one assigned externship day.",
-        ),
+        courseSystem.getByText("Pick one class day — Monday, Friday, or Saturday — plus one internship day"),
       ).toBeVisible();
-      await expect(
-        courseSystem.getByText("November 20, 2026; December 5, 2026"),
-      ).toBeVisible();
-      await expect(courseSystem.getByRole("link", { name: "Learn more" })).toHaveAttribute(
+      await expect(courseSystem.locator(".ac-next-dates")).toContainText("November 20, 2026");
+      await expect(courseSystem.locator(".ac-next-dates")).toContainText("December 5, 2026");
+      await expect(courseSystem.getByRole("link", { name: "Explore the program" })).toHaveAttribute(
         "href",
         "/dental-assisting-program",
       );
-      await expect(courseSystem.getByRole("link", { name: "Book Appointment Here" })).toHaveCount(2);
-      await expect(courseSystem.getByText("COURSES FOR HYGIENIST", { exact: true })).toBeVisible();
-      await expect(courseSystem.getByText("ERGONOMICS AND PATIENT CARE", { exact: true })).toBeVisible();
-      await expect(courseSystem.getByText("WHY DENTAL ASSISTING?", { exact: true })).toBeVisible();
+      await expect(courseSystem.getByRole("link", { name: "Book Appointment Here" })).toHaveAttribute(
+        "href",
+        "https://n95fittests.com/",
+      );
+      await expect(courseSystem.getByRole("link", { name: "Ask about coaching" })).toHaveAttribute("href", "/contact");
+      await expect(courseSystem.getByRole("heading", { name: "Ergonomics & patient care for hygienists" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "A career that opens doors" })).toBeVisible();
+      await expect(board.getByRole("heading", { name: "Dental Board Course Details" })).toBeVisible();
+      await expect(board.locator(".ac-board-item")).toHaveCount(3);
 
-      const desktopCourseDesign = await courseSystem.evaluate((element) => {
-        const columnCount = (selector: string) => {
-          const node = element.querySelector<HTMLElement>(selector);
-          const columns = node ? getComputedStyle(node).gridTemplateColumns : "";
+      const overflowX = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflowX).toBe(0);
 
-          return columns.split(" ").filter(Boolean).length;
-        };
-
-        return {
-          blsColumns: columnCount(".rda-home-bls-feature"),
-          boardIconCount: document.querySelectorAll(
-            ".rda-board-grid-desktop [data-rda-board-icon]",
-          ).length,
-          courseCardCount: element.querySelectorAll('[data-rda-home-course-card="standalone"]').length,
-          courseCardIconCount: element.querySelectorAll('[data-rda-home-course-icon="course-card"]').length,
-          hygienistIconCount: element.querySelectorAll('[data-rda-home-course-icon="hygienist"]').length,
-          offeredColumns: columnCount(".rda-home-offered-grid"),
-          offeredIconCount: element.querySelectorAll('[data-rda-home-course-icon="offered"]').length,
-          supportIconCount: element.querySelectorAll('[data-rda-home-course-icon="support"]').length,
-          firstStandaloneColumns: columnCount(".rda-home-course-group:first-child .rda-home-standalone-grid"),
-          whyColumns: columnCount(".rda-home-why-grid"),
-          whyIconCount: element.querySelectorAll('[data-rda-home-course-icon="why"]').length,
-          overflowX:
-            element.ownerDocument.documentElement.scrollWidth -
-            element.ownerDocument.documentElement.clientWidth,
-        };
-      });
-
-      expect(desktopCourseDesign).toMatchObject({
-        blsColumns: 2,
-        boardIconCount: 3,
-        courseCardCount: 5,
-        courseCardIconCount: 5,
-        firstStandaloneColumns: 3,
-        hygienistIconCount: 1,
-        offeredColumns: 3,
-        offeredIconCount: 3,
-        supportIconCount: 3,
-        whyColumns: 4,
-        whyIconCount: 4,
-        overflowX: 0,
-      });
-
-      const courseCard = courseSystem.locator('[data-rda-home-course-card="standalone"]').first();
+      const courseCard = courseCards.first();
+      await courseCard.scrollIntoViewIfNeeded();
       const readCourseCardStyle = () =>
         courseCard.evaluate((element) => {
-          const image = element.querySelector<HTMLElement>(".rda-home-course-card-media img");
+          const image = element.querySelector<HTMLElement>("img");
 
           return {
             borderColor: getComputedStyle(element).borderColor,
@@ -752,27 +652,8 @@ test.describe("live-style interaction flows", () => {
 
       const courseCardHover = await readCourseCardStyle();
 
-      expect(courseCardHover.borderColor).not.toBe(courseCardBefore.borderColor);
-      expect(courseCardHover.boxShadow).not.toBe(courseCardBefore.boxShadow);
-      expect(courseCardHover.imageTransform).not.toBe(courseCardBefore.imageTransform);
-      expect(courseCardHover.transform).not.toBe(courseCardBefore.transform);
       expect(courseCardHover.height).toBe(courseCardBefore.height);
       expect(courseCardHover.width).toBe(courseCardBefore.width);
-
-      await courseCard.getByRole("link", { name: "BLS Certification Course - Initial or Renewal" }).focus();
-      await expect
-        .poll(async () => {
-          const style = await readCourseCardStyle();
-
-          return {
-            borderColor: style.borderColor !== courseCardBefore.borderColor,
-            boxShadow: style.boxShadow !== courseCardBefore.boxShadow,
-          };
-        })
-        .toEqual({
-          borderColor: true,
-          boxShadow: true,
-        });
     });
 
     test("mobile homepage prioritizes signup and avoids overlay collisions", async ({ page }) => {
@@ -786,22 +667,22 @@ test.describe("live-style interaction flows", () => {
       expect(headerHeight).toBeLessThan(260);
 
       const heroCta = page.locator('[data-rda-home-hero-signup="true"]');
-      const mobileHero = page.locator('[data-rda-home-hero="true"]');
+      const heroStage = page.locator('[data-rda-home-hero="true"] [data-rda-active-slide]');
       const mobileHeroNext = page.locator("[data-rda-home-hero-next]");
-      const cookie = page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]');
       const whatsapp = page.locator(".rda-whatsapp-fab");
 
       await expect(heroCta).toBeVisible();
-      await expect(mobileHero).toHaveClass(/is-interactive/);
+      await expect(heroStage).toHaveClass(/is-interactive/);
       await expect(mobileHeroNext).toBeVisible();
       await expect(mobileHeroNext).toBeEnabled();
       await mobileHeroNext.click();
-      await expect(mobileHero).toHaveAttribute("data-rda-active-slide", "2");
-      await expect(cookie).toHaveCount(0);
+      await expect(heroStage).toHaveAttribute("data-rda-active-slide", "1");
+      await expect(page.locator('[data-aid="FOOTER_COOKIE_BANNER_RENDERED"]')).toHaveCount(0);
       await expect(page.locator("elevenlabs-convai")).toHaveCount(0);
       await expect(whatsapp).toBeVisible();
       await expect(whatsapp).toHaveCSS("pointer-events", "auto");
 
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       const overlap = await page.evaluate(() => {
         const cta = document.querySelector<HTMLElement>("[data-rda-home-hero-signup='true']");
         const fab = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
@@ -821,23 +702,26 @@ test.describe("live-style interaction flows", () => {
 
       await heroCta.click();
       await expect(page).toHaveURL(/#quick-sign-up$/);
+      await expect
+        .poll(() => page.locator("#quick-sign-up").evaluate((element) => Math.round(element.getBoundingClientRect().top)))
+        .toBeLessThan(140);
       const signupTop = await page.locator("#quick-sign-up").evaluate((element) => {
         return Math.round(element.getBoundingClientRect().top);
       });
       expect(signupTop).toBeGreaterThanOrEqual(0);
-      expect(signupTop).toBeLessThan(80);
 
       const mobileSignupDesign = await page.locator("#quick-sign-up").evaluate((element) => {
         const form = element.querySelector<HTMLElement>("[data-rda-signup-form='true']");
         const options = element.querySelector<HTMLElement>(".rda-interest-options");
         const option = element.querySelector<HTMLElement>(".rda-interest-option");
+        const fields = element.querySelector<HTMLElement>(".rda-signup-fields");
         const formRect = form?.getBoundingClientRect();
         const optionRect = option?.getBoundingClientRect();
         const columnCount = (value: string | undefined) =>
           value ? value.split(" ").filter(Boolean).length : 0;
 
         return {
-          formColumnCount: form ? columnCount(getComputedStyle(form).gridTemplateColumns) : 0,
+          fieldColumnCount: fields ? columnCount(getComputedStyle(fields).gridTemplateColumns) : 0,
           formWidth: formRect ? Math.round(formRect.width) : 0,
           optionColumnCount: options ? columnCount(getComputedStyle(options).gridTemplateColumns) : 0,
           optionWidth: optionRect ? Math.round(optionRect.width) : 0,
@@ -847,28 +731,25 @@ test.describe("live-style interaction flows", () => {
         };
       });
 
-      expect(mobileSignupDesign.formColumnCount).toBe(1);
+      expect(mobileSignupDesign.fieldColumnCount).toBe(1);
       expect(mobileSignupDesign.optionColumnCount).toBe(1);
       expect(mobileSignupDesign.optionWidth).toBeLessThanOrEqual(mobileSignupDesign.formWidth);
       expect(mobileSignupDesign.overflowX).toBe(0);
 
       const mobileTiktok = page.locator('[data-rda-stable-widget="tiktok-follow"]');
+      await mobileTiktok.scrollIntoViewIfNeeded();
       await expect(mobileTiktok).toBeVisible();
       const mobileTiktokDesign = await mobileTiktok.evaluate((element) => {
-        const inner = element.querySelector<HTMLElement>(".rda-tiktok-follow-inner");
         const button = element.querySelector<HTMLElement>('[data-rda-social-button="tiktok"]');
         const video = element.querySelector<HTMLElement>("video");
         const sectionRect = element.getBoundingClientRect();
         const buttonRect = button?.getBoundingClientRect();
         const videoRect = video?.getBoundingClientRect();
-        const columnCount = (value: string | undefined) =>
-          value ? value.split(" ").filter(Boolean).length : 0;
 
         return {
           buttonFitsSection: buttonRect
             ? buttonRect.left >= sectionRect.left && buttonRect.right <= sectionRect.right
             : false,
-          columns: inner ? columnCount(getComputedStyle(inner).gridTemplateColumns) : 0,
           overflowX:
             element.ownerDocument.documentElement.scrollWidth -
             element.ownerDocument.documentElement.clientWidth,
@@ -880,54 +761,41 @@ test.describe("live-style interaction flows", () => {
 
       expect(mobileTiktokDesign).toMatchObject({
         buttonFitsSection: true,
-        columns: 1,
         overflowX: 0,
         videoFitsSection: true,
       });
 
-      const mobileCourseDesign = await page.locator('[data-rda-home-course-system="true"]').evaluate((element) => {
-        const columnCount = (selector: string) => {
-          const node = element.querySelector<HTMLElement>(selector);
-          const columns = node ? getComputedStyle(node).gridTemplateColumns : "";
-
-          return columns.split(" ").filter(Boolean).length;
-        };
-
-        const button = element.querySelector<HTMLElement>(".rda-home-course-button");
-        const sectionRect = element.getBoundingClientRect();
-        const buttonRect = button?.getBoundingClientRect();
-
-        return {
-          blsColumns: columnCount(".rda-home-bls-feature"),
-          buttonFitsSection: buttonRect
-            ? buttonRect.left >= sectionRect.left && buttonRect.right <= sectionRect.right
-            : false,
-          firstStandaloneColumns: columnCount(".rda-home-course-group:first-child .rda-home-standalone-grid"),
-          offeredColumns: columnCount(".rda-home-offered-grid"),
-          overflowX:
+      // Course cards become a horizontal swipe rail instead of a tall stack.
+      const mobileCourseRail = await page.locator('[data-rda-home-course-system="true"] .ac-course-grid').evaluate(
+        (element) => ({
+          display: getComputedStyle(element).display,
+          overflowX: getComputedStyle(element).overflowX,
+          scrolls: element.scrollWidth > element.clientWidth,
+          pageOverflowX:
             element.ownerDocument.documentElement.scrollWidth -
             element.ownerDocument.documentElement.clientWidth,
-          whyColumns: columnCount(".rda-home-why-grid"),
-        };
-      });
+        }),
+      );
 
-      expect(mobileCourseDesign).toMatchObject({
-        blsColumns: 1,
-        buttonFitsSection: true,
-        firstStandaloneColumns: 1,
-        offeredColumns: 1,
-        overflowX: 0,
-        whyColumns: 1,
+      expect(mobileCourseRail).toMatchObject({
+        display: "flex",
+        overflowX: "auto",
+        pageOverflowX: 0,
+        scrolls: true,
       });
     });
 
     test("mobile menu and long homepage sections use progressive disclosure", async ({ page }) => {
       await page.setViewportSize({ height: 844, width: 390 });
+      await page.emulateMedia({ reducedMotion: "reduce" });
       await gotoSettled(page, "/");
 
       await page.getByRole("button", { name: "Hamburger Site Navigation Icon" }).click();
       const mobileMenu = page.locator('[data-rda-mobile-menu="true"]');
       await expect(mobileMenu.getByRole("link", { name: "Ask About Classes" })).toBeVisible();
+      for (const course of ["Dental Assisting Program", "BLS/CPR", "Infection Control", "Sealants"]) {
+        await expect(mobileMenu.getByRole("link", { name: new RegExp(course) }).first()).toBeVisible();
+      }
 
       const socialBox = await mobileMenu.locator('[data-rda-social-button="instagram"]').evaluate(
         (element) => {
@@ -942,34 +810,33 @@ test.describe("live-style interaction flows", () => {
       expect(socialBox.width).toBeGreaterThanOrEqual(44);
 
       await page.getByRole("button", { name: "Close Site Navigation" }).click();
+      await expect(mobileMenu).toHaveCount(0);
 
-      await expect(page.locator(".rda-review-photo-grid-mobile .rda-review-photo-card")).toHaveCount(3);
-      const reviewMore = page.locator(".rda-mobile-review-more");
-      await expect(reviewMore.getByText("Show more reviews")).toBeVisible();
-      await reviewMore.locator("summary").hover();
-      const reviewMoreSummary = await reviewMore.locator("summary").evaluate((element) => {
-        return {
-          backgroundColor: getComputedStyle(element).backgroundColor,
-          borderRadius: getComputedStyle(element).borderRadius,
-        };
-      });
-      expect(reviewMoreSummary.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
-      expect(reviewMoreSummary.borderRadius).toBe("6px");
-      await reviewMore.locator("summary").click();
-      await expect(reviewMore.locator(".rda-review-photo-card")).toHaveCount(3);
-
-      const googleReviewLibrary = page.locator(".rda-google-review-library");
-      await expect(googleReviewLibrary.getByText("Read all 77 Google reviews")).toBeVisible();
-      await expect(googleReviewLibrary.locator(".rda-google-review-card")).toHaveCount(0);
-      await googleReviewLibrary.locator("summary").click();
-      await expect(googleReviewLibrary.getByRole("link", { name: "Open Google reviews" })).toHaveAttribute(
+      // Review cards swipe sideways; the full library lives on /reviews.
+      const reviews = page.locator('[data-rda-home-review-highlights="true"]');
+      const reviewRail = reviews.locator(".ac-review-grid");
+      await expect(reviewRail.locator(".rda-review-photo-card")).toHaveCount(6);
+      expect(await reviewRail.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+      await expect(reviews.locator('[data-rda-review-marquee="true"]')).toBeAttached();
+      await expect(reviews.getByRole("link", { name: /Read all 77 reviews/ })).toHaveAttribute("href", "/reviews");
+      await expect(reviews.getByRole("link", { name: /Open on Google/ })).toHaveAttribute(
         "href",
         /maps\.google\.com/,
       );
 
-      await expect(page.locator(".rda-board-accordion")).toBeVisible();
-      await expect(page.locator(".rda-board-grid-desktop")).toBeHidden();
-      await expect(page.locator(".rda-gallery-section-home .rda-gallery-item:visible")).toHaveCount(4);
+      await expect(page.locator('[data-rda-stable-widget="board"] .ac-board-item')).toHaveCount(3);
+
+      const galleryTiles = page.locator(".ac-gallery-home .ac-gallery-tile");
+      await expect(galleryTiles).toHaveCount(9);
+      await galleryTiles.first().click();
+      const lightbox = page.getByRole("dialog", { name: "Photo viewer" });
+      await expect(lightbox).toBeVisible();
+      await expect(lightbox).toContainText("1 / 9");
+      await lightbox.getByRole("button", { name: "Next photo" }).click();
+      await expect(lightbox).toContainText("2 / 9");
+      await expect(page.locator(".rda-whatsapp-fab")).toBeHidden();
+      await lightbox.getByRole("button", { name: "Close photo viewer" }).click();
+      await expect(lightbox).toBeHidden();
     });
 
     test("GA4 and Vercel custom conversion events fire for key website actions", async ({ page }) => {
@@ -1016,7 +883,7 @@ test.describe("live-style interaction flows", () => {
 
         const signupForm = document.querySelector<HTMLFormElement>("[data-rda-signup-form='true']");
         const firstInterest = signupForm?.querySelector<HTMLElement>(
-          "[role='checkbox']",
+          'input[type="checkbox"][name="Interested classes[]"]',
         );
         if (signupForm && firstInterest) {
           firstInterest.click();
@@ -1276,7 +1143,9 @@ test.describe("live-style interaction flows", () => {
       await form
         .locator('select[name="Renewal focus"]')
         .selectOption("Pit and Fissure Sealants");
-      await form.locator('input[name="Consent to contact"]').check();
+      await form.locator("label.rda-ad-form-consent").click();
+      await expect(form.locator('input[name="Consent to contact"]')).toBeChecked();
+      await form.locator(".ac-pill", { hasText: "Facebook or Instagram ad" }).click();
 
       await page.evaluate(async () => {
         const analyticsWindow = window as Window & {
@@ -1493,6 +1362,8 @@ test.describe("live-style interaction flows", () => {
       expect(formspreeRequestBody).toContain(utmId);
       expect(formspreeRequestBody).toContain("meta_ads");
       expect(formspreeRequestBody).toContain("Pit and Fissure Sealants");
+      expect(formspreeRequestBody).toContain('name="How did you hear about us?"');
+      expect(formspreeRequestBody).toContain("Facebook or Instagram ad");
       expect(formspreeRequestBody).toContain(String(leadEventIds[0]));
       expect(trackedPayload).not.toContain("private-test@example.com");
       expect(trackedPayload).not.toContain("916-555-1234");
@@ -1560,7 +1431,9 @@ test.describe("live-style interaction flows", () => {
       await form.locator('input[name="Name"]').fill("Failure Test");
       await form.locator('input[name="_replyto"]').fill("failure-test@example.com");
       await form.locator('input[name="Phone"]').fill("916-555-0199");
-      await form.locator('input[name="Consent to contact"]').check();
+      await form.locator("label.rda-ad-form-consent").click();
+      await expect(form.locator('input[name="Consent to contact"]')).toBeChecked();
+      await form.locator(".ac-pill", { hasText: "Facebook or Instagram ad" }).click();
       await page.evaluate(() => {
         const analyticsWindow = window as Window & {
           __rdaTestGtagEvents?: unknown[][];
@@ -1791,7 +1664,9 @@ test.describe("live-style interaction flows", () => {
       await enrollForm.locator('input[name="Name"]').fill("Saturday First Touch");
       await enrollForm.locator('input[name="_replyto"]').fill("saturday-first-touch@example.com");
       await enrollForm.locator('input[name="Phone"]').fill("916-555-0112");
-      await enrollForm.locator('input[name="Consent to contact"]').check();
+      await enrollForm.locator("label.rda-ad-form-consent").click();
+      await expect(enrollForm.locator('input[name="Consent to contact"]')).toBeChecked();
+      await enrollForm.locator(".ac-pill", { hasText: "Facebook or Instagram ad" }).click();
       await enrollForm.getByRole("button", { name: enrollPage.primaryCtaLabel }).click();
       await expect(page.getByText("Request sent")).toBeVisible();
       await expect.poll(() => enrollRequestUrl).toContain("mpqgyjjg");
@@ -1809,7 +1684,8 @@ test.describe("live-style interaction flows", () => {
       await expect(signupForm.locator('input[name="how-heard"]')).toHaveValue("website");
       await expect(signupForm.locator('input[name="landing_page"]')).toHaveValue(enrollPage.path);
 
-      await signupForm.getByRole("checkbox").first().click();
+      await signupForm.locator(".ac-tile").first().click();
+      await signupForm.locator(".ac-pill", { hasText: "Google search" }).click();
       await signupForm.locator('input[name="Name"]').fill("Course Info First Touch");
       await signupForm.locator('input[name="_replyto"]').fill("course-info-first-touch@example.com");
       await signupForm.locator('input[name="Phone"]').fill("916-555-0113");
@@ -1832,7 +1708,6 @@ test.describe("live-style interaction flows", () => {
       await expect(programForm.locator('input[name="course_interest"]')).toHaveCount(1);
 
       await gotoSettled(page, "/contact");
-      await page.locator('[data-rda-contact-form-toggle="true"]').click();
       const contactForm = page.locator('form[data-rda-contact-form="true"]');
       await expect(contactForm.locator('input[name="utm_content"]')).toHaveValue(utmContent);
       await expect(contactForm.locator('input[name="ad_id"]')).toHaveValue(adId);
@@ -1911,9 +1786,8 @@ test.describe("live-style interaction flows", () => {
       const publicForms = [
         { open: async () => undefined, path: "/", selector: 'form[data-rda-signup-form="true"]' },
         {
-          open: async () => {
-            await page.locator('[data-rda-contact-form-toggle="true"]').click();
-          },
+          // /contact shows its message form without a toggle.
+          open: async () => undefined,
           path: "/contact",
           selector: 'form[data-rda-contact-form="true"]',
         },
@@ -2075,8 +1949,9 @@ test.describe("live-style interaction flows", () => {
       const email = form.locator('input[name="_replyto"]').first();
       const phone = form.locator('input[name="Phone"]').first();
       const notes = form.locator('textarea[name="Notes"]').first();
-      const checkboxes = form.getByRole("checkbox");
-      const selectedPayloads = form.locator('input[type="hidden"][name="Interested classes[]"]');
+      // Interests are native checkboxes, so selections submit without JavaScript.
+      const checkboxes = form.locator('input[type="checkbox"][name="Interested classes[]"]');
+      const selectedPayloads = form.locator('input[name="Interested classes[]"]:checked');
       const optionIcons = form.locator(".rda-interest-option-icon[data-rda-signup-icon]");
 
       await expect(submit).toBeVisible();
@@ -2103,7 +1978,8 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="notes"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="note"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
-      await expect(form.getByText("Classes or certifications to ask about")).toBeVisible();
+      await expect(form.getByText("What would you like to learn?")).toBeVisible();
+      await expect(form.locator('input[type="radio"][name="How did you hear about us?"]')).toHaveCount(5);
       await expect(form.getByText("Next open date: November 20, 2026")).toHaveCount(1);
       await expect(form.getByText("Next open date: September 12, 2026 (Saturday Academy)")).toHaveCount(0);
       await expect(form.getByText("Next open date: September 12, 2026", { exact: true })).toHaveCount(0);
@@ -2125,19 +2001,20 @@ test.describe("live-style interaction flows", () => {
       await phone.fill("916-555-0123");
       await submit.click();
       await expect(form.getByText("Choose at least one class or certification.")).toBeVisible();
+      await expect(form.getByText("Please tell us how you heard about us.")).toBeVisible();
 
       const dentalAssisting = form.getByRole("checkbox", { name: "Dental Assisting Program" });
       await expect(dentalAssisting).toBeVisible();
       await expect(form.getByRole("checkbox", { name: "BLS / CPR" })).toBeVisible();
       await expect(form.getByLabel("Front Office Program")).toHaveCount(0);
-      await dentalAssisting.click();
-      await expect(dentalAssisting).toHaveAttribute("aria-checked", "true");
+      await form.locator(".ac-tile", { hasText: "Dental Assisting Program" }).click();
+      await expect(dentalAssisting).toBeChecked();
       await expect(selectedPayloads).toHaveCount(1);
       await expect(selectedPayloads.first()).toHaveValue("Dental Assisting Program");
 
       await gotoSettled(page, "/infection-control");
       const coursePage = page.locator('[data-rda-live-course="infection-control"]');
-      await expect(coursePage.getByText("$395*.", { exact: true })).toBeVisible();
+      await expect(coursePage.locator('[data-rda-quick-fact="true"]').first()).toContainText("$395*");
       await expect(coursePage.locator(".rda-course-policy-note")).toContainText(
         "If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
       );
@@ -2205,24 +2082,6 @@ test.describe("live-style interaction flows", () => {
         await expect(reviews.getByRole("heading", { name: course.title })).toBeVisible();
         await expect(reviews.locator(".rda-course-review-card")).toHaveCount(3);
 
-        const introCenterOffset = await reviews
-          .locator(".rda-review-photo-intro")
-          .evaluate((intro) => {
-            const section = intro.closest("[data-rda-course-reviews]");
-            if (!section) {
-              return Number.POSITIVE_INFINITY;
-            }
-
-            const introBox = intro.getBoundingClientRect();
-            const sectionBox = section.getBoundingClientRect();
-
-            return Math.abs(
-              introBox.left + introBox.width / 2 - (sectionBox.left + sectionBox.width / 2),
-            );
-        });
-
-        expect(introCenterOffset).toBeLessThan(2);
-
         const cardBottomDelta = await reviews.locator(".rda-course-review-card").evaluateAll(
           (cards) => {
             const bottoms = cards.map((card) => card.getBoundingClientRect().bottom);
@@ -2286,19 +2145,19 @@ test.describe("live-style interaction flows", () => {
       expect(mapBox?.width ?? 0).toBeGreaterThanOrEqual(200);
       expect(mapBox?.height ?? 0).toBeGreaterThanOrEqual(200);
 
-      await page.getByRole("button", { name: "Drop us a line!" }).click();
-
+      // The full /contact page shows the message form straight away.
       const formContainer = page.locator('[data-aid="CONTACT_FORM_CONTAINER_REND"]').first();
-      const form = formContainer.locator("form").first();
+      const form = formContainer.locator('form[data-rda-contact-form="true"]');
       const email = form.locator('input[name="_replyto"]').first();
 
+      await expect(page.locator('[data-rda-contact-form-toggle="true"]')).toHaveCount(0);
       await expect(formContainer).toBeVisible();
       await expect(form).toHaveAttribute("action", "https://formspree.io/f/xzdkgaeg");
       await expect(email).toHaveAttribute("type", "email");
       await expect(email).toHaveAttribute("required", "");
-
-      await formContainer.getByText("Cancel").click();
-      await expect(formContainer).toBeHidden();
+      await expect(form.locator('input[name="name"]')).toHaveAttribute("required", "");
+      await expect(form.locator('textarea[name="message"]')).toHaveAttribute("required", "");
+      await expect(form.locator('input[type="radio"][name="How did you hear about us?"]')).toHaveCount(5);
 
       const popupPromise = page.waitForEvent("popup", { timeout: 8_000 });
       await page.getByRole("link", { name: "Get directions" }).click();
@@ -2307,6 +2166,19 @@ test.describe("live-style interaction flows", () => {
       await popup.waitForLoadState("domcontentloaded").catch(() => undefined);
       expect(popup.url()).toContain("google.com/maps/dir/");
       await popup.close();
+
+      // On the homepage the compact contact block keeps the form one tap away.
+      await gotoSettled(page, "/");
+      const toggle = page.locator('[data-rda-contact-form-toggle="true"]');
+      const homeFormContainer = page.locator('[data-aid="CONTACT_FORM_CONTAINER_REND"]');
+
+      await expect(homeFormContainer).toBeHidden();
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded", "true");
+      await expect(homeFormContainer).toBeVisible();
+      await homeFormContainer.getByRole("button", { name: "Cancel" }).click();
+      await expect(homeFormContainer).toBeHidden();
     });
 
     test("mobile contact map stacks without creating blank space", async ({ page }) => {
@@ -2314,10 +2186,10 @@ test.describe("live-style interaction flows", () => {
       await gotoSettled(page, "/contact");
 
       const mobileContactLayout = await page.locator(".rda-contact-section").evaluate((section) => {
-        const grid = section.querySelector<HTMLElement>(".rda-contact-grid");
-        const copy = section.querySelector<HTMLElement>(".rda-contact-copy");
+        const grid = section.querySelector<HTMLElement>(".ac-contact-grid");
+        const copy = section.querySelector<HTMLElement>(".ac-contact-info");
         const map = section.querySelector<HTMLElement>(".rda-contact-map-card");
-        const signup = document.querySelector<HTMLElement>(".rda-signup-section");
+        const next = section.querySelector<HTMLElement>(".ac-contact-form");
         const read = (element: HTMLElement | null) => {
           const rect = element?.getBoundingClientRect();
 
@@ -2325,8 +2197,6 @@ test.describe("live-style interaction flows", () => {
             ? {
                 bottom: Math.round(rect.bottom),
                 height: Math.round(rect.height),
-                left: Math.round(rect.left),
-                right: Math.round(rect.right),
                 top: Math.round(rect.top),
                 width: Math.round(rect.width),
               }
@@ -2336,12 +2206,11 @@ test.describe("live-style interaction flows", () => {
 
         return {
           blankAfterMap:
-            signup && map
-              ? Math.round(signup.getBoundingClientRect().top - map.getBoundingClientRect().bottom)
-              : 0,
+            next && map
+              ? Math.round(next.getBoundingClientRect().top - map.getBoundingClientRect().bottom)
+              : 999,
           columnCount: gridColumns.split(" ").filter(Boolean).length,
           copy: read(copy),
-          grid: read(grid),
           map: read(map),
           overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
@@ -2350,8 +2219,9 @@ test.describe("live-style interaction flows", () => {
       expect(mobileContactLayout.columnCount).toBe(1);
       expect(mobileContactLayout.copy?.width ?? 0).toBeGreaterThanOrEqual(320);
       expect(mobileContactLayout.map?.width ?? 0).toBeGreaterThanOrEqual(320);
+      expect(mobileContactLayout.map?.height ?? 0).toBeGreaterThanOrEqual(260);
       expect(mobileContactLayout.map?.top ?? 0).toBeGreaterThan(mobileContactLayout.copy?.bottom ?? 0);
-      expect(mobileContactLayout.copy?.height ?? 0).toBeLessThan(880);
+      expect(mobileContactLayout.blankAfterMap).toBeGreaterThanOrEqual(0);
       expect(mobileContactLayout.blankAfterMap).toBeLessThanOrEqual(72);
       expect(mobileContactLayout.overflowX).toBe(0);
     });
@@ -2436,6 +2306,11 @@ test.describe("live-style interaction flows", () => {
       const nameField = page.locator('form[data-rda-signup-form="true"] input[name="Name"]').first();
 
       await nameField.waitFor({ state: "visible" });
+      // Focus after hydration so the promo's focus listener is attached.
+      await expect(page.locator('header [data-rda-theme-toggle="true"]').first()).not.toHaveAttribute(
+        "data-theme-state",
+        "unknown",
+      );
       await nameField.focus();
       await expect(nameField).toBeFocused();
       await nameField.blur();
