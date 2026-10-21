@@ -178,6 +178,22 @@ test("student database enforces shared inventory, separate modes, replay, roster
     await db.exec(migration);
     await db.exec(migration);
     expect(migration).toContain("AND mode=p_mode FOR UPDATE;");
+    expect(migration).toContain("AND o.mode='live'");
+    expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
+      "FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true",
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      "account.id !== config.account ||",
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      "charge.refunded === true && charge.amount_refunded === held.amount",
+    );
+    expect(
+      await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
+    ).toContain("!verifyEnrollmentSignature(");
+    expect(
+      await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
+    ).toContain("(event.account && event.account !== config.account)");
     expect(isCanonicalInfectionControlDate("2026-11-14")).toBe(true);
     expect(isCanonicalInfectionControlDate("2026-11-07")).toBe(false);
     expect(
