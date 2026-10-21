@@ -66,9 +66,9 @@ try {
     `INSERT INTO student_enrollment_offerings(
       id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled
     ) VALUES
-      ($1,'test','infection-control','2026-11-14',39500,0,$5,$6,$7,now(),'lock last seat',true),
+      ($1,'test','infection-control','2099-03-15',39500,0,$5,$6,$7,now(),'lock last seat',true),
       ($2,'live','infection-control','2026-11-14',39500,0,$5,$6,$7,now(),'lock live mode',true),
-      ($3,'test','infection-control','2026-12-05',39500,0,$5,$6,$7,now(),'lock refunded seats',true),
+      ($3,'test','infection-control','2099-04-15',39500,0,$5,$6,$7,now(),'lock refunded seats',true),
       ($4,'test','infection-control','2099-09-15',39500,0,$5,$6,$7,now(),'lock verification release',true)`,
     [
       lastSeat,
@@ -347,7 +347,7 @@ try {
   await test("M55 / M56 resolve records actor and writes an events row", async () => {
     const reviewId = randomUUID();
     await admin.query(
-      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2026-11-14',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-03-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
       [
         reviewId,
         lastSeat,
