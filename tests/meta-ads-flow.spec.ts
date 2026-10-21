@@ -261,15 +261,27 @@ test.describe("RDA Meta ads: local intercepted lead measurement", () => {
 
   test("phone and WhatsApp Meta Contact properties exclude query identifiers", async ({ page }) => {
     await page.goto(`${sealantsUrl(creatives[0].content)}&fbclid=synthetic_private_click&arbitrary=synthetic-private%40example.test`, { waitUntil: "networkidle" });
-    await page.locator('a[href^="tel:"]').first().waitFor();
-    await page.locator("a[data-rda-whatsapp]").first().waitFor();
+    const phone = page.locator("main a[data-rda-lead-source='phone']").first();
+    const whatsapp = page.locator("main a[data-rda-whatsapp]").first();
+    await expect(phone).toBeVisible();
+    await expect(whatsapp).toBeVisible();
     await page.evaluate(() => {
-      for (const selector of ['a[href^="tel:"]', "a[data-rda-whatsapp]"]) {
-        const link = document.querySelector<HTMLAnchorElement>(selector);
-        link?.addEventListener("click", (event) => event.preventDefault(), { once: true });
-        link?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-      }
+      document.addEventListener(
+        "click",
+        (event) => {
+          const link = event.target instanceof Element
+            ? event.target.closest("a[href]")
+            : null;
+          const href = link?.getAttribute("href") ?? "";
+          if (href.startsWith("tel:") || link?.matches("[data-rda-whatsapp]")) {
+            event.preventDefault();
+          }
+        },
+        true,
+      );
     });
+    await phone.click();
+    await whatsapp.click();
     const observed = await captures(page);
     const contacts = observed.meta.filter((event) => event[1] === "Contact");
     expect(contacts).toHaveLength(2);
