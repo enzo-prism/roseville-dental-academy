@@ -352,11 +352,10 @@ test.describe("student enrollment isolated full stack", () => {
   });
   test("both confirmed dates are offered at 39500 and a sold-out date cannot be purchased", async ({
     request,
-    page,
   }) => {
-    const pageResponse = await page.goto("/enroll");
-    expect(pageResponse?.status()).toBe(200);
-    const body = await page.text();
+    const pageResponse = await request.get("/enroll");
+    expect(pageResponse.status()).toBe(200);
+    const body = await pageResponse.text();
     expect(body).toContain("November 14, 2026");
     expect(body).toContain("December 5, 2026");
     expect(body).toContain("$395.00 USD");

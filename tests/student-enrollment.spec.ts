@@ -42,7 +42,9 @@ test("checkout inventory is only the confirmed November 14 and December 5 sessio
   expect(INFECTION_CONTROL_CHECKOUT_POLICY).toBe(
     "Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
   );
-  expect(INFECTION_CONTROL_SELLABLE_SESSIONS.some((session) => session.courseDate === "2026-11-07")).toBe(false);
+  expect(
+    INFECTION_CONTROL_SELLABLE_SESSIONS.map((session) => session.courseDate),
+  ).not.toContain("2026-11-07");
   expect(STUDENT_POLICY_HASH).toBe(
     "af24daa14cf51c382bcdc9cb567f2b4de29886ccd4d980d62ca1a46ee7fd53ae",
   );
