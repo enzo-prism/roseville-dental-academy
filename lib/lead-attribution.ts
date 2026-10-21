@@ -383,14 +383,15 @@ function hasCampaignTouch(touch: AttributionTouch) {
   );
 }
 
+// Keep these lists identical to RDA-Dashboard src/lib/attribution-quality.ts.
 const PAID_UTM_MEDIUM = /^(cpc|ppc|paid|paid_social|paid-social)$/iu;
-
-function isPaidMedium(medium: string) {
-  return PAID_UTM_MEDIUM.test(medium.trim());
-}
+const UNPAID_UTM_MEDIUM = /^(social|organic|gmb|gbp|google_business_profile)$/iu;
 
 function hasPaidTouch(touch: Pick<AttributionTouch, "clickIds" | "utm">) {
-  return hasExplicitClickId(touch) || isPaidMedium(touch.utm.utm_medium);
+  const medium = touch.utm.utm_medium.trim();
+  if (PAID_UTM_MEDIUM.test(medium)) return true;
+  if (UNPAID_UTM_MEDIUM.test(medium)) return false;
+  return hasExplicitClickId(touch);
 }
 
 function isMetaTouch(touch: Pick<AttributionTouch, "clickIds" | "dimensions" | "utm">) {
@@ -927,10 +928,12 @@ export function getLeadAttributionStamp(
   const first = attribution.firstTouch;
   const conversion = attribution.conversionTouch;
   // Top-level Formspree fields answer "which paid click should we tag?"
-  // Only a paid touch wins: an explicit click id (fbclid, gclid, ...) or a
-  // paid medium (paid_social, cpc, ppc, paid). A later GBP or organic
-  // ig/social visit must not drop a Meta fbclid or ad_id. First-touch
-  // identity stays in first_touch_* and is never overwritten.
+  // Same order as RDA-Dashboard hasPaidAttributionTouch: a paid medium
+  // (cpc/ppc/paid/paid_social/paid-social) wins; unpaid mediums (social,
+  // organic, gmb, gbp, google_business_profile) are not paid even with a
+  // click id — Meta adds fbclid to organic IG/GBP links too; otherwise a
+  // click id with no non-paid medium means paid. First-touch identity stays
+  // in first_touch_* and is never overwritten.
   const touch = hasPaidTouch(conversion)
     ? conversion
     : hasPaidTouch(first)

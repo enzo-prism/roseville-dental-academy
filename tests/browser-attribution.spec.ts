@@ -551,3 +551,79 @@ test("a later organic ig/social visit does not drop a Meta fbclid or ad_id from 
   expect(stamp.ad_id).toBe("120000222");
   expect(stamp.conversion_touch_utm_source).toBe("ig");
 });
+
+test("a later organic ig/social visit with fbclid keeps the Meta ad stamp", () => {
+  const browser = browserAttribution();
+  browser.visit(META, FIRST);
+  const later = browser.visit(`${ORGANIC_IG}&fbclid=organic_ig_fbclid`, SECOND);
+  expect(later.conversionTouch.clickIds.fbclid).toBe("organic_ig_fbclid");
+  expect(later.conversionTouch.utm.utm_medium).toBe("social");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.utm_medium).toBe("paid_social");
+  expect(stamp.utm_campaign).toBe("meta_second");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.ad_id).toBe("120000222");
+  expect(stamp.landing_page).toBe("/lp/dental-assisting-enroll");
+  expect(stamp.conversion_touch_fbclid).toBe("organic_ig_fbclid");
+});
+
+test("a later GBP visit with fbclid keeps the Meta ad stamp", () => {
+  const browser = browserAttribution();
+  browser.visit(META, FIRST);
+  const later = browser.visit(`${GBP}&fbclid=gbp_fbclid`, SECOND);
+  expect(later.conversionTouch.clickIds.fbclid).toBe("gbp_fbclid");
+  expect(later.conversionTouch.utm.utm_medium).toBe("gmb");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("facebook");
+  expect(stamp.utm_medium).toBe("paid_social");
+  expect(stamp.fbclid).toBe("meta_click");
+  expect(stamp.ad_id).toBe("120000222");
+  expect(stamp.landing_page).toBe("/lp/dental-assisting-enroll");
+});
+
+test("a later organic ig/social visit with fbclid keeps an earlier Google ad", () => {
+  const browser = browserAttribution();
+  browser.visit(GOOGLE, FIRST);
+  const later = browser.visit(`${ORGANIC_IG}&fbclid=organic_ig_after_google`, SECOND);
+  expect(later.conversionTouch.utm.utm_source).toBe("ig");
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("google");
+  expect(stamp.utm_medium).toBe("cpc");
+  expect(stamp.utm_campaign).toBe("google_first");
+  expect(stamp.gclid).toBe("google_click");
+  expect(stamp.fbclid).toBe("");
+  expect(stamp.landing_page).toBe("/lp/dental-assisting-enroll");
+});
+
+test("a bare fbclid with no medium still counts as paid", () => {
+  const browser = browserAttribution();
+  const attribution = browser.visit("/infection-control?fbclid=bare_fbclid", FIRST);
+  const stamp = browser.api.getLeadAttributionFormFields(attribution);
+  expect(stamp.fbclid).toBe("bare_fbclid");
+  expect(stamp.utm_medium).toBe("");
+  expect(stamp.landing_page).toBe("/infection-control");
+});
+
+test("a bare gclid with no medium still counts as paid", () => {
+  const browser = browserAttribution();
+  const attribution = browser.visit("/infection-control?gclid=bare_gclid", FIRST);
+  const stamp = browser.api.getLeadAttributionFormFields(attribution);
+  expect(stamp.gclid).toBe("bare_gclid");
+  expect(stamp.utm_medium).toBe("");
+  expect(stamp.landing_page).toBe("/infection-control");
+});
+
+test("Meta ad then Google ad still takes the newer paid touch", () => {
+  const browser = browserAttribution();
+  browser.visit(META, FIRST);
+  const later = browser.visit(GOOGLE, SECOND);
+  const stamp = browser.api.getLeadAttributionFormFields(later);
+  expect(stamp.utm_source).toBe("google");
+  expect(stamp.utm_medium).toBe("cpc");
+  expect(stamp.gclid).toBe("google_click");
+  expect(stamp.fbclid).toBe("");
+  expect(stamp.ad_id).toBe("");
+  expect(stamp.first_touch_utm_source).toBe("facebook");
+  expect(stamp.first_touch_ad_id).toBe("120000222");
+});
