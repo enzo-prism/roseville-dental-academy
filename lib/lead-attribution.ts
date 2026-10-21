@@ -899,11 +899,35 @@ function createRecord(
   };
 }
 
+function compactStoredTouch(touch: AttributionTouch) {
+  const clickIds = compactNonEmptyRecord(touch.clickIds);
+  const dimensions = compactNonEmptyRecord(touch.dimensions);
+  const utm = compactNonEmptyRecord(touch.utm);
+  return {
+    capturedAt: touch.capturedAt || undefined,
+    clickIds: Object.keys(clickIds).length ? clickIds : undefined,
+    dimensions: Object.keys(dimensions).length ? dimensions : undefined,
+    gaClientId: touch.gaClientId || undefined,
+    gaSessionId: touch.gaSessionId || undefined,
+    pagePath: touch.pagePath || undefined,
+    referrer: touch.referrer || undefined,
+    sessionId: touch.sessionId || undefined,
+    touchId: touch.touchId || undefined,
+    utm: Object.keys(utm).length ? utm : undefined,
+  };
+}
+
 function persistRecord(record: StoredAttributionRecord, consentState: AttributionConsentState) {
   const lastPaidTouch = distinctLastPaidTouch(record);
   const serialized = JSON.stringify({
     ...record,
     lastPaidTouch,
+  });
+  const cookieSerialized = JSON.stringify({
+    ...record,
+    conversionTouch: compactStoredTouch(record.conversionTouch),
+    firstTouch: compactStoredTouch(record.firstTouch),
+    lastPaidTouch: lastPaidTouch ? compactStoredTouch(lastPaidTouch) : undefined,
   });
   memoryRecord = serialized;
 
@@ -920,7 +944,7 @@ function persistRecord(record: StoredAttributionRecord, consentState: Attributio
   }
 
   const storedLocally = writeStorage("localStorage", ATTRIBUTION_STORAGE_KEY, serialized);
-  const storedInCookie = writeCookie(ATTRIBUTION_STORAGE_KEY, serialized);
+  const storedInCookie = writeCookie(ATTRIBUTION_STORAGE_KEY, cookieSerialized);
   if (!storedInCookie) {
     expireCookie(ATTRIBUTION_STORAGE_KEY);
   }

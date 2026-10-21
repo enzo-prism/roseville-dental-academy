@@ -791,8 +791,12 @@ test("cookie-only restore after Meta then organic Instagram keeps the IG convers
   expect(afterIg.conversionTouch.utm.utm_source).toBe("ig");
   expect(afterIg.conversionTouch.pagePath).toBe("/");
   expect(afterIg.lastPaidTouch.utm.utm_source).toBe("meta");
-  expect(encodedFullCookieLength(firstBrowser)).toBeGreaterThan(0);
-  expect(encodedFullCookieLength(firstBrowser)).toBeLessThan(firstBrowser.api.MAX_COOKIE_LENGTH);
+  const metaThenIgCookieLength = encodedFullCookieLength(firstBrowser);
+  expect(
+    metaThenIgCookieLength,
+    `M→IG full cookie ${metaThenIgCookieLength}B`,
+  ).toBeGreaterThan(0);
+  expect(metaThenIgCookieLength).toBeLessThan(firstBrowser.api.MAX_COOKIE_LENGTH);
   const stored = JSON.parse(decodeURIComponent(
     firstBrowser.cookies.get("rda_lead_attribution_v2")!,
   )) as { lastPaidTouch?: unknown };
@@ -821,20 +825,15 @@ test("cookie-only restore after Google then Meta then organic Instagram keeps Me
   expect(afterIg.conversionTouch.utm.utm_source).toBe("ig");
   expect(afterIg.lastPaidTouch.utm.utm_source).toBe("meta");
   const encodedLength = encodedFullCookieLength(firstBrowser);
+  expect(encodedLength, `G→M→IG full cookie ${encodedLength}B`).toBeGreaterThan(0);
   expect(
     encodedLength,
     `G→M→IG full cookie ${encodedLength}B must stay under ${firstBrowser.api.MAX_COOKIE_LENGTH}`,
   ).toBeLessThan(firstBrowser.api.MAX_COOKIE_LENGTH);
-  if (encodedLength > 0) {
-    const stored = JSON.parse(decodeURIComponent(
-      firstBrowser.cookies.get("rda_lead_attribution_v2")!,
-    )) as { lastPaidTouch?: { utm?: { utm_source?: string } } };
-    expect(stored.lastPaidTouch?.utm?.utm_source).toBe("meta");
-  } else {
-    expect(decodeURIComponent(
-      firstBrowser.cookies.get("rda_lead_attribution_stamp_v1") ?? "",
-    )).toMatch(/"p":\{/);
-  }
+  const stored = JSON.parse(decodeURIComponent(
+    firstBrowser.cookies.get("rda_lead_attribution_v2")!,
+  )) as { lastPaidTouch?: { utm?: { utm_source?: string } } };
+  expect(stored.lastPaidTouch?.utm?.utm_source).toBe("meta");
 
   const laterBrowser = browserAttribution({ cookies: cookieHeader(firstBrowser) });
   const later = laterBrowser.visit("/contact", FOURTH);
@@ -881,13 +880,11 @@ test("compact stamp p cookie restores last-paid Meta when the full cookie is gon
 test("an oversized full-cookie write expires the stale v2 cookie so the stamp wins", () => {
   const firstBrowser = browserAttribution();
   firstBrowser.visit(GOOGLE, FIRST);
-  const long = "x".repeat(400);
+  firstBrowser.visit(META_IC, SECOND);
+  expect(firstBrowser.cookies.get("rda_lead_attribution_v2")).toBeTruthy();
+  const long = "w".repeat(512);
   firstBrowser.visit(
-    `/infection-control?utm_source=meta&utm_medium=paid_social&utm_campaign=${long}&utm_content=video_sept25_clinical_${long}&utm_id=${long}&utm_term=${long}&utm_source_platform=meta_ads&fbclid=${long}`,
-    SECOND,
-  );
-  firstBrowser.visit(
-    `/?utm_source=ig&utm_medium=social&utm_campaign=${long}&utm_content=${long}&fbclid=organic_${long}`,
+    `/?utm_source=ig&utm_medium=social&utm_campaign=${long}&utm_content=${long}&utm_term=${long}&fbclid=organic_${long}`,
     THIRD,
   );
   expect(firstBrowser.cookies.get("rda_lead_attribution_v2")).toBeUndefined();
