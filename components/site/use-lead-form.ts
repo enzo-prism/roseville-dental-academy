@@ -181,7 +181,7 @@ export function useLeadFormSubmit() {
       formData.set("lead_event_id", leadEventId);
 
       for (const [field, value] of Object.entries(getLeadAttributionFormFields(attribution))) {
-        if (value) {
+        if (value && !String(formData.get(field) || "").trim()) {
           formData.set(field, value);
         }
       }
