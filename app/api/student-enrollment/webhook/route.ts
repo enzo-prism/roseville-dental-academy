@@ -7,7 +7,7 @@ import {
   getStudentEnrollment,
   studentConfig,
   studentWebhookConfig,
-  studentWebhookProcessesWhilePaymentsOff,
+  studentWebhookRecordsEvent,
 } from "@/lib/student-enrollment";
 import {
   verifyStudentMerchant,
@@ -73,9 +73,11 @@ export async function POST(request: Request) {
     if (session.metadata?.integration !== "rda-student-v1")
       return enrollmentResponse({ received: true, ignored: true });
     if (
-      !paymentsEnabled &&
-      !studentWebhookProcessesWhilePaymentsOff(event.type) &&
-      !studentSessionIsFullyRefunded(session)
+      !studentWebhookRecordsEvent(
+        event.type,
+        paymentsEnabled,
+        studentSessionIsFullyRefunded(session),
+      )
     ) {
       const existing = session.metadata?.enrollment_id
         ? await getStudentEnrollment(session.metadata.enrollment_id)

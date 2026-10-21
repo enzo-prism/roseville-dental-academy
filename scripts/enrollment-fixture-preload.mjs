@@ -45,7 +45,7 @@ globalThis.fetch = async (input, init = {}) => {
     try {
       const control=await fixtureControls();
       if (control.resetLimits && control.resetLimits !== resetLimits) {
-        await db.exec("TRUNCATE student_enrollment_attempts");
+        await db.exec("TRUNCATE student_enrollment_attempts, student_enrollment_mail, student_enrollment_events, student_enrollment_reviews, student_enrollments RESTART IDENTITY CASCADE");
         await db.exec("UPDATE student_enrollment_offerings SET external_seats=0");
         resetLimits=control.resetLimits;
       }
@@ -58,7 +58,7 @@ globalThis.fetch = async (input, init = {}) => {
         const plant=control.plantSessionlessHold;
         const offer=(await db.query("SELECT id,course_date,policy_text,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
         if (offer) {
-          await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,'2026-09-30',$8,$9,39500,'usd',$11,$10) ON CONFLICT (id) DO NOTHING",[plant.id,offer.id,offer.course_date,plant.owner,plant.name,plant.email,plant.phone,offer.policy_hash,offer.policy_text,plant.expiresAt,plant.status ?? "reserved"]);
+          await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id,stripe_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,'2026-09-30',$8,$9,39500,'usd',$11,$12,$10) ON CONFLICT (id) DO NOTHING",[plant.id,offer.id,offer.course_date,plant.owner,plant.name,plant.email,plant.phone,offer.policy_hash,offer.policy_text,plant.expiresAt,plant.status ?? "reserved",plant.sessionId ?? null]);
         }
       }
       if (control.releaseHold) {
@@ -72,6 +72,21 @@ globalThis.fetch = async (input, init = {}) => {
           await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,'2026-11-14',$3,$4,$5,$6,true,'2026-09-30',$7,$8,39500,'usd','expired',$9) ON CONFLICT (id) DO NOTHING",[plant.id,plant.offeringId,plant.owner,plant.name,plant.email,plant.phone,policy.policy_hash,policy.policy_text,plant.expiresAt]);
           await db.query("INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason) VALUES($1,$2,'paid_after_release') ON CONFLICT (enrollment_id, session_id) DO NOTHING",[plant.id,plant.sessionId]);
         }
+      }
+      if (control.plantForeignModeHold) {
+        const plant=control.plantForeignModeHold;
+        const policy=(await db.query("SELECT policy_text,policy_hash FROM student_enrollment_offerings LIMIT 1")).rows[0];
+        if (policy) {
+          await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2026-11-14',39500,0,'2026-09-30',$2,$3,now(),'foreign-mode hold',false) ON CONFLICT (mode, course_id, course_date) DO NOTHING",[plant.offeringId,policy.policy_hash,policy.policy_text]);
+          const liveOffer=(await db.query("SELECT id FROM student_enrollment_offerings WHERE mode='live' AND course_id='infection-control' AND course_date='2026-11-14'")).rows[0];
+          if (liveOffer) {
+            await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,'2026-11-14',$3,$4,$5,$6,true,'2026-09-30',$7,$8,39500,'usd','reserved',$9) ON CONFLICT (id) DO NOTHING",[plant.id,liveOffer.id,plant.owner,plant.name,plant.email,plant.phone,policy.policy_hash,policy.policy_text,plant.expiresAt]);
+          }
+        }
+      }
+      if (control.releaseRefundedSeat) {
+        const release=control.releaseRefundedSeat;
+        await db.query("SELECT release_refunded_student_seat($1::uuid,$2)",[release.id,release.actor ?? "staff@example.test"]);
       }
       const { query, params } = JSON.parse(init.body);
       if (control.expireOnBind && typeof query==="string" && query.includes("UPDATE student_enrollments SET stripe_session_id")) {
@@ -93,21 +108,6 @@ globalThis.fetch = async (input, init = {}) => {
   }
   if (url.hostname === "api.stripe.com") {
     const control = await fixtureControls();
-      if (control.plantForeignModeHold) {
-        const plant=control.plantForeignModeHold;
-        const policy=(await db.query("SELECT policy_text,policy_hash FROM student_enrollment_offerings LIMIT 1")).rows[0];
-        if (policy) {
-          await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2026-11-14',39500,0,'2026-09-30',$2,$3,now(),'foreign-mode hold',false) ON CONFLICT (mode, course_id, course_date) DO NOTHING",[plant.offeringId,policy.policy_hash,policy.policy_text]);
-          const liveOffer=(await db.query("SELECT id FROM student_enrollment_offerings WHERE mode='live' AND course_id='infection-control' AND course_date='2026-11-14'")).rows[0];
-          if (liveOffer) {
-            await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,'2026-11-14',$3,$4,$5,$6,true,'2026-09-30',$7,$8,39500,'usd','reserved',$9) ON CONFLICT (id) DO NOTHING",[plant.id,liveOffer.id,plant.owner,plant.name,plant.email,plant.phone,policy.policy_hash,policy.policy_text,plant.expiresAt]);
-          }
-        }
-      }
-      if (control.releaseRefundedSeat) {
-        const release=control.releaseRefundedSeat;
-        await db.query("SELECT release_refunded_student_seat($1,$2)",[release.id,release.actor ?? "staff@example.test"]);
-      }
       if (control.plantOrphanSession) {
       const plant=control.plantOrphanSession;
       const offer=(await db.query("SELECT course_date,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
@@ -120,7 +120,7 @@ globalThis.fetch = async (input, init = {}) => {
         sessions.set(plant.id,{
           id:plant.id,object:"checkout.session",livemode:false,mode:"payment",amount_total:39500,currency:"usd",
           status:plant.status ?? "open",payment_status:plant.paymentStatus ?? "unpaid",
-          expires_at:plant.expiresAt ?? Number(heldExpires) || Math.floor(Date.now()/1000)+3600,
+          expires_at:plant.expiresAt ?? (Number(heldExpires) || Math.floor(Date.now()/1000)+3600),
           url:`https://checkout.stripe.com/c/pay/${plant.id}`,client_reference_id:plant.enrollmentId,payment_intent:null,
           metadata:{enrollment_id:plant.enrollmentId,offering_id:plant.offeringId,policy_version:"2026-09-30",
             policy_hash:offer.policy_hash,integration:"rda-student-v1",environment:"test",course_date:courseDate},

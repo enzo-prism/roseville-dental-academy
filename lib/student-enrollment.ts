@@ -99,6 +99,17 @@ export function studentWebhookConfig(): StudentConfig | null {
 export function studentWebhookProcessesWhilePaymentsOff(eventType: string) {
   return eventType === "charge.refunded";
 }
+export function studentWebhookRecordsEvent(
+  eventType: string,
+  paymentsEnabled: boolean,
+  fullyRefunded: boolean,
+) {
+  return (
+    paymentsEnabled ||
+    studentWebhookProcessesWhilePaymentsOff(eventType) ||
+    fullyRefunded
+  );
+}
 export function studentPublicEnrollCtaEnabled() {
   return (
     studentConfig()?.mode === "live" &&

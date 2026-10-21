@@ -204,22 +204,45 @@ const lines = [
   `suite: pnpm test:student-enrollment && pnpm test:student-enrollment-locks`,
   "",
 ];
+const restorers = new Map();
+const restoreAll = async () => {
+  for (const [absolute, original] of restorers) {
+    await writeFile(absolute, original);
+  }
+  restorers.clear();
+};
+process.on("SIGINT", () => {
+  restoreAll().finally(() => process.exit(1));
+});
+process.on("SIGTERM", () => {
+  restoreAll().finally(() => process.exit(1));
+});
 
 for (const mutant of selected) {
   const absolute = resolve(root, mutant.file);
   const original = await readFile(absolute, "utf8");
   if (!original.includes(mutant.find)) {
     lines.push(`${mutant.id} SURVIVED (snippet missing in ${mutant.file})`);
+    await writeFile(logPath, `${lines.join("\n")}\n`);
     continue;
   }
+  restorers.set(absolute, original);
   await writeFile(absolute, original.replace(mutant.find, mutant.replace));
-  const suite = await run("bash", ["-lc", "pnpm test:student-enrollment"]);
+  const needsBuild = !mutant.file.endsWith(".sql");
+  const build = needsBuild
+    ? await run("bash", ["-lc", "pnpm build"])
+    : { code: 0, stdout: "skipped (sql mutant)", stderr: "" };
+  const suite =
+    build.code === 0
+      ? await run("bash", ["-lc", "pnpm test:student-enrollment"])
+      : { code: 1, stdout: "", stderr: "build failed; suite skipped" };
   const locks = await run("bash", ["-lc", "pnpm test:student-enrollment-locks"], {
     STUDENT_LOCK_DATABASE_URL:
       process.env.STUDENT_LOCK_DATABASE_URL ??
       "postgres://postgres:postgres@127.0.0.1:5432/rda_locks",
   });
   await writeFile(absolute, original);
+  restorers.delete(absolute);
   const killed = suite.code !== 0 || locks.code !== 0;
   const suiteTail = `${suite.stdout}\n${suite.stderr}`
     .trim()
@@ -233,14 +256,16 @@ for (const mutant of selected) {
     .join("\n");
   lines.push(
     `${mutant.id} ${killed ? "KILLED" : "SURVIVED"} file=${mutant.file}`,
-    `  suite_exit=${suite.code} locks_exit=${locks.code}`,
+    `  build_exit=${build.code} suite_exit=${suite.code} locks_exit=${locks.code}`,
     `  suite_tail:\n${suiteTail}`,
     `  locks_tail:\n${lockTail}`,
     "",
   );
+  await writeFile(logPath, `${lines.join("\n")}\n`);
   console.log(`${mutant.id} ${killed ? "KILLED" : "SURVIVED"}`);
   if (!killed) process.exitCode = 1;
 }
 
+await restoreAll();
 await writeFile(logPath, `${lines.join("\n")}\n`);
 console.log(`wrote ${logPath}`);

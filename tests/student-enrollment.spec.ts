@@ -28,6 +28,7 @@ import {
   studentPublicEnrollCtas,
   studentWebhookConfig,
   studentWebhookProcessesWhilePaymentsOff,
+  studentWebhookRecordsEvent,
   STUDENT_POLICY_HASH,
   type StudentEnrollment,
 } from "@/lib/student-enrollment";
@@ -129,6 +130,21 @@ test("student configuration fails closed and never mixes live keys, wrong mercha
     );
     expect(
       studentWebhookProcessesWhilePaymentsOff("checkout.session.completed"),
+    ).toBe(false);
+    expect(
+      studentWebhookRecordsEvent("charge.refunded", true, false),
+    ).toBe(true);
+    expect(
+      studentWebhookRecordsEvent("checkout.session.completed", true, false),
+    ).toBe(true);
+    expect(
+      studentWebhookRecordsEvent("charge.refunded", false, false),
+    ).toBe(true);
+    expect(
+      studentWebhookRecordsEvent("checkout.session.completed", false, true),
+    ).toBe(true);
+    expect(
+      studentWebhookRecordsEvent("checkout.session.completed", false, false),
     ).toBe(false);
     expect(studentPublicEnrollCtaEnabled()).toBe(false);
     expect(studentPublicEnrollCtas()).toHaveLength(0);
@@ -1374,6 +1390,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     );
     const page = await readFile("app/enrollment-pilot/roster/page.tsx", "utf8");
     expect(page).toContain("listStudentReservedHolds(config.mode)");
+    expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');
     expect(page).toContain("refundedRosterPaymentLabel");
     expect(page).toContain("r.inventory_released_at");
     const enroll = await readFile("app/enroll/page.tsx", "utf8");
