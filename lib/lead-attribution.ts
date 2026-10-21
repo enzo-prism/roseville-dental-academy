@@ -422,8 +422,8 @@ function enrichMetaBrowserIds(
 
   if (clickIds.fbclid) {
     if (cookieFbc.endsWith(`.${clickIds.fbclid}`)) {
-      clickIds.fbc ||= cookieFbc;
-    } else if (!clickIds.fbc) {
+      clickIds.fbc = cookieFbc;
+    } else if (!clickIds.fbc && !cookieFbc) {
       clickIds.fbc = buildFbcFromFbclid(clickIds.fbclid, touch.capturedAt);
     }
   }
