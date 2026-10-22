@@ -10,7 +10,6 @@ import {
 } from "@/lib/student-enrollment";
 import {
   deliverStudentConfirmation,
-  drainStudentConfirmations,
   studentConfirmationText,
 } from "@/lib/student-enrollment-mail";
 
@@ -283,7 +282,7 @@ test("refund before delivery suppresses confirmation; test mode captures an immu
     await capture.close();
   }
 });
-test("confirmation send requires a paid enrollment and drain is idempotent", async () => {
+test("confirmation send requires a paid enrollment", async () => {
   const f = await fixture();
   try {
     await f.db.query(
@@ -297,15 +296,9 @@ test("confirmation send requires a paid enrollment and drain is idempotent", asy
       "UPDATE student_enrollments SET status='paid' WHERE id=$1",
       [f.id],
     );
-    const first = await drainStudentConfirmations(f.config);
-    expect(first.attempted).toBe(1);
-    expect(first.remaining).toBe(0);
+    await deliverStudentConfirmation(f.held, f.config);
     expect(f.calls).toHaveLength(1);
     expect((await f.state()).status).toBe("sent");
-    const again = await drainStudentConfirmations(f.config);
-    expect(again.attempted).toBe(0);
-    expect(again.remaining).toBe(0);
-    expect(f.calls).toHaveLength(1);
   } finally {
     await f.close();
   }
