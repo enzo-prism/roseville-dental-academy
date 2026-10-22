@@ -20,8 +20,26 @@ export type PublishedCourseScheduleStatus = {
   version: 1;
 };
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
+
 function isPublishedStatus(status: string): status is PublishedScheduleEntry["status"] {
   return status === "open" || status === "full";
+}
+
+function isIsoDate(value: unknown): value is string {
+  return typeof value === "string" && ISO_DATE.test(value);
+}
+
+export function resolvePublishedBuiltOn(data: {
+  builtOn?: string;
+  reviewedOn: string;
+  source: string;
+}): string {
+  const stamped = isIsoDate(data.builtOn) ? data.builtOn : "";
+  // Dashboard freshness is builtOn vs reviewedOn. A missing stamp must not
+  // silently become reviewedOn, or the stale-feed check is a no-op.
+  if (data.source === "dashboard") return stamped;
+  return stamped || data.reviewedOn;
 }
 
 export function upcomingScheduleEntries(
@@ -53,10 +71,7 @@ export function buildPublishedCourseScheduleStatus(
   } = courseScheduleData,
 ): PublishedCourseScheduleStatus {
   const upcoming = upcomingScheduleEntries(data.entries, data.reviewedOn);
-  const builtOn =
-    typeof data.builtOn === "string" && /^\d{4}-\d{2}-\d{2}$/u.test(data.builtOn)
-      ? data.builtOn
-      : data.reviewedOn;
+  const builtOn = resolvePublishedBuiltOn(data);
 
   return {
     version: 1,

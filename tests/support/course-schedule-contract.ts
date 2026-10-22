@@ -46,6 +46,13 @@ export const COURSE_DATE_MUTANTS = [
   "llms-extra-full",
   "lp-full-date",
   "request-choice-wrong",
+  "faq-fullA-under-B",
+  "llms-fullA-under-B",
+  "faq-cross-swap",
+  "stale-rollback",
+  "builtOn-missing",
+  "builtOn-tomorrow",
+  "llms-unlabelled-past",
 ] as const;
 
 export type CourseDateMutant = (typeof COURSE_DATE_MUTANTS)[number];
@@ -90,6 +97,9 @@ const WRONG_FUTURE_DATE = "2027-06-15";
 const PAST_CORONAL_DATE = "2026-09-12";
 const EMPTY_HOME_COPY = "Ask admissions for upcoming dates.";
 const EMPTY_COURSE_COPY = "Ask admissions";
+const POLICY_DATES = new Set(["January 1, 2025"]);
+export const STALE_DASHBOARD_WARN_DAYS = 1;
+export const STALE_DASHBOARD_FAIL_DAYS = 7;
 const LANDER_COURSES = {
   coronal_polish: ["coronal-polish"],
   dental_assisting_program: ["dental-assisting-program"],
@@ -213,6 +223,82 @@ function llmsCourseDateFragments(text: string, courseId: CourseScheduleId) {
 
 function dateListFragments(text: string, label: string, courseId: CourseScheduleId) {
   return [...courseListFragments(text, label), ...llmsCourseDateFragments(text, courseId)];
+}
+
+function listedDateLabels(fragment: string) {
+  return [...fragment.matchAll(MONTH_DAY_YEAR)].map((match) => match[0]);
+}
+
+function expectedOpenDateLabels(status: PublishedCourseScheduleStatus, courseId: CourseScheduleId) {
+  return openLabelsForCourse(status, courseId).flatMap((label) => listedDateLabels(label));
+}
+
+function replaceCourseDateList(text: string, label: string, nextDates: string) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return text.replace(new RegExp(`${escaped}: [^.]+`, "u"), `${label}: ${nextDates}`);
+}
+
+function appendToCourseDateList(text: string, label: string, extra: string) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return text.replace(new RegExp(`(${escaped}: [^.]+)`, "u"), `$1; ${extra}`);
+}
+
+function fullDateMissingFromOtherCourse(status: PublishedCourseScheduleStatus) {
+  for (const full of status.upcoming.filter((entry) => entry.status === "full")) {
+    const fullId = full.courseId as CourseScheduleId;
+    const fullLabel = formatOpenDateLabel(fullId, full.isoDate);
+    const extra = listedDateLabels(fullLabel);
+    const other = COURSE_SCHEDULE_IDS.find((id) => {
+      if (id === fullId) return false;
+      const open = expectedOpenDateLabels(status, id);
+      return extra.some((label) => !open.includes(label));
+    });
+    if (other) {
+      const extraLabel = extra.find((label) => !expectedOpenDateLabels(status, other).includes(label));
+      assert.ok(extraLabel, "mutant needs a Full date label missing from the other course");
+      return { extra: extraLabel, other };
+    }
+  }
+  assert.ok(false, "mutant needs a Full date that another course does not list");
+}
+
+function twoCoursesWithDifferentOpenDates(status: PublishedCourseScheduleStatus) {
+  for (const left of COURSE_SCHEDULE_IDS) {
+    for (const right of COURSE_SCHEDULE_IDS) {
+      if (left === right) continue;
+      const leftLabels = expectedOpenDateLabels(status, left);
+      const rightLabels = expectedOpenDateLabels(status, right);
+      if (leftLabels.length > 0 && rightLabels.join("\0") !== leftLabels.join("\0")) {
+        return { left, leftLabels, right, rightLabels };
+      }
+    }
+  }
+  assert.ok(false, "mutant needs two courses with different open dates");
+}
+
+function renderedIsoDates(snapshot: ServedScheduleSnapshot) {
+  const dates = [
+    ...snapshot.homeRows.map((row) => row.isoDate),
+    ...COURSE_SCHEDULE_IDS.flatMap((id) => snapshot.courses[id].dates.map((entry) => entry.isoDate)),
+  ];
+  for (const labels of Object.values(snapshot.landerDates)) {
+    for (const label of labels) {
+      dates.push(
+        ...listedDateLabels(label).map((value) => new Date(`${value} UTC`).toISOString().slice(0, 10)),
+      );
+    }
+  }
+  return dates.filter((date) => ISO_DATE.test(date));
+}
+
+export function dashboardScheduleWarnings(snapshot: ServedScheduleSnapshot) {
+  if (snapshot.status.source !== "dashboard" || !ISO_DATE.test(snapshot.status.builtOn)) return [];
+  if (snapshot.status.builtOn < shiftIsoDate(snapshot.todayLA, -STALE_DASHBOARD_WARN_DAYS)) {
+    return [
+      `dashboard builtOn ${snapshot.status.builtOn} is more than a day older than ${snapshot.todayLA}`,
+    ];
+  }
+  return [];
 }
 
 function synthesizeCourse(status: PublishedCourseScheduleStatus, courseId: CourseScheduleId): CoursePageSnapshot {
@@ -528,6 +614,60 @@ export function applyCourseDateMutant(
       option.nextOpen = "Next open date: January 1, 2026";
       return next;
     }
+    case "faq-fullA-under-B": {
+      const { extra, other } = fullDateMissingFromOtherCourse(next.status);
+      next.faqText = appendToCourseDateList(next.faqText, courseScheduleCourseDetails[other].label, extra);
+      return next;
+    }
+    case "llms-fullA-under-B": {
+      const { extra, other } = fullDateMissingFromOtherCourse(next.status);
+      next.llmsText = appendToCourseDateList(next.llmsText, courseScheduleCourseDetails[other].label, extra);
+      return next;
+    }
+    case "faq-cross-swap": {
+      const pair = twoCoursesWithDifferentOpenDates(next.status);
+      next.faqText = replaceCourseDateList(
+        next.faqText,
+        courseScheduleCourseDetails[pair.left].label,
+        pair.rightLabels.join("; "),
+      );
+      // Keep the original dates elsewhere so a global includes() still passes.
+      next.faqText += ` Also scheduled ${pair.leftLabels.join("; ")}.`;
+      return next;
+    }
+    case "stale-rollback": {
+      const builtOn = shiftIsoDate(next.todayLA, -(STALE_DASHBOARD_FAIL_DAYS + 1));
+      next.previewUrl = true;
+      next.status = {
+        ...next.status,
+        source: "dashboard",
+        builtOn,
+        reviewedOn: next.status.reviewedOn,
+      };
+      if (!renderedIsoDates(next).some((date) => date < next.todayLA)) {
+        next.homeRows = [
+          ...next.homeRows,
+          {
+            isoDate: PAST_CORONAL_DATE,
+            courses: [{ full: false, id: "coronal-polish", label: courseScheduleCourseDetails["coronal-polish"].label }],
+          },
+        ];
+      }
+      return next;
+    }
+    case "builtOn-missing": {
+      next.previewUrl = true;
+      next.status = { ...next.status, source: "dashboard", builtOn: "" };
+      return next;
+    }
+    case "builtOn-tomorrow": {
+      next.status = { ...next.status, builtOn: shiftIsoDate(next.todayLA, 1) };
+      return next;
+    }
+    case "llms-unlabelled-past": {
+      next.llmsText += ` Coronal Polish also: ${formatOpenDateLabel("coronal-polish", PAST_CORONAL_DATE)}.`;
+      return next;
+    }
     default: {
       const exhaustive: never = mutant;
       throw new Error(`Unhandled course-date mutant: ${exhaustive}`);
@@ -545,11 +685,23 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
   assert.match(status.source, /^(committed|dashboard)$/u);
   assert.equal(status.empty, status.upcoming.length === 0);
   assert.ok(status.reviewedOn <= todayLA, `reviewedOn ${status.reviewedOn} is after today ${todayLA} in LA`);
+  assert.ok(status.builtOn <= todayLA, `builtOn ${status.builtOn} is after today ${todayLA} in LA`);
   if (status.source === "dashboard") {
     assert.ok(
       status.reviewedOn >= shiftIsoDate(status.builtOn, -1),
       `dashboard reviewedOn ${status.reviewedOn} is stale relative to builtOn ${status.builtOn}`,
     );
+    if (status.builtOn < shiftIsoDate(todayLA, -STALE_DASHBOARD_FAIL_DAYS)) {
+      const pastShown = [...new Set(renderedIsoDates(snapshot).filter((date) => date < todayLA))];
+      assert.deepEqual(
+        pastShown,
+        [],
+        `dashboard builtOn ${status.builtOn} is more than ${STALE_DASHBOARD_FAIL_DAYS} days old and still shows past dates ${pastShown.join(", ")}`,
+      );
+    }
+    for (const warning of dashboardScheduleWarnings(snapshot)) {
+      console.warn(`[course-dates] ${warning}`);
+    }
   }
   if (!snapshot.previewUrl) {
     assert.equal(status.source, "committed");
@@ -618,19 +770,35 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
 
   for (const id of COURSE_SCHEDULE_IDS) {
     const label = courseScheduleCourseDetails[id].label;
-    for (const text of [snapshot.faqText, snapshot.llmsText]) {
-      for (const listed of dateListFragments(text, label, id)) {
-        for (const match of listed.matchAll(MONTH_DAY_YEAR)) {
-          const isoDate = new Date(`${match[0]} UTC`).toISOString().slice(0, 10);
-          assert.ok(isoDate >= status.reviewedOn, `${label} lists past date ${match[0]}`);
-        }
-        for (const entry of entriesForCourse(status, id).filter((item) => item.status === "full")) {
-          assert.ok(
-            !listed.includes(formatOpenDateLabel(id, entry.isoDate)),
-            `${label} lists Full date ${entry.isoDate}`,
-          );
-        }
-      }
+    const expected = expectedOpenDateLabels(status, id);
+    const faqFragments = courseListFragments(snapshot.faqText, label);
+    assert.ok(faqFragments.length > 0, `FAQ is missing ${label} date list`);
+    for (const listed of faqFragments) {
+      assert.deepEqual(
+        [...new Set(listedDateLabels(listed))].sort(),
+        [...new Set(expected)].sort(),
+        `${label} FAQ line must list exactly that course's open dates`,
+      );
+    }
+    const llmsFragments = dateListFragments(snapshot.llmsText, label, id);
+    assert.ok(llmsFragments.length > 0, `llms.txt is missing ${label} date list`);
+    for (const listed of llmsFragments) {
+      assert.deepEqual(
+        [...new Set(listedDateLabels(listed))].sort(),
+        [...new Set(expected)].sort(),
+        `${label} llms.txt bullet must list exactly that course's open dates`,
+      );
+    }
+  }
+
+  for (const [source, text] of [
+    ["FAQ", snapshot.faqText],
+    ["llms.txt", snapshot.llmsText],
+  ] as const) {
+    for (const match of text.matchAll(MONTH_DAY_YEAR)) {
+      if (POLICY_DATES.has(match[0])) continue;
+      const isoDate = new Date(`${match[0]} UTC`).toISOString().slice(0, 10);
+      assert.ok(isoDate >= status.reviewedOn, `${source} lists past date ${match[0]}`);
     }
   }
 

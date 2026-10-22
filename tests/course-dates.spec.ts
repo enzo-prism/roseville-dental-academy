@@ -13,6 +13,7 @@ import {
   assertServedScheduleContract,
   collectServedScheduleSnapshot,
   courseInstanceStartDates,
+  dashboardScheduleWarnings,
 } from "./support/course-schedule-contract";
 import { execFile } from "node:child_process";
 import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -419,4 +420,8 @@ test("AI discovery dates match the reviewed course schedule", async ({ request }
 test("served schedule matches the published upcoming revision", async ({ page, request }) => {
   const snapshot = await collectServedScheduleSnapshot(page, request);
   assertServedScheduleContract(snapshot);
+  for (const warning of dashboardScheduleWarnings(snapshot)) {
+    test.info().annotations.push({ type: "warning", description: warning });
+    console.warn(`[course-dates] ${warning}`);
+  }
 });

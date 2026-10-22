@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 
 import { expect, test } from "@playwright/test";
 
+import { resolvePublishedBuiltOn } from "../lib/published-course-schedule";
+import courseScheduleData from "../data/course-schedule.json";
 import {
   COURSE_DATE_MUTANTS,
   academyDate,
@@ -10,6 +12,7 @@ import {
   committedScheduleSnapshot,
   courseInstanceStartDates,
   dashboardScheduleSnapshot,
+  dashboardScheduleWarnings,
   elapsedDashboardScheduleSnapshot,
   rolledBackDashboardSnapshot,
 } from "./support/course-schedule-contract";
@@ -32,7 +35,36 @@ test("dashboard build whose stored dates are all in the past is an explicit empt
 });
 
 test("dashboard rollback with reviewedOn matching builtOn still passes", () => {
-  assert.doesNotThrow(() => assertServedScheduleContract(rolledBackDashboardSnapshot()));
+  const snapshot = rolledBackDashboardSnapshot();
+  assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
+  assert.match(dashboardScheduleWarnings(snapshot).join(" "), /more than a day older/u);
+});
+
+test("dashboard builtOn does not fall back to reviewedOn", () => {
+  assert.equal(
+    resolvePublishedBuiltOn({ reviewedOn: "2026-10-14", source: "dashboard" }),
+    "",
+  );
+  assert.equal(
+    resolvePublishedBuiltOn({
+      builtOn: "not-a-date",
+      reviewedOn: "2026-10-14",
+      source: "dashboard",
+    }),
+    "",
+  );
+  assert.equal(
+    resolvePublishedBuiltOn({
+      builtOn: "2026-10-21",
+      reviewedOn: "2026-10-14",
+      source: "dashboard",
+    }),
+    "2026-10-21",
+  );
+  assert.equal(
+    resolvePublishedBuiltOn({ reviewedOn: courseScheduleData.reviewedOn, source: "committed" }),
+    courseScheduleData.reviewedOn,
+  );
 });
 
 test("JSON-LD walker reads pretty-printed hasCourseInstance dates", () => {
