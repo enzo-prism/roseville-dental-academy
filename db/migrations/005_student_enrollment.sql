@@ -201,7 +201,7 @@ $$;
 CREATE TABLE IF NOT EXISTS student_enrollment_reviews (
   enrollment_id uuid NOT NULL REFERENCES student_enrollments(id),
   session_id text NOT NULL,
-  reason text NOT NULL CHECK (reason IN ('paid_after_release')),
+  reason text NOT NULL CHECK (reason IN ('paid_after_release','session_mismatch')),
   created_at timestamptz NOT NULL DEFAULT now(),
   resolved_at timestamptz,
   resolution text CHECK (resolution IS NULL OR resolution IN ('enrolled','dismissed','refunded')),
@@ -235,14 +235,38 @@ BEGIN
   END IF;
 END
 $reviews_resolution$;
+DO $reviews_reason$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT conname FROM pg_constraint
+    WHERE conrelid='student_enrollment_reviews'::regclass
+      AND contype='c'
+      AND pg_get_constraintdef(oid) ILIKE '%reason%'
+      AND pg_get_constraintdef(oid) NOT ILIKE '%session_mismatch%'
+  LOOP
+    EXECUTE format('ALTER TABLE student_enrollment_reviews DROP CONSTRAINT %I', r.conname);
+  END LOOP;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='student_enrollment_reviews'::regclass
+      AND pg_get_constraintdef(oid) ILIKE '%session_mismatch%'
+  ) THEN
+    ALTER TABLE student_enrollment_reviews
+      ADD CONSTRAINT student_enrollment_reviews_reason_check
+      CHECK (reason IN ('paid_after_release','session_mismatch'));
+  END IF;
+END
+$reviews_reason$;
 CREATE OR REPLACE FUNCTION flag_student_enrollment_review(p_id uuid,p_session text,p_reason text)
 RETURNS boolean LANGUAGE plpgsql AS $$
 DECLARE held student_enrollments;
 BEGIN
-  IF p_reason <> 'paid_after_release' THEN RAISE EXCEPTION 'Invalid review reason'; END IF;
+  IF p_reason NOT IN ('paid_after_release','session_mismatch') THEN RAISE EXCEPTION 'Invalid review reason'; END IF;
   SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
-  IF held.status <> 'expired' THEN RAISE EXCEPTION 'Review flag requires an expired enrollment'; END IF;
+  IF p_reason='paid_after_release' AND held.status <> 'expired' THEN RAISE EXCEPTION 'Review flag requires an expired enrollment'; END IF;
+  IF p_reason='session_mismatch' AND held.status <> 'reserved' THEN RAISE EXCEPTION 'Session mismatch review requires a reserved enrollment'; END IF;
   INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason)
     VALUES(p_id,p_session,p_reason)
     ON CONFLICT (enrollment_id, session_id) DO NOTHING;

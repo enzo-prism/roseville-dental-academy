@@ -127,6 +127,20 @@ export function studentWebhookShouldRecord(
     (studentWebhookPaidCompletionEvent(eventType) && boundToSession)
   );
 }
+export function studentWebhookForeignPaidCompletion(
+  eventType: string,
+  existing:
+    | { status: string; stripe_session_id: string | null }
+    | undefined,
+  sessionId: string,
+) {
+  return (
+    studentWebhookPaidCompletionEvent(eventType) &&
+    existing?.status === "reserved" &&
+    existing.stripe_session_id != null &&
+    existing.stripe_session_id !== sessionId
+  );
+}
 export function studentPublicEnrollCtaEnabled() {
   return (
     studentConfig()?.mode === "live" &&

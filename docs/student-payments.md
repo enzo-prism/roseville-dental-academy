@@ -213,7 +213,10 @@ evidence before attempting delivery. No production database has been migrated by
 `/enrollment-pilot/roster` requires the existing separate staff password/session configuration.
 It shows verified paid/refunded students only, with no public roster API. Staff can retry
 a pending confirmation with authenticated same-origin JSON POST `{ "id": "<enrollment UUID>" }`
-to `/api/student-enrollment/retry-confirmation`. A `review` send requires comparing provider
+to `/api/student-enrollment/retry-confirmation`. To drain every paid `pending`/`sending`
+outbox row, POST `{ "drain": true }` to the same route. That drain is idempotent and
+uses webhook configuration, so it still works while live payments are off. Enable live
+email before draining or the rows stay queued. A `review` send requires comparing provider
 logs before any deliberate resend; do not reset its status blindly. Keep the pilot staff
 origin aligned with the deployed enrollment origin.
 
@@ -332,7 +335,10 @@ the repository.
    so `/enroll` can take a charge. Enable the two live offerings. **Before any live
    purchase**, also set `RDA_STUDENT_EMAIL_LIVE_ENABLED=true` plus
    `RDA_STUDENT_EMAIL_API_KEY` and `RDA_STUDENT_EMAIL_FROM`. A paid live webhook
-   otherwise throws in confirmation delivery and Stripe retries get 503 forever.
+   still records the seat if mail is off or the provider fails; confirmation stays
+   queued. Drain those rows with staff POST `{ "drain": true }` to
+   `/api/student-enrollment/retry-confirmation` after email is enabled. The drain
+   works while live payments are off.
    **Leave `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` unset.** The public Infection Control
    "Enroll and pay in full" CTA stays hidden on this redeploy. `/enroll` stays
    reachable by direct URL during this CTA-off window and is the verification URL
@@ -381,13 +387,24 @@ verification purchase:
 3. Leave `RDA_STUDENT_EMAIL_LIVE_ENABLED` on until every paid confirmation has
    left `pending`/`sending`, then unset it. Later webhooks still record refunds
    and other state changes while mail is disabled; they queue the outbox
-   instead of returning 503.
+   instead of returning 503. If email was already off, turn it back on and POST
+   `{ "drain": true }` to `/api/student-enrollment/retry-confirmation` (staff
+   session, same origin). The drain works while live payments are off and is
+   safe to repeat.
 4. Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` back to anything except `true` and
    disable the two live offerings (`enabled=false`). `/enroll` then fail-closes.
    New Checkout sessions stop. Do not delete offerings that already have
    enrollments.
-5. Do not drop `005` objects from production as a rollback. Re-apply the file
-   after review if functions are missing.
+5. Check Stripe Dashboard → Developers → Webhooks → the student enrollment
+   endpoint → failed deliveries. Unbound or expired-unbound paid completions
+   while payments are off return 503 so Stripe retries for about three days.
+   If the kill switch stays off longer than that window, those events are
+   dropped unless an operator retries them from the dashboard after payments
+   are back on. Do not copy event payloads or customer data into tickets.
+6. Do not drop `005` objects from production as a rollback. Re-apply the file
+   after review if functions are missing. Review `session_mismatch` rows
+   (reserved hold bound to one Checkout session, paid on another) on the
+   staff roster; do not treat them as verified seats.
 
 Launch remains blocked until that checklist is finished. No real charges, refunds, student
 emails, bank changes, or credential creation are part of this development release. This

@@ -133,13 +133,14 @@ export function assertStudentSession(
   session: StudentSession,
   held: StudentEnrollment,
   config: StudentConfig,
-  options?: { allowExpiredOrphan?: boolean },
+  options?: { allowExpiredOrphan?: boolean; allowSessionMismatch?: boolean },
 ) {
   const prefix =
     config.mode === "test"
       ? /^cs_test_[A-Za-z0-9]+$/
       : /^cs_live_[A-Za-z0-9]+$/;
   const orphan = options?.allowExpiredOrphan === true;
+  const mismatch = options?.allowSessionMismatch === true;
   if (
     session.object !== "checkout.session" ||
     !prefix.test(session.id) ||
@@ -155,8 +156,11 @@ export function assertStudentSession(
     session.metadata?.integration !== "rda-student-v1" ||
     session.metadata?.environment !== config.mode ||
     session.metadata?.course_date !== held.course_date ||
-    (!orphan && session.expires_at !== Number(held.stripe_expires_at)) ||
     (!orphan &&
+      !mismatch &&
+      session.expires_at !== Number(held.stripe_expires_at)) ||
+    (!orphan &&
+      !mismatch &&
       held.stripe_session_id !== null &&
       held.stripe_session_id !== session.id)
   )
@@ -292,6 +296,19 @@ export async function recordStudentSession(
     await studentDatabase()`SELECT mode FROM student_enrollment_offerings WHERE id=${held.offering_id}::uuid`;
   if (mode[0]?.mode !== config.mode)
     throw new Error("Wrong ledger environment");
+  if (
+    held.status === "reserved" &&
+    held.stripe_session_id != null &&
+    held.stripe_session_id !== session.id &&
+    session.status === "complete" &&
+    session.payment_status === "paid" &&
+    (eventType === "checkout.session.completed" ||
+      eventType === "checkout.session.async_payment_succeeded")
+  ) {
+    assertStudentSession(session, held, config, { allowSessionMismatch: true });
+    await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'session_mismatch')`;
+    return held;
+  }
   assertStudentSession(session, held, config, {
     allowExpiredOrphan: held.status === "expired",
   });

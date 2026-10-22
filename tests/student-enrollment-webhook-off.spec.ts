@@ -4,6 +4,10 @@ import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
 import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
 import { STUDENT_POLICY_HASH } from "@/lib/student-enrollment";
+import {
+  studentWebhookConfig,
+} from "@/lib/student-enrollment";
+import { drainStudentConfirmations } from "@/lib/student-enrollment-mail";
 import { POST } from "@/app/api/student-enrollment/webhook/route";
 
 const LIVE_ACCOUNT = "acct_1UJHgLCOhHjREvRz";
@@ -19,6 +23,7 @@ type SessionSpec = {
   paymentStatus?: string;
   amountRefunded?: number;
   fullyRefunded?: boolean;
+  chargeRefunded?: boolean;
 };
 
 async function liveOffFixture() {
@@ -141,7 +146,7 @@ async function liveOffFixture() {
                 currency: "usd",
                 livemode: true,
                 amount_refunded: refunded,
-                refunded: refunded === amount,
+                refunded: spec.chargeRefunded ?? refunded === amount,
               },
             }
           : null,
@@ -203,6 +208,14 @@ async function liveOffFixture() {
       return (
         await db.query<Record<string, unknown>>(
           "SELECT * FROM student_enrollment_mail WHERE enrollment_id=$1",
+          [id],
+        )
+      ).rows;
+    },
+    async reviews(id: string) {
+      return (
+        await db.query<Record<string, unknown>>(
+          "SELECT * FROM student_enrollment_reviews WHERE enrollment_id=$1",
           [id],
         )
       ).rows;
@@ -611,6 +624,179 @@ test("rollback refunds and releases before the kill switch, then bound leftover 
     expect(counts.rows[0].reserved).toBe("0");
     expect(counts.rows[0].unreleased).toBe("0");
     expect(counts.rows[0].enabled).toBe(false);
+  } finally {
+    await f.close();
+  }
+});
+
+test("staff drain sends queued paid mail while live payments stay off", async () => {
+  const f = await liveOffFixture();
+  try {
+    const offer = await f.plantOffering();
+    const paid = await f.plantHold(offer.id, offer.courseDate);
+    const sessionId = `cs_live_drain${paid.id.replaceAll("-", "").slice(0, 8)}`;
+    await f.db.query(
+      "UPDATE student_enrollments SET stripe_session_id=$2 WHERE id=$1",
+      [paid.id, sessionId],
+    );
+    f.plantSession({
+      id: sessionId,
+      enrollmentId: paid.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: paid.expiresAt,
+    });
+    expect((await f.webhook("checkout.session.completed", sessionId)).status).toBe(
+      200,
+    );
+    expect((await f.mail(paid.id))[0].status).toBe("pending");
+    expect(studentWebhookConfig()?.mode).toBe("live");
+    const queued = await drainStudentConfirmations(studentWebhookConfig()!);
+    expect(queued.attempted).toBe(1);
+    expect(queued.remaining).toBe(1);
+    process.env.RDA_STUDENT_EMAIL_LIVE_ENABLED = "true";
+    process.env.RDA_STUDENT_EMAIL_API_KEY = "fixture-mail-key";
+    process.env.RDA_STUDENT_EMAIL_FROM = "Academy <academy@example.test>";
+    const drained = await drainStudentConfirmations(studentWebhookConfig()!);
+    expect(drained.attempted).toBe(1);
+    expect(drained.remaining).toBe(0);
+    expect(drained.errors).toBe(0);
+    expect((await f.mail(paid.id))[0].status).toBe("sent");
+    const again = await drainStudentConfirmations(studentWebhookConfig()!);
+    expect(again.attempted).toBe(0);
+    expect(again.remaining).toBe(0);
+  } finally {
+    await f.close();
+  }
+});
+
+test("reserved row bound to one session and paid on another is flagged, not 503", async () => {
+  const f = await liveOffFixture();
+  try {
+    const offer = await f.plantOffering();
+    const held = await f.plantHold(offer.id, offer.courseDate);
+    const bound = `cs_live_s1${held.id.replaceAll("-", "").slice(0, 8)}`;
+    const paidOther = `cs_live_s2${held.id.replaceAll("-", "").slice(0, 8)}`;
+    await f.db.query(
+      "UPDATE student_enrollments SET stripe_session_id=$2 WHERE id=$1",
+      [held.id, bound],
+    );
+    f.plantSession({
+      id: paidOther,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt + 1800,
+    });
+    const first = await f.webhook("checkout.session.completed", paidOther);
+    expect(first.status).toBe(200);
+    expect(await first.json()).toEqual({ received: true });
+    expect((await f.enrollment(held.id)).status).toBe("reserved");
+    expect((await f.enrollment(held.id)).stripe_session_id).toBe(bound);
+    const reviews = await f.reviews(held.id);
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0].reason).toBe("session_mismatch");
+    expect(reviews[0].session_id).toBe(paidOther);
+    expect(reviews[0].resolved_at).toBeNull();
+    expect((await f.webhook("checkout.session.completed", paidOther)).status).toBe(
+      200,
+    );
+    expect(await f.reviews(held.id)).toHaveLength(1);
+    f.setPaymentsEnabled(true);
+    expect((await f.webhook("checkout.session.completed", paidOther)).status).toBe(
+      200,
+    );
+    expect((await f.enrollment(held.id)).status).toBe("reserved");
+  } finally {
+    await f.close();
+  }
+});
+
+test("unpaid completed sessions are ignored, not treated as paid completions", async () => {
+  const f = await liveOffFixture();
+  try {
+    const offer = await f.plantOffering();
+    const unbound = await f.plantHold(offer.id, offer.courseDate);
+    const sessionId = `cs_live_unpaid${unbound.id.replaceAll("-", "").slice(0, 8)}`;
+    f.plantSession({
+      id: sessionId,
+      enrollmentId: unbound.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: unbound.expiresAt,
+      paymentStatus: "unpaid",
+    });
+    const ignored = await f.webhook("checkout.session.completed", sessionId);
+    expect(ignored.status).toBe(200);
+    expect(await ignored.json()).toEqual({ received: true, ignored: true });
+    expect((await f.enrollment(unbound.id)).status).toBe("reserved");
+    expect((await f.enrollment(unbound.id)).stripe_session_id).toBeNull();
+  } finally {
+    await f.close();
+  }
+});
+
+test("record-path mail failure stays 200 after a durable paid record", async () => {
+  const f = await liveOffFixture();
+  try {
+    const offer = await f.plantOffering();
+    const paid = await f.plantHold(offer.id, offer.courseDate);
+    const sessionId = `cs_live_mailerr${paid.id.replaceAll("-", "").slice(0, 8)}`;
+    await f.db.query(
+      "UPDATE student_enrollments SET stripe_session_id=$2 WHERE id=$1",
+      [paid.id, sessionId],
+    );
+    f.plantSession({
+      id: sessionId,
+      enrollmentId: paid.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: paid.expiresAt,
+    });
+    process.env.RDA_STUDENT_EMAIL_LIVE_ENABLED = "true";
+    delete process.env.RDA_STUDENT_EMAIL_API_KEY;
+    delete process.env.RDA_STUDENT_EMAIL_FROM;
+    const completed = await f.webhook("checkout.session.completed", sessionId);
+    expect(completed.status).toBe(200);
+    expect(await completed.json()).toEqual({ received: true });
+    expect((await f.enrollment(paid.id)).status).toBe("paid");
+    expect((await f.mail(paid.id))[0].status).toBe("pending");
+  } finally {
+    await f.close();
+  }
+});
+
+test("expired orphan with a partial refund stays in review", async () => {
+  const f = await liveOffFixture();
+  try {
+    f.setPaymentsEnabled(true);
+    const offer = await f.plantOffering();
+    const expired = await f.plantHold(offer.id, offer.courseDate, {
+      expiresAt: 1_700_000_000,
+    });
+    await f.db.query(
+      "UPDATE student_enrollments SET status='expired',stripe_session_id=NULL WHERE id=$1",
+      [expired.id],
+    );
+    const sessionId = `cs_live_orpart${expired.id.replaceAll("-", "").slice(0, 8)}`;
+    f.plantSession({
+      id: sessionId,
+      enrollmentId: expired.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: 1_800_000_000,
+      amountRefunded: 10000,
+      chargeRefunded: true,
+    });
+    expect((await f.webhook("checkout.session.completed", sessionId)).status).toBe(
+      200,
+    );
+    expect((await f.enrollment(expired.id)).status).toBe("expired");
+    const reviews = await f.reviews(expired.id);
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0].reason).toBe("paid_after_release");
+    expect(reviews[0].resolved_at).toBeNull();
+    expect(reviews[0].resolution).toBeNull();
   } finally {
     await f.close();
   }

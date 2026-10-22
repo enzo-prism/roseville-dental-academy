@@ -1360,6 +1360,27 @@ test.describe("student enrollment isolated full stack", () => {
     expect(reservedRoster).toContain(reservedEmail);
     expect(reservedRoster).toContain("unbound");
     expect(reservedRoster).not.toContain("TEST ONLY · paid");
+    const paidHold = randomUUID();
+    const paidEmail = `paid-roster-${paidHold}@example.test`;
+    await control({
+      plantSessionlessHold: {
+        id: paidHold,
+        offeringId: december,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Paid Roster Adult",
+        email: paidEmail,
+        phone: "916 555 0112",
+        expiresAt,
+        status: "paid",
+      },
+    });
+    const paidRoster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(paidRoster).toContain(paidEmail);
+    expect(paidRoster).toContain("TEST ONLY · paid");
   });
   test("/enroll remaining matches checkout when a refunded seat still occupies", async ({
     request,

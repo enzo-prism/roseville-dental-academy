@@ -4,12 +4,19 @@ import {
   enrollmentOwner,
   validHoldId,
 } from "@/lib/enrollment-http";
-import { studentConfig, getStudentEnrollment } from "@/lib/student-enrollment";
-import { deliverStudentConfirmation } from "@/lib/student-enrollment-mail";
+import {
+  studentWebhookConfig,
+  getStudentEnrollment,
+  studentDatabase,
+} from "@/lib/student-enrollment";
+import {
+  deliverStudentConfirmation,
+  drainStudentConfirmations,
+} from "@/lib/student-enrollment-mail";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
-  const config = studentConfig();
+  const config = studentWebhookConfig();
   if (
     !config ||
     !(await enrollmentOwner()) ||
@@ -21,6 +28,12 @@ export async function POST(request: Request) {
     return enrollmentResponse({ error: "Staff access required." }, 401);
   try {
     const body = await enrollmentBody(request);
+    if (body.drain === true && Object.keys(body).length === 1) {
+      return enrollmentResponse({
+        processed: true,
+        ...(await drainStudentConfirmations(config)),
+      });
+    }
     if (Object.keys(body).length !== 1 || !validHoldId(body.id))
       return enrollmentResponse(
         { error: "Invalid enrollment reference." },
@@ -29,7 +42,6 @@ export async function POST(request: Request) {
     const held = await getStudentEnrollment(body.id);
     if (!held || held.status !== "paid")
       return enrollmentResponse({ error: "Paid enrollment required." }, 409);
-    const { studentDatabase } = await import("@/lib/student-enrollment");
     const offering =
       await studentDatabase()`SELECT mode FROM student_enrollment_offerings WHERE id=${held.offering_id}::uuid`;
     if (offering[0]?.mode !== config.mode)

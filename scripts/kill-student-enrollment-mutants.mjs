@@ -1,7 +1,8 @@
 // Applies one source mutant at a time, runs the student suite + lock suite,
 // records that the mutant is killed, then restores the file.
 import { spawn } from "node:child_process";
-import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { access, readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { constants } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -73,10 +74,16 @@ const mutants = [
       "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND status IN ('reserved','paid'))>=offer.capacity THEN",
   },
   {
-    id: "M52b",
+    id: "M52",
     file: "app/enroll/page.tsx",
     find: "              const remaining = live?.remaining;",
     replace: "              const remaining = INFECTION_CONTROL_OFFERING_CAPACITY;",
+  },
+  {
+    id: "M52b",
+    file: "lib/student-enrollment-stripe.ts",
+    find: "        orphanCharge.refunded === true &&\n        orphanCharge.amount_refunded === held.amount",
+    replace: "        orphanCharge.refunded === true",
   },
   {
     id: "M55",
@@ -129,11 +136,18 @@ const mutants = [
       "  IF NEW.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=OLD.id AND status IN ('reserved','paid'))>NEW.capacity THEN RAISE EXCEPTION 'Inventory exceeds capacity'; END IF;",
   },
   {
-    id: "N12",
+    id: "N12a",
     file: "db/migrations/005_student_enrollment.sql",
     find: "    (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash,NEW.policy_text)\n    IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash,OLD.policy_text)",
     replace:
       "    (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash)\n    IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash)",
+  },
+  {
+    id: "N12",
+    file: "db/migrations/005_student_enrollment.sql",
+    find: "  IF NEW.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=OLD.id AND student_enrollment_occupies_seat(status,inventory_released_at))>NEW.capacity THEN RAISE EXCEPTION 'Inventory exceeds capacity'; END IF;",
+    replace:
+      "  IF NEW.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=OLD.id AND student_enrollment_occupies_seat(status,NULL))>NEW.capacity THEN RAISE EXCEPTION 'Inventory exceeds capacity'; END IF;",
   },
   {
     id: "N13",
@@ -178,10 +192,16 @@ const mutants = [
       "  return mode === \"test\"\n    ? \"TEST ONLY · refunded\"\n    : \"refunded — not sellable until released\";",
   },
   {
-    id: "N22",
+    id: "N22a",
     file: "app/enrollment-pilot/roster/page.tsx",
     find: "    rows = roster.filter((row) => row.status === \"paid\");",
     replace: "    rows = roster.filter((row) => row.status !== \"refunded\");",
+  },
+  {
+    id: "N22",
+    file: "app/enrollment-pilot/roster/page.tsx",
+    find: "                  config?.mode === \"test\" ? \"TEST ONLY · paid\" : \"paid\",",
+    replace: "                  \"paid\",",
   },
   {
     id: "W03",
@@ -224,6 +244,26 @@ const mutants = [
     file: "app/api/student-enrollment/webhook/route.ts",
     find: "      if (existing?.status === \"paid\") {\n        try {\n          await deliverStudentConfirmation(existing, config);\n        } catch {\n          /* Mail stays queued; payment state is already durable. */\n        }\n      }\n",
     replace: "",
+  },
+  {
+    id: "X06",
+    file: "app/api/student-enrollment/webhook/route.ts",
+    find: "      studentWebhookPaidCompletionEvent(event.type) &&\n      session.status === \"complete\" &&\n      session.payment_status === \"paid\";",
+    replace:
+      "      studentWebhookPaidCompletionEvent(event.type) &&\n      session.status === \"complete\";",
+  },
+  {
+    id: "X08",
+    file: "app/api/student-enrollment/webhook/route.ts",
+    find: "    try {\n      if (held?.status === \"paid\") await deliverStudentConfirmation(held, config);\n    } catch {\n      /* Mail stays queued; payment state is already durable. */\n    }\n",
+    replace:
+      "    if (held?.status === \"paid\") await deliverStudentConfirmation(held, config);\n",
+  },
+  {
+    id: "X09",
+    file: "lib/student-enrollment-mail.ts",
+    find: "    AND EXISTS(SELECT 1 FROM student_enrollments WHERE id=${held.id}::uuid AND status='paid') RETURNING payload`;",
+    replace: "    RETURNING payload`;",
   },
 ];
 
@@ -269,6 +309,21 @@ function lockDbUnreachable(result) {
   );
 }
 
+function fixtureStartFailed(result) {
+  return /Could not find a production build|Fixture server exited|EADDRINUSE|listen EADDRINUSE|Local fixture server did not become ready/i.test(
+    `${result.stdout}\n${result.stderr}`,
+  );
+}
+
+async function nextBuildExists() {
+  try {
+    await access(resolve(root, ".next"), constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const only = process.argv.slice(2).filter((value) => !value.startsWith("-"));
 const selected = only.length
   ? mutants.filter((mutant) => only.includes(mutant.id))
@@ -298,6 +353,19 @@ const cleanBuild = async () => {
   await rm(resolve(root, ".next"), { recursive: true, force: true });
   return run("bash", ["-lc", "pnpm build"]);
 };
+
+if (!(await nextBuildExists())) {
+  const prepared = await run("bash", ["-lc", "pnpm build"]);
+  if (prepared.code !== 0 || !(await nextBuildExists())) {
+    lines.push(
+      `ERROR reason=initial production build missing`,
+      `  build_exit=${prepared.code}`,
+      "",
+    );
+    await writeFile(logPath, `${lines.join("\n")}\n`);
+    process.exitCode = 1;
+  }
+}
 
 for (const mutant of selected) {
   const absolute = resolve(root, mutant.file);
@@ -369,6 +437,18 @@ for (const mutant of selected) {
     lines.push(
       `${mutant.id} ERROR file=${mutant.file}`,
       `  reason=lock database unreachable`,
+      `  build_exit=${build.code} suite_exit=${suite.code} locks_exit=${locks.code}`,
+      "",
+    );
+    await writeFile(logPath, `${lines.join("\n")}\n`);
+    process.exitCode = 1;
+    console.log(`${mutant.id} ERROR`);
+    continue;
+  }
+  if (fixtureStartFailed(suite) || fixtureStartFailed(locks)) {
+    lines.push(
+      `${mutant.id} ERROR file=${mutant.file}`,
+      `  reason=fixture start failure`,
       `  build_exit=${build.code} suite_exit=${suite.code} locks_exit=${locks.code}`,
       "",
     );
