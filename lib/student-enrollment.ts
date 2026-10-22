@@ -48,10 +48,11 @@ export type StudentEnrollment = {
   stripe_expires_at: number;
   created_at: string;
 };
-export function studentConfig(): StudentConfig | null {
+function readStudentConfig(requireLivePayments: boolean): StudentConfig | null {
   const mode = process.env.RDA_STUDENT_PAYMENTS_MODE;
   if (mode !== "test" && mode !== "live") return null;
   if (
+    requireLivePayments &&
     mode === "live" &&
     process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED !== "true"
   )
@@ -89,6 +90,64 @@ export function studentConfig(): StudentConfig | null {
   }
   return { mode, key, webhookSecret, origin, account };
 }
+export function studentConfig(): StudentConfig | null {
+  return readStudentConfig(true);
+}
+export function studentWebhookConfig(): StudentConfig | null {
+  return readStudentConfig(false);
+}
+export function studentWebhookProcessesWhilePaymentsOff(eventType: string) {
+  return eventType === "charge.refunded";
+}
+export function studentWebhookPaidCompletionEvent(eventType: string) {
+  return (
+    eventType === "checkout.session.completed" ||
+    eventType === "checkout.session.async_payment_succeeded"
+  );
+}
+export function studentWebhookRecordsEvent(
+  eventType: string,
+  paymentsEnabled: boolean,
+  fullyRefunded: boolean,
+) {
+  return (
+    paymentsEnabled ||
+    studentWebhookProcessesWhilePaymentsOff(eventType) ||
+    fullyRefunded
+  );
+}
+export function studentWebhookShouldRecord(
+  eventType: string,
+  paymentsEnabled: boolean,
+  fullyRefunded: boolean,
+  boundToSession: boolean,
+) {
+  return (
+    studentWebhookRecordsEvent(eventType, paymentsEnabled, fullyRefunded) ||
+    (studentWebhookPaidCompletionEvent(eventType) && boundToSession)
+  );
+}
+export function studentPublicEnrollCtaEnabled() {
+  return (
+    studentConfig()?.mode === "live" &&
+    process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA === "true"
+  );
+}
+export function studentEnrollmentOccupiesSeat(
+  status: StudentEnrollment["status"],
+  releasedAt: unknown,
+) {
+  return (
+    status === "reserved" ||
+    status === "paid" ||
+    (status === "refunded" && releasedAt == null)
+  );
+}
+export function studentPublicEnrollCtas() {
+  return studentPublicEnrollCtaEnabled()
+    ? ([{ href: "/enroll" as const, label: "Enroll and pay in full" as const }])
+    : [];
+}
 export function studentDatabase() {
   if (!process.env.DATABASE_URL) throw new Error("Enrollment unavailable");
   return neon(process.env.DATABASE_URL);
@@ -100,10 +159,11 @@ export function studentOwner(token: string | undefined) {
 }
 export async function studentOfferings(
   config: StudentConfig,
+  database: typeof studentDatabase = studentDatabase,
 ): Promise<StudentOffering[]> {
   const rows =
-    await studentDatabase()`SELECT o.*, (o.capacity-o.external_seats-(SELECT count(*) FROM student_enrollments e
-    WHERE e.offering_id=o.id AND e.status IN ('reserved','paid','refunded')))::int AS remaining
+    await database()`SELECT o.*, (o.capacity-o.external_seats-(SELECT count(*) FROM student_enrollments e
+    WHERE e.offering_id=o.id AND student_enrollment_occupies_seat(e.status,e.inventory_released_at)))::int AS remaining
     FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true
     AND o.course_date > (now() AT TIME ZONE 'America/Los_Angeles')::date
     AND o.policy_version=${ENROLLMENT_POLICY_VERSION} AND o.policy_hash=${STUDENT_POLICY_HASH} AND o.policy_text IS NOT NULL ORDER BY o.course_date`;
@@ -136,6 +196,35 @@ export async function getStudentEnrollment(id: string) {
         course_date: enrollmentDate(rows[0].course_date),
       } as StudentEnrollment)
     : undefined;
+}
+export async function listStudentReviews(mode: StudentConfig["mode"]) {
+  return studentDatabase()`SELECT e.id,e.student_name,e.email,e.status,r.session_id,r.reason,r.created_at,r.resolved_at,r.resolution,o.course_date
+    FROM student_enrollment_reviews r
+    JOIN student_enrollments e ON e.id=r.enrollment_id
+    JOIN student_enrollment_offerings o ON o.id=e.offering_id
+    WHERE o.mode=${mode} AND r.resolved_at IS NULL
+    ORDER BY r.created_at LIMIT 500`;
+}
+export async function listStudentReservedHolds(
+  mode: StudentConfig["mode"],
+  database: typeof studentDatabase = studentDatabase,
+) {
+  return database()`SELECT e.id,e.student_name,e.email,e.stripe_session_id,e.stripe_expires_at,o.course_date
+    FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id
+    WHERE e.status='reserved' AND o.mode=${mode} ORDER BY e.created_at LIMIT 500`;
+}
+export function refundedRosterPaymentLabel(
+  mode: StudentConfig["mode"] | undefined,
+  releasedAt: unknown,
+) {
+  if (releasedAt != null && releasedAt !== "") {
+    return mode === "test"
+      ? "TEST ONLY · refunded · released"
+      : "refunded — seat released";
+  }
+  return mode === "test"
+    ? "TEST ONLY · refunded"
+    : "refunded — not sellable until released";
 }
 export function studentInput(body: Record<string, unknown>) {
   if (

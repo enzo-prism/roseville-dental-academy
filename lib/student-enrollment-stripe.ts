@@ -35,6 +35,24 @@ export type StudentSession = {
   url?: string;
 };
 const API_VERSION = "2026-08-26.dahlia";
+export class StudentProviderError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = "StudentProviderError";
+  }
+}
+export function isStripeIdempotencyConflict(status: number, code?: string) {
+  return status === 409 && code === "idempotency_key_in_use";
+}
+export function isStudentIdempotencyConflict(error: unknown) {
+  return (
+    error instanceof StudentProviderError &&
+    error.code === "idempotency_key_in_use"
+  );
+}
 async function provider(
   config: StudentConfig,
   path: string,
@@ -53,7 +71,23 @@ async function provider(
     },
     body,
   });
-  if (!response.ok) throw new Error("Payment provider unavailable");
+  if (!response.ok) {
+    let code: string | undefined;
+    try {
+      const failure = (await response.json()) as {
+        error?: { code?: string };
+      };
+      code = failure.error?.code;
+    } catch {
+      /* Status 409 is enough to recover the in-flight Checkout session. */
+    }
+    if (isStripeIdempotencyConflict(response.status, code))
+      throw new StudentProviderError(
+        "Payment provider idempotency conflict",
+        "idempotency_key_in_use",
+      );
+    throw new Error("Payment provider unavailable");
+  }
   return response.json();
 }
 export async function verifyStudentMerchant(config: StudentConfig) {
@@ -99,11 +133,13 @@ export function assertStudentSession(
   session: StudentSession,
   held: StudentEnrollment,
   config: StudentConfig,
+  options?: { allowExpiredOrphan?: boolean },
 ) {
   const prefix =
     config.mode === "test"
       ? /^cs_test_[A-Za-z0-9]+$/
       : /^cs_live_[A-Za-z0-9]+$/;
+  const orphan = options?.allowExpiredOrphan === true;
   if (
     session.object !== "checkout.session" ||
     !prefix.test(session.id) ||
@@ -119,10 +155,24 @@ export function assertStudentSession(
     session.metadata?.integration !== "rda-student-v1" ||
     session.metadata?.environment !== config.mode ||
     session.metadata?.course_date !== held.course_date ||
-    session.expires_at !== Number(held.stripe_expires_at) ||
-    (held.stripe_session_id !== null && held.stripe_session_id !== session.id)
+    (!orphan && session.expires_at !== Number(held.stripe_expires_at)) ||
+    (!orphan &&
+      held.stripe_session_id !== null &&
+      held.stripe_session_id !== session.id)
   )
     throw new Error("Payment verification failed");
+}
+export function studentSessionIsFullyRefunded(session: StudentSession) {
+  const charge =
+    typeof session.payment_intent === "object"
+      ? session.payment_intent?.latest_charge
+      : null;
+  return (
+    charge != null &&
+    charge.refunded === true &&
+    charge.amount_refunded === charge.amount &&
+    charge.amount === session.amount_total
+  );
 }
 export async function retrieveStudentSession(
   id: string,
@@ -189,22 +239,36 @@ export async function startStudentSession(
     const recovered = await recoverStudentSession(held, config);
     if (!recovered) throw new Error("Reconciliation required");
     session = recovered;
-  } else
-    session = await provider(
-      config,
-      "checkout/sessions",
-      studentSessionParameters(held, config),
-      `rda-student-${held.id}`,
-    );
+  } else {
+    try {
+      session = await provider(
+        config,
+        "checkout/sessions",
+        studentSessionParameters(held, config),
+        `rda-student-${held.id}`,
+      );
+    } catch (error) {
+      if (!isStudentIdempotencyConflict(error)) throw error;
+      const recovered = await recoverStudentSession(held, config);
+      if (!recovered) throw error;
+      session = recovered;
+    }
+  }
   assertStudentSession(session, held, config);
   await bindStudentSession(held, session.id);
   if (session.status !== "open") throw new Error("Session closed");
   return safeTestCheckoutUrl(session.url);
 }
-export async function bindStudentSession(held: StudentEnrollment, id: string) {
+export async function bindStudentSession(
+  held: StudentEnrollment,
+  id: string,
+  database: typeof studentDatabase = studentDatabase,
+) {
+  if (held.status !== "reserved") throw new Error("Session identity conflict");
   const rows =
-    await studentDatabase()`UPDATE student_enrollments SET stripe_session_id=${id},updated_at=now()
-    WHERE id=${held.id}::uuid AND (stripe_session_id IS NULL OR stripe_session_id=${id}) RETURNING id`;
+    await database()`UPDATE student_enrollments SET stripe_session_id=${id},updated_at=now()
+    WHERE id=${held.id}::uuid AND status='reserved'
+      AND (stripe_session_id IS NULL OR stripe_session_id=${id}) RETURNING id`;
   if (!rows.length) throw new Error("Session identity conflict");
 }
 export type StudentPaymentEvent =
@@ -228,8 +292,49 @@ export async function recordStudentSession(
     await studentDatabase()`SELECT mode FROM student_enrollment_offerings WHERE id=${held.offering_id}::uuid`;
   if (mode[0]?.mode !== config.mode)
     throw new Error("Wrong ledger environment");
-  assertStudentSession(session, held, config);
-  await bindStudentSession(held, session.id);
+  assertStudentSession(session, held, config, {
+    allowExpiredOrphan: held.status === "expired",
+  });
+  if (held.status === "expired") {
+    if (session.status === "complete" && session.payment_status === "paid") {
+      await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'paid_after_release')`;
+      const orphanCharge =
+        typeof session.payment_intent === "object"
+          ? session.payment_intent?.latest_charge
+          : null;
+      if (
+        orphanCharge &&
+        orphanCharge.amount === held.amount &&
+        orphanCharge.currency === held.currency &&
+        orphanCharge.livemode === (config.mode === "live") &&
+        orphanCharge.refunded === true &&
+        orphanCharge.amount_refunded === held.amount
+      ) {
+        await studentDatabase()`SELECT resolve_student_enrollment_review(${held.id}::uuid,${session.id},'refunded','stripe-charge-refunded')`;
+      }
+    }
+    return held;
+  }
+  if (held.status === "reserved") {
+    if (eventType === "charge.refunded" && held.stripe_session_id == null)
+      throw new Error("Session identity conflict");
+    try {
+      await bindStudentSession(held, session.id);
+    } catch (error) {
+      const current = await getStudentEnrollment(id);
+      if (
+        current?.status === "expired" &&
+        session.status === "complete" &&
+        session.payment_status === "paid"
+      ) {
+        await studentDatabase()`SELECT flag_student_enrollment_review(${current.id}::uuid,${session.id},'paid_after_release')`;
+        return current;
+      }
+      throw error;
+    }
+  } else if (held.stripe_session_id !== session.id) {
+    throw new Error("Session identity conflict");
+  }
   let outcome: "paid" | "expired" | "refunded" | null = null;
   const intent =
     typeof session.payment_intent === "string"
@@ -244,10 +349,13 @@ export async function recordStudentSession(
     case "checkout.session.completed":
     case "checkout.session.expired":
     case "checkout.session.async_payment_succeeded":
-    case "charge.refunded":
     case "reconcile":
       if (session.status === "complete" && session.payment_status === "paid")
         outcome = "paid";
+      if (session.status === "expired" && session.payment_status === "unpaid")
+        outcome = "expired";
+      break;
+    case "charge.refunded":
       if (session.status === "expired" && session.payment_status === "unpaid")
         outcome = "expired";
       break;
@@ -301,7 +409,7 @@ export async function reconcileStudentSession(
     throw new Error("Provider session not found; manual review required");
   }
   assertStudentSession(session, held, config);
-  await bindStudentSession(held, session.id);
+  if (held.status === "reserved") await bindStudentSession(held, session.id);
   const verified: StudentSession =
     session.status === "open"
       ? await provider(

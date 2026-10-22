@@ -37,6 +37,29 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify student enrollment locks on real Postgres
+        env:
+          STUDENT_LOCK_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/rda_locks
+        run: |
+          set -euo pipefail
+          docker run -d --name rda-locks-pg \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=rda_locks \
+            -p 5432:5432 \
+            postgres:17
+          trap 'docker rm -f rda-locks-pg' EXIT
+          ready=0
+          for i in $(seq 1 30); do
+            if docker exec rda-locks-pg pg_isready -h 127.0.0.1 -U postgres -d rda_locks; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" -eq 1
+          pnpm test:student-enrollment-locks
+
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
@@ -108,3 +131,44 @@ jobs:
             playwright-report
             test-results
           if-no-files-found: ignore
+
+  student-enrollment-locks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rda_locks
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rda_locks"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify student enrollment locks on real Postgres
+        env:
+          STUDENT_LOCK_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/rda_locks
+        run: pnpm test:student-enrollment-locks

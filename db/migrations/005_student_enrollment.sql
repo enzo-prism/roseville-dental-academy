@@ -47,9 +47,28 @@ CREATE TABLE IF NOT EXISTS student_enrollment_events (
   event_id text PRIMARY KEY,
   enrollment_id uuid NOT NULL REFERENCES student_enrollments(id),
   session_id text NOT NULL,
-  outcome text NOT NULL CHECK (outcome IN ('paid','expired','refunded')),
+  outcome text NOT NULL CHECK (outcome IN ('paid','expired','refunded','released','enrolled','dismissed')),
+  actor text,
   received_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE student_enrollments ADD COLUMN IF NOT EXISTS inventory_released_at timestamptz;
+ALTER TABLE student_enrollments ADD COLUMN IF NOT EXISTS inventory_released_by text;
+ALTER TABLE student_enrollment_events ADD COLUMN IF NOT EXISTS actor text;
+DROP INDEX IF EXISTS student_enrollment_duplicate;
+CREATE UNIQUE INDEX student_enrollment_duplicate ON student_enrollments(offering_id,lower(email))
+  WHERE status IN ('reserved','paid') OR (status='refunded' AND inventory_released_at IS NULL);
+DO $events_outcome$
+BEGIN
+  ALTER TABLE student_enrollment_events DROP CONSTRAINT IF EXISTS student_enrollment_events_outcome_check;
+  ALTER TABLE student_enrollment_events
+    ADD CONSTRAINT student_enrollment_events_outcome_check
+    CHECK (outcome IN ('paid','expired','refunded','released','enrolled','dismissed'));
+END
+$events_outcome$;
+CREATE OR REPLACE FUNCTION student_enrollment_occupies_seat(p_status text, p_released timestamptz)
+RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+  SELECT p_status IN ('reserved','paid') OR (p_status='refunded' AND p_released IS NULL);
+$$;
 CREATE TABLE IF NOT EXISTS student_enrollment_mail (
   enrollment_id uuid PRIMARY KEY REFERENCES student_enrollments(id),
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sending','sent','captured','review')),
@@ -83,8 +102,8 @@ BEGIN
     OR encode(sha256(convert_to(offer.policy_text,'UTF8')),'hex')<>p_hash
     OR (p_mode='live' AND offer.course_date NOT IN (DATE '2026-11-14', DATE '2026-12-05')) THEN RAISE EXCEPTION 'Offering unavailable'; END IF;
   IF (SELECT count(*) FROM student_enrollments WHERE owner_hash=p_owner AND status='reserved')>=2 THEN RETURN; END IF;
-  -- Refunded seats stay counted until academy staff explicitly reconcile inventory.
-  IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=p_offering AND status IN ('reserved','paid','refunded'))>=offer.capacity THEN RETURN; END IF;
+  -- Refunded seats stay counted until release_refunded_student_seat records an actor.
+  IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=p_offering AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN RETURN; END IF;
   RETURN QUERY INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency)
     VALUES(p_id,p_offering,offer.course_date,p_owner,p_name,p_email,p_phone,true,p_policy,p_hash,offer.policy_text,offer.amount,offer.currency) RETURNING *;
 END;
@@ -125,7 +144,7 @@ BEGIN
   IF EXISTS(SELECT 1 FROM student_enrollments WHERE offering_id=OLD.id) AND
     (NEW.mode,NEW.course_id,NEW.course_date,NEW.amount,NEW.currency,NEW.policy_version,NEW.policy_hash,NEW.policy_text)
     IS DISTINCT FROM (OLD.mode,OLD.course_id,OLD.course_date,OLD.amount,OLD.currency,OLD.policy_version,OLD.policy_hash,OLD.policy_text) THEN RAISE EXCEPTION 'Offering already has enrollments'; END IF;
-  IF NEW.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=OLD.id AND status IN ('reserved','paid','refunded'))>NEW.capacity THEN RAISE EXCEPTION 'Inventory exceeds capacity'; END IF;
+  IF NEW.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=OLD.id AND student_enrollment_occupies_seat(status,inventory_released_at))>NEW.capacity THEN RAISE EXCEPTION 'Inventory exceeds capacity'; END IF;
   RETURN NEW;
 END;
 $$;
@@ -153,13 +172,15 @@ BEGIN
   RETURN NEXT held;
 END;
 $$;
+DROP VIEW IF EXISTS student_enrollment_roster;
+DROP VIEW IF EXISTS student_enrollment_roster_test;
 CREATE OR REPLACE VIEW student_enrollment_roster AS
   SELECT e.id,e.student_name,e.email,e.phone,e.status,e.amount,e.currency,e.refunded_amount,e.policy_accepted_at,e.policy_version,
-    e.stripe_session_id,e.stripe_payment_intent,o.mode,o.course_id,o.course_date
+    e.stripe_session_id,e.stripe_payment_intent,e.inventory_released_at,e.inventory_released_by,o.mode,o.course_id,o.course_date
   FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.status IN ('paid','refunded') AND o.mode='live';
 CREATE OR REPLACE VIEW student_enrollment_roster_test AS
   SELECT e.id,e.student_name,e.email,e.phone,e.status,e.amount,e.currency,e.refunded_amount,e.policy_accepted_at,e.policy_version,
-    e.stripe_session_id,e.stripe_payment_intent,o.mode,o.course_id,o.course_date
+    e.stripe_session_id,e.stripe_payment_intent,e.inventory_released_at,e.inventory_released_by,o.mode,o.course_id,o.course_date
   FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.status IN ('paid','refunded') AND o.mode='test';
 
 CREATE TABLE IF NOT EXISTS student_enrollment_attempts (
@@ -175,3 +196,125 @@ BEGIN
   RETURN hits<=20;
 END;
 $$;
+-- Orphan Checkout payments against released/expired rows need staff review.
+-- Re-applying this file is required so production picks up new functions/views.
+CREATE TABLE IF NOT EXISTS student_enrollment_reviews (
+  enrollment_id uuid NOT NULL REFERENCES student_enrollments(id),
+  session_id text NOT NULL,
+  reason text NOT NULL CHECK (reason IN ('paid_after_release')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  resolved_at timestamptz,
+  resolution text CHECK (resolution IS NULL OR resolution IN ('enrolled','dismissed','refunded')),
+  PRIMARY KEY (enrollment_id, session_id)
+);
+ALTER TABLE student_enrollment_reviews ADD COLUMN IF NOT EXISTS resolved_at timestamptz;
+ALTER TABLE student_enrollment_reviews ADD COLUMN IF NOT EXISTS resolution text;
+DO $reviews_pk$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='student_enrollment_reviews'::regclass
+      AND conname='student_enrollment_reviews_pkey'
+      AND array_length(conkey, 1) = 1
+  ) THEN
+    ALTER TABLE student_enrollment_reviews DROP CONSTRAINT student_enrollment_reviews_pkey;
+    ALTER TABLE student_enrollment_reviews ADD PRIMARY KEY (enrollment_id, session_id);
+  END IF;
+END
+$reviews_pk$;
+DO $reviews_resolution$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='student_enrollment_reviews'::regclass
+      AND pg_get_constraintdef(oid) ILIKE '%resolution%enrolled%dismissed%refunded%'
+  ) THEN
+    ALTER TABLE student_enrollment_reviews
+      ADD CONSTRAINT student_enrollment_reviews_resolution_check
+      CHECK (resolution IS NULL OR resolution IN ('enrolled','dismissed','refunded'));
+  END IF;
+END
+$reviews_resolution$;
+CREATE OR REPLACE FUNCTION flag_student_enrollment_review(p_id uuid,p_session text,p_reason text)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE held student_enrollments;
+BEGIN
+  IF p_reason <> 'paid_after_release' THEN RAISE EXCEPTION 'Invalid review reason'; END IF;
+  SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
+  IF held.status <> 'expired' THEN RAISE EXCEPTION 'Review flag requires an expired enrollment'; END IF;
+  INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason)
+    VALUES(p_id,p_session,p_reason)
+    ON CONFLICT (enrollment_id, session_id) DO NOTHING;
+  RETURN true;
+END;
+$$;
+ALTER TABLE student_enrollment_reviews ADD COLUMN IF NOT EXISTS resolved_by text;
+DROP FUNCTION IF EXISTS resolve_student_enrollment_review(uuid, text, text);
+-- Staff-only: never UPDATE student_enrollments.status='paid' by hand. This
+-- function refuses 'enrolled' when reserved+paid+unreleased-refunded already
+-- fill capacity. Actor is required and written onto the review and events row.
+CREATE OR REPLACE FUNCTION resolve_student_enrollment_review(p_id uuid,p_session text,p_resolution text,p_actor text)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE held student_enrollments; offer student_enrollment_offerings; review student_enrollment_reviews;
+BEGIN
+  IF p_actor IS NULL OR length(btrim(p_actor))<3 THEN RAISE EXCEPTION 'Actor required'; END IF;
+  IF p_resolution NOT IN ('enrolled','dismissed','refunded') THEN RAISE EXCEPTION 'Invalid review resolution'; END IF;
+  SELECT * INTO review FROM student_enrollment_reviews WHERE enrollment_id=p_id AND session_id=p_session FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown review'; END IF;
+  IF review.resolved_at IS NOT NULL THEN
+    IF review.resolution IS DISTINCT FROM p_resolution THEN RAISE EXCEPTION 'Review already resolved'; END IF;
+    RETURN false;
+  END IF;
+  SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
+  IF p_resolution='enrolled' THEN
+    IF held.status<>'expired' THEN RAISE EXCEPTION 'Review enroll requires an expired enrollment'; END IF;
+    SELECT * INTO offer FROM student_enrollment_offerings WHERE id=held.offering_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Unknown offering'; END IF;
+    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN
+      RAISE EXCEPTION 'Class is full';
+    END IF;
+    UPDATE student_enrollments SET status='paid',stripe_session_id=COALESCE(stripe_session_id,p_session),updated_at=now() WHERE id=p_id;
+    INSERT INTO student_enrollment_mail(enrollment_id) VALUES(p_id) ON CONFLICT DO NOTHING;
+  END IF;
+  UPDATE student_enrollment_reviews SET resolved_at=now(),resolution=p_resolution,resolved_by=btrim(p_actor) WHERE enrollment_id=p_id AND session_id=p_session;
+  INSERT INTO student_enrollment_events(event_id,enrollment_id,session_id,outcome,actor)
+    VALUES('resolve:'||p_id::text||':'||p_session||':'||p_resolution,p_id,p_session,p_resolution,btrim(p_actor))
+    ON CONFLICT (event_id) DO NOTHING;
+  RETURN true;
+END;
+$$;
+-- Staff-only path that frees a refunded verification (or academy-cancelled) seat.
+-- Refunded rows keep occupying inventory until this records an actor and event.
+CREATE OR REPLACE FUNCTION release_refunded_student_seat(p_id uuid,p_actor text)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE held student_enrollments;
+BEGIN
+  IF p_actor IS NULL OR length(btrim(p_actor))<3 THEN RAISE EXCEPTION 'Actor required'; END IF;
+  SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
+  IF held.status<>'refunded' THEN RAISE EXCEPTION 'Seat release requires a refunded enrollment'; END IF;
+  IF held.inventory_released_at IS NOT NULL THEN RETURN false; END IF;
+  UPDATE student_enrollments
+    SET inventory_released_at=now(),inventory_released_by=btrim(p_actor),updated_at=now()
+    WHERE id=p_id;
+  INSERT INTO student_enrollment_events(event_id,enrollment_id,session_id,outcome,actor)
+    VALUES('release:'||p_id::text,p_id,COALESCE(held.stripe_session_id,'staff'),'released',btrim(p_actor));
+  RETURN true;
+END;
+$$;
+-- CREATE TABLE IF NOT EXISTS will not add CHECKs to an older offerings table.
+DO $amount_check$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='student_enrollment_offerings'::regclass
+      AND contype='c'
+      AND pg_get_constraintdef(oid) ILIKE '%amount%39500%'
+  ) THEN
+    ALTER TABLE student_enrollment_offerings
+      ADD CONSTRAINT student_enrollment_offerings_amount_39500 CHECK (amount=39500);
+  END IF;
+END
+$amount_check$;

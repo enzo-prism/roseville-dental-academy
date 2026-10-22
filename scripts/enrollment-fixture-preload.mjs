@@ -16,7 +16,8 @@ if (process.env.RDA_STUDENT_PAYMENTS_MODE) {
     || process.env.RDA_STUDENT_STRIPE_TEST_WEBHOOK_SECRET !== "whsec_fixture"
     || process.env.RDA_STUDENT_STRIPE_ACCOUNT_ID !== "acct_fixture"
     || process.env.RDA_STUDENT_PAYMENTS_ORIGIN !== process.env.RDA_ENROLLMENT_TEST_ORIGIN
-    || process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED || process.env.RDA_STUDENT_EMAIL_LIVE_ENABLED) throw new Error("Student fixtures require isolated test configuration");
+    || process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED || process.env.RDA_STUDENT_EMAIL_LIVE_ENABLED
+    || process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA) throw new Error("Student fixtures require isolated test configuration");
   const source=await readFile(new URL("../lib/academy-policies.ts",import.meta.url),"utf8");
   const paragraphs=[...source.split("export const CANCELLATION_POLICY_PARAGRAPHS = [")[1].split("] as const")[0].matchAll(/"([^"\n]*)"/g)].map(m=>m[1]);
   const hash=createHash("sha256").update(paragraphs.join("\n\n")).digest("hex");
@@ -44,7 +45,7 @@ globalThis.fetch = async (input, init = {}) => {
     try {
       const control=await fixtureControls();
       if (control.resetLimits && control.resetLimits !== resetLimits) {
-        await db.exec("TRUNCATE student_enrollment_attempts");
+        await db.exec("TRUNCATE student_enrollment_attempts, student_enrollment_mail, student_enrollment_events, student_enrollment_reviews, student_enrollments RESTART IDENTITY CASCADE");
         await db.exec("UPDATE student_enrollment_offerings SET external_seats=0");
         resetLimits=control.resetLimits;
       }
@@ -57,35 +58,91 @@ globalThis.fetch = async (input, init = {}) => {
         const plant=control.plantSessionlessHold;
         const offer=(await db.query("SELECT id,course_date,policy_text,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
         if (offer) {
-          await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,'2026-09-30',$8,$9,39500,'usd','reserved',$10) ON CONFLICT (id) DO NOTHING",[plant.id,offer.id,offer.course_date,plant.owner,plant.name,plant.email,plant.phone,offer.policy_hash,offer.policy_text,plant.expiresAt]);
+          await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id,stripe_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,true,'2026-09-30',$8,$9,39500,'usd',$11,$12,$10) ON CONFLICT (id) DO NOTHING",[plant.id,offer.id,offer.course_date,plant.owner,plant.name,plant.email,plant.phone,offer.policy_hash,offer.policy_text,plant.expiresAt,plant.status ?? "reserved",plant.sessionId ?? null]);
+          if (plant.releasedAt) {
+            await db.query("UPDATE student_enrollments SET inventory_released_at=now(),inventory_released_by=$2,updated_at=now() WHERE id=$1",[plant.id,plant.releasedBy ?? "staff@example.test"]);
+          }
         }
       }
+      if (control.releaseHold) {
+        await db.query("UPDATE student_enrollments SET status='expired',stripe_session_id=NULL,updated_at=now() WHERE id=$1",[control.releaseHold]);
+      }
+      if (control.plantForeignModeReview) {
+        const plant=control.plantForeignModeReview;
+        const policy=(await db.query("SELECT policy_text,policy_hash FROM student_enrollment_offerings LIMIT 1")).rows[0];
+        if (policy) {
+          await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2026-11-14',39500,0,'2026-09-30',$2,$3,now(),'foreign-mode fixture',false) ON CONFLICT (mode, course_id, course_date) DO NOTHING",[plant.offeringId,policy.policy_hash,policy.policy_text]);
+          await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,'2026-11-14',$3,$4,$5,$6,true,'2026-09-30',$7,$8,39500,'usd','expired',$9) ON CONFLICT (id) DO NOTHING",[plant.id,plant.offeringId,plant.owner,plant.name,plant.email,plant.phone,policy.policy_hash,policy.policy_text,plant.expiresAt]);
+          await db.query("INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason) VALUES($1,$2,'paid_after_release') ON CONFLICT (enrollment_id, session_id) DO NOTHING",[plant.id,plant.sessionId]);
+        }
+      }
+      if (control.plantForeignModeHold) {
+        const plant=control.plantForeignModeHold;
+        const policy=(await db.query("SELECT policy_text,policy_hash FROM student_enrollment_offerings LIMIT 1")).rows[0];
+        if (policy) {
+          await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2026-11-14',39500,0,'2026-09-30',$2,$3,now(),'foreign-mode hold',false) ON CONFLICT (mode, course_id, course_date) DO NOTHING",[plant.offeringId,policy.policy_hash,policy.policy_text]);
+          const liveOffer=(await db.query("SELECT id FROM student_enrollment_offerings WHERE mode='live' AND course_id='infection-control' AND course_date='2026-11-14'")).rows[0];
+          if (liveOffer) {
+            await db.query("INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_expires_at) VALUES($1,$2,'2026-11-14',$3,$4,$5,$6,true,'2026-09-30',$7,$8,39500,'usd','reserved',$9) ON CONFLICT (id) DO NOTHING",[plant.id,liveOffer.id,plant.owner,plant.name,plant.email,plant.phone,policy.policy_hash,policy.policy_text,plant.expiresAt]);
+          }
+        }
+      }
+      if (control.releaseRefundedSeat) {
+        const release=control.releaseRefundedSeat;
+        await db.query("SELECT release_refunded_student_seat($1::uuid,$2)",[release.id,release.actor ?? "staff@example.test"]);
+      }
       const { query, params } = JSON.parse(init.body);
+      if (control.expireOnBind && typeof query==="string" && query.includes("UPDATE student_enrollments SET stripe_session_id")) {
+        await db.query("UPDATE student_enrollments SET status='expired',updated_at=now() WHERE id=$1",[control.expireOnBind]);
+      }
       const result = await db.query(query, params);
       if (process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE) {
         const evidence={};
-        for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_roster","student_enrollment_roster_test"]) evidence[table]=(await db.query(`SELECT * FROM ${table}`)).rows;
+        for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_reviews","student_enrollment_roster","student_enrollment_roster_test"]) evidence[table]=(await db.query(`SELECT * FROM ${table}`)).rows;
         await writeFile(process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE,JSON.stringify(evidence));
       }
       return Response.json({ ...result, rows: result.rows.map((row) => result.fields.map(({ name, dataTypeID }) => {
         const value = row[name]; if (value === null) return null;
         if (dataTypeID === 16) return value ? "t" : "f";
         if ([114,3802].includes(dataTypeID)) return JSON.stringify(value);
-        if (value instanceof Date) return dataTypeID === 1082 ? value.toISOString().slice(0,10) : value.toISOString(); return String(value);
+        if (value instanceof Date) return dataTypeID === 1082 ? value.toISOString().slice(0,10) : value.toISOString().replace("T"," ").replace("Z","+00"); return String(value);
       })) });
     } catch (error) { return Response.json({ message: error.message }, { status: 400 }); }
   }
   if (url.hostname === "api.stripe.com") {
     const control = await fixtureControls();
+      if (control.plantOrphanSession) {
+      const plant=control.plantOrphanSession;
+      const offer=(await db.query("SELECT course_date,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
+      const heldExpires=plant.enrollmentId
+        ? (await db.query("SELECT stripe_expires_at FROM student_enrollments WHERE id=$1",[plant.enrollmentId])).rows[0]?.stripe_expires_at
+        : undefined;
+      if (offer && !sessions.has(plant.id)) {
+        const courseDate=offer.course_date instanceof Date && offer.course_date.toISOString().endsWith("T00:00:00.000Z")
+          ? offer.course_date.toISOString().slice(0,10) : String(offer.course_date).slice(0,10);
+        sessions.set(plant.id,{
+          id:plant.id,object:"checkout.session",livemode:false,mode:"payment",amount_total:39500,currency:"usd",
+          status:plant.status ?? "open",payment_status:plant.paymentStatus ?? "unpaid",
+          expires_at:plant.expiresAt ?? (Number(heldExpires) || Math.floor(Date.now()/1000)+3600),
+          url:`https://checkout.stripe.com/c/pay/${plant.id}`,client_reference_id:plant.enrollmentId,payment_intent:null,
+          metadata:{enrollment_id:plant.enrollmentId,offering_id:plant.offeringId,policy_version:"2026-09-30",
+            policy_hash:offer.policy_hash,integration:"rda-student-v1",environment:"test",course_date:courseDate},
+        });
+        if (plant.idempotencyKey) keys.set(plant.idempotencyKey,{id:plant.id,raw:plant.raw ?? "orphan"});
+      }
+    }
     if (url.pathname === "/v1/account") {
       if (control.accountError) return Response.json({error:"fixture account unavailable"},{status:500});
       return Response.json({id:control.wrongMerchant ? "acct_wrong" : "acct_fixture",charges_enabled:true,payouts_enabled:true});
     }
     if (init.method === "POST" && url.pathname === "/v1/checkout/sessions") {
       if (control.createError) return Response.json({error:"fixture session create unavailable"},{status:500});
+      if (control.conflictWithoutIdempotencyCode) return Response.json({error:{message:"fixture 409 without idempotency code"}},{status:409});
+      if (control.conflictOtherCode) return Response.json({error:{code:"lock_timeout",message:"fixture 409 with a different code"}},{status:409});
+      if (control.idempotencyConflict) return Response.json({error:{code:"idempotency_key_in_use",message:"fixture in-flight idempotency key"}},{status:409});
       const key = new Headers(init.headers).get("Idempotency-Key"), raw = String(init.body);
       if (keys.has(key)) {
-        const existing = keys.get(key); if (existing.raw !== raw) return Response.json({ error: "idempotency conflict" }, { status: 409 });
+        const existing = keys.get(key); if (existing.raw !== raw) return Response.json({ error: { code: "idempotency_key_in_use", message: "idempotency conflict" } }, { status: 409 });
         return Response.json(sessions.get(existing.id));
       }
       const params = new URLSearchParams(raw); const id = `cs_test_fixture${sessions.size + 1}`;

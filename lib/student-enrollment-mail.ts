@@ -36,11 +36,11 @@ export async function deliverStudentConfirmation(
   if (["sent", "captured"].includes(existing[0].status)) return;
   if (existing[0].status === "review")
     throw new Error("Delivery requires review");
+  if (config.mode === "live" && process.env.RDA_STUDENT_EMAIL_LIVE_ENABLED !== "true")
+    return;
   if (
     config.mode === "live" &&
-    (process.env.RDA_STUDENT_EMAIL_LIVE_ENABLED !== "true" ||
-      !process.env.RDA_STUDENT_EMAIL_API_KEY ||
-      !process.env.RDA_STUDENT_EMAIL_FROM)
+    (!process.env.RDA_STUDENT_EMAIL_API_KEY || !process.env.RDA_STUDENT_EMAIL_FROM)
   )
     throw new Error("Confirmation delivery unavailable");
   if (existing[0].payload === null) {

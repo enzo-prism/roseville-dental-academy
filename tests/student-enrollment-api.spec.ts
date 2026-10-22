@@ -226,6 +226,11 @@ test.describe("student enrollment isolated full stack", () => {
         })
       ).status(),
     ).toBe(503);
+    const lost = (await evidence()).student_enrollments.find(
+      (r: { id: string }) => r.id === data.id,
+    );
+    expect(lost?.status).toBe("reserved");
+    expect(lost?.stripe_session_id).toBeNull();
     await control({});
     const result = await request.post("/api/student-enrollment/reconcile", {
       data: { id: data.id },
@@ -791,5 +796,606 @@ test.describe("student enrollment isolated full stack", () => {
     expect(roster).toContain("Pending checkout holds");
     expect(roster).toContain(data.email);
     expect(roster).toContain("bound");
+  });
+  test("409 idempotency race does not release a reserved hold, and bind stays reserved-only", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Idempotency Adult",
+        email: `idempotency-${planted}@example.test`,
+        phone: "916 555 0188",
+        expiresAt,
+      },
+      idempotencyConflict: true,
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: {
+            id: planted,
+            offeringId: offer,
+            name: "Idempotency Adult",
+            email: `idempotency-${planted}@example.test`,
+            phone: "916 555 0188",
+            adultAccepted: true,
+            policyAccepted: true,
+            policyVersion: "2026-09-30",
+          },
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === planted,
+      ).status,
+    ).toBe("reserved");
+    const orphan = `cs_test_orphan${planted.replaceAll("-", "").slice(0, 12)}`;
+    await control({
+      plantOrphanSession: {
+        id: orphan,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt,
+        idempotencyKey: `rda-student-${planted}`,
+      },
+      idempotencyConflict: true,
+    });
+    const recovered = await request.post("/api/student-enrollment/checkout", {
+      data: {
+        id: planted,
+        offeringId: offer,
+        name: "Idempotency Adult",
+        email: `idempotency-${planted}@example.test`,
+        phone: "916 555 0188",
+        adultAccepted: true,
+        policyAccepted: true,
+        policyVersion: "2026-09-30",
+      },
+      headers,
+    });
+    expect(recovered.status()).toBe(200);
+    expect((await recovered.json()).url).toContain(orphan);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === planted,
+      ).stripe_session_id,
+    ).toBe(orphan);
+  });
+  test("paid webhook for an expired or released row is flagged for staff review instead of 503", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+    const orphan = `cs_test_paidrelease${planted.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("e".repeat(64)).digest("hex"),
+        name: "Released Adult",
+        email: `released-${planted}@example.test`,
+        phone: "916 555 0177",
+        expiresAt,
+        status: "expired",
+      },
+      plantOrphanSession: {
+        id: orphan,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, orphan)).status()).toBe(200);
+    const state = await evidence();
+    const row = state.student_enrollments.find(
+      (item: { id: string }) => item.id === planted,
+    );
+    expect(row.status).toBe("expired");
+    expect(row.stripe_session_id).toBeNull();
+    expect(
+      state.student_enrollment_reviews.filter(
+        (item: { enrollment_id: string; reason: string }) =>
+          item.enrollment_id === planted &&
+          item.reason === "paid_after_release",
+      ),
+    ).toHaveLength(1);
+    expect(
+      state.student_enrollment_mail.filter(
+        (item: { enrollment_id: string }) => item.enrollment_id === planted,
+      ),
+    ).toHaveLength(0);
+    expect((await webhook(request, orphan)).status()).toBe(200);
+    const staff = createEnrollmentSession({
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin,
+    });
+    const roster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(roster).toContain("Payments needing staff review");
+    expect(roster).toContain(`released-${planted}@example.test`);
+    expect(roster).toContain("paid_after_release");
+  });
+  test("live flags without the public CTA flag render 0 Enroll CTAs on /infection-control", async ({
+    request,
+  }) => {
+    const html = await (await request.get("/infection-control")).text();
+    expect(html).not.toContain("data-rda-student-enroll-cta");
+    expect(html).not.toContain("Enroll and pay in full");
+    const enroll = await request.get("/enroll");
+    expect(enroll.status()).toBe(200);
+    expect(await enroll.text()).toContain("Infection Control enrollment");
+  });
+  test("409 without idempotency_key_in_use is not an idempotency conflict", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Bare 409 Adult",
+        email: `bare409-${planted}@example.test`,
+        phone: "916 555 0166",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+      conflictWithoutIdempotencyCode: true,
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: {
+            id: planted,
+            offeringId: offer,
+            name: "Bare 409 Adult",
+            email: `bare409-${planted}@example.test`,
+            phone: "916 555 0166",
+            adultAccepted: true,
+            policyAccepted: true,
+            policyVersion: "2026-09-30",
+          },
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === planted,
+      ).status,
+    ).toBe("expired");
+    const other = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: other,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Other 409 Adult",
+        email: `other409-${other}@example.test`,
+        phone: "916 555 0165",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+      conflictOtherCode: true,
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: {
+            id: other,
+            offeringId: offer,
+            name: "Other 409 Adult",
+            email: `other409-${other}@example.test`,
+            phone: "916 555 0165",
+            adultAccepted: true,
+            policyAccepted: true,
+            policyVersion: "2026-09-30",
+          },
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === other,
+      ).status,
+    ).toBe("expired");
+  });
+  test("bind is reserved-only and a bind that loses the race flags review instead of 503", async ({
+    request,
+  }) => {
+    const checkoutHold = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: checkoutHold,
+        offeringId: offer,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Expire On Bind Adult",
+        email: `expire-bind-${checkoutHold}@example.test`,
+        phone: "916 555 0155",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+      expireOnBind: checkoutHold,
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: {
+            id: checkoutHold,
+            offeringId: offer,
+            name: "Expire On Bind Adult",
+            email: `expire-bind-${checkoutHold}@example.test`,
+            phone: "916 555 0155",
+            adultAccepted: true,
+            policyAccepted: true,
+            policyVersion: "2026-09-30",
+          },
+          headers,
+        })
+      ).status(),
+    ).toBe(503);
+    const checkoutRow = (await evidence()).student_enrollments.find(
+      (row: { id: string }) => row.id === checkoutHold,
+    );
+    expect(checkoutRow.status).toBe("expired");
+    expect(checkoutRow.stripe_session_id).toBeNull();
+    const raced = randomUUID();
+    const orphan = `cs_test_bindrace${raced.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: raced,
+        offeringId: offer,
+        owner: createHash("sha256").update("f".repeat(64)).digest("hex"),
+        name: "Bind Race Adult",
+        email: `bind-race-${raced}@example.test`,
+        phone: "916 555 0144",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      },
+      plantOrphanSession: {
+        id: orphan,
+        enrollmentId: raced,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      expireOnBind: raced,
+      status: "complete",
+    });
+    expect((await webhook(request, orphan)).status()).toBe(200);
+    const state = await evidence();
+    expect(
+      state.student_enrollments.find((row: { id: string }) => row.id === raced)
+        .status,
+    ).toBe("expired");
+    expect(
+      state.student_enrollment_reviews.filter(
+        (item: { enrollment_id: string; session_id: string }) =>
+          item.enrollment_id === raced && item.session_id === orphan,
+      ),
+    ).toHaveLength(1);
+  });
+  test("a second paid orphan for the same enrollment records another review and returns 200", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    const first = `cs_test_p11b1${planted.replaceAll("-", "").slice(0, 8)}`;
+    const second = `cs_test_p11b2${planted.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("e".repeat(64)).digest("hex"),
+        name: "Second Orphan Adult",
+        email: `second-orphan-${planted}@example.test`,
+        phone: "916 555 0133",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "expired",
+      },
+      plantOrphanSession: {
+        id: first,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, first)).status()).toBe(200);
+    await control({
+      plantOrphanSession: {
+        id: second,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, second)).status()).toBe(200);
+    expect(
+      (await evidence()).student_enrollment_reviews.filter(
+        (item: { enrollment_id: string }) => item.enrollment_id === planted,
+      ),
+    ).toHaveLength(2);
+  });
+  test("a refund on an orphan resolves its review", async ({ request }) => {
+    const planted = randomUUID();
+    const orphan = `cs_test_p11a${planted.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("e".repeat(64)).digest("hex"),
+        name: "Orphan Refund Adult",
+        email: `orphan-refund-${planted}@example.test`,
+        phone: "916 555 0122",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "expired",
+      },
+      plantOrphanSession: {
+        id: orphan,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, orphan)).status()).toBe(200);
+    await control({
+      status: "complete",
+      refundedAmount: 39500,
+    });
+    expect(
+      (
+        await webhook(request, orphan, "charge.refunded", {
+          data: { object: { payment_intent: `pi_fixture${orphan.slice(8)}` } },
+        })
+      ).status(),
+    ).toBe(200);
+    const review = (await evidence()).student_enrollment_reviews.find(
+      (item: { enrollment_id: string }) => item.enrollment_id === planted,
+    );
+    expect(review.resolution).toBe("refunded");
+    expect(review.resolved_at).toBeTruthy();
+    const staff = createEnrollmentSession({
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin,
+    });
+    const roster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(roster).not.toContain(`orphan-refund-${planted}@example.test`);
+  });
+  test("staff review list is filtered by the active payment mode", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    const foreign = randomUUID();
+    const orphan = `cs_test_mode${planted.replaceAll("-", "").slice(0, 8)}`;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: offer,
+        owner: createHash("sha256").update("e".repeat(64)).digest("hex"),
+        name: "Mode Filter Adult",
+        email: `mode-filter-${planted}@example.test`,
+        phone: "916 555 0111",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "expired",
+      },
+      plantOrphanSession: {
+        id: orphan,
+        enrollmentId: planted,
+        offeringId: offer,
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "complete",
+        paymentStatus: "paid",
+      },
+      plantForeignModeReview: {
+        id: foreign,
+        offeringId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        owner: "b".repeat(64),
+        name: "Live Review Adult",
+        email: `live-review-${foreign}@example.test`,
+        phone: "916 555 0110",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        sessionId: "cs_live_foreignreview",
+      },
+      status: "complete",
+    });
+    expect((await webhook(request, orphan)).status()).toBe(200);
+    const staff = createEnrollmentSession({
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin,
+    });
+    const roster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(roster).toContain(`mode-filter-${planted}@example.test`);
+    expect(roster).not.toContain(`live-review-${foreign}@example.test`);
+  });
+  test("async_payment_failed does not expire a paid enrollment", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    const sessionId = `cs_test_paidfail${planted.replaceAll("-", "").slice(0, 8)}`;
+    const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: december,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Paid Fail Adult",
+        email: `paid-fail-${planted}@example.test`,
+        phone: "916 555 0108",
+        sessionId,
+        expiresAt,
+        status: "paid",
+      },
+      plantOrphanSession: {
+        id: sessionId,
+        enrollmentId: planted,
+        offeringId: december,
+        expiresAt,
+        status: "complete",
+        paymentStatus: "unpaid",
+      },
+      status: "complete",
+      paymentStatus: "unpaid",
+    });
+    expect(
+      (await webhook(request, sessionId, "checkout.session.async_payment_failed"))
+        .status(),
+    ).toBe(200);
+    expect(
+      (await evidence()).student_enrollments.find(
+        (row: { id: string }) => row.id === planted,
+      ).status,
+    ).toBe("paid");
+  });
+  test("test roster hides live reserved holds and labels released refunds", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    const sessionId = `cs_test_released${planted.replaceAll("-", "").slice(0, 8)}`;
+    const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+    const email = `released-roster-${planted}@example.test`;
+    const foreign = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: december,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Released Roster Adult",
+        email,
+        phone: "916 555 0107",
+        sessionId,
+        expiresAt,
+        status: "refunded",
+        releasedAt: true,
+        releasedBy: "staff@example.test",
+      },
+      releaseRefundedSeat: {
+        id: planted,
+        actor: "staff@example.test",
+      },
+      plantForeignModeHold: {
+        id: foreign,
+        offeringId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        owner: "c".repeat(64),
+        name: "Live Hold Adult",
+        email: `live-hold-${foreign}@example.test`,
+        phone: "916 555 0109",
+        expiresAt,
+      },
+    });
+    const staff = createEnrollmentSession({
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin,
+    });
+    const roster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(roster).toContain(email);
+    expect(roster).toContain("TEST ONLY · refunded · released");
+    expect(roster).not.toContain("TEST ONLY · paid");
+    expect(roster).not.toContain("TEST ONLY · refunded</");
+    expect(roster).not.toContain("refunded — not sellable until released");
+    expect(roster).not.toContain(`live-hold-${foreign}@example.test`);
+    const reservedHold = randomUUID();
+    const reservedEmail = `reserved-roster-${reservedHold}@example.test`;
+    await control({
+      plantSessionlessHold: {
+        id: reservedHold,
+        offeringId: december,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Reserved Roster Adult",
+        email: reservedEmail,
+        phone: "916 555 0111",
+        expiresAt,
+      },
+    });
+    const reservedRoster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(reservedRoster).toContain(reservedEmail);
+    expect(reservedRoster).toContain("unbound");
+    expect(reservedRoster).not.toContain("TEST ONLY · paid");
+  });
+  test("/enroll remaining matches checkout when a refunded seat still occupies", async ({
+    request,
+  }) => {
+    const planted = randomUUID();
+    await control({
+      resetLimits: randomUUID(),
+      externalSeats: { [december]: 11 },
+      plantSessionlessHold: {
+        id: planted,
+        offeringId: december,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Occupying Refund Adult",
+        email: `occupy-refund-${planted}@example.test`,
+        phone: "916 555 0106",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        status: "refunded",
+      },
+    });
+    const enroll = await (await request.get("/enroll")).text();
+    expect(enroll).toMatch(/0 seats available/);
+    expect(
+      (
+        await request.post("/api/student-enrollment/checkout", {
+          data: { ...payload(), offeringId: december },
+          headers,
+        })
+      ).status(),
+    ).toBe(409);
+    await control({
+      releaseRefundedSeat: {
+        id: planted,
+        actor: "staff@example.test",
+      },
+    });
+    const afterRelease = await (await request.get("/enroll")).text();
+    expect(afterRelease).toMatch(/1 seats available/);
   });
 });
