@@ -65,13 +65,13 @@ const mutants = [
   },
   {
     id: "M49",
-    file: "db/migrations/005_student_enrollment.sql",
+    file: "db/migrations/006_student_enrollment_review.sql",
     find: "    SELECT * INTO offer FROM student_enrollment_offerings WHERE id=held.offering_id FOR UPDATE;",
     replace: "    SELECT * INTO offer FROM student_enrollment_offerings WHERE id=held.offering_id;",
   },
   {
     id: "M51b",
-    file: "db/migrations/005_student_enrollment.sql",
+    file: "db/migrations/006_student_enrollment_review.sql",
     find: "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND id<>p_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN",
     replace:
       "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND status IN ('reserved','paid'))>=offer.capacity THEN",
@@ -90,13 +90,13 @@ const mutants = [
   },
   {
     id: "M55",
-    file: "db/migrations/005_student_enrollment.sql",
+    file: "db/migrations/006_student_enrollment_review.sql",
     find: "    IF review.resolution IS DISTINCT FROM p_resolution THEN RAISE EXCEPTION 'Review already resolved'; END IF;\n",
     replace: "",
   },
   {
     id: "M56",
-    file: "db/migrations/005_student_enrollment.sql",
+    file: "db/migrations/006_student_enrollment_review.sql",
     find: "    ELSIF held.status<>'expired' THEN RAISE EXCEPTION 'Review enroll requires an expired enrollment'; END IF;",
     replace: "    END IF;",
   },
@@ -132,7 +132,7 @@ const mutants = [
   },
   {
     id: "N17",
-    file: "db/migrations/005_student_enrollment.sql",
+    file: "db/migrations/006_student_enrollment_review.sql",
     find: "  UPDATE student_enrollment_reviews SET resolved_at=now(),resolution=p_resolution,resolved_by=btrim(p_actor) WHERE enrollment_id=p_id AND session_id=p_session;",
     replace:
       "  UPDATE student_enrollment_reviews SET resolved_at=now(),resolution=p_resolution WHERE enrollment_id=p_id AND session_id=p_session;",
@@ -160,7 +160,7 @@ const mutants = [
   },
   {
     id: "N13",
-    file: "db/migrations/005_student_enrollment.sql",
+    file: "db/migrations/006_student_enrollment_review.sql",
     find: "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND id<>p_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN",
     replace:
       "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND id<>p_id AND student_enrollment_occupies_seat(status,NULL))>=offer.capacity THEN",
@@ -357,7 +357,7 @@ const mutants = [
   },
   {
     id: "S07",
-    file: "db/migrations/005_student_enrollment.sql",
+    file: "db/migrations/006_student_enrollment_review.sql",
     find: "  IF p_reason='session_mismatch' AND held.status NOT IN ('reserved','paid') THEN RAISE EXCEPTION 'Session mismatch review requires a reserved or paid enrollment'; END IF;",
     replace: "",
   },

@@ -139,6 +139,12 @@ try {
       "utf8",
     ),
   );
+  await admin.query(
+    await readFile(
+      new URL("../db/migrations/006_student_enrollment_review.sql", import.meta.url),
+      "utf8",
+    ),
+  );
   await admin.query(`
     TRUNCATE student_enrollment_attempts,
       student_enrollment_mail,
@@ -917,6 +923,126 @@ try {
     );
     if (event.rows[0]?.actor !== "staff@example.test" || event.rows[0]?.outcome !== "dismissed") {
       throw new Error("resolve_student_enrollment_review must write an actor event (M56)");
+    }
+  });
+
+  await test("MF4 main 005 then 006 matches a fresh apply and re-run is a no-op", async () => {
+    const catalogSql = `
+      SELECT kind, name, def FROM (
+        SELECT 'function'::text AS kind,
+          p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' AS name,
+          pg_get_functiondef(p.oid) AS def
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public'
+          AND p.proname LIKE '%student_enrollment%'
+        UNION ALL
+        SELECT 'constraint',
+          c.conrelid::regclass::text || ':' || c.conname,
+          pg_get_constraintdef(c.oid)
+        FROM pg_constraint c
+        JOIN pg_class t ON t.oid = c.conrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        WHERE n.nspname = 'public' AND t.relname LIKE 'student_enrollment%'
+        UNION ALL
+        SELECT 'index',
+          i.relname,
+          pg_get_indexdef(i.oid)
+        FROM pg_class i
+        JOIN pg_namespace n ON n.oid = i.relnamespace
+        WHERE n.nspname = 'public' AND i.relkind = 'i'
+          AND i.relname LIKE 'student_enrollment%'
+        UNION ALL
+        SELECT 'column',
+          a.attrelid::regclass::text || '.' || a.attname,
+          format_type(a.atttypid, a.atttypmod) || CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+        FROM pg_attribute a
+        JOIN pg_class t ON t.oid = a.attrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        WHERE n.nspname = 'public' AND t.relkind = 'r'
+          AND t.relname LIKE 'student_enrollment%' AND a.attnum > 0 AND NOT a.attisdropped
+      ) catalog
+      ORDER BY 1, 2, 3
+    `;
+    const shipped = await readFile(
+      new URL("../db/migrations/005_student_enrollment.sql", import.meta.url),
+      "utf8",
+    );
+    const upgrade = await readFile(
+      new URL("../db/migrations/006_student_enrollment_review.sql", import.meta.url),
+      "utf8",
+    );
+    const ctlUrl = url.replace(/\/rda_locks(?:\?.*)?$/, "/postgres");
+    const ctl = new pg.Client({ connectionString: ctlUrl });
+    await ctl.connect();
+    const dump = async (database) => {
+      const client = new pg.Client({
+        connectionString: url.replace(/\/rda_locks(?:\?.*)?$/, `/${database}`),
+      });
+      await client.connect();
+      try {
+        const rows = await client.query(catalogSql);
+        return JSON.stringify(rows.rows);
+      } finally {
+        await client.end();
+      }
+    };
+    const applyBoth = async (database) => {
+      const client = new pg.Client({
+        connectionString: url.replace(/\/rda_locks(?:\?.*)?$/, `/${database}`),
+      });
+      await client.connect();
+      try {
+        await client.query(shipped);
+        await client.query(upgrade);
+      } finally {
+        await client.end();
+      }
+    };
+    try {
+      await ctl.query("DROP DATABASE IF EXISTS rda_upgrade_fresh");
+      await ctl.query("DROP DATABASE IF EXISTS rda_upgrade_main");
+      await ctl.query("CREATE DATABASE rda_upgrade_fresh");
+      await ctl.query("CREATE DATABASE rda_upgrade_main");
+      await applyBoth("rda_upgrade_fresh");
+      const mainOnly = new pg.Client({
+        connectionString: url.replace(
+          /\/rda_locks(?:\?.*)?$/,
+          "/rda_upgrade_main",
+        ),
+      });
+      await mainOnly.connect();
+      await mainOnly.query(shipped);
+      await mainOnly.end();
+      const afterMain = new pg.Client({
+        connectionString: url.replace(
+          /\/rda_locks(?:\?.*)?$/,
+          "/rda_upgrade_main",
+        ),
+      });
+      await afterMain.connect();
+      await afterMain.query(upgrade);
+      await afterMain.end();
+      const fresh = await dump("rda_upgrade_fresh");
+      const upgraded = await dump("rda_upgrade_main");
+      if (fresh !== upgraded) {
+        throw new Error("main 005 then 006 catalog differs from a fresh 005+006 apply");
+      }
+      await applyBoth("rda_upgrade_fresh");
+      const rerun = await dump("rda_upgrade_fresh");
+      if (rerun !== fresh) {
+        throw new Error("re-applying 005 then 006 changed the catalog");
+      }
+      if (!upgrade.includes("AND id<>p_id AND student_enrollment_occupies_seat")) {
+        throw new Error("006 must carry the self-excluding capacity count");
+      }
+      if (!shipped.includes("COALESCE(stripe_session_id,p_session)")) {
+        throw new Error("005 must remain the shipped main file");
+      }
+    } finally {
+      await ctl.query("DROP DATABASE IF EXISTS rda_upgrade_fresh").catch(() => {});
+      await ctl.query("DROP DATABASE IF EXISTS rda_upgrade_main").catch(() => {});
+      await ctl.end();
     }
   });
 

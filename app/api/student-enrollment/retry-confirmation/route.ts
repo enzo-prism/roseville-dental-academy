@@ -58,6 +58,11 @@ export async function handleStudentConfirmationRetry(
   }
   try {
     if (body.drain === true && Object.keys(body).length === 1) {
+      if (studentEmailLiveDisabled(config))
+        return enrollmentResponse(
+          { processed: false, emailDisabled: true },
+          409,
+        );
       return enrollmentResponse({
         processed: true,
         ...(await drainStudentConfirmations(config)),

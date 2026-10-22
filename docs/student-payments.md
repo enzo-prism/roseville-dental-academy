@@ -23,7 +23,9 @@ the public schedule earlier and must not be seeded or offered at checkout.
 Canonical config: `lib/student-enrollment-offerings.ts`.
 Reviewed insert (disabled live offerings only): `db/seeds/infection-control-offerings.sql`.
 Isolated TEST-mode insert (enabled offerings): `db/seeds/infection-control-offerings.test.sql`.
-Schema only, zero offerings: `db/migrations/005_student_enrollment.sql`.
+Schema: `db/migrations/005_student_enrollment.sql` (shipped) plus
+`db/migrations/006_student_enrollment_review.sql` (review-function upgrade).
+Zero offerings.
 
 `db/seeds/infection-control-offerings.test.sql` is **only** for an isolated preview or
 test database. It inserts the same two dates as `mode='test'`, `enabled=true`,
@@ -45,11 +47,16 @@ or enabled flag do not match.
 ## October 21 2026 preview exception
 
 By Enzo's decision on October 21, 2026, the Vercel preview for this branch used the
-production database with `db/seeds/infection-control-offerings.test.sql` applied there.
-That contradicts the isolated-database rule above. Test-mode queries stay filtered by
+production database. That preview applied the then-current `005_student_enrollment.sql`
+and `db/seeds/infection-control-offerings.test.sql` to the production database.
+That contradicts the isolated-database rule above. Go-live applies
+`006_student_enrollment_review.sql` on that same database (the filename-order
+migrator re-applies `005` then `006`; `006` is idempotent on a DB that already
+has the shipped `005`). Test-mode queries stay filtered by
 `mode='test'`, but ad-hoc SQL against `student_enrollment_roster` is live-only; use
-`student_enrollment_roster_test` for TEST paid rows. Do not repeat this. After preview
-sign-off, clean TEST rows with the SQL below — **do not run it from this task**.
+`student_enrollment_roster_test` for TEST paid rows. Do not repeat the preview
+exception. After preview sign-off, clean TEST rows with the SQL below —
+**do not run it from this task**.
 
 ```sql
 -- TEST-mode-only cleanup. Never delete mode='live' rows.
@@ -109,11 +116,13 @@ and SHA-256 of the exact policy paragraphs joined by two newlines, and those exa
 in `policy_text`. Each reservation copies that accepted policy snapshot. The reviewed seed
 inserts both dates with `external_seats=0`, `amount=39500`, `capacity=12`, and `enabled=false`.
 No application API creates or enables offerings.
-Apply migration `005_student_enrollment.sql` using the filename-order migrator only against
-the verified RDA database after review. It is repeatable and seeds zero offerings. If
-production already applied an earlier copy of `005`, **re-apply the current file** so
-it picks up new functions (`flag_student_enrollment_review`, roster views) and the
-offerings `amount=39500` CHECK. Then apply
+Apply migrations using the filename-order migrator only against the verified RDA
+database after review. `005_student_enrollment.sql` is the shipped schema (repeatable,
+zero offerings). Production already has that October 21 copy from the preview.
+Go-live applies `006_student_enrollment_review.sql`, which is idempotent
+(`CREATE OR REPLACE` / `IF NOT EXISTS`) on a database that already has `005`.
+The migrator re-applies every `NNN_*.sql` file in order, so a single run upgrades
+`005` then `006`. Then apply
 `db/seeds/infection-control-offerings.sql` to insert the two disabled live offerings. Enable
 an offering only after the go-live checklist below. On an isolated preview or test database
 only, `db/seeds/infection-control-offerings.test.sql` can insert the same two dates as
@@ -208,7 +217,8 @@ silently change a queued confirmation or the bytes sent with its idempotency key
 text uses the policy accepted by that enrollment rather than the current site's policy.
 If an older private test database has no accepted-policy snapshot, do not invent it from
 today's text: rebuild the disposable fixture database or reconcile its original acceptance
-evidence before attempting delivery. No production database has been migrated by this task.
+evidence before attempting delivery. The October 21 preview applied the then-current
+`005` to the production database; go-live applies `006` on that same database.
 
 `/enrollment-pilot/roster` requires the existing separate staff password/session configuration.
 It shows verified paid/refunded students only, with no public roster API. Staff can retry
@@ -305,7 +315,8 @@ the repository.
 
 1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
    secure form. Configure them only on the isolated test deployment and test database.
-2. Apply `005_student_enrollment.sql` on the isolated test database. Then set
+2. Apply `005_student_enrollment.sql` then `006_student_enrollment_review.sql`
+   on the isolated test database (or run the filename-order migrator). Then set
    `application_name = 'rda-student-offering-seed-isolated'` and apply
    `db/seeds/infection-control-offerings.test.sql` (mode=`test`, `enabled=true`).
    Confirm the two dates, `amount=39500`, `capacity=12`, `external_seats=0`. Never
@@ -323,11 +334,14 @@ the repository.
    other date must remain purchasable.
 7. After test-mode sign-off, configure live keys through the same secure form on the
    live environment. Do not reuse test secrets.
-8. **Re-apply** `005_student_enrollment.sql` on production even if an earlier copy
-   already ran. The file is repeatable (`CREATE OR REPLACE` / `IF NOT EXISTS`) and this
-   revision adds `flag_student_enrollment_review`, `resolve_student_enrollment_review`,
-   `student_enrollment_reviews`, the roster views, and an `amount=39500` CHECK that
-   `CREATE TABLE IF NOT EXISTS` would otherwise skip on an older table. Then set
+8. **Apply `006_student_enrollment_review.sql`** on production. The October 21
+   preview already applied the then-current `005` to the production database.
+   `006` is idempotent (`CREATE OR REPLACE` / `IF NOT EXISTS`) on that schema: it
+   widens review reasons, replaces `flag_student_enrollment_review` /
+   `resolve_student_enrollment_review`, binds the paying Checkout session on
+   enroll, and excludes the reviewed row from the capacity count. Running the
+   filename-order migrator re-applies `005` then `006` and is the supported
+   upgrade. Then set
    `application_name = 'rda-student-offering-seed'` and apply
    `db/seeds/infection-control-offerings.sql` (`mode=live`, `enabled=false`). The
    post-seed verify must succeed.
@@ -403,8 +417,9 @@ verification purchase:
    the charge up in the merchant dashboard and reconcile from the staff
    roster, or run `resolve_student_enrollment_review` for a flagged row. Do
    not copy event payloads or customer data into tickets.
-6. Do not drop `005` objects from production as a rollback. Re-apply the file
-   after review if functions are missing. The staff roster uses webhook
+6. Do not drop `005` or `006` objects from production as a rollback. Re-apply
+   both files (or run the migrator) after review if functions are missing. The
+   staff roster uses webhook
    configuration, so `session_mismatch` and `paid_after_release` reviews stay
    visible while live payments are off. Do not treat them as verified seats.
    `resolve_student_enrollment_review(..., 'enrolled', ...)` binds the

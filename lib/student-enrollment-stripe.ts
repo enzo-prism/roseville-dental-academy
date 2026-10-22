@@ -180,6 +180,37 @@ export function studentSessionIsFullyRefunded(session: StudentSession) {
     charge.amount === session.amount_total
   );
 }
+async function recordStudentRefundedAmount(
+  enrollmentId: string,
+  session: StudentSession,
+  held: StudentEnrollment,
+  config: StudentConfig,
+) {
+  const charge =
+    typeof session.payment_intent === "object"
+      ? session.payment_intent?.latest_charge
+      : null;
+  if (
+    !charge ||
+    charge.amount !== held.amount ||
+    charge.currency !== held.currency ||
+    charge.livemode !== (config.mode === "live") ||
+    !Number.isInteger(charge.amount_refunded) ||
+    charge.amount_refunded <= 0 ||
+    charge.amount_refunded > held.amount
+  )
+    return;
+  await studentDatabase()`UPDATE student_enrollments SET refunded_amount=GREATEST(refunded_amount,${charge.amount_refunded}) WHERE id=${enrollmentId}::uuid`;
+}
+async function resolveOpenStudentRefundReview(
+  enrollmentId: string,
+  sessionId: string,
+) {
+  const review =
+    await studentDatabase()`SELECT resolved_at FROM student_enrollment_reviews WHERE enrollment_id=${enrollmentId}::uuid AND session_id=${sessionId}`;
+  if (review[0]?.resolved_at != null) return;
+  await studentDatabase()`SELECT resolve_student_enrollment_review(${enrollmentId}::uuid,${sessionId},'refunded','stripe-charge-refunded')`;
+}
 export async function retrieveStudentSession(
   id: string,
   config: StudentConfig,
@@ -312,13 +343,28 @@ export async function recordStudentSession(
   ) {
     assertStudentSession(session, held, config, { allowSessionMismatch: true });
     await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'session_mismatch')`;
-    if (
-      eventType === "charge.refunded" &&
-      studentSessionIsFullyRefunded(session)
-    ) {
-      await studentDatabase()`SELECT resolve_student_enrollment_review(${held.id}::uuid,${session.id},'refunded','stripe-charge-refunded')`;
+    if (eventType === "charge.refunded") {
+      await recordStudentRefundedAmount(held.id, session, held, config);
+      if (studentSessionIsFullyRefunded(session)) {
+        await resolveOpenStudentRefundReview(held.id, session.id);
+      }
     }
     return held;
+  }
+  if (
+    (eventType === "checkout.session.expired" ||
+      eventType === "checkout.session.async_payment_failed") &&
+    (foreignBound || held.status === "paid" || held.status === "refunded")
+  ) {
+    const bound =
+      await studentDatabase()`SELECT id FROM student_enrollments WHERE stripe_session_id=${session.id}`;
+    if (!bound.length) {
+      console.info(
+        "student-enrollment: expired session is no longer bound to any row",
+        { eventType, enrollmentId: held.id },
+      );
+      return held;
+    }
   }
   assertStudentSession(session, held, config, {
     allowExpiredOrphan: held.status === "expired",
@@ -326,6 +372,7 @@ export async function recordStudentSession(
   if (held.status === "expired") {
     if (session.status === "complete" && session.payment_status === "paid") {
       await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'paid_after_release')`;
+      await recordStudentRefundedAmount(held.id, session, held, config);
       const orphanCharge =
         typeof session.payment_intent === "object"
           ? session.payment_intent?.latest_charge
@@ -338,7 +385,7 @@ export async function recordStudentSession(
         orphanCharge.refunded === true &&
         orphanCharge.amount_refunded === held.amount
       ) {
-        await studentDatabase()`SELECT resolve_student_enrollment_review(${held.id}::uuid,${session.id},'refunded','stripe-charge-refunded')`;
+        await resolveOpenStudentRefundReview(held.id, session.id);
       }
     }
     return held;

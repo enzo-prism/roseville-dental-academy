@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
 import { handleStudentConfirmationRetry } from "@/app/api/student-enrollment/retry-confirmation/route";
@@ -12,6 +11,7 @@ import {
   STUDENT_CONFIRMATION_DRAIN_MS,
   drainStudentConfirmations,
 } from "@/lib/student-enrollment-mail";
+import { applyStudentEnrollmentSchema } from "./support/student-enrollment-schema";
 
 const LIVE_ACCOUNT = "acct_1UJHgLCOhHjREvRz";
 const POLICY = CANCELLATION_POLICY_PARAGRAPHS.join("\n\n");
@@ -21,9 +21,7 @@ async function retryFixture() {
   const originalEnv = { ...process.env };
   const originalFetch = globalThis.fetch;
   const db = await PGlite.create();
-  await db.exec(
-    await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
-  );
+  await applyStudentEnrollmentSchema((sql) => db.exec(sql));
   Object.assign(process.env, {
     DATABASE_URL: "postgres://fixture:fixture@db.fixture.neon.tech/test",
     RDA_STUDENT_PAYMENTS_MODE: "live",
@@ -166,6 +164,13 @@ test("retry drain works with payments off and refuses missing staff, origin, or 
   const f = await retryFixture();
   try {
     expect(studentWebhookConfig()?.mode).toBe("live");
+    const emailOff = await f.retry({ drain: true });
+    expect(emailOff.status).toBe(409);
+    expect(await emailOff.json()).toEqual({
+      processed: false,
+      emailDisabled: true,
+    });
+    f.enableEmail();
     const drain = await f.retry({ drain: true });
     expect(drain.status).toBe(200);
     expect(await drain.json()).toEqual({
@@ -180,6 +185,33 @@ test("retry drain works with payments off and refuses missing staff, origin, or 
     ).toBe(401);
     delete process.env.RDA_STUDENT_PAYMENTS_MODE;
     expect((await f.retry({ drain: true })).status).toBe(401);
+  } finally {
+    await f.close();
+  }
+});
+
+test("retry drain with email off matches {id} and a truthy non-true drain is 400", async () => {
+  const f = await retryFixture();
+  try {
+    const live = await f.plantOffering("live");
+    const paid = await f.plantEnrollment(live);
+    const drainOff = await f.retry({ drain: true });
+    expect(drainOff.status).toBe(409);
+    expect(await drainOff.json()).toEqual({
+      processed: false,
+      emailDisabled: true,
+    });
+    const idOff = await f.retry({ id: paid });
+    expect(idOff.status).toBe(409);
+    expect(await idOff.json()).toEqual({
+      processed: false,
+      emailDisabled: true,
+    });
+    const truthy = await f.retry({ drain: "yes" });
+    expect(truthy.status).toBe(400);
+    expect(await truthy.json()).toEqual({
+      error: "Invalid enrollment reference.",
+    });
   } finally {
     await f.close();
   }
@@ -256,12 +288,13 @@ test("drain remaining is the true backlog, bounded to 100 rows, and honors a tim
     expect(queued.remaining).toBe(101);
     expect(queued.errors).toBe(0);
 
+    expect(STUDENT_CONFIRMATION_DRAIN_MS).toBe(20_000);
     const realNow = Date.now;
     let current = realNow();
     try {
       Date.now = () => {
         const value = current;
-        current += STUDENT_CONFIRMATION_DRAIN_MS;
+        current += 20_000;
         return value;
       };
       const timed = await drainStudentConfirmations(studentWebhookConfig()!);

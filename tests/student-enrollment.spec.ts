@@ -45,6 +45,7 @@ import {
   studentSessionParameters,
   type StudentSession,
 } from "@/lib/student-enrollment-stripe";
+import { applyStudentEnrollmentSchema } from "./support/student-enrollment-schema";
 const offer = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[0],
   policy = "2026-09-30",
   [fixtureFirstDate, fixtureSecondDate] = infectionControlFixtureCourseDates();
@@ -367,9 +368,7 @@ test("bindStudentSession SQL still refuses a stale reserved object against an ex
   const db = await PGlite.create();
   const bindId = randomUUID();
   try {
-    await db.exec(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
-    );
+    await applyStudentEnrollmentSchema((sql) => db.exec(sql));
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,0,$2,$3,$4,now(),'bind filter',true)",
       [
@@ -546,19 +545,29 @@ test("student consent and immutable checkout contract reject tampering", () => {
 test("student database enforces shared inventory, separate modes, replay, roster and atomic mail", async () => {
   const db = await PGlite.create();
   try {
-    const migration = await readFile(
+    const shipped = await readFile(
       "db/migrations/005_student_enrollment.sql",
       "utf8",
     );
-    await db.exec(migration);
-    await db.exec(migration);
-    expect(migration).toContain("AND o.mode='live'");
-    expect(migration).toContain("AND mode=p_mode FOR UPDATE");
-    expect(migration).toContain("resolve_student_enrollment_review");
-    expect(migration).toContain(
+    const upgrade = await readFile(
+      "db/migrations/006_student_enrollment_review.sql",
+      "utf8",
+    );
+    await applyStudentEnrollmentSchema((sql) => db.exec(sql));
+    await applyStudentEnrollmentSchema((sql) => db.exec(sql));
+    expect(shipped).toContain("AND o.mode='live'");
+    expect(shipped).toContain("AND mode=p_mode FOR UPDATE");
+    expect(shipped).toContain("resolve_student_enrollment_review");
+    expect(shipped).toContain(
       "DROP FUNCTION IF EXISTS resolve_student_enrollment_review(uuid, text, text);",
     );
-    expect(migration).toContain("RAISE EXCEPTION 'Class is full'");
+    expect(shipped).toContain("RAISE EXCEPTION 'Class is full'");
+    expect(shipped).toContain("COALESCE(stripe_session_id,p_session)");
+    expect(shipped).not.toContain("AND id<>p_id AND student_enrollment_occupies_seat");
+    expect(upgrade).toContain("stripe_session_id=p_session");
+    expect(upgrade).not.toContain("COALESCE(stripe_session_id,p_session)");
+    expect(upgrade).toContain("AND id<>p_id AND student_enrollment_occupies_seat");
+    expect(upgrade).toContain("IF btrim(p_actor)='stripe-charge-refunded' THEN RETURN false;");
     expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
       "FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true",
     );
@@ -588,6 +597,12 @@ test("student database enforces shared inventory, separate modes, replay, roster
       releaseGate.lastIndexOf("student-enrollment-locks:"),
     );
     expect(releaseGate).toContain("pnpm test:student-enrollment-locks");
+    expect(releaseGate.indexOf("timeout-minutes: 60")).toBeGreaterThan(
+      releaseGate.indexOf("release-gate:"),
+    );
+    expect(releaseGate.indexOf("timeout-minutes: 60")).toBeLessThan(
+      releaseGate.indexOf("student-enrollment-locks:"),
+    );
     expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
       "WHERE o.mode=${mode} AND r.resolved_at IS NULL",
     );
@@ -646,6 +661,9 @@ test("student database enforces shared inventory, separate modes, replay, roster
     ).toContain('id: "M57"');
     expect(
       await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
+    ).toContain('file: "db/migrations/006_student_enrollment_review.sql"');
+    expect(
+      await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
     ).toContain("db/seeds/infection-control-offerings.test.sql");
     expect(await readFile(".gitignore", "utf8")).toContain(
       "evidence/student-enrollment-mutants.log",
@@ -660,13 +678,13 @@ test("student database enforces shared inventory, separate modes, replay, roster
       await readFile("lib/student-enrollment-mail.ts", "utf8"),
     ).toContain("countStudentPendingConfirmations");
     expect(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+      await readFile("db/migrations/006_student_enrollment_review.sql", "utf8"),
     ).toContain("stripe_session_id=p_session");
     expect(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+      await readFile("db/migrations/006_student_enrollment_review.sql", "utf8"),
     ).not.toContain("COALESCE(stripe_session_id,p_session)");
     expect(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+      await readFile("db/migrations/006_student_enrollment_review.sql", "utf8"),
     ).toContain("AND id<>p_id AND student_enrollment_occupies_seat");
     expect(
       await readFile("app/enrollment-pilot/roster/page.tsx", "utf8"),
@@ -1374,9 +1392,7 @@ test("each confirmed date has a 12-seat cap, blocks the 13th, and a sold-out dat
   const december = "22222222-2222-4222-8222-222222222222";
   const soldOut = "33333333-3333-4333-8333-333333333333";
   try {
-    await db.exec(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
-    );
+    await applyStudentEnrollmentSchema((sql) => db.exec(sql));
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,0,$2,$3,$4,now(),'fixture',true)",
       [
@@ -1433,9 +1449,7 @@ test("each confirmed date has a 12-seat cap, blocks the 13th, and a sold-out dat
 test("claimed enrollment mutants fail when applied at their source lines", async () => {
   const db = await PGlite.create();
   try {
-    await db.exec(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
-    );
+    await applyStudentEnrollmentSchema((sql) => db.exec(sql));
     const threeArg = await db.query(
       "SELECT 1 FROM pg_proc WHERE proname='resolve_student_enrollment_review' AND pronargs=3",
     );
@@ -1455,9 +1469,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
         )
       ).rows,
     ).toHaveLength(1);
-    await db.exec(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
-    );
+    await applyStudentEnrollmentSchema((sql) => db.exec(sql));
     expect(
       (
         await db.query(
@@ -1757,6 +1769,11 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(docs).toContain("30 days");
     expect(docs).toContain("staff roster uses webhook");
     expect(docs).toContain("Checkout session that actually paid");
+    expect(docs).toContain(
+      "The October 21 preview applied the then-current",
+    );
+    expect(docs).toContain("go-live applies `006`");
+    expect(docs).toContain("**Apply `006_student_enrollment_review.sql`**");
     const page = await readFile("app/enrollment-pilot/roster/page.tsx", "utf8");
     expect(page).toContain("listStudentReservedHolds(config.mode)");
     expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');
@@ -1774,9 +1791,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
 test("released refunded seats do not block adding external seats on the offering", async () => {
   const db = await PGlite.create();
   try {
-    await db.exec(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
-    );
+    await applyStudentEnrollmentSchema((sql) => db.exec(sql));
     const offer = randomUUID();
     const policy = "2026-09-30";
     await db.query(
@@ -1824,9 +1839,7 @@ test("released refunded seats do not block adding external seats on the offering
 test("resolve enrolled binds the paying session and can convert a reserved mismatch without counting that seat twice", async () => {
   const db = await PGlite.create();
   try {
-    await db.exec(
-      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
-    );
+    await applyStudentEnrollmentSchema((sql) => db.exec(sql));
     const fullOffer = randomUUID();
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-10-15',39500,0,$2,$3,$4,now(),'mismatch bind',true)",
@@ -1914,6 +1927,50 @@ test("resolve enrolled binds the paying session and can convert a reserved misma
         )
       ).rows[0].stripe_session_id,
     ).toBe("cs_test_orphan_paid");
+    const paidOffer = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-10-17',39500,0,$2,$3,$4,now(),'paid enroll refuse',true)",
+      [
+        paidOffer,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    const paidId = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,'2099-10-17',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','paid',$10)",
+      [
+        paidId,
+        paidOffer,
+        "f".repeat(64),
+        "Paid Enroll Adult",
+        "paid-enroll@example.test",
+        "916 555 0100",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        "cs_test_paid_bound",
+      ],
+    );
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_paid_dup','session_mismatch')",
+      [paidId],
+    );
+    await expect(
+      db.query(
+        "SELECT resolve_student_enrollment_review($1,'cs_test_paid_dup','enrolled',$2)",
+        [paidId, "staff@example.test"],
+      ),
+    ).rejects.toThrow("reserved or expired enrollment");
+    expect(
+      (
+        await db.query<{ status: string; stripe_session_id: string }>(
+          "SELECT status,stripe_session_id FROM student_enrollments WHERE id=$1",
+          [paidId],
+        )
+      ).rows[0],
+    ).toEqual({ status: "paid", stripe_session_id: "cs_test_paid_bound" });
   } finally {
     await db.close();
   }
