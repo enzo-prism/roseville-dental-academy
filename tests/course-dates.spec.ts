@@ -193,10 +193,12 @@ test("publication status describes bundled schedule without caching or credentia
       : scheduleRevision(courseScheduleData.entries),
     upcomingRevision: expect.stringMatching(/^[0-9a-f]{64}$/u),
     reviewedOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/u),
+    builtOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/u),
     source: expect.stringMatching(/^(committed|dashboard)$/u),
     upcoming: expect.any(Array),
     empty: expect.any(Boolean),
   });
+  expect(published.empty).toBe(published.upcoming.length === 0);
   expect(published.upcomingRevision).toBe(scheduleRevision(published.upcoming));
   // Release-gate and local builds have no PREVIEW_URL and must serve the fixture.
   // verify-preview sets PREVIEW_URL and may hit either branch; log which one.

@@ -10,6 +10,7 @@ export type PublishedScheduleEntry = {
 };
 
 export type PublishedCourseScheduleStatus = {
+  builtOn: string;
   empty: boolean;
   reviewedOn: string;
   revision: string;
@@ -45,20 +46,26 @@ export function upcomingScheduleEntries(
 
 export function buildPublishedCourseScheduleStatus(
   data: {
+    builtOn?: string;
     entries: Array<{ courseId: string; isoDate: string; status: string }>;
     reviewedOn: string;
     source: string;
   } = courseScheduleData,
 ): PublishedCourseScheduleStatus {
   const upcoming = upcomingScheduleEntries(data.entries, data.reviewedOn);
+  const builtOn =
+    typeof data.builtOn === "string" && /^\d{4}-\d{2}-\d{2}$/u.test(data.builtOn)
+      ? data.builtOn
+      : data.reviewedOn;
 
   return {
     version: 1,
     revision: scheduleRevision(data.entries),
     upcomingRevision: scheduleRevision(upcoming),
     reviewedOn: data.reviewedOn,
+    builtOn,
     source: data.source === "dashboard" ? "dashboard" : "committed",
     upcoming,
-    empty: data.entries.length === 0,
+    empty: upcoming.length === 0,
   };
 }

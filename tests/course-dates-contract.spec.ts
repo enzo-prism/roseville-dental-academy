@@ -10,6 +10,8 @@ import {
   committedScheduleSnapshot,
   courseInstanceStartDates,
   dashboardScheduleSnapshot,
+  elapsedDashboardScheduleSnapshot,
+  rolledBackDashboardSnapshot,
 } from "./support/course-schedule-contract";
 
 const builds = [
@@ -20,6 +22,17 @@ const builds = [
 test("synthesized committed and dashboard snapshots satisfy the served contract", () => {
   assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot()));
   assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot()));
+});
+
+test("dashboard build whose stored dates are all in the past is an explicit empty schedule", () => {
+  const snapshot = elapsedDashboardScheduleSnapshot();
+  assert.equal(snapshot.status.empty, true);
+  assert.deepEqual(snapshot.status.upcoming, []);
+  assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
+});
+
+test("dashboard rollback with reviewedOn matching builtOn still passes", () => {
+  assert.doesNotThrow(() => assertServedScheduleContract(rolledBackDashboardSnapshot()));
 });
 
 test("JSON-LD walker reads pretty-printed hasCourseInstance dates", () => {
