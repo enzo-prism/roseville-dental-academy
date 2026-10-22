@@ -200,13 +200,19 @@ function courseListFragments(text: string, label: string) {
   return [...text.matchAll(new RegExp(`${escaped}: ([^.]+)`, "gu"))].map((match) => match[1]);
 }
 
-function dateListFragments(text: string, label: string) {
+function llmsCourseDateFragments(text: string, courseId: CourseScheduleId) {
+  const escapedHref = courseScheduleCourseDetails[courseId].href.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const bullet = text.match(new RegExp(`\\[[^\\]]+\\]\\([^\\n)]*${escapedHref}\\)[^\\n]*`, "u"));
+  if (!bullet) return [];
   return [
-    ...courseListFragments(text, label),
-    ...courseListFragments(text, "Upcoming dates"),
-    ...courseListFragments(text, "upcoming dates"),
-    ...courseListFragments(text, "Upcoming starts"),
+    ...courseListFragments(bullet[0], "Upcoming dates"),
+    ...courseListFragments(bullet[0], "upcoming dates"),
+    ...courseListFragments(bullet[0], "Upcoming starts"),
   ];
+}
+
+function dateListFragments(text: string, label: string, courseId: CourseScheduleId) {
+  return [...courseListFragments(text, label), ...llmsCourseDateFragments(text, courseId)];
 }
 
 function synthesizeCourse(status: PublishedCourseScheduleStatus, courseId: CourseScheduleId): CoursePageSnapshot {
@@ -613,7 +619,7 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
   for (const id of COURSE_SCHEDULE_IDS) {
     const label = courseScheduleCourseDetails[id].label;
     for (const text of [snapshot.faqText, snapshot.llmsText]) {
-      for (const listed of dateListFragments(text, label)) {
+      for (const listed of dateListFragments(text, label, id)) {
         for (const match of listed.matchAll(MONTH_DAY_YEAR)) {
           const isoDate = new Date(`${match[0]} UTC`).toISOString().slice(0, 10);
           assert.ok(isoDate >= status.reviewedOn, `${label} lists past date ${match[0]}`);
