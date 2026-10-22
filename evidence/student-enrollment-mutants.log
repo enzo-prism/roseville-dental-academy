@@ -1,11 +1,11 @@
-student-enrollment mutant kills 2026-10-21T23:42:00.229Z
+student-enrollment mutant kills 2026-10-22T15:16:59.483Z
 suite: pnpm test:student-enrollment && pnpm test:student-enrollment-locks
 
 CONTROL SURVIVED file=lib/student-enrollment.ts
   build_exit=0 suite_exit=0 locks_exit=0
   failed_tests: none
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
   locks_tail:
 ok 14 - N01 / N02 release refuses non-refunded rows and a second call
 ok 15 - N05 / N17 release and resolve persist the actor
@@ -18,16 +18,16 @@ student-enrollment-locks: 18 passed
 
 M24 KILLED file=app/api/student-enrollment/checkout/route.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: student enrollment isolated full stack › wrong merchant and lost responses retain inventory until verified closure | student database enforces shared inventory, separate modes, replay, roster and atomic mail | tests/student-enrollment-api.spec.ts:202:7 › student enrollment isolated full stack › wrong merchant and lost responses retain inventory until verified closure | tests/student-enrollment.spec.ts:483:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail
+  failed_tests: student enrollment isolated full stack › wrong merchant and lost responses retain inventory until verified closure | student database enforces shared inventory, separate modes, replay, roster and atomic mail | tests/student-enrollment-api.spec.ts:202:7 › student enrollment isolated full stack › wrong merchant and lost responses retain inventory until verified closure | tests/student-enrollment.spec.ts:514:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail
   suite_tail:
   ✘  18 tests/student-enrollment-api.spec.ts:202:7 › student enrollment isolated full stack › wrong merchant and lost responses retain inventory until verified closure (40ms)
   ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
-  ✘  61 tests/student-enrollment.spec.ts:483:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail (1.1s)
+  ✘  67 tests/student-enrollment.spec.ts:514:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
     > 232 |     expect(lost?.status).toBe("reserved");
       233 |     expect(lost?.stripe_session_id).toBeNull();
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-    > 558 |     ).toContain(
+    > 612 |     ).toContain(
   2 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -42,12 +42,12 @@ student-enrollment-locks: 18 passed
 
 M26 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.2s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 1363 |     ).toBe("reserved");
+    > 1435 |     ).toBe("reserved");
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -64,7 +64,7 @@ M27 KILLED file=lib/student-enrollment-stripe.ts
   build_exit=0 suite_exit=1 locks_exit=0
   failed_tests: student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment | tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment
   suite_tail:
-  ✘  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (38ms)
+  ✘  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (42ms)
   1) tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
       1280 |       (await webhook(request, sessionId, "checkout.session.async_payment_failed"))
@@ -84,12 +84,12 @@ student-enrollment-locks: 18 passed
 
 M30 KILLED file=lib/student-enrollment.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mnot[2m.[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-    > 1448 |     expect(liveListed.map((row) => row.course_date)).not.toContain("2099-01-15");
+    > 1520 |     expect(liveListed.map((row) => row.course_date)).not.toContain("2099-01-15");
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -104,18 +104,18 @@ student-enrollment-locks: 18 passed
 
 M32 KILLED file=lib/student-enrollment.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (29ms)
-  ✘  39 tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds (49ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (35ms)
+  ✘  39 tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds (53ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mnot[2m.[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
       1339 |     expect(roster).not.toContain("TEST ONLY · refunded</");
       1340 |     expect(roster).not.toContain("refunded — not sellable until released");
     > 1341 |     expect(roster).not.toContain(`live-hold-${foreign}@example.test`);
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 1478 |     expect(testHolds.some((row) => row.id === liveHold)).toBe(false);
-      1479 |     expect(testHolds.some((row) => row.id === bound)).toBe(true);
+    > 1550 |     expect(testHolds.some((row) => row.id === liveHold)).toBe(false);
+      1551 |     expect(testHolds.some((row) => row.id === bound)).toBe(true);
   2 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -130,12 +130,12 @@ student-enrollment-locks: 18 passed
 
 M34 KILLED file=db/seeds/infection-control-offerings.test.sql
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (30ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (31ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mrejects[2m.[22mtoThrow[2m()[22m
-      1399 |     ).rejects.toThrow(/expected 2 rows/i);
+      1471 |     ).rejects.toThrow(/expected 2 rows/i);
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -150,14 +150,14 @@ student-enrollment-locks: 18 passed
 
 M34L KILLED file=db/seeds/infection-control-offerings.sql
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (35ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mrejects[2m.[22mtoThrow[2m([22m[32mexpected[39m[2m)[22m
     Expected pattern: [32m/expected 2 rows/i[39m
     Received message: [31m"Live offering seed verify failed: stale or unexpected rows remain"[39m
-    > 1424 |     ).rejects.toThrow(/expected 2 rows/i);
+    > 1496 |     ).rejects.toThrow(/expected 2 rows/i);
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -174,7 +174,7 @@ M49 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: (see tail)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
           Error.captureStackTrace(err)
@@ -189,19 +189,42 @@ M51b KILLED file=db/migrations/005_student_enrollment.sql
       throw new Error(
 Error: resolve enrolled must refuse when an unreleased refunded row fills capacity (M51b)
 
-M52b KILLED file=app/enroll/page.tsx
+M52 KILLED file=app/enroll/page.tsx
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1364:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1385:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
-  ✘  40 tests/student-enrollment-api.spec.ts:1364:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies (36ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
+  ✘  40 tests/student-enrollment-api.spec.ts:1385:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies (36ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-      1611 |     expect(page).toContain("r.inventory_released_by");
-    > 1613 |     expect(enroll).toContain("live?.remaining");
-      1614 |     expect(enroll).toContain("${Math.max(0, remaining)} seats available");
+      1687 |     expect(page).toContain("r.inventory_released_by");
+    > 1689 |     expect(enroll).toContain("live?.remaining");
+      1690 |     expect(enroll).toContain("${Math.max(0, remaining)} seats available");
   2 failed
+ ELIFECYCLE  Command failed with exit code 1.
+  locks_tail:
+ok 14 - N01 / N02 release refuses non-refunded rows and a second call
+ok 15 - N05 / N17 release and resolve persist the actor
+ok 16 - N11 protect_student_offering counts unreleased refunded seats
+ok 17 - N19 released refunded emails can re-enroll
+ok 18 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 18 passed
+
+
+
+M52b KILLED file=lib/student-enrollment-stripe.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  failed_tests: expired orphan with a partial refund stays in review | tests/student-enrollment-webhook-off.spec.ts:769:5 › expired orphan with a partial refund stays in review
+  suite_tail:
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
+  ✘  56 tests/student-enrollment-webhook-off.spec.ts:769:5 › expired orphan with a partial refund stays in review (1.1s)
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeNull[2m()[22m
+      796 |     expect(reviews).toHaveLength(1);
+      797 |     expect(reviews[0].reason).toBe("paid_after_release");
+    > 798 |     expect(reviews[0].resolved_at).toBeNull();
+      799 |     expect(reviews[0].resolution).toBeNull();
+  1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
 ok 14 - N01 / N02 release refuses non-refunded rows and a second call
@@ -217,7 +240,7 @@ M55 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: A second resolve with a different resolution must fail (M55)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (30ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
       throw new Error(
@@ -227,7 +250,7 @@ M56 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: (see tail)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
           Error.captureStackTrace(err)
@@ -236,7 +259,7 @@ M57b KILLED file=db/seeds/infection-control-offerings.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: Live seed must wrap guard/insert/verify in BEGIN/COMMIT (M57b)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (35ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
       throw new Error("Live seed must wrap guard/insert/verify in BEGIN/COMMIT (M57b)");
@@ -246,7 +269,7 @@ N01 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: release of a paid row must fail (N01)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
       throw new Error("release of a paid row must fail (N01)");
@@ -256,8 +279,8 @@ N02 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=1 locks_exit=1
   failed_tests: student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
-  ✘  39 tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds (47ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
+  ✘  39 tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds (45ms)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
     > 1336 |     expect(roster).toContain(email);
       1337 |     expect(roster).toContain("TEST ONLY · refunded · released");
@@ -274,7 +297,7 @@ N05 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: release must store inventory_released_by (N05)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (35ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
       throw new Error("release must store inventory_released_by (N05)");
@@ -284,7 +307,7 @@ N17 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: resolve must store resolved_by (N17)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (31ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (35ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
       throw new Error("resolve must store resolved_by (N17)");
@@ -294,19 +317,37 @@ N11 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: Raising external_seats must fail while an unreleased refunded row occupies (N11)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (30ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (42ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
       throw new Error(
 Error: Raising external_seats must fail while an unreleased refunded row occupies (N11)
 
+N12a KILLED file=db/migrations/005_student_enrollment.sql
+  build_exit=0 suite_exit=1 locks_exit=0
+  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
+  suite_tail:
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mrejects[2m.[22mtoThrow[2m()[22m
+  1 failed
+ ELIFECYCLE  Command failed with exit code 1.
+  locks_tail:
+ok 14 - N01 / N02 release refuses non-refunded rows and a second call
+ok 15 - N05 / N17 release and resolve persist the actor
+ok 16 - N11 protect_student_offering counts unreleased refunded seats
+ok 17 - N19 released refunded emails can re-enroll
+ok 18 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 18 passed
+
+
+
 N12 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: released refunded seats do not block adding external seats on the offering | tests/student-enrollment.spec.ts:1695:5 › released refunded seats do not block adding external seats on the offering
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
-    Error: [2mexpect([22m[31mreceived[39m[2m).[22mrejects[2m.[22mtoThrow[2m()[22m
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✘  70 tests/student-enrollment.spec.ts:1695:5 › released refunded seats do not block adding external seats on the offering (1.1s)
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -321,10 +362,10 @@ student-enrollment-locks: 18 passed
 
 N13 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=1 locks_exit=1
-  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (31ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -333,14 +374,14 @@ N13 KILLED file=db/migrations/005_student_enrollment.sql
 
 N14 KILLED file=lib/student-enrollment.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1364:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1385:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (32ms)
-  ✘  40 tests/student-enrollment-api.spec.ts:1364:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies (61ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
+  ✘  40 tests/student-enrollment-api.spec.ts:1385:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies (63ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.2s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 1548 |     expect(afterRelease.find((row) => row.id === remainingOffer)?.remaining).toBe(
+    > 1620 |     expect(afterRelease.find((row) => row.id === remainingOffer)?.remaining).toBe(
   2 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -355,14 +396,14 @@ student-enrollment-locks: 18 passed
 
 N15 KILLED file=lib/student-enrollment.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1364:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1385:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (37ms)
-  ✘  40 tests/student-enrollment-api.spec.ts:1364:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies (36ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (40ms)
+  ✘  40 tests/student-enrollment-api.spec.ts:1385:7 › student enrollment isolated full stack › /enroll remaining matches checkout when a refunded seat still occupies (37ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 1515 |     expect(listed.find((row) => row.id === remainingOffer)?.remaining).toBe(0);
+    > 1587 |     expect(listed.find((row) => row.id === remainingOffer)?.remaining).toBe(0);
   2 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -379,18 +420,18 @@ N19 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=0 locks_exit=1
   failed_tests: (see tail)
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (37ms)
   locks_tail:
  ELIFECYCLE  Command failed with exit code 1.
           Error.captureStackTrace(err)
 
 N20 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (31ms)
   ✘  39 tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds (52ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
       1336 |     expect(roster).toContain(email);
     > 1337 |     expect(roster).toContain("TEST ONLY · refunded · released");
@@ -411,7 +452,7 @@ student-enrollment-locks: 18 passed
 
 N21 KILLED file=lib/student-enrollment.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
       1336 |     expect(roster).toContain(email);
     > 1337 |     expect(roster).toContain("TEST ONLY · refunded · released");
@@ -419,11 +460,35 @@ N21 KILLED file=lib/student-enrollment.ts
       1339 |     expect(roster).not.toContain("TEST ONLY · refunded</");
       1340 |     expect(roster).not.toContain("refunded — not sellable until released");
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-      1589 |     expect(roster.rows[0].status).toBe("refunded");
-      1590 |     expect(roster.rows[0].inventory_released_at).toBeTruthy();
-    > 1591 |     expect(refundedRosterPaymentLabel("test", roster.rows[0].inventory_released_at)).toBe(
-      1594 |     expect(refundedRosterPaymentLabel("live", null)).toBe(
+      1661 |     expect(roster.rows[0].status).toBe("refunded");
+      1662 |     expect(roster.rows[0].inventory_released_at).toBeTruthy();
+    > 1663 |     expect(refundedRosterPaymentLabel("test", roster.rows[0].inventory_released_at)).toBe(
+      1666 |     expect(refundedRosterPaymentLabel("live", null)).toBe(
   2 failed
+ ELIFECYCLE  Command failed with exit code 1.
+  locks_tail:
+ok 14 - N01 / N02 release refuses non-refunded rows and a second call
+ok 15 - N05 / N17 release and resolve persist the actor
+ok 16 - N11 protect_student_offering counts unreleased refunded seats
+ok 17 - N19 released refunded emails can re-enroll
+ok 18 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 18 passed
+
+
+
+N22a KILLED file=app/enrollment-pilot/roster/page.tsx
+  build_exit=0 suite_exit=1 locks_exit=0
+  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
+  suite_tail:
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+      1682 |     expect(page).toContain("listStudentReservedHolds(config.mode)");
+    > 1683 |     expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');
+      1684 |     expect(page).toContain("TEST ONLY · paid");
+      1685 |     expect(page).toContain("refundedRosterPaymentLabel");
+      1686 |     expect(page).toContain("r.inventory_released_at");
+  1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
 ok 14 - N01 / N02 release refuses non-refunded rows and a second call
@@ -437,17 +502,19 @@ student-enrollment-locks: 18 passed
 
 N22 KILLED file=app/enrollment-pilot/roster/page.tsx
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment-api.spec.ts:1289:7 › student enrollment isolated full stack › test roster hides live reserved holds and labels released refunds | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-      1607 |     expect(page).toContain("listStudentReservedHolds(config.mode)");
-    > 1608 |     expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');
-      1609 |     expect(page).toContain("refundedRosterPaymentLabel");
-      1610 |     expect(page).toContain("r.inventory_released_at");
-      1611 |     expect(page).toContain("r.inventory_released_by");
-  1 failed
+      1382 |     expect(paidRoster).toContain(paidEmail);
+    > 1383 |     expect(paidRoster).toContain("TEST ONLY · paid");
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+      1682 |     expect(page).toContain("listStudentReservedHolds(config.mode)");
+      1683 |     expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');
+    > 1684 |     expect(page).toContain("TEST ONLY · paid");
+      1685 |     expect(page).toContain("refundedRosterPaymentLabel");
+      1686 |     expect(page).toContain("r.inventory_released_at");
+      1687 |     expect(page).toContain("r.inventory_released_by");
+  2 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
 ok 14 - N01 / N02 release refuses non-refunded rows and a second call
@@ -461,12 +528,12 @@ student-enrollment-locks: 18 passed
 
 W03 KILLED file=lib/student-enrollment-stripe.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: a partial refund is never treated as a full refund | tests/student-enrollment.spec.ts:248:5 › a partial refund is never treated as a full refund ───
+  failed_tests: a partial refund is never treated as a full refund | tests/student-enrollment.spec.ts:263:5 › a partial refund is never treated as a full refund ───
   suite_tail:
   ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
-  ✘  55 tests/student-enrollment.spec.ts:248:5 › a partial refund is never treated as a full refund (3ms)
+  ✘  61 tests/student-enrollment.spec.ts:263:5 › a partial refund is never treated as a full refund (1ms)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 272 |   expect(studentSessionIsFullyRefunded(session)).toBe(false);
+    > 287 |   expect(studentSessionIsFullyRefunded(session)).toBe(false);
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -481,12 +548,12 @@ student-enrollment-locks: 18 passed
 
 W04 KILLED file=app/api/student-enrollment/webhook/route.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | tests/student-enrollment-webhook-off.spec.ts:408:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans
+  failed_tests: payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | tests/student-enrollment-webhook-off.spec.ts:421:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans
   suite_tail:
   ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
-  ✘  48 tests/student-enrollment-webhook-off.spec.ts:408:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans (1.1s)
+  ✘  49 tests/student-enrollment-webhook-off.spec.ts:421:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeNull[2m()[22m
-    > 466 |     expect((await f.mail(reserved.id))[0].payload).toBeNull();
+    > 479 |     expect((await f.mail(reserved.id))[0].payload).toBeNull();
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -501,19 +568,19 @@ student-enrollment-locks: 18 passed
 
 W05 KILLED file=app/api/student-enrollment/webhook/route.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: payments off records a bound paid completion and 503s anything it cannot record | payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | tests/student-enrollment-webhook-off.spec.ts:242:5 › payments off records a bound paid completion and 503s anything it cannot record | tests/student-enrollment-webhook-off.spec.ts:408:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans
+  failed_tests: payments off records a bound paid completion and 503s anything it cannot record | payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | unpaid completed sessions are ignored, not treated as paid completions | tests/student-enrollment-webhook-off.spec.ts:255:5 › payments off records a bound paid completion and 503s anything it cannot record | tests/student-enrollment-webhook-off.spec.ts:421:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | tests/student-enrollment-webhook-off.spec.ts:715:5 › unpaid completed sessions are ignored, not treated as paid completions
   suite_tail:
-  ✘  45 tests/student-enrollment-webhook-off.spec.ts:242:5 › payments off records a bound paid completion and 503s anything it cannot record (1.1s)
-  ✘  48 tests/student-enrollment-webhook-off.spec.ts:408:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans (1.1s)
-    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 309 |     expect(ignored.status).toBe(503);
-      311 |     expect((await f.enrollment(unbound.id)).status).toBe("reserved");
-      312 |     expect((await f.enrollment(unbound.id)).stripe_session_id).toBeNull();
+      324 |     expect((await f.enrollment(unbound.id)).status).toBe("reserved");
+      325 |     expect((await f.enrollment(unbound.id)).stripe_session_id).toBeNull();
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
-      428 |     expect(expired.status).toBe(200);
-      430 |     expect((await f.enrollment(reserved.id)).status).toBe("reserved");
-      431 |     expect(await f.mail(reserved.id)).toHaveLength(0);
-  2 failed
+      441 |     expect(expired.status).toBe(200);
+      443 |     expect((await f.enrollment(reserved.id)).status).toBe("reserved");
+      444 |     expect(await f.mail(reserved.id)).toHaveLength(0);
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
+      730 |     expect(ignored.status).toBe(200);
+      732 |     expect((await f.enrollment(unbound.id)).status).toBe("reserved");
+      733 |     expect((await f.enrollment(unbound.id)).stripe_session_id).toBeNull();
+  3 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
 ok 14 - N01 / N02 release refuses non-refunded rows and a second call
@@ -527,13 +594,13 @@ student-enrollment-locks: 18 passed
 
 W06 KILLED file=lib/student-enrollment-stripe.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | tests/student-enrollment-webhook-off.spec.ts:408:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans
+  failed_tests: payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | tests/student-enrollment-webhook-off.spec.ts:421:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (31ms)
-  ✘  48 tests/student-enrollment-webhook-off.spec.ts:408:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans (1.1s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✘  49 tests/student-enrollment-webhook-off.spec.ts:421:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 486 |     ).toBe(503);
-      487 |     expect((await f.enrollment(mismatch.id)).status).toBe("reserved");
+    > 499 |     ).toBe(503);
+      500 |     expect((await f.enrollment(mismatch.id)).status).toBe("reserved");
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -548,18 +615,18 @@ student-enrollment-locks: 18 passed
 
 W08 KILLED file=db/migrations/005_student_enrollment.sql
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: student database enforces shared inventory, separate modes, replay, roster and atomic mail | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:483:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail | tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines
+  failed_tests: student database enforces shared inventory, separate modes, replay, roster and atomic mail | claimed enrollment mutants fail when applied at their source lines | tests/student-enrollment.spec.ts:514:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail | tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (42ms)
-  ✘  61 tests/student-enrollment.spec.ts:483:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail (1.1s)
-  ✘  63 tests/student-enrollment.spec.ts:1288:5 › claimed enrollment mutants fail when applied at their source lines (1.0s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✘  67 tests/student-enrollment.spec.ts:514:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail (1.1s)
+  ✘  69 tests/student-enrollment.spec.ts:1360:5 › claimed enrollment mutants fail when applied at their source lines (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-      493 |     expect(migration).toContain("AND mode=p_mode FOR UPDATE");
-      494 |     expect(migration).toContain("resolve_student_enrollment_review");
-    > 495 |     expect(migration).toContain(
-      498 |     expect(migration).toContain("RAISE EXCEPTION 'Class is full'");
+      524 |     expect(migration).toContain("AND mode=p_mode FOR UPDATE");
+      525 |     expect(migration).toContain("resolve_student_enrollment_review");
+    > 526 |     expect(migration).toContain(
+      529 |     expect(migration).toContain("RAISE EXCEPTION 'Class is full'");
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoHaveLength[2m([22m[32mexpected[39m[2m)[22m
-    > 1322 |     ).toHaveLength(0);
+    > 1394 |     ).toHaveLength(0);
   2 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -574,19 +641,19 @@ student-enrollment-locks: 18 passed
 
 W09 KILLED file=app/api/student-enrollment/webhook/route.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: payments off records a bound paid completion and 503s anything it cannot record | email off still records later webhooks on a paid row and queues mail | rollback refunds and releases before the kill switch, then bound leftover payments still record | tests/student-enrollment-webhook-off.spec.ts:242:5 › payments off records a bound paid completion and 503s anything it cannot record | tests/student-enrollment-webhook-off.spec.ts:493:5 › email off still records later webhooks on a paid row and queues mail | tests/student-enrollment-webhook-off.spec.ts:536:5 › rollback refunds and releases before the kill switch, then bound leftover payments still record
+  failed_tests: payments off records a bound paid completion and 503s anything it cannot record | email off still records later webhooks on a paid row and queues mail | rollback refunds and releases before the kill switch, then bound leftover payments still record | staff drain sends queued paid mail while live payments stay off | record-path mail failure stays 200 after a durable paid record | tests/student-enrollment-webhook-off.spec.ts:255:5 › payments off records a bound paid completion and 503s anything it cannot record | tests/student-enrollment-webhook-off.spec.ts:506:5 › email off still records later webhooks on a paid row and queues mail | tests/student-enrollment-webhook-off.spec.ts:549:5 › rollback refunds and releases before the kill switch, then bound leftover payments still record | tests/student-enrollment-webhook-off.spec.ts:632:5 › staff drain sends queued paid mail while live payments stay off | tests/student-enrollment-webhook-off.spec.ts:739:5 › record-path mail failure stays 200 after a durable paid record
   suite_tail:
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 265 |     expect(completed.status).toBe(200);
-      267 |     expect((await f.enrollment(bound.id)).status).toBe("paid");
-      268 |     expect(await f.mail(bound.id)).toHaveLength(1);
+    > 611 |     ).toBe(200);
+      612 |     expect((await f.enrollment(leftover.id)).status).toBe("paid");
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 510 |     expect((await f.webhook("checkout.session.completed", sessionId)).status).toBe(
-      513 |     expect((await f.enrollment(paid.id)).status).toBe("paid");
+    > 649 |     expect((await f.webhook("checkout.session.completed", sessionId)).status).toBe(
+      652 |     expect((await f.mail(paid.id))[0].status).toBe("pending");
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-    > 598 |     ).toBe(200);
-      599 |     expect((await f.enrollment(leftover.id)).status).toBe("paid");
-  3 failed
+    > 760 |     expect(completed.status).toBe(200);
+      762 |     expect((await f.enrollment(paid.id)).status).toBe("paid");
+      763 |     expect((await f.mail(paid.id))[0].status).toBe("pending");
+  5 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
 ok 14 - N01 / N02 release refuses non-refunded rows and a second call
@@ -600,14 +667,14 @@ student-enrollment-locks: 18 passed
 
 W10 KILLED file=app/api/student-enrollment/webhook/route.ts
   build_exit=0 suite_exit=1 locks_exit=0
-  failed_tests: payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | tests/student-enrollment-webhook-off.spec.ts:408:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans
+  failed_tests: payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans | tests/student-enrollment-webhook-off.spec.ts:421:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans
   suite_tail:
-  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
-  ✘  48 tests/student-enrollment-webhook-off.spec.ts:408:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans (1.1s)
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (35ms)
+  ✘  49 tests/student-enrollment-webhook-off.spec.ts:421:5 › payments off expires nothing, drains only paid mail, and rejects mismatched reserved orphans (1.1s)
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-      461 |     ).toBe(200);
-    > 462 |     expect((await f.mail(paid.id))[0].status).toBe("sent");
-      463 |     expect((await f.webhook("checkout.session.expired", sessionId)).status).toBe(
+      474 |     ).toBe(200);
+    > 475 |     expect((await f.mail(paid.id))[0].status).toBe("sent");
+      476 |     expect((await f.webhook("checkout.session.expired", sessionId)).status).toBe(
   1 failed
  ELIFECYCLE  Command failed with exit code 1.
   locks_tail:
@@ -620,8 +687,76 @@ student-enrollment-locks: 18 passed
 
 
 
-summary: 33 KILLED, 0 SURVIVED, 0 ERROR
-M24 M26 M27 M30 M32 M34 M34L M49 M51b M52b M55 M56 M57b N01 N02 N05 N17 N11 N12 N13 N14 N15 N19 N20 N21 N22 W03 W04 W05 W06 W08 W09 W10
+X06 KILLED file=app/api/student-enrollment/webhook/route.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  failed_tests: unpaid completed sessions are ignored, not treated as paid completions | tests/student-enrollment-webhook-off.spec.ts:715:5 › unpaid completed sessions are ignored, not treated as paid completions
+  suite_tail:
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✘  54 tests/student-enrollment-webhook-off.spec.ts:715:5 › unpaid completed sessions are ignored, not treated as paid completions (1.1s)
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+    > 730 |     expect(ignored.status).toBe(200);
+      732 |     expect((await f.enrollment(unbound.id)).status).toBe("reserved");
+      733 |     expect((await f.enrollment(unbound.id)).stripe_session_id).toBeNull();
+  1 failed
+ ELIFECYCLE  Command failed with exit code 1.
+  locks_tail:
+ok 14 - N01 / N02 release refuses non-refunded rows and a second call
+ok 15 - N05 / N17 release and resolve persist the actor
+ok 16 - N11 protect_student_offering counts unreleased refunded seats
+ok 17 - N19 released refunded emails can re-enroll
+ok 18 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 18 passed
+
+
+
+X08 KILLED file=app/api/student-enrollment/webhook/route.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  failed_tests: record-path mail failure stays 200 after a durable paid record | tests/student-enrollment-webhook-off.spec.ts:739:5 › record-path mail failure stays 200 after a durable paid record
+  suite_tail:
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (33ms)
+  ✘  55 tests/student-enrollment-webhook-off.spec.ts:739:5 › record-path mail failure stays 200 after a durable paid record (1.0s)
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+    > 760 |     expect(completed.status).toBe(200);
+      762 |     expect((await f.enrollment(paid.id)).status).toBe("paid");
+      763 |     expect((await f.mail(paid.id))[0].status).toBe("pending");
+  1 failed
+ ELIFECYCLE  Command failed with exit code 1.
+  locks_tail:
+ok 14 - N01 / N02 release refuses non-refunded rows and a second call
+ok 15 - N05 / N17 release and resolve persist the actor
+ok 16 - N11 protect_student_offering counts unreleased refunded seats
+ok 17 - N19 released refunded emails can re-enroll
+ok 18 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 18 passed
+
+
+
+X09 KILLED file=lib/student-enrollment-mail.ts
+  build_exit=0 suite_exit=1 locks_exit=0
+  failed_tests: confirmation send requires a paid enrollment | student database enforces shared inventory, separate modes, replay, roster and atomic mail | tests/student-enrollment-mail.spec.ts:285:5 › confirmation send requires a paid enrollment ──── | tests/student-enrollment.spec.ts:514:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail
+  suite_tail:
+  ✓  38 tests/student-enrollment-api.spec.ts:1249:7 › student enrollment isolated full stack › async_payment_failed does not expire a paid enrollment (34ms)
+  ✘  45 tests/student-enrollment-mail.spec.ts:285:5 › confirmation send requires a paid enrollment (1.2s)
+  ✘  67 tests/student-enrollment.spec.ts:514:5 › student database enforces shared inventory, separate modes, replay, roster and atomic mail (1.1s)
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoHaveLength[2m([22m[32mexpected[39m[2m)[22m
+    > 293 |     expect(f.calls).toHaveLength(0);
+      294 |     expect((await f.state()).status).toBe("pending");
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+    > 592 |     ).toContain(
+  2 failed
+ ELIFECYCLE  Command failed with exit code 1.
+  locks_tail:
+ok 14 - N01 / N02 release refuses non-refunded rows and a second call
+ok 15 - N05 / N17 release and resolve persist the actor
+ok 16 - N11 protect_student_offering counts unreleased refunded seats
+ok 17 - N19 released refunded emails can re-enroll
+ok 18 - M55 / M56 resolve records actor and writes an events row
+student-enrollment-locks: 18 passed
+
+
+
+summary: 39 KILLED, 0 SURVIVED, 0 ERROR
+M24 M26 M27 M30 M32 M34 M34L M49 M51b M52 M52b M55 M56 M57b N01 N02 N05 N17 N11 N12a N12 N13 N14 N15 N19 N20 N21 N22a N22 W03 W04 W05 W06 W08 W09 W10 X06 X08 X09
 
 
 CONTROL SURVIVED file=lib/student-enrollment.ts
