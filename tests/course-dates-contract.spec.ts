@@ -8,6 +8,7 @@ import { buildPublishedCourseScheduleStatus, resolvePublishedBuiltOn } from "../
 import liveCourseScheduleData from "../data/course-schedule.json";
 import {
   CONTRACT_SCHEDULE,
+  CONTRACT_SCHEDULE_MODULE,
   CONTRACT_TODAY_LA,
   COURSE_DATE_MUTANTS,
   EIGHT_DAY_STALE_OFFSET,
@@ -266,6 +267,11 @@ test("synthetic contract stays green when the live schedule file is refreshed", 
   } finally {
     writeFileSync(livePath, original);
   }
+});
+
+test("synthetic contract is bound to the frozen fixture module, not the live file", () => {
+  assert.equal(CONTRACT_SCHEDULE_MODULE, "../fixtures/course-schedule.contract.json");
+  assert.equal(CONTRACT_SCHEDULE.reviewedOn, "2026-10-14");
 });
 
 for (const probe of COPY_PROBES) {

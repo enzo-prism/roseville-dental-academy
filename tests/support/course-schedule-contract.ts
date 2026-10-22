@@ -150,6 +150,7 @@ const DOT_YEAR_PAST_DATE = "Oct. 12, 2026";
 const DOT_NOYEAR_PAST_DATE = "Oct. 12";
 const NUMERIC_PAST_DATE = "10/12/2026";
 export const CONTRACT_SCHEDULE = contractScheduleData;
+export const CONTRACT_SCHEDULE_MODULE = "../fixtures/course-schedule.contract.json";
 export const LIVE_COURSE_SCHEDULE = liveCourseScheduleData;
 const EMPTY_HOME_COPY = "Ask admissions for upcoming dates.";
 const EMPTY_COURSE_COPY = "Ask admissions";
