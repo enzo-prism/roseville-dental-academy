@@ -6,6 +6,7 @@ import { adLandingPages } from "../../lib/ad-landing-pages";
 import {
   SATURDAY_ACADEMY_START_DATE,
   courseScheduleCourseDetails,
+  formatWeekdayShortDate,
   type CourseScheduleId,
 } from "../../lib/course-schedule";
 import { scheduleRevision } from "../../lib/course-schedule-revision.mjs";
@@ -92,6 +93,7 @@ export type HomeScheduleRow = {
 
 export type CoursePageSnapshot = {
   dates: Array<{ full: boolean; isoDate: string; label: string }>;
+  heroStarts: Array<{ full: boolean; isoDate: string; label: string }>;
   ldScripts: string[];
   nextAvailable: string | undefined;
   nextClass: string;
@@ -548,6 +550,14 @@ function synthesizeCourse(status: PublishedCourseScheduleStatus, courseId: Cours
   const open = dates.filter((entry) => !entry.full);
   return {
     dates,
+    heroStarts:
+      courseId === "dental-assisting-program"
+        ? dates.map((entry) => ({
+            full: entry.full,
+            isoDate: entry.isoDate,
+            label: formatWeekdayShortDate(entry.isoDate),
+          }))
+        : [],
     ldScripts: [courseLdScript(courseId, open.map((entry) => entry.isoDate))],
     nextAvailable: open[0]?.label,
     nextClass: open[0]?.label ?? EMPTY_COURSE_COPY,
@@ -748,6 +758,7 @@ export function applyCourseDateMutant(
       for (const id of COURSE_SCHEDULE_IDS) {
         next.courses[id] = {
           dates: [],
+          heroStarts: [],
           ldScripts: [courseLdScript(id, [])],
           nextAvailable: undefined,
           nextClass: EMPTY_COURSE_COPY,
@@ -1145,6 +1156,12 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     assert.deepEqual(ldDates, openDates, `${id} JSON-LD startDates must equal non-Full dates`);
     assert.equal(rendered.nextAvailable, openDates[0] ? formatOpenDateLabel(id, openDates[0]) : undefined);
     assert.equal(rendered.nextClass, openDates[0] ? formatOpenDateLabel(id, openDates[0]) : EMPTY_COURSE_COPY);
+    assert.deepEqual(
+      rendered.heroStarts.map((entry) => [entry.isoDate, entry.full, entry.label]),
+      id === "dental-assisting-program"
+        ? published.map((entry) => [entry.isoDate, entry.status === "full", formatWeekdayShortDate(entry.isoDate)])
+        : [],
+    );
 
     const homeForCourse = snapshot.homeRows
       .filter((row) => row.courses.some((course) => course.id === id))
@@ -1289,14 +1306,26 @@ export async function collectServedScheduleSnapshot(
       })),
     );
     const nextClass = await root.evaluate((node) => {
+      const marked = node.querySelector("[data-rda-next-class]")?.getAttribute("data-rda-next-class")?.trim();
+      if (marked) {
+        return marked;
+      }
       const dt = [...node.querySelectorAll("dt")].find((item) => item.textContent?.includes("Next class"));
       return dt?.nextElementSibling?.textContent?.trim() ?? "";
     });
+    const heroStarts = await root.locator("[data-rda-hero-starts] [data-rda-hero-start]").evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        full: node.getAttribute("data-status") === "full",
+        isoDate: node.querySelector("time")?.getAttribute("datetime") ?? "",
+        label: node.querySelector("time")?.textContent?.trim() ?? "",
+      })),
+    );
     const body = (await root.innerText()) ?? "";
     const nextAvailable = body.match(/Next available date: ([^.]+)/u)?.[1];
     const courseScript = (await page.locator(`#rda-ld-course-${courseId}`).textContent()) ?? "{}";
     courses[courseId] = {
       dates,
+      heroStarts,
       ldScripts: [courseScript],
       nextAvailable,
       nextClass,

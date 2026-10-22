@@ -194,6 +194,48 @@ export function formatCourseDateLabel(courseId: CourseScheduleId, date: string) 
   return date;
 }
 
+/** "Fri, Nov 20" — weekday + short month for hero / lander start chips. */
+export function formatWeekdayShortDate(isoDate: string) {
+  return formatIsoDate(isoDate, { weekday: "short", month: "short", day: "numeric" });
+}
+
+export type UpcomingStartDate = {
+  date: string;
+  isoDate: string;
+  status: CourseScheduleStatus;
+  weekdayShort: string;
+};
+
+export function getUpcomingStartDates(
+  courseId: CourseScheduleId,
+  asOf = COURSE_SCHEDULE_REVIEWED_ON,
+): UpcomingStartDate[] {
+  return getUpcomingCourseSchedule(courseId, asOf).map((entry) => ({
+    date: formatCourseDateLabel(courseId, entry.date),
+    isoDate: entry.isoDate,
+    status: entry.status === "full" ? "full" : "available",
+    weekdayShort: formatWeekdayShortDate(entry.isoDate),
+  }));
+}
+
+/** Compact line: "Fri, Nov 20 · Sat, Dec 5". Full dates append (Full). */
+export function formatStartDatesSummary(dates: readonly UpcomingStartDate[]) {
+  if (!dates.length) {
+    return undefined;
+  }
+
+  return dates
+    .map((entry) => (entry.status === "full" ? `${entry.weekdayShort} (Full)` : entry.weekdayShort))
+    .join(" · ");
+}
+
+export function formatNextStartsSummary(
+  courseId: CourseScheduleId,
+  asOf = COURSE_SCHEDULE_REVIEWED_ON,
+) {
+  return formatStartDatesSummary(getUpcomingStartDates(courseId, asOf));
+}
+
 export function getUpcomingCourseSchedule(
   courseId: CourseScheduleId,
   asOf = COURSE_SCHEDULE_REVIEWED_ON,

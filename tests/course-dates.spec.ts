@@ -2,10 +2,14 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 import {
   COURSE_SCHEDULE_REVIEWED_ON,
   buildCourseScheduleMonths,
+  formatNextStartsSummary,
+  formatStartDatesSummary,
+  formatWeekdayShortDate,
   getAvailableCourseDates,
   getCourseSchedule,
   getNextAvailableCourseDate,
   getUpcomingScheduleMonths,
+  getUpcomingStartDates,
 } from "../lib/course-schedule";
 import { suppressSitePromo } from "./support/qa-helpers";
 import {
@@ -71,6 +75,21 @@ test("reviewed schedule excludes elapsed dates without inventing sold-out histor
   expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-08-01")?.status).toBe("available");
   expect(getCourseSchedule("sealants").find((entry) => entry.isoDate === "2026-10-24")?.status).toBe("full");
   expect(getCourseSchedule("coronal-polish").find((entry) => entry.isoDate === "2026-10-24")?.status).toBe("full");
+  expect(formatWeekdayShortDate("2026-11-20")).toBe("Fri, Nov 20");
+  expect(formatWeekdayShortDate("2026-12-05")).toBe("Sat, Dec 5");
+  expect(getUpcomingStartDates("dental-assisting-program").map((entry) => [entry.isoDate, entry.status, entry.weekdayShort])).toEqual([
+    ["2026-11-20", "available", "Fri, Nov 20"],
+    ["2026-12-05", "available", "Sat, Dec 5"],
+  ]);
+  expect(formatNextStartsSummary("dental-assisting-program")).toBe("Fri, Nov 20 · Sat, Dec 5");
+  expect(formatNextStartsSummary("dental-assisting-program", "2026-11-21")).toBe("Sat, Dec 5");
+  expect(formatNextStartsSummary("dental-assisting-program", "2026-12-06")).toBeUndefined();
+  expect(
+    formatStartDatesSummary([
+      { date: "November 20, 2026", isoDate: "2026-11-20", status: "full", weekdayShort: "Fri, Nov 20" },
+      { date: "December 5, 2026", isoDate: "2026-12-05", status: "available", weekdayShort: "Sat, Dec 5" },
+    ]),
+  ).toBe("Fri, Nov 20 (Full) · Sat, Dec 5");
 });
 
 test("dashboard schedule data builds months, labels, and course order", () => {
@@ -384,6 +403,15 @@ test("course JSON-LD omits sold-out instances", async ({ page, request }) => {
     "2026-12-05",
   ]);
   expect((infectionSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).not.toContain("2026-11-07");
+
+  await page.goto("/dental-assisting-program");
+  const daSchema = JSON.parse(
+    (await page.locator("#rda-ld-course-dental-assisting-program").textContent()) ?? "{}",
+  ) as { hasCourseInstance?: Array<{ startDate?: string }> };
+  expect((daSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).toEqual([
+    "2026-11-20",
+    "2026-12-05",
+  ]);
 });
 
 test("infection-control page and FAQs omit November 7 while keeping later dates", async ({ page, request }) => {
@@ -402,6 +430,52 @@ test("infection-control page and FAQs omit November 7 while keeping later dates"
   const faqBody = await page.locator("body").textContent() ?? "";
   expect(faqBody).toContain("Infection Control: November 14, 2026; December 5, 2026");
   expect(faqBody).not.toContain("Infection Control: October 17, 2026; November 7, 2026");
+});
+
+test("DA program hero lists both upcoming weekday starts above the fold", async ({ page, request }) => {
+  test.skip(await servesDashboardSchedule(request), FIXTURE_PIN);
+
+  const assertHeroStarts = async (width: number) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/dental-assisting-program");
+    const starts = page.locator('[data-rda-hero-starts="dental-assisting-program"]');
+    await expect(starts).toBeVisible();
+    await expect(starts).toHaveAttribute("data-rda-next-class", "November 20, 2026");
+    await expect(starts.getByText("Next starts", { exact: true })).toBeVisible();
+    await expect(starts.locator('time[datetime="2026-11-20"]')).toHaveText("Fri, Nov 20");
+    await expect(starts.locator('time[datetime="2026-12-05"]')).toHaveText("Sat, Dec 5");
+    await expect(starts.getByText("Full", { exact: true })).toHaveCount(0);
+    await expect(starts.getByRole("link", { name: "Ask about this course" })).toHaveAttribute("href", "#quick-sign-up");
+    await expect(page.locator('[data-rda-live-course="dental-assisting-program"] .ac-hero-actions a[href="#quick-sign-up"]')).toHaveText(
+      /Ask about this course/,
+    );
+    await expect(page.locator('[data-rda-student-enroll-cta]')).toHaveCount(0);
+
+    const geometry = await starts.evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      const fab = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
+      const fabRect = fab?.getBoundingClientRect();
+      const overlapsFab = Boolean(
+        fabRect &&
+          rect.left < fabRect.right &&
+          rect.right > fabRect.left &&
+          rect.top < fabRect.bottom &&
+          rect.bottom > fabRect.top,
+      );
+      return {
+        aboveFold: rect.top >= 0 && rect.bottom <= window.innerHeight,
+        overlapsFab,
+      };
+    });
+    expect(geometry.aboveFold).toBe(true);
+    expect(geometry.overlapsFab).toBe(false);
+  };
+
+  await assertHeroStarts(1280);
+  await assertHeroStarts(390);
+
+  await page.goto("/infection-control");
+  await expect(page.locator("[data-rda-hero-starts]")).toHaveCount(0);
 });
 
 test("AI discovery dates match the reviewed course schedule", async ({ request }) => {

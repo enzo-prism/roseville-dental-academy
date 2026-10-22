@@ -5932,6 +5932,98 @@ html.rda-motion .ac-rating-bar span {
   margin: 0.3rem 0 0;
 }
 
+.ac-course-facts.is-pair {
+  grid-template-columns: 1fr 1fr;
+}
+
+.ac-hero-starts {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1rem;
+  padding: 0.85rem 1rem;
+  width: 100%;
+}
+
+.ac-hero-starts-label {
+  align-items: center;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 0.4rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.ac-hero-starts-label svg {
+  color: var(--primary);
+  height: 0.95rem;
+  width: 0.95rem;
+}
+
+.ac-hero-starts-dates {
+  align-items: center;
+  display: flex;
+  flex: 1 1 12rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ac-hero-starts-date {
+  align-items: center;
+  background: var(--primary-soft);
+  border-radius: var(--radius-pill);
+  color: var(--accent-foreground);
+  display: inline-flex;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  gap: 0.4rem;
+  line-height: 1.2;
+  padding: 0.4rem 0.85rem;
+}
+
+.ac-hero-starts-date[data-status="full"] {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.ac-hero-starts-date time {
+  white-space: nowrap;
+}
+
+.ac-hero-starts-cta {
+  align-items: center;
+  color: var(--primary-deep);
+  display: inline-flex;
+  font-size: 0.86rem;
+  font-weight: 700;
+  gap: 0.3rem;
+  margin-left: auto;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ac-hero-starts-cta svg {
+  height: 0.95rem;
+  width: 0.95rem;
+}
+
+.ac-hero-starts-cta:hover {
+  color: var(--primary);
+}
+
+@media (max-width: 639px) {
+  .ac-hero-starts-cta {
+    margin-left: 0;
+  }
+}
+
 .ac-course-mosaic {
   display: grid;
   gap: 0.75rem;
@@ -5989,6 +6081,10 @@ html.rda-motion .ac-course-float {
 
   .ac-course-facts > div:last-child {
     grid-column: 1 / -1;
+  }
+
+  .ac-course-facts.is-pair > div:last-child {
+    grid-column: auto;
   }
 
   .ac-course-mosaic {

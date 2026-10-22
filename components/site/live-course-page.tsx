@@ -30,7 +30,16 @@ import { showsCertificateExpiration } from "@/lib/certificate-expiration";
 import { studentPublicEnrollCtas } from "@/lib/student-enrollment";
 import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE, hasStandaloneClinicalRequirements, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
 import { getAcademyCourse } from "@/lib/academy-catalog";
-import { courseScheduleNote, formatCourseDateLabel, getNextAvailableCourseDate, getUpcomingCourseSchedule } from "@/lib/course-schedule";
+import {
+  courseScheduleNote,
+  formatCourseDateLabel,
+  formatStartDatesSummary,
+  getNextAvailableCourseDate,
+  getUpcomingCourseSchedule,
+  getUpcomingStartDates,
+  type CourseScheduleId,
+  type UpcomingStartDate,
+} from "@/lib/course-schedule";
 import type {
   LiveCourseContent,
   LiveCourseLink,
@@ -170,6 +179,53 @@ function CourseMedia({
   );
 }
 
+function CourseHeroStartDates({
+  courseId,
+  dates,
+  nextClass,
+}: {
+  courseId: CourseScheduleId;
+  dates: UpcomingStartDate[];
+  nextClass: string;
+}) {
+  const summary = formatStartDatesSummary(dates);
+
+  return (
+    <div
+      className="ac-hero-starts"
+      data-rda-hero-starts={courseId}
+      data-rda-next-class={nextClass}
+    >
+      <p className="ac-hero-starts-label">
+        <CalendarDays aria-hidden="true" />
+        Next starts
+      </p>
+      {summary ? <p className="sr-only">Next starts: {summary}</p> : null}
+      <div className="ac-hero-starts-dates">
+        {dates.map((entry) => (
+          <span
+            className="ac-hero-starts-date"
+            data-rda-hero-start=""
+            data-status={entry.status === "full" ? "full" : "open"}
+            key={entry.isoDate}
+          >
+            <time dateTime={entry.isoDate}>{entry.weekdayShort}</time>
+            {entry.status === "full" ? (
+              <span aria-label={`${entry.date} is full`} className="ac-full-flag">
+                Full
+              </span>
+            ) : null}
+          </span>
+        ))}
+      </div>
+      <a className="ac-hero-starts-cta" href="#quick-sign-up">
+        Ask about this course
+        <ArrowRight aria-hidden="true" />
+      </a>
+    </div>
+  );
+}
+
 function CourseSchedule({ course }: { course: LiveCourseContent }) {
   const scheduleEntries = getUpcomingCourseSchedule(course.id);
 
@@ -299,6 +355,8 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   const supportingMedia = (course.supportingMedia ?? course.supportingImages ?? []).slice(0, 2);
   const reviewGroup = courseReviewHighlights[course.id];
   const nextDate = getNextAvailableCourseDate(course.id);
+  const upcomingStarts = getUpcomingStartDates(course.id);
+  const showHeroStarts = course.id === "dental-assisting-program" && upcomingStarts.length > 0;
   const phoneHref = `tel:${siteContact.phone.replace(/\D/g, "")}`;
   const title = hero ? toDisplayTitle(hero.heading) : catalog?.name ?? "";
 
@@ -328,8 +386,15 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               ) : null}
             </div>
             <h1 className="ac-h1">{title}</h1>
+            {showHeroStarts ? (
+              <CourseHeroStartDates
+                courseId={course.id}
+                dates={upcomingStarts}
+                nextClass={nextDate ?? "Ask admissions"}
+              />
+            ) : null}
             {hero?.body ? <p className="ac-lede">{renderTextWithLinks(hero.body, course.links)}</p> : null}
-            <dl className="ac-course-facts">
+            <dl className={`ac-course-facts${showHeroStarts ? " is-pair" : ""}`}>
               {price ? (
                 <div data-rda-quick-fact="true">
                   <dt>
@@ -348,13 +413,15 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
                   <dd>{catalog?.duration.split(" · ")[0] ?? duration.body}</dd>
                 </div>
               ) : null}
-              <div>
-                <dt>
-                  <CalendarDays aria-hidden="true" />
-                  Next class
-                </dt>
-                <dd>{nextDate ?? "Ask admissions"}</dd>
-              </div>
+              {showHeroStarts ? null : (
+                <div>
+                  <dt>
+                    <CalendarDays aria-hidden="true" />
+                    Next class
+                  </dt>
+                  <dd>{nextDate ?? "Ask admissions"}</dd>
+                </div>
+              )}
             </dl>
             <div className="ac-hero-actions">
               <a className="ac-btn ac-btn-primary ac-btn-lg" href="#quick-sign-up">

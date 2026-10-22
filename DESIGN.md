@@ -221,7 +221,7 @@ Do not introduce raw colors in components. New durable values go here and in `ap
 
 - **Home** (`components/academy/home/home-page.tsx`): photo-stack hero carousel (3 real class photos, Ken Burns, autoplay with pause, keyboard and dot controls) → skills ticker → "Students in action" bento (photos, an Instagram clip, count-up stats) → reviews ink band (score, 6 photo review cards, two-row marquee of every written review) → courses (DA flagship + 5 certification cards + extras) → instructors → schedule → Request Course Info form → why dental assisting → Dental Board details → gallery + TikTok → contact → social.
 - **Instructors**, **Photos** (filterable masonry + lightbox + social video rail), **Reviews** (`/reviews`: rating breakdown, graduate stories, searchable/filterable wall of every review), **Contact**, and **FAQs** (searchable native `<details>` accordion) share `PageHero`.
-- **Course pages** (`components/site/live-course-page.tsx`): hero with quick facts (price, duration, next class) and photo mosaic, detail cards, a sticky enrollment sidebar with every upcoming date (Open/Full), course reviews in an ink band, then the course-preselected request form.
+- **Course pages** (`components/site/live-course-page.tsx`): hero with quick facts (price, duration, next class) and photo mosaic. The Dental Assisting program hero also lists upcoming weekday start dates (Open/Full) from the course schedule, directly above the existing request-info CTA. Detail cards, a sticky enrollment sidebar with every upcoming date (Open/Full), course reviews in an ink band, then the course-preselected request form.
 - **404** is standalone (no primary nav) with a way back home.
 
 ## Forms

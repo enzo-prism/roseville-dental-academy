@@ -33,6 +33,7 @@ test("an intentionally empty feed renders no stale dates or CourseInstances", as
       for (const course of ["bls-cpr-1", "radiation-safety", "coronal-polish", "sealants", "infection-control", "dental-assisting-program"]) {
         await page.goto(`${origin}/${course}`);
         await expect(page.locator(".rda-course-date")).toHaveCount(0);
+        await expect(page.locator("[data-rda-hero-starts]")).toHaveCount(0);
         await expect(page.getByText("Ask admissions", { exact: true })).toBeVisible();
         const schemas = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent ?? "{}")));
         const courseSchema = schemas.find((schema) => schema["@type"] === "Course");
@@ -67,6 +68,7 @@ test("a dashboard build whose stored dates are all in the past publishes empty a
       for (const course of ["bls-cpr-1", "radiation-safety", "coronal-polish", "sealants", "infection-control", "dental-assisting-program"]) {
         await page.goto(`${origin}/${course}`);
         await expect(page.locator(".rda-course-date")).toHaveCount(0);
+        await expect(page.locator("[data-rda-hero-starts]")).toHaveCount(0);
         await expect(page.getByText("Ask admissions", { exact: true })).toBeVisible();
         await expect(page.getByText("Call the office for upcoming class dates.")).toBeVisible();
       }

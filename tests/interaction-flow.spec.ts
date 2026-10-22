@@ -2799,7 +2799,7 @@ test.describe("live-style interaction flows", () => {
 
       const dates = page.locator(".rda-ad-date-list");
 
-      await expect(page.getByText("Next start: November 20, 2026")).toBeVisible();
+      await expect(page.getByText("Next starts: Fri, Nov 20 · Sat, Dec 5")).toBeVisible();
       await expect(dates.getByText("September 12, 2026 (Saturday Academy)")).toHaveCount(0);
       await expect(dates.getByText("October 12, 2026")).toHaveCount(0);
       await expect(dates.getByText("November 20, 2026")).toBeVisible();
