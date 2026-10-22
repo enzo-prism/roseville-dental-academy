@@ -71,3 +71,50 @@ jobs:
             playwright-report
             test-results
           if-no-files-found: ignore
+
+  course-dates-clock:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment_url != '' && contains(github.event.deployment_status.environment_url, 'vercel.app')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: nov20-la
+            tz: America/Los_Angeles
+            fake_now: "2026-11-20T12:00:00-08:00"
+          - name: nov20-utc
+            tz: UTC
+            fake_now: "2026-11-20T12:00:00Z"
+          - name: dec20-la
+            tz: America/Los_Angeles
+            fake_now: "2026-12-20T12:00:00-08:00"
+          - name: dec20-utc
+            tz: UTC
+            fake_now: "2026-12-20T12:00:00Z"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Course-dates contract under ${{ matrix.name }}
+        env:
+          CI: "true"
+          COURSE_DATES_FAKE_NOW: ${{ matrix.fake_now }}
+          PLAYWRIGHT_NO_WEBSERVER: "1"
+          TZ: ${{ matrix.tz }}
+        run: pnpm test:course-dates-contract

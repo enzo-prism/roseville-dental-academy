@@ -53,6 +53,12 @@ export const COURSE_DATE_MUTANTS = [
   "builtOn-missing",
   "builtOn-tomorrow",
   "llms-unlabelled-past",
+  "faq-abbrev-past",
+  "faq-noyear-past",
+  "llms-abbrev-past",
+  "llms-noyear-past",
+  "faq-drop-one",
+  "faq-unlisted-policy-date",
 ] as const;
 
 export type CourseDateMutant = (typeof COURSE_DATE_MUTANTS)[number];
@@ -91,15 +97,53 @@ export type ServedScheduleSnapshot = {
 const ACADEMY_TIME_ZONE = "America/Los_Angeles";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
 const REVISION = /^[0-9a-f]{64}$/u;
-const MONTH_DAY_YEAR =
-  /(?:January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}/gu;
+const MONTH_LONG =
+  "January|February|March|April|May|June|July|August|September|October|November|December";
+const MONTH_SHORT = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec";
+const MONTH_DAY_YEAR = new RegExp(`(?:${MONTH_LONG}) \\d{1,2}, \\d{4}`, "gu");
+// Long names first so "December 5, 2026" is one match, not a yearless "December 5".
+const COPY_DATE = new RegExp(`\\b(?:${MONTH_LONG}|${MONTH_SHORT}) \\d{1,2}(?:, \\d{4})?\\b`, "gu");
+const MONTH_INDEX: Record<string, number> = {
+  january: 0,
+  jan: 0,
+  february: 1,
+  feb: 1,
+  march: 2,
+  mar: 2,
+  april: 3,
+  apr: 3,
+  may: 4,
+  june: 5,
+  jun: 5,
+  july: 6,
+  jul: 6,
+  august: 7,
+  aug: 7,
+  september: 8,
+  sep: 8,
+  sept: 8,
+  october: 9,
+  oct: 9,
+  november: 10,
+  nov: 10,
+  december: 11,
+  dec: 11,
+};
 const WRONG_FUTURE_DATE = "2027-06-15";
 const PAST_CORONAL_DATE = "2026-09-12";
+const ABBREV_PAST_DATE = "Oct 12, 2026";
+const NOYEAR_PAST_DATE = "October 12";
 const EMPTY_HOME_COPY = "Ask admissions for upcoming dates.";
 const EMPTY_COURSE_COPY = "Ask admissions";
-const POLICY_DATES = new Set(["January 1, 2025"]);
+// Exact legal/policy strings only. Class dates do not belong here.
+export const POLICY_DATE_ALLOWLIST = ["January 1, 2025"] as const;
+const POLICY_DATES = new Set<string>(POLICY_DATE_ALLOWLIST);
+const UNLISTED_POLICY_DATE = "January 2, 2025";
 export const STALE_DASHBOARD_WARN_DAYS = 1;
 export const STALE_DASHBOARD_FAIL_DAYS = 7;
+export const CONTRACT_TODAY_LA = "2026-10-22";
+export const SEVEN_DAY_STALE_OFFSET = 7;
+export const EIGHT_DAY_STALE_OFFSET = 8;
 const LANDER_COURSES = {
   coronal_polish: ["coronal-polish"],
   dental_assisting_program: ["dental-assisting-program"],
@@ -109,7 +153,24 @@ const LANDER_COURSES = {
 } as const satisfies Record<string, readonly CourseScheduleId[]>;
 
 export function academyDate(now = new Date()) {
-  return getSeasonalLocalDate(now, ACADEMY_TIME_ZONE);
+  const fakeNow = process.env.COURSE_DATES_FAKE_NOW?.trim();
+  const instant = fakeNow ? new Date(fakeNow) : now;
+  if (fakeNow && Number.isNaN(instant.getTime())) {
+    throw new Error(`COURSE_DATES_FAKE_NOW is not a valid date: ${fakeNow}`);
+  }
+  return getSeasonalLocalDate(instant, ACADEMY_TIME_ZONE);
+}
+
+export function parseCopyDate(raw: string, fallbackYear: string) {
+  const match = raw.match(new RegExp(`^(${MONTH_LONG}|${MONTH_SHORT}) (\\d{1,2})(?:, (\\d{4}))?$`, "u"));
+  assert.ok(match, `unrecognized copy date ${raw}`);
+  const month = MONTH_INDEX[match[1].toLowerCase()];
+  assert.ok(month !== undefined, `unrecognized month in copy date ${raw}`);
+  const year = Number(match[3] ?? fallbackYear);
+  const day = Number(match[2]);
+  const isoDate = new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10);
+  assert.match(isoDate, ISO_DATE);
+  return isoDate;
 }
 
 export function shiftIsoDate(isoDate: string, days: number) {
@@ -276,6 +337,14 @@ function twoCoursesWithDifferentOpenDates(status: PublishedCourseScheduleStatus)
   assert.ok(false, "mutant needs two courses with different open dates");
 }
 
+function courseWithMultipleOpenDates(status: PublishedCourseScheduleStatus) {
+  for (const id of COURSE_SCHEDULE_IDS) {
+    const labels = expectedOpenDateLabels(status, id);
+    if (labels.length > 1) return { id, labels };
+  }
+  assert.ok(false, "mutant needs a course with two open dates");
+}
+
 function renderedIsoDates(snapshot: ServedScheduleSnapshot) {
   const dates = [
     ...snapshot.homeRows.map((row) => row.isoDate),
@@ -393,14 +462,14 @@ export function snapshotFromPublishedStatus(
   };
 }
 
-export function committedScheduleSnapshot(todayLA = academyDate()): ServedScheduleSnapshot {
+export function committedScheduleSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
   return snapshotFromPublishedStatus(buildPublishedCourseScheduleStatus(courseScheduleData), {
     previewUrl: false,
     todayLA,
   });
 }
 
-export function dashboardScheduleSnapshot(todayLA = academyDate()): ServedScheduleSnapshot {
+export function dashboardScheduleSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
   return snapshotFromPublishedStatus(
     buildPublishedCourseScheduleStatus({
       ...courseScheduleData,
@@ -412,7 +481,31 @@ export function dashboardScheduleSnapshot(todayLA = academyDate()): ServedSchedu
   );
 }
 
-export function elapsedDashboardScheduleSnapshot(todayLA = academyDate()): ServedScheduleSnapshot {
+export function eightDayStaleDashboardSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
+  return snapshotFromPublishedStatus(
+    buildPublishedCourseScheduleStatus({
+      ...courseScheduleData,
+      builtOn: shiftIsoDate(todayLA, -EIGHT_DAY_STALE_OFFSET),
+      reviewedOn: courseScheduleData.reviewedOn,
+      source: "dashboard",
+    }),
+    { previewUrl: true, todayLA },
+  );
+}
+
+export function sevenDayStaleDashboardSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
+  return snapshotFromPublishedStatus(
+    buildPublishedCourseScheduleStatus({
+      ...courseScheduleData,
+      builtOn: shiftIsoDate(todayLA, -SEVEN_DAY_STALE_OFFSET),
+      reviewedOn: courseScheduleData.reviewedOn,
+      source: "dashboard",
+    }),
+    { previewUrl: true, todayLA },
+  );
+}
+
+export function elapsedDashboardScheduleSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
   const lastDate = courseScheduleData.entries.reduce(
     (latest, entry) => (entry.isoDate > latest ? entry.isoDate : latest),
     "0000-01-01",
@@ -429,7 +522,7 @@ export function elapsedDashboardScheduleSnapshot(todayLA = academyDate()): Serve
   );
 }
 
-export function rolledBackDashboardSnapshot(todayLA = academyDate()): ServedScheduleSnapshot {
+export function rolledBackDashboardSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
   const builtOn = shiftIsoDate(todayLA, -5);
   return snapshotFromPublishedStatus(
     buildPublishedCourseScheduleStatus({
@@ -636,23 +729,35 @@ export function applyCourseDateMutant(
       return next;
     }
     case "stale-rollback": {
-      const builtOn = shiftIsoDate(next.todayLA, -(STALE_DASHBOARD_FAIL_DAYS + 1));
-      next.previewUrl = true;
-      next.status = {
-        ...next.status,
-        source: "dashboard",
-        builtOn,
-        reviewedOn: next.status.reviewedOn,
-      };
-      if (!renderedIsoDates(next).some((date) => date < next.todayLA)) {
-        next.homeRows = [
-          ...next.homeRows,
-          {
-            isoDate: PAST_CORONAL_DATE,
-            courses: [{ full: false, id: "coronal-polish", label: courseScheduleCourseDetails["coronal-polish"].label }],
-          },
-        ];
-      }
+      return eightDayStaleDashboardSnapshot(next.todayLA);
+    }
+    case "faq-abbrev-past": {
+      next.faqText += ` Also ${ABBREV_PAST_DATE}.`;
+      return next;
+    }
+    case "faq-noyear-past": {
+      next.faqText += ` Also ${NOYEAR_PAST_DATE}.`;
+      return next;
+    }
+    case "llms-abbrev-past": {
+      next.llmsText += ` Also ${ABBREV_PAST_DATE}.`;
+      return next;
+    }
+    case "llms-noyear-past": {
+      next.llmsText += ` Also ${NOYEAR_PAST_DATE}.`;
+      return next;
+    }
+    case "faq-drop-one": {
+      const { id, labels } = courseWithMultipleOpenDates(next.status);
+      next.faqText = replaceCourseDateList(
+        next.faqText,
+        courseScheduleCourseDetails[id].label,
+        labels.slice(0, -1).join("; "),
+      );
+      return next;
+    }
+    case "faq-unlisted-policy-date": {
+      next.faqText += ` ${UNLISTED_POLICY_DATE}.`;
       return next;
     }
     case "builtOn-missing": {
@@ -791,14 +896,17 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     }
   }
 
-  for (const [source, text] of [
-    ["FAQ", snapshot.faqText],
-    ["llms.txt", snapshot.llmsText],
+  for (const [source, file, text] of [
+    ["FAQ", "/faqs-1", snapshot.faqText],
+    ["llms.txt", "/llms.txt", snapshot.llmsText],
   ] as const) {
-    for (const match of text.matchAll(MONTH_DAY_YEAR)) {
+    for (const match of text.matchAll(COPY_DATE)) {
       if (POLICY_DATES.has(match[0])) continue;
-      const isoDate = new Date(`${match[0]} UTC`).toISOString().slice(0, 10);
-      assert.ok(isoDate >= status.reviewedOn, `${source} lists past date ${match[0]}`);
+      const isoDate = parseCopyDate(match[0], status.reviewedOn.slice(0, 4));
+      assert.ok(
+        isoDate >= status.reviewedOn,
+        `${source} (${file}) lists past date "${match[0]}" that is not in POLICY_DATE_ALLOWLIST`,
+      );
     }
   }
 
