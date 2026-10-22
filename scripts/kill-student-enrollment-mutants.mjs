@@ -376,12 +376,25 @@ const mutants = [
   },
 ];
 
+function killProcessGroup(pid) {
+  try {
+    process.kill(-pid, "SIGKILL");
+  } catch {
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch {
+      /* already exited */
+    }
+  }
+}
+
 function run(command, args, extraEnv = {}, timeoutMs = 0) {
   return new Promise((resolveExit) => {
     const child = spawn(command, args, {
       cwd: root,
       env: { ...process.env, ...extraEnv },
       stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
     });
     let stdout = "";
     let stderr = "";
@@ -396,11 +409,12 @@ function run(command, args, extraEnv = {}, timeoutMs = 0) {
       timeoutMs > 0
         ? setTimeout(() => {
             timedOut = true;
-            child.kill("SIGKILL");
+            killProcessGroup(child.pid);
           }, timeoutMs)
         : null;
     child.on("close", (code) => {
       if (timer) clearTimeout(timer);
+      killProcessGroup(child.pid);
       resolveExit({
         code: timedOut ? 1 : (code ?? 1),
         stdout,
@@ -591,10 +605,15 @@ for (const mutant of selected) {
     continue;
   }
   if (fixtureStartFailed(suite) || fixtureStartFailed(locks)) {
+    const fixtureTail = `${suite.stdout}\n${suite.stderr}`
+      .split("\n")
+      .slice(-12)
+      .join("\n");
     lines.push(
       `${mutant.id} ERROR file=${mutant.file}`,
       `  reason=fixture start failure`,
       `  build_exit=${build.code} suite_exit=${suite.code} locks_exit=${locks.code}`,
+      `  suite_tail:\n${fixtureTail}`,
       "",
     );
     await writeFile(logPath, `${lines.join("\n")}\n`);
