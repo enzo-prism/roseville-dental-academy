@@ -42,6 +42,87 @@ const reserveParams = (id, offeringId, index, mode) => [
   mode,
 ];
 
+function splitSqlStatements(sql) {
+  const statements = [];
+  let current = "";
+  for (let i = 0; i < sql.length; ) {
+    if (sql.startsWith("--", i)) {
+      const end = sql.indexOf("\n", i);
+      i = end === -1 ? sql.length : end + 1;
+      continue;
+    }
+    const dollar = sql.slice(i).match(/^\$[A-Za-z0-9_]*\$/);
+    if (dollar) {
+      const tag = dollar[0];
+      const end = sql.indexOf(tag, i + tag.length);
+      if (end === -1) {
+        current += sql.slice(i);
+        break;
+      }
+      current += sql.slice(i, end + tag.length);
+      i = end + tag.length;
+      continue;
+    }
+    if (sql[i] === "'") {
+      let j = i + 1;
+      while (j < sql.length) {
+        if (sql[j] === "'" && sql[j + 1] === "'") {
+          j += 2;
+          continue;
+        }
+        if (sql[j] === "'") {
+          j += 1;
+          break;
+        }
+        j += 1;
+      }
+      current += sql.slice(i, j);
+      i = j;
+      continue;
+    }
+    if (sql[i] === ";") {
+      const statement = current.trim();
+      if (statement) statements.push(statement);
+      current = "";
+      i += 1;
+      continue;
+    }
+    current += sql[i];
+    i += 1;
+  }
+  const tail = current.trim();
+  if (tail) statements.push(tail);
+  return statements;
+}
+
+async function applyOfferingSeed(fileUrl, applicationName) {
+  const sql = await readFile(fileUrl, "utf8");
+  const seeder = new pg.Client({ connectionString: url });
+  await seeder.connect();
+  try {
+    await seeder.query(`SET application_name = '${applicationName}'`);
+    try {
+      for (const statement of splitSqlStatements(sql)) {
+        await seeder.query(statement);
+      }
+      return { failed: false, output: "" };
+    } catch (error) {
+      const output = String(error.message);
+      try {
+        await seeder.query("ROLLBACK");
+      } catch {
+        /* already aborted or autocommit */
+      }
+      return {
+        failed: /stale or unexpected|expected 2 rows/i.test(output),
+        output,
+      };
+    }
+  } finally {
+    await seeder.end();
+  }
+}
+
 let passed = 0;
 async function test(name, fn) {
   await fn();
@@ -318,35 +399,19 @@ try {
       ],
     );
     await admin.query("COMMIT");
-    const seed = await readFile(
+    const applied = await applyOfferingSeed(
       new URL("../db/seeds/infection-control-offerings.test.sql", import.meta.url),
-      "utf8",
+      "rda-student-offering-seed-on-live-data",
     );
-    const seeder = new pg.Client({ connectionString: url });
-    await seeder.connect();
-    try {
-      await seeder.query("SET application_name = 'rda-student-offering-seed-on-live-data'");
-      let failed = false;
-      try {
-        await seeder.query(seed);
-      } catch (error) {
-        failed = /stale or unexpected|expected 2 rows/i.test(String(error.message));
-        try {
-          await seeder.query("ROLLBACK");
-        } catch {
-          /* already aborted */
-        }
-        if (!failed) throw error;
-      }
-      if (!failed) throw new Error("stale TEST seed should fail verify (M57b)");
-      const leftover = await admin.query(
-        "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05'",
+    if (!applied.failed)
+      throw new Error(
+        `stale TEST seed should fail verify (M57b): ${applied.output}`,
       );
-      if (leftover.rows.length) {
-        throw new Error("Failed TEST seed left a Dec 5 row (M57 / transaction removed)");
-      }
-    } finally {
-      await seeder.end();
+    const leftover = await admin.query(
+      "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05'",
+    );
+    if (leftover.rows.length) {
+      throw new Error("Failed TEST seed left a Dec 5 row (M57 / transaction removed)");
     }
   });
 
@@ -593,35 +658,19 @@ try {
       "UPDATE student_enrollment_offerings SET enabled=true, review_reference='stale live' WHERE id=$1",
       [liveOffer],
     );
-    const seed = await readFile(
+    const applied = await applyOfferingSeed(
       new URL("../db/seeds/infection-control-offerings.sql", import.meta.url),
-      "utf8",
+      "rda-student-offering-seed",
     );
-    const seeder = new pg.Client({ connectionString: url });
-    await seeder.connect();
-    try {
-      await seeder.query("SET application_name = 'rda-student-offering-seed'");
-      let failed = false;
-      try {
-        await seeder.query(seed);
-      } catch (error) {
-        failed = /stale or unexpected|expected 2 rows/i.test(String(error.message));
-        try {
-          await seeder.query("ROLLBACK");
-        } catch {
-          /* already aborted */
-        }
-        if (!failed) throw error;
-      }
-      if (!failed) throw new Error("stale live seed should fail verify (M57b)");
-      const leftover = await admin.query(
-        "SELECT 1 FROM student_enrollment_offerings WHERE mode='live' AND course_date='2026-12-05'",
+    if (!applied.failed)
+      throw new Error(
+        `stale live seed should fail verify (M57b): ${applied.output}`,
       );
-      if (leftover.rows.length) {
-        throw new Error("Failed live seed left a Dec 5 row (M57b / BEGIN removed)");
-      }
-    } finally {
-      await seeder.end();
+    const leftover = await admin.query(
+      "SELECT 1 FROM student_enrollment_offerings WHERE mode='live' AND course_date='2026-12-05'",
+    );
+    if (leftover.rows.length) {
+      throw new Error("Failed live seed left a Dec 5 row (M57b / BEGIN removed)");
     }
   });
 

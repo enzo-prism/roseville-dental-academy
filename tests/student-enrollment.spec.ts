@@ -571,6 +571,8 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     expect(lockSuite).not.toMatch(/M22b refunded/);
     expect(lockSuite).toContain("student-enrollment-locks: ${passed} passed");
+    expect(lockSuite).toContain("function splitSqlStatements(sql)");
+    expect(lockSuite).toContain("function applyOfferingSeed(fileUrl, applicationName)");
     expect(
       await readFile("scripts/test-student-enrollment.mjs", "utf8"),
     ).toContain("tests/student-enrollment-webhook-off.spec.ts");
