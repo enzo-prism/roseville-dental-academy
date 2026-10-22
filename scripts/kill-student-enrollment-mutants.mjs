@@ -161,9 +161,9 @@ const mutants = [
   {
     id: "N13",
     file: "db/migrations/005_student_enrollment.sql",
-    find: "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN",
+    find: "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND id<>p_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN",
     replace:
-      "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND student_enrollment_occupies_seat(status,NULL))>=offer.capacity THEN",
+      "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND id<>p_id AND student_enrollment_occupies_seat(status,NULL))>=offer.capacity THEN",
   },
   {
     id: "N14",
