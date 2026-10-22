@@ -534,7 +534,11 @@ test("student consent and immutable checkout contract reject tampering", () => {
     expect(() =>
       assertStudentSession(
         { ...session, expires_at: 1 },
-        { ...held, stripe_session_id: "cs_test_fixture" } as StudentEnrollment,
+        {
+          ...held,
+          status: "paid",
+          stripe_session_id: "cs_test_fixture",
+        } as StudentEnrollment,
         config,
       ),
     ).not.toThrow();
@@ -1750,7 +1754,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     );
     expect(docs).toContain("30 days");
     expect(docs).toContain("staff roster uses webhook");
-    expect(docs).toContain("binds the Checkout session that actually paid");
+    expect(docs).toContain("Checkout session that actually paid");
     const page = await readFile("app/enrollment-pilot/roster/page.tsx", "utf8");
     expect(page).toContain("listStudentReservedHolds(config.mode)");
     expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');

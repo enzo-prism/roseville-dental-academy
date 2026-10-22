@@ -257,12 +257,12 @@ test("drain remaining is the true backlog, bounded to 100 rows, and honors a tim
     expect(queued.errors).toBe(0);
 
     const realNow = Date.now;
-    let calls = 0;
-    const origin = realNow();
+    let current = realNow();
     try {
       Date.now = () => {
-        calls += 1;
-        return calls === 1 ? origin : origin + STUDENT_CONFIRMATION_DRAIN_MS;
+        const value = current;
+        current += STUDENT_CONFIRMATION_DRAIN_MS;
+        return value;
       };
       const timed = await drainStudentConfirmations(studentWebhookConfig()!);
       expect(timed.attempted).toBe(0);
@@ -281,7 +281,7 @@ test("drain records row errors instead of 503ing the staff retry", async () => {
     f.enableEmail();
     const live = await f.plantOffering("live");
     const broken = await f.plantEnrollment(live, {
-      policyHash: "ab".repeat(32),
+      mailStatus: "sending",
     });
     const viaRoute = await f.retry({ drain: true });
     expect(viaRoute.status).toBe(200);
@@ -298,7 +298,7 @@ test("drain records row errors instead of 503ing the staff retry", async () => {
           [broken],
         )
       ).rows[0].status,
-    ).toBe("pending");
+    ).toBe("sending");
   } finally {
     await f.close();
   }

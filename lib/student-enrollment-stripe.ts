@@ -158,7 +158,8 @@ export function assertStudentSession(
     session.metadata?.course_date !== held.course_date ||
     (!orphan &&
       !mismatch &&
-      held.stripe_session_id !== session.id &&
+      held.status !== "paid" &&
+      held.status !== "refunded" &&
       session.expires_at !== Number(held.stripe_expires_at)) ||
     (!orphan &&
       !mismatch &&
