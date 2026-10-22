@@ -5997,30 +5997,15 @@ html.rda-motion .ac-rating-bar span {
   white-space: nowrap;
 }
 
-.ac-hero-starts-cta {
-  align-items: center;
-  color: var(--primary-deep);
-  display: inline-flex;
-  font-size: 0.86rem;
-  font-weight: 700;
-  gap: 0.3rem;
-  margin-left: auto;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.ac-hero-starts-cta svg {
-  height: 0.95rem;
-  width: 0.95rem;
-}
-
-.ac-hero-starts-cta:hover {
-  color: var(--primary);
-}
-
 @media (max-width: 639px) {
-  .ac-hero-starts-cta {
-    margin-left: 0;
+  .ac-hero-starts {
+    gap: 0.45rem 0.7rem;
+    padding: 0.7rem 0.85rem;
+  }
+
+  .ac-hero-starts-date {
+    font-size: 0.98rem;
+    padding: 0.32rem 0.7rem;
   }
 }
 

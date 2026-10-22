@@ -445,30 +445,42 @@ test("DA program hero lists both upcoming weekday starts above the fold", async 
     await expect(starts.locator('time[datetime="2026-11-20"]')).toHaveText("Fri, Nov 20");
     await expect(starts.locator('time[datetime="2026-12-05"]')).toHaveText("Sat, Dec 5");
     await expect(starts.getByText("Full", { exact: true })).toHaveCount(0);
-    await expect(starts.getByRole("link", { name: "Ask about this course" })).toHaveAttribute("href", "#quick-sign-up");
     await expect(page.locator('[data-rda-live-course="dental-assisting-program"] .ac-hero-actions a[href="#quick-sign-up"]')).toHaveText(
       /Ask about this course/,
     );
     await expect(page.locator('[data-rda-student-enroll-cta]')).toHaveCount(0);
 
-    const geometry = await starts.evaluate((node) => {
-      const rect = node.getBoundingClientRect();
-      const fab = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
-      const fabRect = fab?.getBoundingClientRect();
-      const overlapsFab = Boolean(
-        fabRect &&
-          rect.left < fabRect.right &&
-          rect.right > fabRect.left &&
-          rect.top < fabRect.bottom &&
-          rect.bottom > fabRect.top,
+    const geometry = await page.evaluate(() => {
+      const starts = document.querySelector<HTMLElement>("[data-rda-hero-starts]");
+      const cta = document.querySelector<HTMLElement>(
+        '[data-rda-live-course="dental-assisting-program"] .ac-hero-actions a[href="#quick-sign-up"]',
       );
+      const fab = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
+      const overlaps = (node: HTMLElement | null) => {
+        const rect = node?.getBoundingClientRect();
+        const fabRect = fab?.getBoundingClientRect();
+        return Boolean(
+          rect &&
+            fabRect &&
+            rect.left < fabRect.right &&
+            rect.right > fabRect.left &&
+            rect.top < fabRect.bottom &&
+            rect.bottom > fabRect.top,
+        );
+      };
+      const startsRect = starts?.getBoundingClientRect();
+      const ctaRect = cta?.getBoundingClientRect();
       return {
-        aboveFold: rect.top >= 0 && rect.bottom <= window.innerHeight,
-        overlapsFab,
+        ctaAboveFold: Boolean(ctaRect && ctaRect.top >= 0 && ctaRect.bottom <= window.innerHeight),
+        ctaOverlapsFab: overlaps(cta),
+        startsAboveFold: Boolean(startsRect && startsRect.top >= 0 && startsRect.bottom <= window.innerHeight),
+        startsOverlapsFab: overlaps(starts),
       };
     });
-    expect(geometry.aboveFold).toBe(true);
-    expect(geometry.overlapsFab).toBe(false);
+    expect(geometry.startsAboveFold).toBe(true);
+    expect(geometry.startsOverlapsFab).toBe(false);
+    expect(geometry.ctaAboveFold).toBe(true);
+    expect(geometry.ctaOverlapsFab).toBe(false);
   };
 
   await assertHeroStarts(1280);

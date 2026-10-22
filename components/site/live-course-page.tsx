@@ -218,10 +218,6 @@ function CourseHeroStartDates({
           </span>
         ))}
       </div>
-      <a className="ac-hero-starts-cta" href="#quick-sign-up">
-        Ask about this course
-        <ArrowRight aria-hidden="true" />
-      </a>
     </div>
   );
 }
