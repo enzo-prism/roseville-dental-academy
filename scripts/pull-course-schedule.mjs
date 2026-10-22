@@ -21,6 +21,17 @@ const COURSE_IDS = new Set([
   "dental-assisting-program",
 ]);
 
+function academyDate(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+  }).formatToParts(now);
+  const part = (type) => parts.find((entry) => entry.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 function isIsoDate(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split("-").map(Number);
@@ -72,7 +83,15 @@ async function main() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const { entries, revision, reviewedOn, generatedAt } = validateFeed(await response.json());
 
-    const next = { version: 1, source: "dashboard", revision, generatedAt, reviewedOn, entries };
+    const next = {
+      version: 1,
+      source: "dashboard",
+      revision,
+      generatedAt,
+      reviewedOn,
+      builtOn: academyDate(),
+      entries,
+    };
     const tempPath = `${DATA_PATH}.tmp`;
     await writeFile(tempPath, `${JSON.stringify(next, null, 2)}\n`);
     await rename(tempPath, DATA_PATH);
