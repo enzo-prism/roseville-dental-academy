@@ -266,7 +266,7 @@ BEGIN
   SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
   IF p_reason='paid_after_release' AND held.status <> 'expired' THEN RAISE EXCEPTION 'Review flag requires an expired enrollment'; END IF;
-  IF p_reason='session_mismatch' AND held.status <> 'reserved' THEN RAISE EXCEPTION 'Session mismatch review requires a reserved enrollment'; END IF;
+  IF p_reason='session_mismatch' AND held.status NOT IN ('reserved','paid') THEN RAISE EXCEPTION 'Session mismatch review requires a reserved or paid enrollment'; END IF;
   INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason)
     VALUES(p_id,p_session,p_reason)
     ON CONFLICT (enrollment_id, session_id) DO NOTHING;
@@ -293,13 +293,17 @@ BEGIN
   SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
   IF p_resolution='enrolled' THEN
-    IF held.status<>'expired' THEN RAISE EXCEPTION 'Review enroll requires an expired enrollment'; END IF;
+    IF review.reason='session_mismatch' THEN
+      IF held.status NOT IN ('reserved','expired') THEN RAISE EXCEPTION 'Review enroll requires a reserved or expired enrollment'; END IF;
+    ELSIF held.status<>'expired' THEN RAISE EXCEPTION 'Review enroll requires an expired enrollment'; END IF;
     SELECT * INTO offer FROM student_enrollment_offerings WHERE id=held.offering_id FOR UPDATE;
     IF NOT FOUND THEN RAISE EXCEPTION 'Unknown offering'; END IF;
-    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN
+    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND id<>p_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN
       RAISE EXCEPTION 'Class is full';
     END IF;
-    UPDATE student_enrollments SET status='paid',stripe_session_id=COALESCE(stripe_session_id,p_session),updated_at=now() WHERE id=p_id;
+    -- Bind the Checkout session that actually paid, including mismatch and
+    -- paid-after-release orphans. Never keep a stale reserved binding.
+    UPDATE student_enrollments SET status='paid',stripe_session_id=p_session,updated_at=now() WHERE id=p_id;
     INSERT INTO student_enrollment_mail(enrollment_id) VALUES(p_id) ON CONFLICT DO NOTHING;
   END IF;
   UPDATE student_enrollment_reviews SET resolved_at=now(),resolution=p_resolution,resolved_by=btrim(p_actor) WHERE enrollment_id=p_id AND session_id=p_session;

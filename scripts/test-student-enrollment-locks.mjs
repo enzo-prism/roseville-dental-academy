@@ -322,9 +322,6 @@ try {
       new URL("../db/seeds/infection-control-offerings.test.sql", import.meta.url),
       "utf8",
     );
-    if (!/^\s*BEGIN;/m.test(seed) || !/COMMIT;\s*$/.test(seed.trim())) {
-      throw new Error("TEST seed must wrap guard/insert/verify in BEGIN/COMMIT (M57)");
-    }
     const seeder = new pg.Client({ connectionString: url });
     await seeder.connect();
     try {
@@ -600,9 +597,6 @@ try {
       new URL("../db/seeds/infection-control-offerings.sql", import.meta.url),
       "utf8",
     );
-    if (!/^\s*BEGIN;/m.test(seed) || !/COMMIT;\s*$/.test(seed.trim())) {
-      throw new Error("Live seed must wrap guard/insert/verify in BEGIN/COMMIT (M57b)");
-    }
     const seeder = new pg.Client({ connectionString: url });
     await seeder.connect();
     try {

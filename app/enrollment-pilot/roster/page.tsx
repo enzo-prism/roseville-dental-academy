@@ -5,7 +5,7 @@ import {
   listStudentReservedHolds,
   listStudentReviews,
   refundedRosterPaymentLabel,
-  studentConfig,
+  studentWebhookConfig,
   studentDatabase,
 } from "@/lib/student-enrollment";
 
@@ -17,7 +17,7 @@ function expireLabel(value: unknown) {
 
 export default async function StudentRoster() {
   const staff = await enrollmentOwner(),
-    config = studentConfig();
+    config = studentWebhookConfig();
   if (!staff)
     return (
       <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
@@ -176,7 +176,8 @@ export default async function StudentRoster() {
         Paid Checkout sessions that arrived after the seat was released or
         expired, or a paid session that does not match the Checkout session
         bound to the reserved hold. Do not treat these as verified enrollments
-        until staff reconciles the charge.
+        until staff reconciles the charge. The list stays visible while live
+        payments are off.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">

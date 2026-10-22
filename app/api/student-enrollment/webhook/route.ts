@@ -89,7 +89,10 @@ export async function POST(request: Request) {
         studentSessionIsFullyRefunded(session),
         boundToSession,
       ) &&
-      !studentWebhookForeignPaidCompletion(event.type, existing, session.id)
+      !(
+        studentWebhookForeignPaidCompletion(event.type, existing, session.id) &&
+        paidCompletion
+      )
     ) {
       if (paidCompletion)
         return enrollmentResponse(

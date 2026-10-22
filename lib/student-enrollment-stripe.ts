@@ -158,6 +158,7 @@ export function assertStudentSession(
     session.metadata?.course_date !== held.course_date ||
     (!orphan &&
       !mismatch &&
+      held.stripe_session_id !== session.id &&
       session.expires_at !== Number(held.stripe_expires_at)) ||
     (!orphan &&
       !mismatch &&
@@ -296,17 +297,26 @@ export async function recordStudentSession(
     await studentDatabase()`SELECT mode FROM student_enrollment_offerings WHERE id=${held.offering_id}::uuid`;
   if (mode[0]?.mode !== config.mode)
     throw new Error("Wrong ledger environment");
-  if (
-    held.status === "reserved" &&
-    held.stripe_session_id != null &&
-    held.stripe_session_id !== session.id &&
+  const foreignBound =
+    held.stripe_session_id != null && held.stripe_session_id !== session.id;
+  const paidCompletion =
     session.status === "complete" &&
     session.payment_status === "paid" &&
     (eventType === "checkout.session.completed" ||
-      eventType === "checkout.session.async_payment_succeeded")
+      eventType === "checkout.session.async_payment_succeeded");
+  if (
+    foreignBound &&
+    (held.status === "reserved" || held.status === "paid") &&
+    (paidCompletion || eventType === "charge.refunded")
   ) {
     assertStudentSession(session, held, config, { allowSessionMismatch: true });
     await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'session_mismatch')`;
+    if (
+      eventType === "charge.refunded" &&
+      studentSessionIsFullyRefunded(session)
+    ) {
+      await studentDatabase()`SELECT resolve_student_enrollment_review(${held.id}::uuid,${session.id},'refunded','stripe-charge-refunded')`;
+    }
     return held;
   }
   assertStudentSession(session, held, config, {

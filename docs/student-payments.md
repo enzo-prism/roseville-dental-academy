@@ -398,13 +398,17 @@ verification purchase:
 5. Check Stripe Dashboard → Developers → Webhooks → the student enrollment
    endpoint → failed deliveries. Unbound or expired-unbound paid completions
    while payments are off return 503 so Stripe retries for about three days.
-   If the kill switch stays off longer than that window, those events are
-   dropped unless an operator retries them from the dashboard after payments
-   are back on. Do not copy event payloads or customer data into tickets.
+   Dashboard resend only works within 15 days of event creation (Stripe CLI:
+   30 days). After that window the event is unrecoverable from Stripe; look
+   the charge up in the merchant dashboard and reconcile from the staff
+   roster, or run `resolve_student_enrollment_review` for a flagged row. Do
+   not copy event payloads or customer data into tickets.
 6. Do not drop `005` objects from production as a rollback. Re-apply the file
-   after review if functions are missing. Review `session_mismatch` rows
-   (reserved hold bound to one Checkout session, paid on another) on the
-   staff roster; do not treat them as verified seats.
+   after review if functions are missing. The staff roster uses webhook
+   configuration, so `session_mismatch` and `paid_after_release` reviews stay
+   visible while live payments are off. Do not treat them as verified seats.
+   `resolve_student_enrollment_review(..., 'enrolled', ...)` binds the
+   Checkout session that actually paid before a later refund can land.
 
 Launch remains blocked until that checklist is finished. No real charges, refunds, student
 emails, bank changes, or credential creation are part of this development release. This

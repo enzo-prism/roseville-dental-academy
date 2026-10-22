@@ -56,7 +56,13 @@ try {
   for (let i = 0; i < 120; i++) {
     if (server.exitCode !== null) throw new Error("Fixture server exited");
     try {
-      if ((await fetch(`${env.LOCAL_ORIGIN}/manifest.webmanifest`)).ok) {
+      if (
+        (
+          await fetch(`${env.LOCAL_ORIGIN}/manifest.webmanifest`, {
+            signal: AbortSignal.timeout(2000),
+          })
+        ).ok
+      ) {
         ready = true;
         break;
       }
@@ -83,6 +89,7 @@ try {
         "tests/student-enrollment-api.spec.ts",
         "tests/student-enrollment-mail.spec.ts",
         "tests/student-enrollment-webhook-off.spec.ts",
+        "tests/student-enrollment-retry.spec.ts",
       ],
       { cwd: root, env, stdio: "inherit" },
     );

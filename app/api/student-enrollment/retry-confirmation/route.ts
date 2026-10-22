@@ -12,22 +12,51 @@ import {
 import {
   deliverStudentConfirmation,
   drainStudentConfirmations,
+  studentEmailLiveDisabled,
 } from "@/lib/student-enrollment-mail";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function POST(request: Request) {
+export const maxDuration = 60;
+function staffConfirmationDenied(request: Request, owner: string | null) {
   const config = studentWebhookConfig();
   if (
     !config ||
-    !(await enrollmentOwner()) ||
+    !owner ||
     request.headers.get("origin") !== config.origin ||
     request.headers.get("content-type")?.split(";")[0].trim() !==
       "application/json" ||
     ["cross-site", "none"].includes(request.headers.get("sec-fetch-site") ?? "")
   )
+    return null;
+  return config;
+}
+export async function handleStudentConfirmationRetry(
+  request: Request,
+  owner: string | null,
+) {
+  const config = staffConfirmationDenied(request, owner);
+  if (!config)
     return enrollmentResponse({ error: "Staff access required." }, 401);
+  let body: Record<string, unknown>;
   try {
-    const body = await enrollmentBody(request);
+    body = await enrollmentBody(request);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (
+      message === "Invalid body" ||
+      message === "Body too large" ||
+      error instanceof SyntaxError
+    )
+      return enrollmentResponse(
+        { error: "Invalid enrollment reference." },
+        400,
+      );
+    return enrollmentResponse(
+      { error: "Delivery remains pending or requires operator review." },
+      503,
+    );
+  }
+  try {
     if (body.drain === true && Object.keys(body).length === 1) {
       return enrollmentResponse({
         processed: true,
@@ -46,6 +75,11 @@ export async function POST(request: Request) {
       await studentDatabase()`SELECT mode FROM student_enrollment_offerings WHERE id=${held.offering_id}::uuid`;
     if (offering[0]?.mode !== config.mode)
       return enrollmentResponse({ error: "Wrong environment." }, 409);
+    if (studentEmailLiveDisabled(config))
+      return enrollmentResponse(
+        { processed: false, emailDisabled: true },
+        409,
+      );
     await deliverStudentConfirmation(held, config);
     return enrollmentResponse({ processed: true });
   } catch {
@@ -54,4 +88,7 @@ export async function POST(request: Request) {
       503,
     );
   }
+}
+export async function POST(request: Request) {
+  return handleStudentConfirmationRetry(request, await enrollmentOwner());
 }

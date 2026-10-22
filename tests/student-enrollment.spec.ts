@@ -186,6 +186,27 @@ test("student configuration fails closed and never mixes live keys, wrong mercha
         "cs_live_s1",
       ),
     ).toBe(false);
+    expect(
+      studentWebhookForeignPaidCompletion(
+        "checkout.session.completed",
+        { status: "paid", stripe_session_id: "cs_live_s1" },
+        "cs_live_s2",
+      ),
+    ).toBe(true);
+    expect(
+      studentWebhookForeignPaidCompletion(
+        "checkout.session.expired",
+        { status: "reserved", stripe_session_id: "cs_live_s1" },
+        "cs_live_s2",
+      ),
+    ).toBe(false);
+    expect(
+      studentWebhookForeignPaidCompletion(
+        "charge.refunded",
+        { status: "reserved", stripe_session_id: "cs_live_s1" },
+        "cs_live_s2",
+      ),
+    ).toBe(false);
     expect(studentPublicEnrollCtaEnabled()).toBe(false);
     expect(studentPublicEnrollCtas()).toHaveLength(0);
     process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED = "true";
@@ -510,6 +531,13 @@ test("student consent and immutable checkout contract reject tampering", () => {
         { allowSessionMismatch: true },
       ),
     ).toThrow();
+    expect(() =>
+      assertStudentSession(
+        { ...session, expires_at: 1 },
+        { ...held, stripe_session_id: "cs_test_fixture" } as StudentEnrollment,
+        config,
+      ),
+    ).not.toThrow();
 });
 test("student database enforces shared inventory, separate modes, replay, roster and atomic mail", async () => {
   const db = await PGlite.create();
@@ -598,6 +626,45 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(
       await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
     ).toContain("reason=fixture start failure");
+    expect(
+      await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
+    ).toContain("Invalid local fixture port");
+    expect(
+      await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
+    ).toContain("reason=per-mutant timeout");
+    expect(
+      await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
+    ).toContain("dogfood-output/student-enrollment-mutants.log");
+    expect(
+      await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
+    ).toContain('id: "M57"');
+    expect(
+      await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
+    ).toContain("db/seeds/infection-control-offerings.test.sql");
+    expect(await readFile(".gitignore", "utf8")).toContain(
+      "evidence/student-enrollment-mutants.log",
+    );
+    expect(
+      await readFile("scripts/test-student-enrollment.mjs", "utf8"),
+    ).toContain("tests/student-enrollment-retry.spec.ts");
+    expect(
+      await readFile("app/api/student-enrollment/retry-confirmation/route.ts", "utf8"),
+    ).toContain("export const maxDuration = 60");
+    expect(
+      await readFile("lib/student-enrollment-mail.ts", "utf8"),
+    ).toContain("countStudentPendingConfirmations");
+    expect(
+      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+    ).toContain("stripe_session_id=p_session");
+    expect(
+      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+    ).not.toContain("COALESCE(stripe_session_id,p_session)");
+    expect(
+      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+    ).toContain("AND id<>p_id AND student_enrollment_occupies_seat");
+    expect(
+      await readFile("app/enrollment-pilot/roster/page.tsx", "utf8"),
+    ).toContain("studentWebhookConfig()");
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
     ).toContain("studentWebhookShouldRecord(");
@@ -1045,7 +1112,7 @@ test("student database enforces shared inventory, separate modes, replay, roster
         "SELECT flag_student_enrollment_review($1,'cs_test_s2','session_mismatch')",
         [unbound],
       ),
-    ).rejects.toThrow("reserved enrollment");
+    ).rejects.toThrow("reserved or paid enrollment");
     await db.query(
       "SELECT flag_student_enrollment_review($1,'cs_test_orphan','paid_after_release')",
       [unbound],
@@ -1678,6 +1745,12 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(docs).toContain('{ "drain": true }');
     expect(docs).toContain("failed deliveries");
     expect(docs).toContain("session_mismatch");
+    expect(docs).toContain(
+      "Dashboard resend only works within 15 days of event creation",
+    );
+    expect(docs).toContain("30 days");
+    expect(docs).toContain("staff roster uses webhook");
+    expect(docs).toContain("binds the Checkout session that actually paid");
     const page = await readFile("app/enrollment-pilot/roster/page.tsx", "utf8");
     expect(page).toContain("listStudentReservedHolds(config.mode)");
     expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');
@@ -1738,6 +1811,103 @@ test("released refunded seats do not block adding external seats on the offering
         )
       ).rows[0].external_seats,
     ).toBe(1);
+  } finally {
+    await db.close();
+  }
+});
+test("resolve enrolled binds the paying session and can convert a reserved mismatch without counting that seat twice", async () => {
+  const db = await PGlite.create();
+  try {
+    await db.exec(
+      await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
+    );
+    const fullOffer = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-10-15',39500,0,$2,$3,$4,now(),'mismatch bind',true)",
+      [
+        fullOffer,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    const ids = Array.from({ length: 12 }, () => randomUUID());
+    for (const [index, id] of ids.entries()) {
+      await db.query(
+        "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,'2099-10-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','reserved',$10)",
+        [
+          id,
+          fullOffer,
+          index.toString(16).padStart(64, "0"),
+          `Mismatch Bind ${index}`,
+          `mismatch-bind-${index}@example.test`,
+          "916 555 0100",
+          policy,
+          STUDENT_POLICY_HASH,
+          CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+          `cs_test_old${index}`,
+        ],
+      );
+    }
+    const target = ids[0];
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_paid','session_mismatch')",
+      [target],
+    );
+    await db.query(
+      "SELECT resolve_student_enrollment_review($1,'cs_test_paid','enrolled',$2)",
+      [target, "staff@example.test"],
+    );
+    const bound = await db.query<{
+      status: string;
+      stripe_session_id: string;
+    }>("SELECT status,stripe_session_id FROM student_enrollments WHERE id=$1", [
+      target,
+    ]);
+    expect(bound.rows[0].status).toBe("paid");
+    expect(bound.rows[0].stripe_session_id).toBe("cs_test_paid");
+    const orphanOffer = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-10-16',39500,0,$2,$3,$4,now(),'orphan bind',true)",
+      [
+        orphanOffer,
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+    const orphanId = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,'2099-10-16',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired',$10)",
+      [
+        orphanId,
+        orphanOffer,
+        "e".repeat(64),
+        "Orphan Bind Adult",
+        "orphan-bind@example.test",
+        "916 555 0100",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        "cs_test_stale",
+      ],
+    );
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_orphan_paid','paid_after_release')",
+      [orphanId],
+    );
+    await db.query(
+      "SELECT resolve_student_enrollment_review($1,'cs_test_orphan_paid','enrolled',$2)",
+      [orphanId, "staff@example.test"],
+    );
+    expect(
+      (
+        await db.query<{ stripe_session_id: string }>(
+          "SELECT stripe_session_id FROM student_enrollments WHERE id=$1",
+          [orphanId],
+        )
+      ).rows[0].stripe_session_id,
+    ).toBe("cs_test_orphan_paid");
   } finally {
     await db.close();
   }

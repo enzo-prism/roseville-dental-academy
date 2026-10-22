@@ -6,7 +6,10 @@ import { constants } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
-const logPath = resolve(root, "evidence/student-enrollment-mutants.log");
+const logPath = resolve(
+  root,
+  "dogfood-output/student-enrollment-mutants.log",
+);
 
 const mutants = [
   {
@@ -69,7 +72,7 @@ const mutants = [
   {
     id: "M51b",
     file: "db/migrations/005_student_enrollment.sql",
-    find: "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN",
+    find: "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND id<>p_id AND student_enrollment_occupies_seat(status,inventory_released_at))>=offer.capacity THEN",
     replace:
       "    IF offer.external_seats+(SELECT count(*) FROM student_enrollments WHERE offering_id=held.offering_id AND status IN ('reserved','paid'))>=offer.capacity THEN",
   },
@@ -94,7 +97,13 @@ const mutants = [
   {
     id: "M56",
     file: "db/migrations/005_student_enrollment.sql",
-    find: "    IF held.status<>'expired' THEN RAISE EXCEPTION 'Review enroll requires an expired enrollment'; END IF;\n",
+    find: "    ELSIF held.status<>'expired' THEN RAISE EXCEPTION 'Review enroll requires an expired enrollment'; END IF;",
+    replace: "    END IF;",
+  },
+  {
+    id: "M57",
+    file: "db/seeds/infection-control-offerings.test.sql",
+    find: "BEGIN;\n",
     replace: "",
   },
   {
@@ -265,9 +274,109 @@ const mutants = [
     find: "    AND EXISTS(SELECT 1 FROM student_enrollments WHERE id=${held.id}::uuid AND status='paid') RETURNING payload`;",
     replace: "    RETURNING payload`;",
   },
+  {
+    id: "R01",
+    file: "app/api/student-enrollment/retry-confirmation/route.ts",
+    find: "import {\n  studentWebhookConfig,\n  getStudentEnrollment,\n  studentDatabase,\n} from \"@/lib/student-enrollment\";",
+    replace:
+      "import {\n  studentConfig as studentWebhookConfig,\n  getStudentEnrollment,\n  studentDatabase,\n} from \"@/lib/student-enrollment\";",
+  },
+  {
+    id: "R02",
+    file: "app/api/student-enrollment/retry-confirmation/route.ts",
+    find: "    !config ||\n    !owner ||\n    request.headers.get(\"origin\") !== config.origin ||",
+    replace:
+      "    !config ||\n    request.headers.get(\"origin\") !== config.origin ||",
+  },
+  {
+    id: "R03",
+    file: "app/api/student-enrollment/retry-confirmation/route.ts",
+    find: "    request.headers.get(\"origin\") !== config.origin ||\n    request.headers.get(\"content-type\")?.split(\";\")[0].trim() !==",
+    replace:
+      "    request.headers.get(\"content-type\")?.split(\";\")[0].trim() !==",
+  },
+  {
+    id: "R06",
+    file: "app/api/student-enrollment/retry-confirmation/route.ts",
+    find: "    if (!held || held.status !== \"paid\")\n      return enrollmentResponse({ error: \"Paid enrollment required.\" }, 409);",
+    replace:
+      "    if (!held)\n      return enrollmentResponse({ error: \"Paid enrollment required.\" }, 409);",
+  },
+  {
+    id: "R07",
+    file: "app/api/student-enrollment/retry-confirmation/route.ts",
+    find: "    if (offering[0]?.mode !== config.mode)\n      return enrollmentResponse({ error: \"Wrong environment.\" }, 409);\n",
+    replace: "",
+  },
+  {
+    id: "D01",
+    file: "lib/student-enrollment-mail.ts",
+    find: "    WHERE e.status='paid' AND m.status IN ('pending','sending') AND o.mode=${mode}\n    ORDER BY e.created_at LIMIT 100`;",
+    replace:
+      "    WHERE m.status IN ('pending','sending') AND o.mode=${mode}\n    ORDER BY e.created_at LIMIT 100`;",
+  },
+  {
+    id: "D02",
+    file: "lib/student-enrollment-mail.ts",
+    find: "    WHERE e.status='paid' AND m.status IN ('pending','sending') AND o.mode=${mode}\n    ORDER BY e.created_at LIMIT 100`;",
+    replace:
+      "    WHERE e.status='paid' AND m.status IN ('pending','sending')\n    ORDER BY e.created_at LIMIT 100`;",
+  },
+  {
+    id: "D03",
+    file: "lib/student-enrollment-mail.ts",
+    find: "    WHERE e.status='paid' AND m.status IN ('pending','sending') AND o.mode=${mode}\n    ORDER BY e.created_at LIMIT 100`;",
+    replace:
+      "    WHERE e.status='paid' AND m.status IN ('pending','sending','review') AND o.mode=${mode}\n    ORDER BY e.created_at LIMIT 100`;",
+  },
+  {
+    id: "D05",
+    file: "lib/student-enrollment-mail.ts",
+    find: "    } catch {\n      errors += 1;\n    }",
+    replace: "    } catch (error) {\n      throw error;\n    }",
+  },
+  {
+    id: "D10",
+    file: "lib/student-enrollment-mail.ts",
+    find: "    ORDER BY e.created_at LIMIT 100`;",
+    replace: "    ORDER BY e.created_at`;",
+  },
+  {
+    id: "S01",
+    file: "lib/student-enrollment-stripe.ts",
+    find: "    session.status === \"complete\" &&\n    session.payment_status === \"paid\" &&\n    (eventType === \"checkout.session.completed\" ||\n      eventType === \"checkout.session.async_payment_succeeded\");",
+    replace:
+      "    session.status === \"complete\" &&\n    (eventType === \"checkout.session.completed\" ||\n      eventType === \"checkout.session.async_payment_succeeded\");",
+  },
+  {
+    id: "S05",
+    file: "lib/student-enrollment-stripe.ts",
+    find: "    assertStudentSession(session, held, config, { allowSessionMismatch: true });\n    await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'session_mismatch')`;",
+    replace:
+      "    await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'session_mismatch')`;",
+  },
+  {
+    id: "S07",
+    file: "db/migrations/005_student_enrollment.sql",
+    find: "  IF p_reason='session_mismatch' AND held.status NOT IN ('reserved','paid') THEN RAISE EXCEPTION 'Session mismatch review requires a reserved or paid enrollment'; END IF;",
+    replace: "",
+  },
+  {
+    id: "S09",
+    file: "lib/student-enrollment-stripe.ts",
+    find: "    (eventType === \"checkout.session.completed\" ||\n      eventType === \"checkout.session.async_payment_succeeded\");",
+    replace: "    (eventType === \"checkout.session.completed\");",
+  },
+  {
+    id: "S10",
+    file: "lib/student-enrollment.ts",
+    find: "    studentWebhookPaidCompletionEvent(eventType) &&\n    (existing?.status === \"reserved\" || existing?.status === \"paid\") &&",
+    replace:
+      "    (existing?.status === \"reserved\" || existing?.status === \"paid\") &&",
+  },
 ];
 
-function run(command, args, extraEnv = {}) {
+function run(command, args, extraEnv = {}, timeoutMs = 0) {
   return new Promise((resolveExit) => {
     const child = spawn(command, args, {
       cwd: root,
@@ -276,14 +385,28 @@ function run(command, args, extraEnv = {}) {
     });
     let stdout = "";
     let stderr = "";
+    let timedOut = false;
     child.stdout.on("data", (chunk) => {
       stdout += chunk;
     });
     child.stderr.on("data", (chunk) => {
       stderr += chunk;
     });
+    const timer =
+      timeoutMs > 0
+        ? setTimeout(() => {
+            timedOut = true;
+            child.kill("SIGKILL");
+          }, timeoutMs)
+        : null;
     child.on("close", (code) => {
-      resolveExit({ code: code ?? 1, stdout, stderr });
+      if (timer) clearTimeout(timer);
+      resolveExit({
+        code: timedOut ? 1 : (code ?? 1),
+        stdout,
+        stderr,
+        timedOut,
+      });
     });
   });
 }
@@ -310,7 +433,7 @@ function lockDbUnreachable(result) {
 }
 
 function fixtureStartFailed(result) {
-  return /Could not find a production build|Fixture server exited|EADDRINUSE|listen EADDRINUSE|Local fixture server did not become ready/i.test(
+  return /Could not find a production build|Fixture server exited|EADDRINUSE|listen EADDRINUSE|Local fixture server did not become ready|Invalid local fixture port/i.test(
     `${result.stdout}\n${result.stderr}`,
   );
 }
@@ -329,7 +452,7 @@ const selected = only.length
   ? mutants.filter((mutant) => only.includes(mutant.id))
   : mutants;
 
-await mkdir(resolve(root, "evidence"), { recursive: true });
+await mkdir(resolve(root, "dogfood-output"), { recursive: true });
 const lines = [
   `student-enrollment mutant kills ${new Date().toISOString()}`,
   `suite: pnpm test:student-enrollment && pnpm test:student-enrollment-locks`,
@@ -410,12 +533,22 @@ for (const mutant of selected) {
     console.log(`${mutant.id} ERROR`);
     continue;
   }
-  const suite = await run("bash", ["-lc", "pnpm test:student-enrollment"]);
-  const locks = await run("bash", ["-lc", "pnpm test:student-enrollment-locks"], {
-    STUDENT_LOCK_DATABASE_URL:
-      process.env.STUDENT_LOCK_DATABASE_URL ??
-      "postgres://postgres:postgres@127.0.0.1:5432/rda_locks",
-  });
+  const suite = await run(
+    "bash",
+    ["-lc", "pnpm test:student-enrollment"],
+    {},
+    240000,
+  );
+  const locks = await run(
+    "bash",
+    ["-lc", "pnpm test:student-enrollment-locks"],
+    {
+      STUDENT_LOCK_DATABASE_URL:
+        process.env.STUDENT_LOCK_DATABASE_URL ??
+        "postgres://postgres:postgres@127.0.0.1:5432/rda_locks",
+    },
+    120000,
+  );
   await writeFile(absolute, original);
   restorers.delete(absolute);
   if (needsBuild) {
@@ -437,6 +570,18 @@ for (const mutant of selected) {
     lines.push(
       `${mutant.id} ERROR file=${mutant.file}`,
       `  reason=lock database unreachable`,
+      `  build_exit=${build.code} suite_exit=${suite.code} locks_exit=${locks.code}`,
+      "",
+    );
+    await writeFile(logPath, `${lines.join("\n")}\n`);
+    process.exitCode = 1;
+    console.log(`${mutant.id} ERROR`);
+    continue;
+  }
+  if (suite.timedOut || locks.timedOut) {
+    lines.push(
+      `${mutant.id} ERROR file=${mutant.file}`,
+      `  reason=per-mutant timeout`,
       `  build_exit=${build.code} suite_exit=${suite.code} locks_exit=${locks.code}`,
       "",
     );

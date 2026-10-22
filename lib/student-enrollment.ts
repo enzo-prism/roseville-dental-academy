@@ -136,7 +136,7 @@ export function studentWebhookForeignPaidCompletion(
 ) {
   return (
     studentWebhookPaidCompletionEvent(eventType) &&
-    existing?.status === "reserved" &&
+    (existing?.status === "reserved" || existing?.status === "paid") &&
     existing.stripe_session_id != null &&
     existing.stripe_session_id !== sessionId
   );
