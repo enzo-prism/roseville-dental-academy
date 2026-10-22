@@ -728,7 +728,7 @@ test("student database enforces shared inventory, separate modes, replay, roster
         `ALTER TABLE student_enrollment_offerings DROP CONSTRAINT ${check.conname}`,
       );
     }
-    await db.exec(migration);
+    await db.exec(shipped);
     await expect(
       db.query(
         "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-12-31',1,0,$2,$3,$4,now(),'amount',true)",
