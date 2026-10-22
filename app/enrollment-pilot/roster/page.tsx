@@ -174,8 +174,8 @@ export default async function StudentRoster() {
       <h2 className="font-heading text-2xl">Payments needing staff review</h2>
       <p>
         Paid Checkout sessions that arrived after the seat was released or
-        expired, or a paid session that does not match the reserved hold's
-        bound Checkout session. Do not treat these as verified enrollments
+        expired, or a paid session that does not match the Checkout session
+        bound to the reserved hold. Do not treat these as verified enrollments
         until staff reconciles the charge.
       </p>
       <div className="overflow-x-auto">
