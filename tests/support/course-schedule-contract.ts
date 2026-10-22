@@ -9,7 +9,8 @@ import {
   type CourseScheduleId,
 } from "../../lib/course-schedule";
 import { scheduleRevision } from "../../lib/course-schedule-revision.mjs";
-import courseScheduleData from "../../data/course-schedule.json";
+import liveCourseScheduleData from "../../data/course-schedule.json";
+import contractScheduleData from "../fixtures/course-schedule.contract.json";
 import {
   buildPublishedCourseScheduleStatus,
   type PublishedCourseScheduleStatus,
@@ -58,7 +59,14 @@ export const COURSE_DATE_MUTANTS = [
   "llms-abbrev-past",
   "llms-noyear-past",
   "faq-drop-one",
+  "llms-drop-one",
   "faq-unlisted-policy-date",
+  "faq-dot-year-past",
+  "llms-dot-year-past",
+  "faq-dot-noyear-past",
+  "llms-dot-noyear-past",
+  "faq-numeric-past",
+  "llms-numeric-past",
 ] as const;
 
 export type CourseDateMutant = (typeof COURSE_DATE_MUTANTS)[number];
@@ -102,7 +110,12 @@ const MONTH_LONG =
 const MONTH_SHORT = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec";
 const MONTH_DAY_YEAR = new RegExp(`(?:${MONTH_LONG}) \\d{1,2}, \\d{4}`, "gu");
 // Long names first so "December 5, 2026" is one match, not a yearless "December 5".
-const COPY_DATE = new RegExp(`\\b(?:${MONTH_LONG}|${MONTH_SHORT}) \\d{1,2}(?:, \\d{4})?\\b`, "gu");
+// Short months accept an optional period ("Oct. 12"). Numeric US dates are MM/DD/YYYY.
+const COPY_DATE = new RegExp(
+  `\\b(?:(?:${MONTH_LONG}) \\d{1,2}(?:, \\d{4})?|(?:${MONTH_SHORT})\\.? \\d{1,2}(?:, \\d{4})?|\\d{1,2}/\\d{1,2}/\\d{4})\\b`,
+  "giu",
+);
+const YEARLESS_COPY_DATE = /^(?:(?:January|February|March|April|May|June|July|August|September|October|November|December)|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?) \d{1,2}$/iu;
 const MONTH_INDEX: Record<string, number> = {
   january: 0,
   jan: 0,
@@ -133,6 +146,11 @@ const WRONG_FUTURE_DATE = "2027-06-15";
 const PAST_CORONAL_DATE = "2026-09-12";
 const ABBREV_PAST_DATE = "Oct 12, 2026";
 const NOYEAR_PAST_DATE = "October 12";
+const DOT_YEAR_PAST_DATE = "Oct. 12, 2026";
+const DOT_NOYEAR_PAST_DATE = "Oct. 12";
+const NUMERIC_PAST_DATE = "10/12/2026";
+export const CONTRACT_SCHEDULE = contractScheduleData;
+export const LIVE_COURSE_SCHEDULE = liveCourseScheduleData;
 const EMPTY_HOME_COPY = "Ask admissions for upcoming dates.";
 const EMPTY_COURSE_COPY = "Ask admissions";
 // Exact legal/policy strings only. Class dates do not belong here.
@@ -153,6 +171,10 @@ const LANDER_COURSES = {
 } as const satisfies Record<string, readonly CourseScheduleId[]>;
 
 export function academyDate(now = new Date()) {
+  return getSeasonalLocalDate(now, ACADEMY_TIME_ZONE);
+}
+
+export function contractAcademyDate(now = new Date()) {
   const fakeNow = process.env.COURSE_DATES_FAKE_NOW?.trim();
   const instant = fakeNow ? new Date(fakeNow) : now;
   if (fakeNow && Number.isNaN(instant.getTime())) {
@@ -162,15 +184,54 @@ export function academyDate(now = new Date()) {
 }
 
 export function parseCopyDate(raw: string, fallbackYear: string) {
-  const match = raw.match(new RegExp(`^(${MONTH_LONG}|${MONTH_SHORT}) (\\d{1,2})(?:, (\\d{4}))?$`, "u"));
+  const numeric = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/u);
+  if (numeric) {
+    const isoDate = new Date(Date.UTC(Number(numeric[3]), Number(numeric[1]) - 1, Number(numeric[2])))
+      .toISOString()
+      .slice(0, 10);
+    assert.match(isoDate, ISO_DATE);
+    return isoDate;
+  }
+  const match = raw.match(new RegExp(`^(${MONTH_LONG}|${MONTH_SHORT})\\.? (\\d{1,2})(?:, (\\d{4}))?$`, "iu"));
   assert.ok(match, `unrecognized copy date ${raw}`);
-  const month = MONTH_INDEX[match[1].toLowerCase()];
+  const month = MONTH_INDEX[match[1].toLowerCase().replace(/\.$/u, "")];
   assert.ok(month !== undefined, `unrecognized month in copy date ${raw}`);
   const year = Number(match[3] ?? fallbackYear);
   const day = Number(match[2]);
   const isoDate = new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10);
   assert.match(isoDate, ISO_DATE);
   return isoDate;
+}
+
+function isYearlessCopyDate(raw: string) {
+  return YEARLESS_COPY_DATE.test(raw);
+}
+
+function isAllowlistedCopyDate(raw: string, reviewedOn: string) {
+  if (POLICY_DATES.has(raw)) return true;
+  const isoDate = parseCopyDate(raw, reviewedOn.slice(0, 4));
+  return POLICY_DATE_ALLOWLIST.some((allowed) => parseCopyDate(allowed, reviewedOn.slice(0, 4)) === isoDate);
+}
+
+function copyDateListSpans(text: string) {
+  const spans: Array<{ end: number; start: number }> = [];
+  for (const id of COURSE_SCHEDULE_IDS) {
+    const label = courseScheduleCourseDetails[id].label;
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+    for (const match of text.matchAll(new RegExp(`${escaped}: ([^.]+)`, "gu"))) {
+      if (match.index === undefined) continue;
+      spans.push({ start: match.index, end: match.index + match[0].length });
+    }
+    for (const fragment of llmsCourseDateFragments(text, id)) {
+      const start = text.indexOf(fragment);
+      if (start >= 0) spans.push({ start, end: start + fragment.length });
+    }
+  }
+  return spans;
+}
+
+function inCopyDateList(index: number, spans: Array<{ end: number; start: number }>) {
+  return spans.some((span) => index >= span.start && index < span.end);
 }
 
 export function shiftIsoDate(isoDate: string, days: number) {
@@ -463,7 +524,7 @@ export function snapshotFromPublishedStatus(
 }
 
 export function committedScheduleSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
-  return snapshotFromPublishedStatus(buildPublishedCourseScheduleStatus(courseScheduleData), {
+  return snapshotFromPublishedStatus(buildPublishedCourseScheduleStatus(contractScheduleData), {
     previewUrl: false,
     todayLA,
   });
@@ -472,7 +533,7 @@ export function committedScheduleSnapshot(todayLA = CONTRACT_TODAY_LA): ServedSc
 export function dashboardScheduleSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
   return snapshotFromPublishedStatus(
     buildPublishedCourseScheduleStatus({
-      ...courseScheduleData,
+      ...contractScheduleData,
       builtOn: todayLA,
       reviewedOn: todayLA,
       source: "dashboard",
@@ -484,9 +545,9 @@ export function dashboardScheduleSnapshot(todayLA = CONTRACT_TODAY_LA): ServedSc
 export function eightDayStaleDashboardSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
   return snapshotFromPublishedStatus(
     buildPublishedCourseScheduleStatus({
-      ...courseScheduleData,
+      ...contractScheduleData,
       builtOn: shiftIsoDate(todayLA, -EIGHT_DAY_STALE_OFFSET),
-      reviewedOn: courseScheduleData.reviewedOn,
+      reviewedOn: contractScheduleData.reviewedOn,
       source: "dashboard",
     }),
     { previewUrl: true, todayLA },
@@ -496,9 +557,9 @@ export function eightDayStaleDashboardSnapshot(todayLA = CONTRACT_TODAY_LA): Ser
 export function sevenDayStaleDashboardSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
   return snapshotFromPublishedStatus(
     buildPublishedCourseScheduleStatus({
-      ...courseScheduleData,
+      ...contractScheduleData,
       builtOn: shiftIsoDate(todayLA, -SEVEN_DAY_STALE_OFFSET),
-      reviewedOn: courseScheduleData.reviewedOn,
+      reviewedOn: contractScheduleData.reviewedOn,
       source: "dashboard",
     }),
     { previewUrl: true, todayLA },
@@ -506,14 +567,14 @@ export function sevenDayStaleDashboardSnapshot(todayLA = CONTRACT_TODAY_LA): Ser
 }
 
 export function elapsedDashboardScheduleSnapshot(todayLA = CONTRACT_TODAY_LA): ServedScheduleSnapshot {
-  const lastDate = courseScheduleData.entries.reduce(
+  const lastDate = contractScheduleData.entries.reduce(
     (latest, entry) => (entry.isoDate > latest ? entry.isoDate : latest),
     "0000-01-01",
   );
   const reviewedOn = lastDate > todayLA ? shiftIsoDate(lastDate, 1) : todayLA;
   return snapshotFromPublishedStatus(
     buildPublishedCourseScheduleStatus({
-      ...courseScheduleData,
+      ...contractScheduleData,
       builtOn: reviewedOn,
       reviewedOn,
       source: "dashboard",
@@ -526,7 +587,7 @@ export function rolledBackDashboardSnapshot(todayLA = CONTRACT_TODAY_LA): Served
   const builtOn = shiftIsoDate(todayLA, -5);
   return snapshotFromPublishedStatus(
     buildPublishedCourseScheduleStatus({
-      ...courseScheduleData,
+      ...contractScheduleData,
       builtOn,
       reviewedOn: builtOn,
       source: "dashboard",
@@ -736,7 +797,8 @@ export function applyCourseDateMutant(
       return next;
     }
     case "faq-noyear-past": {
-      next.faqText += ` Also ${NOYEAR_PAST_DATE}.`;
+      const { id } = courseWithMultipleOpenDates(next.status);
+      next.faqText = appendToCourseDateList(next.faqText, courseScheduleCourseDetails[id].label, NOYEAR_PAST_DATE);
       return next;
     }
     case "llms-abbrev-past": {
@@ -744,7 +806,8 @@ export function applyCourseDateMutant(
       return next;
     }
     case "llms-noyear-past": {
-      next.llmsText += ` Also ${NOYEAR_PAST_DATE}.`;
+      const { id } = courseWithMultipleOpenDates(next.status);
+      next.llmsText = appendToCourseDateList(next.llmsText, courseScheduleCourseDetails[id].label, NOYEAR_PAST_DATE);
       return next;
     }
     case "faq-drop-one": {
@@ -754,6 +817,49 @@ export function applyCourseDateMutant(
         courseScheduleCourseDetails[id].label,
         labels.slice(0, -1).join("; "),
       );
+      return next;
+    }
+    case "llms-drop-one": {
+      const { id, labels } = courseWithMultipleOpenDates(next.status);
+      next.llmsText = replaceCourseDateList(
+        next.llmsText,
+        courseScheduleCourseDetails[id].label,
+        labels.slice(0, -1).join("; "),
+      );
+      return next;
+    }
+    case "faq-dot-year-past": {
+      next.faqText += ` Also ${DOT_YEAR_PAST_DATE}.`;
+      return next;
+    }
+    case "llms-dot-year-past": {
+      next.llmsText += ` Also ${DOT_YEAR_PAST_DATE}.`;
+      return next;
+    }
+    case "faq-dot-noyear-past": {
+      const { id } = courseWithMultipleOpenDates(next.status);
+      next.faqText = appendToCourseDateList(
+        next.faqText,
+        courseScheduleCourseDetails[id].label,
+        DOT_NOYEAR_PAST_DATE,
+      );
+      return next;
+    }
+    case "llms-dot-noyear-past": {
+      const { id } = courseWithMultipleOpenDates(next.status);
+      next.llmsText = appendToCourseDateList(
+        next.llmsText,
+        courseScheduleCourseDetails[id].label,
+        DOT_NOYEAR_PAST_DATE,
+      );
+      return next;
+    }
+    case "faq-numeric-past": {
+      next.faqText += ` Also ${NUMERIC_PAST_DATE}.`;
+      return next;
+    }
+    case "llms-numeric-past": {
+      next.llmsText += ` Also ${NUMERIC_PAST_DATE}.`;
       return next;
     }
     case "faq-unlisted-policy-date": {
@@ -900,8 +1006,10 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     ["FAQ", "/faqs-1", snapshot.faqText],
     ["llms.txt", "/llms.txt", snapshot.llmsText],
   ] as const) {
+    const listSpans = copyDateListSpans(text);
     for (const match of text.matchAll(COPY_DATE)) {
-      if (POLICY_DATES.has(match[0])) continue;
+      if (isAllowlistedCopyDate(match[0], status.reviewedOn)) continue;
+      if (isYearlessCopyDate(match[0]) && !inCopyDateList(match.index ?? -1, listSpans)) continue;
       const isoDate = parseCopyDate(match[0], status.reviewedOn.slice(0, 4));
       assert.ok(
         isoDate >= status.reviewedOn,
@@ -945,14 +1053,17 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
 export async function collectServedScheduleSnapshot(
   page: Page,
   request: APIRequestContext,
+  options: { origin?: string; previewUrl?: boolean } = {},
 ): Promise<ServedScheduleSnapshot> {
-  const response = await request.get("/api/course-schedule-status");
+  const origin = options.origin?.replace(/\/$/u, "") ?? "";
+  const href = (path: string) => `${origin}${path}`;
+  const response = await request.get(href("/api/course-schedule-status"));
   expect(response.status()).toBe(200);
   const status = (await response.json()) as PublishedCourseScheduleStatus;
-  const llms = await request.get("/llms.txt");
+  const llms = await request.get(href("/llms.txt"));
   expect(llms.ok()).toBe(true);
 
-  await page.goto("/");
+  await page.goto(href("/"));
   const homeTimes = page.locator('[data-rda-home-course-block="schedule"] time');
   if (!status.empty) await expect(homeTimes).not.toHaveCount(0);
   const homeEmptyCopy = (await page.locator('[data-rda-home-course-block="schedule"]').innerText()) ?? "";
@@ -978,7 +1089,7 @@ export async function collectServedScheduleSnapshot(
   const landerDates: Record<string, string[]> = {};
 
   for (const path of COURSE_DATE_PATHS) {
-    await page.goto(path);
+    await page.goto(href(path));
     pageLdScripts[path] = await page.locator('script[type="application/ld+json"]').allTextContents();
     if (path.startsWith("/lp/")) {
       landerDates[path] = (await page.locator(".rda-ad-date-list span").allTextContents()).map((date) => date.trim());
@@ -1008,7 +1119,7 @@ export async function collectServedScheduleSnapshot(
     };
   }
 
-  await page.goto("/faqs-1");
+  await page.goto(href("/faqs-1"));
   const faqText = (await page.locator("body").textContent()) ?? "";
 
   return {
@@ -1026,7 +1137,7 @@ export async function collectServedScheduleSnapshot(
     landerDates,
     llmsText: await llms.text(),
     pageLdScripts,
-    previewUrl: Boolean(process.env.PREVIEW_URL?.trim()),
+    previewUrl: options.previewUrl ?? Boolean(process.env.PREVIEW_URL?.trim()),
     status,
     todayLA: academyDate(),
   };

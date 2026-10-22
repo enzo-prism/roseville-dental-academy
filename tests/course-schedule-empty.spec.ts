@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { blockOpenAIAdsPixelNetwork } from "./support/qa-helpers";
-import { academyDate } from "./support/course-schedule-contract";
+import {
+  academyDate,
+  assertServedScheduleContract,
+  collectServedScheduleSnapshot,
+} from "./support/course-schedule-contract";
 import { withIsolatedSchedule } from "./support/isolated-schedule";
 
 // Exercise real consumers in an isolated Next app, not by editing the checkout's
@@ -70,7 +74,7 @@ test("a dashboard build whose stored dates are all in the past publishes empty a
   );
 });
 
-test("a fresh dashboard fixture feed publishes source=dashboard without secrets", async ({ page, request }) => {
+test("a fresh dashboard fixture feed satisfies the served contract", async ({ page, request }) => {
   test.setTimeout(180_000);
   await blockOpenAIAdsPixelNetwork(page.context());
   const todayLA = academyDate();
@@ -82,21 +86,14 @@ test("a fresh dashboard fixture feed publishes source=dashboard without secrets"
       builtOn: todayLA,
     }),
     async (origin) => {
-      const status = await (await request.get(`${origin}/api/course-schedule-status`)).json();
-      console.log(`[course-dates] schedule branch: ${status.source}`);
-      expect(status.source).toBe("dashboard");
-      expect(status.builtOn).toBe(todayLA);
-      expect(status.reviewedOn).toBe(todayLA);
-      expect(status.empty).toBe(status.upcoming.length === 0);
       await page.route("https://formspree.io/**", (route) => route.abort());
-      await page.goto(origin);
-      const schedule = page.locator('[data-rda-home-course-block="schedule"]');
-      if (status.empty) {
-        await expect(schedule.getByText("Ask admissions for upcoming dates.")).toBeVisible();
-        await expect(schedule.locator("time")).toHaveCount(0);
-      } else {
-        await expect(schedule.locator("time")).not.toHaveCount(0);
-      }
+      const snapshot = await collectServedScheduleSnapshot(page, request, { origin, previewUrl: true });
+      console.log(`[course-dates] schedule branch: ${snapshot.status.source}`);
+      expect(snapshot.status.source).toBe("dashboard");
+      expect(snapshot.status.builtOn).toBe(todayLA);
+      expect(snapshot.status.reviewedOn).toBe(todayLA);
+      expect(snapshot.status.empty).toBe(snapshot.status.upcoming.length === 0);
+      assertServedScheduleContract(snapshot);
     },
   );
 });
