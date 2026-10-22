@@ -296,6 +296,31 @@ const mutants = [
       "    request.headers.get(\"content-type\")?.split(\";\")[0].trim() !==",
   },
   {
+    id: "R04",
+    file: "app/api/student-enrollment/retry-confirmation/route.ts",
+    find: "    if (body.drain === true && Object.keys(body).length === 1) {",
+    replace: "    if (body.drain && Object.keys(body).length === 1) {",
+  },
+  {
+    id: "V03",
+    file: "db/migrations/006_student_enrollment_review.sql",
+    find: "      IF held.status NOT IN ('reserved','expired') THEN RAISE EXCEPTION 'Review enroll requires a reserved or expired enrollment'; END IF;",
+    replace:
+      "      IF held.status NOT IN ('reserved','expired','paid') THEN RAISE EXCEPTION 'Review enroll requires a reserved or expired enrollment'; END IF;",
+  },
+  {
+    id: "V05",
+    file: "lib/student-enrollment-stripe.ts",
+    find: "      if (studentSessionIsFullyRefunded(session)) {\n        await resolveOpenStudentRefundReview(held.id, session.id);\n      }",
+    replace: "      await resolveOpenStudentRefundReview(held.id, session.id);",
+  },
+  {
+    id: "V12",
+    file: "lib/student-enrollment-mail.ts",
+    find: "export const STUDENT_CONFIRMATION_DRAIN_MS = 20_000;",
+    replace: "export const STUDENT_CONFIRMATION_DRAIN_MS = 200_000;",
+  },
+  {
     id: "R06",
     file: "app/api/student-enrollment/retry-confirmation/route.ts",
     find: "    if (!held || held.status !== \"paid\")\n      return enrollmentResponse({ error: \"Paid enrollment required.\" }, 409);",
