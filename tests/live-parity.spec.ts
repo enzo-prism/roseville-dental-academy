@@ -27,7 +27,7 @@ for (const route of routeMappings) {
     const localSnapshot = await captureSnapshot(
       page,
       `${localOrigin}${route.localPath}`,
-      { viewport: { width: 1280, height: 900 } },
+      { staticContentParity: true, viewport: { width: 1280, height: 900 } },
     );
 
     const mismatches: string[] = [];
