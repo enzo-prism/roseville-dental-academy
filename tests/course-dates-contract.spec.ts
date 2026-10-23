@@ -225,16 +225,18 @@ test("policy date allowlist is the exact January 1, 2025 statute string", () => 
 });
 
 test("equivalent allowlist spelling does not accept a different day in the same month", () => {
-  const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
-  snapshot.faqText += " January 15, 2025.";
-  assert.throws(
-    () => assertServedScheduleContract(snapshot),
-    (error: unknown) => {
-      assert.ok(error instanceof assert.AssertionError);
-      assert.match(error.message, /January 15, 2025/u);
-      return true;
-    },
-  );
+  for (const raw of ["January 15, 2025", "Jan 15, 2025", "January 1, 2024"]) {
+    const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
+    snapshot.faqText += ` ${raw}.`;
+    assert.throws(
+      () => assertServedScheduleContract(snapshot),
+      (error: unknown) => {
+        assert.ok(error instanceof assert.AssertionError);
+        assert.match(error.message, new RegExp(raw.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
+        return true;
+      },
+    );
+  }
 });
 
 test("FAQ date lists must match the course open dates exactly, not a subset", () => {
