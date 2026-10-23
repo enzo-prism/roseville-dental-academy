@@ -567,7 +567,15 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(upgrade).toContain("stripe_session_id=p_session");
     expect(upgrade).not.toContain("COALESCE(stripe_session_id,p_session)");
     expect(upgrade).toContain("AND id<>p_id AND student_enrollment_occupies_seat");
-    expect(upgrade).toContain("IF btrim(p_actor)='stripe-charge-refunded' THEN RETURN false;");
+    expect(upgrade).toContain("IF btrim(p_actor)='stripe-charge-refunded' THEN");
+    expect(upgrade).toContain(
+      "held.stripe_session_id=p_session AND held.status='paid' AND p_resolution='refunded'",
+    );
+    expect(upgrade).toContain("SET lock_timeout = '5s'");
+    expect(upgrade).toContain("superseded by this file");
+    expect(upgrade).toContain(
+      "ADD COLUMN IF NOT EXISTS refunded_amount integer NOT NULL DEFAULT 0",
+    );
     expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
       "FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true",
     );
@@ -577,6 +585,9 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     expect(lockSuite).toContain(
       "M06 refunded seats occupy capacity until released",
+    );
+    expect(lockSuite).toContain(
+      "MF5 enrolled refund waits on the review lock and still applies",
     );
     expect(lockSuite).not.toMatch(/M22b refunded/);
     expect(lockSuite).toContain("student-enrollment-locks: ${passed} passed");
@@ -603,6 +614,8 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(releaseGate.indexOf("timeout-minutes: 60")).toBeLessThan(
       releaseGate.indexOf("student-enrollment-locks:"),
     );
+    expect(releaseGate).toContain("~/.cache/ms-playwright");
+    expect(releaseGate).toContain("playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}");
     expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
       "WHERE o.mode=${mode} AND r.resolved_at IS NULL",
     );
@@ -611,6 +624,12 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       "charge.refunded === true && charge.amount_refunded === held.amount",
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      "recordReviewRefundedAmount",
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      "current?.stripe_session_id === session.id",
     );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       'status === 409 && code === "idempotency_key_in_use"',
@@ -1774,7 +1793,9 @@ test("claimed enrollment mutants fail when applied at their source lines", async
       "The October 21 preview applied the then-current",
     );
     expect(docs).toContain("go-live applies `006`");
-    expect(docs).toContain("**Apply `006_student_enrollment_review.sql`**");
+    expect(docs).toContain("**Run the migrator**");
+    expect(docs).toContain("with live payments off");
+    expect(docs).not.toContain("**Apply `006_student_enrollment_review.sql`**");
     const page = await readFile("app/enrollment-pilot/roster/page.tsx", "utf8");
     expect(page).toContain("listStudentReservedHolds(config.mode)");
     expect(page).toContain('rows = roster.filter((row) => row.status === "paid")');

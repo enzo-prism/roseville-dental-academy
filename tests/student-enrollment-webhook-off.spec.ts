@@ -894,10 +894,12 @@ test("refunding a mismatched or duplicate charge is acknowledged instead of 503"
     expect(reservedRefund.status).toBe(200);
     expect((await f.enrollment(reserved.id)).status).toBe("reserved");
     expect((await f.enrollment(reserved.id)).stripe_session_id).toBe(bound);
+    expect(Number((await f.enrollment(reserved.id)).refunded_amount)).toBe(0);
     const reservedReview = await f.reviews(reserved.id);
     expect(reservedReview).toHaveLength(1);
     expect(reservedReview[0].reason).toBe("session_mismatch");
     expect(reservedReview[0].resolution).toBe("refunded");
+    expect(Number(reservedReview[0].refunded_amount)).toBe(39500);
 
     const paidHold = await f.plantHold(offer.id, offer.courseDate);
     const paidBound = `cs_live_p1${paidHold.id.replaceAll("-", "").slice(0, 8)}`;
@@ -947,10 +949,18 @@ test("refunding a mismatched or duplicate charge is acknowledged instead of 503"
     });
     expect(duplicateRefund.status).toBe(200);
     expect((await f.enrollment(paidHold.id)).status).toBe("paid");
+    expect(Number((await f.enrollment(paidHold.id)).refunded_amount)).toBe(0);
     expect(
       (await f.reviews(paidHold.id)).find((row) => row.session_id === duplicate)
         ?.resolution,
     ).toBe("refunded");
+    expect(
+      Number(
+        (await f.reviews(paidHold.id)).find(
+          (row) => row.session_id === duplicate,
+        )?.refunded_amount,
+      ),
+    ).toBe(39500);
   } finally {
     await f.close();
   }
@@ -1150,7 +1160,8 @@ test("dismiss then refund records the refund and ACKs instead of 503", async () 
     expect(await refunded.json()).toEqual({ received: true });
     expect((await f.enrollment(reserved.id)).status).toBe("reserved");
     expect((await f.enrollment(reserved.id)).stripe_session_id).toBe(bound);
-    expect(Number((await f.enrollment(reserved.id)).refunded_amount)).toBe(
+    expect(Number((await f.enrollment(reserved.id)).refunded_amount)).toBe(0);
+    expect(Number((await f.reviews(reserved.id))[0].refunded_amount)).toBe(
       39500,
     );
     expect((await f.reviews(reserved.id))[0].resolution).toBe("dismissed");
@@ -1195,7 +1206,8 @@ test("dismiss then refund records the refund and ACKs instead of 503", async () 
     const orphanRefund = await f.webhook("checkout.session.completed", orphan);
     expect(orphanRefund.status).toBe(200);
     expect((await f.enrollment(expired.id)).status).toBe("expired");
-    expect(Number((await f.enrollment(expired.id)).refunded_amount)).toBe(
+    expect(Number((await f.enrollment(expired.id)).refunded_amount)).toBe(0);
+    expect(Number((await f.reviews(expired.id))[0].refunded_amount)).toBe(
       39500,
     );
     expect((await f.reviews(expired.id))[0].resolution).toBe("dismissed");
@@ -1230,9 +1242,10 @@ test("partial refund of a mismatch session keeps the review open", async () => {
     });
     expect(partial.status).toBe(200);
     expect((await f.enrollment(held.id)).status).toBe("reserved");
-    expect(Number((await f.enrollment(held.id)).refunded_amount)).toBe(15000);
+    expect(Number((await f.enrollment(held.id)).refunded_amount)).toBe(0);
     const review = (await f.reviews(held.id))[0];
     expect(review.reason).toBe("session_mismatch");
+    expect(Number(review.refunded_amount)).toBe(15000);
     expect(review.resolved_at).toBeNull();
     expect(review.resolution).toBeNull();
   } finally {
@@ -1307,6 +1320,200 @@ test("enrolling a reserved mismatch then expiring the leftover session ACKs with
         )
       ).rows[0].n,
     ).toBe(0);
+  } finally {
+    await f.close();
+  }
+});
+
+test("A1b foreign full refund does not hide a later bound-session partial", async () => {
+  const f = await liveOffFixture();
+  try {
+    f.setPaymentsEnabled(true);
+    const offer = await f.plantOffering();
+    const held = await f.plantHold(offer.id, offer.courseDate);
+    const bound = `cs_live_a1b1${held.id.replaceAll("-", "").slice(0, 8)}`;
+    const other = `cs_live_a1b2${held.id.replaceAll("-", "").slice(0, 8)}`;
+    await f.db.query(
+      "UPDATE student_enrollments SET stripe_session_id=$2 WHERE id=$1",
+      [held.id, bound],
+    );
+    f.plantSession({
+      id: other,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt + 1800,
+      fullyRefunded: true,
+    });
+    expect(
+      (
+        await f.webhook("charge.refunded", "ignored", {
+          data: { object: { payment_intent: `pi_${other.slice(8)}` } },
+        })
+      ).status,
+    ).toBe(200);
+    expect(Number((await f.enrollment(held.id)).refunded_amount)).toBe(0);
+    expect(Number((await f.reviews(held.id))[0].refunded_amount)).toBe(39500);
+    f.plantSession({
+      id: bound,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt,
+    });
+    expect((await f.webhook("checkout.session.completed", bound)).status).toBe(
+      200,
+    );
+    expect((await f.enrollment(held.id)).status).toBe("paid");
+    expect((await f.enrollment(held.id)).stripe_session_id).toBe(bound);
+    expect(Number((await f.enrollment(held.id)).refunded_amount)).toBe(0);
+    f.plantSession({
+      id: bound,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt,
+      amountRefunded: 5000,
+      chargeRefunded: true,
+    });
+    expect(
+      (
+        await f.webhook("charge.refunded", "ignored", {
+          data: { object: { payment_intent: `pi_${bound.slice(8)}` } },
+        })
+      ).status,
+    ).toBe(200);
+    expect(Number((await f.enrollment(held.id)).refunded_amount)).toBe(5000);
+    expect((await f.enrollment(held.id)).status).toBe("paid");
+  } finally {
+    await f.close();
+  }
+});
+
+test("A6 refund of a duplicate session does not write the paid row refunded_amount", async () => {
+  const f = await liveOffFixture();
+  try {
+    f.setPaymentsEnabled(true);
+    const offer = await f.plantOffering();
+    const held = await f.plantHold(offer.id, offer.courseDate);
+    const bound = `cs_live_a6a${held.id.replaceAll("-", "").slice(0, 8)}`;
+    const duplicate = `cs_live_a6b${held.id.replaceAll("-", "").slice(0, 8)}`;
+    await f.db.query(
+      "UPDATE student_enrollments SET stripe_session_id=$2 WHERE id=$1",
+      [held.id, bound],
+    );
+    f.plantSession({
+      id: bound,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt,
+    });
+    expect((await f.webhook("checkout.session.completed", bound)).status).toBe(
+      200,
+    );
+    f.plantSession({
+      id: duplicate,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt + 1800,
+      fullyRefunded: true,
+    });
+    expect(
+      (
+        await f.webhook("charge.refunded", "ignored", {
+          data: { object: { payment_intent: `pi_${duplicate.slice(8)}` } },
+        })
+      ).status,
+    ).toBe(200);
+    expect((await f.enrollment(held.id)).status).toBe("paid");
+    expect((await f.enrollment(held.id)).stripe_session_id).toBe(bound);
+    expect(Number((await f.enrollment(held.id)).refunded_amount)).toBe(0);
+    const review = (await f.reviews(held.id)).find(
+      (row) => row.session_id === duplicate,
+    );
+    expect(review?.reason).toBe("session_mismatch");
+    expect(review?.resolution).toBe("refunded");
+    expect(Number(review?.refunded_amount)).toBe(39500);
+  } finally {
+    await f.close();
+  }
+});
+
+test("N3 refund of a foreign session on a reserved hold stays on the review", async () => {
+  const f = await liveOffFixture();
+  try {
+    f.setPaymentsEnabled(true);
+    const offer = await f.plantOffering();
+    const held = await f.plantHold(offer.id, offer.courseDate);
+    const bound = `cs_live_n3a${held.id.replaceAll("-", "").slice(0, 8)}`;
+    const other = `cs_live_n3b${held.id.replaceAll("-", "").slice(0, 8)}`;
+    await f.db.query(
+      "UPDATE student_enrollments SET stripe_session_id=$2 WHERE id=$1",
+      [held.id, bound],
+    );
+    f.plantSession({
+      id: other,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt + 1800,
+      fullyRefunded: true,
+    });
+    expect(
+      (
+        await f.webhook("charge.refunded", "ignored", {
+          data: { object: { payment_intent: `pi_${other.slice(8)}` } },
+        })
+      ).status,
+    ).toBe(200);
+    expect((await f.enrollment(held.id)).status).toBe("reserved");
+    expect((await f.enrollment(held.id)).stripe_session_id).toBe(bound);
+    expect(Number((await f.enrollment(held.id)).refunded_amount)).toBe(0);
+    expect(Number((await f.reviews(held.id))[0].refunded_amount)).toBe(39500);
+    expect((await f.reviews(held.id))[0].resolution).toBe("refunded");
+  } finally {
+    await f.close();
+  }
+});
+
+test("expired event for a paid row's own bound session ACKs 200", async () => {
+  const f = await liveOffFixture();
+  try {
+    f.setPaymentsEnabled(true);
+    const offer = await f.plantOffering();
+    const held = await f.plantHold(offer.id, offer.courseDate);
+    const bound = `cs_live_sf3${held.id.replaceAll("-", "").slice(0, 8)}`;
+    await f.db.query(
+      "UPDATE student_enrollments SET stripe_session_id=$2 WHERE id=$1",
+      [held.id, bound],
+    );
+    f.plantSession({
+      id: bound,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt,
+    });
+    expect((await f.webhook("checkout.session.completed", bound)).status).toBe(
+      200,
+    );
+    expect((await f.enrollment(held.id)).status).toBe("paid");
+    f.plantSession({
+      id: bound,
+      enrollmentId: held.id,
+      offeringId: offer.id,
+      courseDate: offer.courseDate,
+      expiresAt: held.expiresAt,
+      status: "expired",
+      paymentStatus: "unpaid",
+    });
+    const expired = await f.webhook("checkout.session.expired", bound);
+    expect(expired.status).toBe(200);
+    expect(await expired.json()).toEqual({ received: true });
+    expect((await f.enrollment(held.id)).status).toBe("paid");
+    expect((await f.enrollment(held.id)).stripe_session_id).toBe(bound);
   } finally {
     await f.close();
   }

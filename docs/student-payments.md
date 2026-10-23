@@ -334,14 +334,14 @@ the repository.
    other date must remain purchasable.
 7. After test-mode sign-off, configure live keys through the same secure form on the
    live environment. Do not reuse test secrets.
-8. **Apply `006_student_enrollment_review.sql`** on production. The October 21
+8. **Run the migrator** on production with live payments off
+   (`RDA_STUDENT_PAYMENTS_LIVE_ENABLED` unset). The October 21
    preview already applied the then-current `005` to the production database.
-   `006` is idempotent (`CREATE OR REPLACE` / `IF NOT EXISTS`) on that schema: it
-   widens review reasons, replaces `flag_student_enrollment_review` /
+   The filename-order migrator re-applies every `NNN_*.sql` in one transaction,
+   including idempotent `006` (`CREATE OR REPLACE` / `IF NOT EXISTS`) on that
+   schema: it widens review reasons, replaces `flag_student_enrollment_review` /
    `resolve_student_enrollment_review`, binds the paying Checkout session on
-   enroll, and excludes the reviewed row from the capacity count. Running the
-   filename-order migrator re-applies `005` then `006` and is the supported
-   upgrade. Then set
+   enroll, and excludes the reviewed row from the capacity count. Then set
    `application_name = 'rda-student-offering-seed'` and apply
    `db/seeds/infection-control-offerings.sql` (`mode=live`, `enabled=false`). The
    post-seed verify must succeed.

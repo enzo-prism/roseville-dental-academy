@@ -1,9 +1,18 @@
 -- Upgrade for a database that already applied the shipped 005 (Oct 21 2026
 -- preview included). Safe to re-run. CREATE OR REPLACE / IF NOT EXISTS only.
+-- The flag_student_enrollment_review / resolve_student_enrollment_review
+-- bodies in 005 are superseded by this file. Do not edit 005; it must stay
+-- byte-identical to the shipped main copy.
+-- Apply with live payments off, in one transaction: run the filename-order
+-- migrator (it wraps every NNN_*.sql and strips these BEGIN/COMMIT). Standalone
+-- apply of this file is also one transaction.
 -- Widens review reasons, flags reserved/paid session mismatches, binds the
 -- paying Checkout session on enroll, and excludes the reviewed row from the
 -- capacity count. Stripe refunds against an already-resolved review return
--- false instead of raising so webhooks can ACK.
+-- false instead of raising so webhooks can ACK, except a full refund of a
+-- session that is now bound after staff enroll, which applies refunded.
+SET lock_timeout = '5s';
+BEGIN;
 DO $reviews_reason$
 DECLARE r record;
 BEGIN
@@ -28,6 +37,7 @@ BEGIN
 END
 $reviews_reason$;
 ALTER TABLE student_enrollment_reviews ADD COLUMN IF NOT EXISTS resolved_by text;
+ALTER TABLE student_enrollment_reviews ADD COLUMN IF NOT EXISTS refunded_amount integer NOT NULL DEFAULT 0;
 CREATE OR REPLACE FUNCTION flag_student_enrollment_review(p_id uuid,p_session text,p_reason text)
 RETURNS boolean LANGUAGE plpgsql AS $$
 DECLARE held student_enrollments;
@@ -56,7 +66,18 @@ BEGIN
   SELECT * INTO review FROM student_enrollment_reviews WHERE enrollment_id=p_id AND session_id=p_session FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Unknown review'; END IF;
   IF review.resolved_at IS NOT NULL THEN
-    IF btrim(p_actor)='stripe-charge-refunded' THEN RETURN false; END IF;
+    IF btrim(p_actor)='stripe-charge-refunded' THEN
+      SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
+      IF FOUND AND held.stripe_session_id=p_session AND held.status='paid' AND p_resolution='refunded' THEN
+        UPDATE student_enrollments SET status='refunded',refunded_amount=GREATEST(refunded_amount,held.amount),updated_at=now() WHERE id=p_id;
+        UPDATE student_enrollment_mail SET status='review' WHERE enrollment_id=p_id AND status IN ('pending','sending');
+        INSERT INTO student_enrollment_events(event_id,enrollment_id,session_id,outcome,actor)
+          VALUES('resolve:'||p_id::text||':'||p_session||':'||p_resolution,p_id,p_session,p_resolution,btrim(p_actor))
+          ON CONFLICT (event_id) DO NOTHING;
+        RETURN true;
+      END IF;
+      RETURN false;
+    END IF;
     IF review.resolution IS DISTINCT FROM p_resolution THEN RAISE EXCEPTION 'Review already resolved'; END IF;
     RETURN false;
   END IF;
@@ -83,3 +104,4 @@ BEGIN
   RETURN true;
 END;
 $$;
+COMMIT;

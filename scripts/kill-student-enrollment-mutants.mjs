@@ -311,8 +311,9 @@ const mutants = [
   {
     id: "V05",
     file: "lib/student-enrollment-stripe.ts",
-    find: "      if (studentSessionIsFullyRefunded(session)) {\n        await resolveOpenStudentRefundReview(held.id, session.id);\n      }",
-    replace: "      await resolveOpenStudentRefundReview(held.id, session.id);",
+    find: "      if (studentSessionIsFullyRefunded(session)) {\n        await resolveOpenStudentRefundReview(held.id, session.id);\n        const current = await getStudentEnrollment(id);\n        if (current?.stripe_session_id === session.id) {\n          held = current;\n        } else {\n          return current ?? held;\n        }\n      } else {\n        return held;\n      }",
+    replace:
+      "      await resolveOpenStudentRefundReview(held.id, session.id);\n      const current = await getStudentEnrollment(id);\n      if (current?.stripe_session_id === session.id) {\n        held = current;\n      } else {\n        return current ?? held;\n      }",
   },
   {
     id: "V12",
