@@ -33,10 +33,9 @@ import { getAcademyCourse } from "@/lib/academy-catalog";
 import {
   courseScheduleNote,
   formatCourseDateLabel,
-  formatStartDatesSummary,
+  getHeroStartDates,
   getNextAvailableCourseDate,
   getUpcomingCourseSchedule,
-  getUpcomingStartDates,
   type CourseScheduleId,
   type UpcomingStartDate,
 } from "@/lib/course-schedule";
@@ -182,25 +181,16 @@ function CourseMedia({
 function CourseHeroStartDates({
   courseId,
   dates,
-  nextClass,
 }: {
   courseId: CourseScheduleId;
   dates: UpcomingStartDate[];
-  nextClass: string;
 }) {
-  const summary = formatStartDatesSummary(dates);
-
   return (
-    <div
-      className="ac-hero-starts"
-      data-rda-hero-starts={courseId}
-      data-rda-next-class={nextClass}
-    >
+    <div className="ac-hero-starts" data-rda-hero-starts={courseId}>
       <p className="ac-hero-starts-label">
         <CalendarDays aria-hidden="true" />
         Next starts
       </p>
-      {summary ? <p className="sr-only">Next starts: {summary}</p> : null}
       <div className="ac-hero-starts-dates">
         {dates.map((entry) => (
           <span
@@ -210,11 +200,7 @@ function CourseHeroStartDates({
             key={entry.isoDate}
           >
             <time dateTime={entry.isoDate}>{entry.weekdayShort}</time>
-            {entry.status === "full" ? (
-              <span aria-label={`${entry.date} is full`} className="ac-full-flag">
-                Full
-              </span>
-            ) : null}
+            {entry.status === "full" ? <span className="ac-full-flag">Full</span> : null}
           </span>
         ))}
       </div>
@@ -351,8 +337,8 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   const supportingMedia = (course.supportingMedia ?? course.supportingImages ?? []).slice(0, 2);
   const reviewGroup = courseReviewHighlights[course.id];
   const nextDate = getNextAvailableCourseDate(course.id);
-  const upcomingStarts = getUpcomingStartDates(course.id);
-  const showHeroStarts = course.id === "dental-assisting-program" && upcomingStarts.length > 0;
+  const heroStarts = getHeroStartDates(course.id);
+  const showHeroStarts = course.id === "dental-assisting-program" && heroStarts.length > 0;
   const phoneHref = `tel:${siteContact.phone.replace(/\D/g, "")}`;
   const title = hero ? toDisplayTitle(hero.heading) : catalog?.name ?? "";
 
@@ -382,13 +368,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               ) : null}
             </div>
             <h1 className="ac-h1">{title}</h1>
-            {showHeroStarts ? (
-              <CourseHeroStartDates
-                courseId={course.id}
-                dates={upcomingStarts}
-                nextClass={nextDate ?? "Ask admissions"}
-              />
-            ) : null}
+            {showHeroStarts ? <CourseHeroStartDates courseId={course.id} dates={heroStarts} /> : null}
             {hero?.body ? <p className="ac-lede">{renderTextWithLinks(hero.body, course.links)}</p> : null}
             <dl className={`ac-course-facts${showHeroStarts ? " is-pair" : ""}`}>
               {price ? (

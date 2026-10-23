@@ -16,6 +16,7 @@ import {
   STALE_DASHBOARD_FAIL_DAYS,
   STALE_DASHBOARD_WARN_DAYS,
   academyDate,
+  allFullDentalAssistingSnapshot,
   applyCourseDateMutant,
   assertContractTracksLiveShape,
   assertServedScheduleContract,
@@ -28,6 +29,9 @@ import {
   dashboardScheduleWarnings,
   eightDayStaleDashboardSnapshot,
   elapsedDashboardScheduleSnapshot,
+  expectedHeroChipLabel,
+  expectedNextStartsBadge,
+  mixedDentalAssistingSnapshot,
   parseCopyDate,
   publishedScheduleInput,
   rolledBackDashboardSnapshot,
@@ -122,6 +126,45 @@ function withFakeNow<T>(value: string, run: () => T): T {
 test("synthesized committed and dashboard snapshots satisfy the served contract", () => {
   assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot(CONTRACT_TODAY_LA)));
   assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot(CONTRACT_TODAY_LA)));
+});
+
+test("all-full DA fixtures hide chips and ask admissions on both schedule branches", () => {
+  for (const source of ["committed", "dashboard"] as const) {
+    const snapshot = allFullDentalAssistingSnapshot(source);
+    assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
+    assert.deepEqual(snapshot.courses["dental-assisting-program"].heroStarts, []);
+    assert.equal(snapshot.courses["dental-assisting-program"].nextClass, "Ask admissions");
+    assert.equal(snapshot.landerBadge, "Next start: Ask admissions");
+    assert.ok(
+      snapshot.status.upcoming.some(
+        (entry) => entry.courseId === "dental-assisting-program" && entry.status === "full",
+      ),
+      `${source} all-full fixture needs an upcoming Full DA date`,
+    );
+    assert.ok(
+      !snapshot.status.upcoming.some(
+        (entry) => entry.courseId === "dental-assisting-program" && entry.status !== "full",
+      ),
+      `${source} all-full fixture leaked an open DA date`,
+    );
+  }
+});
+
+test("mixed DA fixtures keep chips and lead the LP badge with the first open date", () => {
+  for (const source of ["committed", "dashboard"] as const) {
+    const snapshot = mixedDentalAssistingSnapshot(source);
+    assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
+    const da = snapshot.status.upcoming.filter((entry) => entry.courseId === "dental-assisting-program");
+    const firstOpen = da.find((entry) => entry.status !== "full");
+    assert.ok(firstOpen, `${source} mixed fixture needs an open DA date`);
+    assert.ok(da.some((entry) => entry.status === "full"), `${source} mixed fixture needs a Full DA date`);
+    assert.ok(snapshot.courses["dental-assisting-program"].heroStarts.length > 0);
+    assert.equal(snapshot.courses["dental-assisting-program"].nextClass, "");
+    const openLabel = expectedHeroChipLabel(firstOpen.isoDate, snapshot.status.reviewedOn);
+    const badge = expectedNextStartsBadge(da, snapshot.status.reviewedOn);
+    assert.equal(snapshot.landerBadge, badge);
+    assert.ok(badge.startsWith(`Next starts: ${openLabel}`));
+  }
 });
 
 test("dashboard build whose stored dates are all in the past is an explicit empty schedule", () => {
