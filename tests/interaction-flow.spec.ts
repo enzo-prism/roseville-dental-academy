@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { adLandingPages, PAID_TRAFFIC_LANDER_SLUGS } from "@/lib/ad-landing-pages";
+import { signupInterestOptions } from "@/lib/site-data";
+import type { PublishedCourseScheduleStatus } from "@/lib/published-course-schedule";
+import { formatOpenDateLabel } from "./support/course-schedule-contract";
+import { primaryMetaTracks } from "./support/meta-events";
 import { HOW_HEARD_OPTIONS } from "@/lib/how-heard";
 import { activeSitePromo } from "@/lib/site-promo";
 import {
@@ -75,6 +79,19 @@ async function submitAbortedContactForm(page: import("@playwright/test").Page) {
   await form.locator(".ac-pill", { hasText: HOW_HEARD_OPTIONS[1].label }).click();
   await form.getByRole("button", { name: "Send" }).click();
 }
+
+test("Meta assertion capture supports one or two pixels without hiding duplicate sends", () => {
+  const lead = { course_interest: "Infection Control" };
+  const options = { eventID: "synthetic-id" };
+  expect(primaryMetaTracks([["track", "Lead", lead, options]])).toEqual([["track", "Lead", lead, options]]);
+  const command = ["trackSingle", "primary", "Lead", lead, options];
+  expect(primaryMetaTracks([
+    ["init", "primary"], ["init", "secondary"], command,
+    ["trackSingle", "secondary", "Lead", lead, options], command,
+  ])).toEqual([["track", "Lead", lead, options], ["track", "Lead", lead, options]]);
+  expect(primaryMetaTracks([["consent", "revoke"]])).toEqual([]);
+});
+
 
 test.describe("live-style interaction flows", () => {
   // Covers the allowPromo paths too, which skip suppressSitePromo.
@@ -618,9 +635,12 @@ test.describe("live-style interaction flows", () => {
       for (const month of ["06", "07", "08", "09"]) {
         await expect(schedule.locator(`time[datetime^="2026-${month}"]`)).toHaveCount(0);
       }
-      await expect(schedule.locator('time[datetime="2026-10-12"]')).toHaveCount(0);
-      await expect(schedule.locator('time[datetime="2026-10-17"]')).toBeVisible();
-      await expect(schedule.locator('time[datetime="2026-10-24"]')).toBeVisible();
+      const publishedResponse = await page.request.get(`${localOrigin}/api/course-schedule-status`);
+      expect(publishedResponse.ok()).toBe(true);
+      const published = await publishedResponse.json() as PublishedCourseScheduleStatus;
+      const displayedDates = await schedule.locator("time").evaluateAll(nodes => nodes.map(node => node.getAttribute("datetime")));
+      expect(displayedDates).toEqual([...new Set(published.upcoming.map(entry => entry.isoDate))].sort());
+      expect(displayedDates.every(date => date && date >= published.reviewedOn)).toBe(true);
 
       const courseCards = courseSystem.locator(".ac-course-card");
       await expect(courseCards).toHaveCount(5);
@@ -1250,9 +1270,7 @@ test.describe("live-style interaction flows", () => {
       const gaEvents = events.ga.filter(
         (event): event is ["event", string, Record<string, unknown>?] => event[0] === "event",
       );
-      const metaTrackEvents = events.meta.filter(
-        (event): event is ["track", string, Record<string, unknown>?] => event[0] === "track",
-      );
+      const metaTrackEvents = primaryMetaTracks(events.meta);
       const vercelEvents = events.vercel
         .filter((event): event is ["event", { name: string; data?: Record<string, unknown> }] => {
           return event[0] === "event" && typeof event[1] === "object" && event[1] !== null && "name" in event[1];
@@ -1260,7 +1278,7 @@ test.describe("live-style interaction flows", () => {
       const vercelEventNames = vercelEvents.map((event) => event[1].name);
       const viewContentEvent = metaTrackEvents.find((event) => event[1] === "ViewContent")?.[2] ?? {};
       const leadEvent = metaTrackEvents.find((event) => event[1] === "Lead")?.[2] ?? {};
-      const leadEventOptions = events.meta.find(
+      const leadEventOptions = metaTrackEvents.find(
         (event) => event[0] === "track" && event[1] === "Lead",
       )?.[3] as { eventID?: string } | undefined;
       const openAILeadEvents = events.openai.filter(
@@ -2147,13 +2165,11 @@ test.describe("live-style interaction flows", () => {
           ?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
       });
 
-      const contactEvents = await page.evaluate(() => {
+      const capturedMetaEvents = await page.evaluate(() => {
         const analyticsWindow = window as Window & { __rdaTestMetaEvents?: unknown[][] };
-        return (analyticsWindow.__rdaTestMetaEvents ?? []).filter(
-          (event): event is ["track", string, Record<string, unknown>?] =>
-            event[0] === "track" && event[1] === "Contact",
-        );
+        return analyticsWindow.__rdaTestMetaEvents ?? [];
       });
+      const contactEvents = primaryMetaTracks(capturedMetaEvents).filter(event => event[1] === "Contact");
 
       expect(contactEvents.length).toBeGreaterThanOrEqual(2);
       expect(contactEvents.map((event) => event[2])).toEqual(
@@ -2393,17 +2409,17 @@ test.describe("live-style interaction flows", () => {
       await expect(form.locator('[data-rda-signup-icon="submit"]')).toBeVisible();
       await expect(form.getByText("What would you like to learn?")).toBeVisible();
       await expect(form.locator('input[type="radio"][name="How did you hear about us?"]')).toHaveCount(5);
-      await expect(form.getByText("Next open date: November 20, 2026")).toHaveCount(1);
-      await expect(form.getByText("Next open date: September 12, 2026 (Saturday Academy)")).toHaveCount(0);
-      await expect(form.getByText("Next open date: September 12, 2026", { exact: true })).toHaveCount(0);
-      await expect(form.getByText("Next open date: July 18, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: August 1, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: September 5, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: October 17, 2026")).toHaveCount(1);
-      await expect(form.getByText("Next open date: November 7, 2026")).toHaveCount(1);
-      await expect(form.getByText("Next open date: August 8, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: October 24, 2026")).toHaveCount(0);
-      await expect(form.getByText("Next open date: November 14, 2026")).toHaveCount(2);
+      const publishedResponse = await page.request.get(`${localOrigin}/api/course-schedule-status`);
+      expect(publishedResponse.ok()).toBe(true);
+      const published = await publishedResponse.json() as PublishedCourseScheduleStatus;
+      for (const option of signupInterestOptions.filter(option => option.scheduleId)) {
+        const next = published.upcoming.find(entry => entry.courseId === option.scheduleId && entry.status !== "full");
+        const expected = next && option.scheduleId
+          ? `Next open date: ${formatOpenDateLabel(option.scheduleId, next.isoDate)}`
+          : "Ask admissions for current availability";
+        const choice = form.locator(".rda-interest-option").filter({ has: page.locator(`input[value="${option.value}"]`) });
+        await expect(choice.locator(".rda-interest-option-date")).toHaveText(expected);
+      }
       await expect(form.getByText("By appointment")).toBeVisible();
       await expect(form.getByText("Team can recommend a starting point")).toBeVisible();
       await expect(submit).toHaveText(/Request next steps/);
