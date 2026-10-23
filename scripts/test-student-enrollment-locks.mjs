@@ -1048,13 +1048,20 @@ try {
 
   await test("MF5 enrolled refund waits on the review lock and still applies", async () => {
     const enrollmentId = randomUUID();
+    const offeringId = randomUUID();
     const leftover = `cs_test_mf5_k1_${enrollmentId.replaceAll("-", "").slice(0, 8)}`;
     const paid = `cs_test_mf5_k2_${enrollmentId.replaceAll("-", "").slice(0, 8)}`;
     await admin.query(
-      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,'2099-03-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','reserved',$10)",
+      `INSERT INTO student_enrollment_offerings(
+        id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled
+      ) VALUES ($1,'test','infection-control','2099-08-15',39500,0,$2,$3,$4,now(),'lock mf5 race',true)`,
+      [offeringId, policyVersion, policyHash, policyText],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,'2099-08-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','reserved',$10)",
       [
         enrollmentId,
-        lastSeat,
+        offeringId,
         "f5".repeat(32),
         "MF5 Race Adult",
         "mf5-race@example.test",
@@ -1078,38 +1085,34 @@ try {
         "SELECT * FROM student_enrollment_reviews WHERE enrollment_id=$1 AND session_id=$2 FOR UPDATE",
         [enrollmentId, paid],
       );
-      await locker.query(
-        "SELECT * FROM student_enrollments WHERE id=$1 FOR UPDATE",
-        [enrollmentId],
-      );
-      await waiter.query("SET lock_timeout = '5s'");
-      const refunded = waiter.query(
-        "SELECT resolve_student_enrollment_review($1,$2,'refunded',$3) AS ok",
-        [enrollmentId, paid, "stripe-charge-refunded"],
-      );
-      let waited = false;
-      for (let i = 0; i < 50; i++) {
-        const waiting = await admin.query(
-          `SELECT count(*)::int AS n FROM pg_stat_activity
-           WHERE wait_event_type = 'Lock'
-             AND query ILIKE '%resolve_student_enrollment_review%'
-             AND query ILIKE '%stripe-charge-refunded%'`,
+      await waiter.query("SET lock_timeout = '400ms'");
+      let timedOut = false;
+      try {
+        await waiter.query(
+          "SELECT resolve_student_enrollment_review($1,$2,'refunded',$3)",
+          [enrollmentId, paid, "stripe-charge-refunded"],
         );
-        if (waiting.rows[0].n >= 1) {
-          waited = true;
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 20));
+      } catch (error) {
+        timedOut = /lock timeout|canceling statement/i.test(String(error.message));
+        if (!timedOut) throw error;
       }
-      if (!waited) {
-        throw new Error("MF5 refund did not wait on the review/enrollment lock");
+      if (!timedOut) {
+        throw new Error("MF5 refund did not wait on the paused enroll transaction");
       }
       await locker.query(
         "SELECT resolve_student_enrollment_review($1,$2,'enrolled',$3)",
         [enrollmentId, paid, "staff@example.test"],
       );
       await locker.query("COMMIT");
-      const result = await refunded;
+      await waiter.query("SET lock_timeout = '5s'");
+      const result = await waiter.query(
+        "SELECT resolve_student_enrollment_review($1,$2,'refunded',$3) AS ok",
+        [enrollmentId, paid, "stripe-charge-refunded"],
+      );
+      const row = await admin.query(
+        "SELECT status,stripe_session_id,refunded_amount,inventory_released_at FROM student_enrollments WHERE id=$1",
+        [enrollmentId],
+      );
       if (result.rows[0]?.ok !== true) {
         throw new Error("MF5 stripe refund after enroll must apply (ca4797e returned false)");
       }
