@@ -1,24 +1,26 @@
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 import { expect, test } from "@playwright/test";
 
 import { buildPublishedCourseScheduleStatus, resolvePublishedBuiltOn } from "../lib/published-course-schedule";
-import liveCourseScheduleData from "../data/course-schedule.json";
 import {
+  CONTRACT_FIXTURE_PIN,
   CONTRACT_SCHEDULE,
   CONTRACT_SCHEDULE_MODULE,
   CONTRACT_TODAY_LA,
   COURSE_DATE_MUTANTS,
   EIGHT_DAY_STALE_OFFSET,
+  LIVE_COURSE_SCHEDULE,
   POLICY_DATE_ALLOWLIST,
   SEVEN_DAY_STALE_OFFSET,
   STALE_DASHBOARD_FAIL_DAYS,
   STALE_DASHBOARD_WARN_DAYS,
   academyDate,
   applyCourseDateMutant,
+  assertContractTracksLiveShape,
   assertServedScheduleContract,
+  assertValidIsoDate,
+  collectServedScheduleSnapshot,
   committedScheduleSnapshot,
   contractAcademyDate,
   courseInstanceStartDates,
@@ -27,7 +29,9 @@ import {
   eightDayStaleDashboardSnapshot,
   elapsedDashboardScheduleSnapshot,
   parseCopyDate,
+  publishedScheduleInput,
   rolledBackDashboardSnapshot,
+  servedSnapshotTodayLA,
   sevenDayStaleDashboardSnapshot,
   shiftIsoDate,
 } from "./support/course-schedule-contract";
@@ -36,26 +40,27 @@ import {
  * Course-date contract.
  *
  * Synthetic snapshots are built from tests/fixtures/course-schedule.contract.json
- * and CONTRACT_TODAY_LA ("2026-10-22"), not data/course-schedule.json or
- * academyDate(). Refreshing the live schedule (reviewedOn bump, mark full, add
- * or drop a date) must not turn this spec red. Live served checks stay relative
- * to whatever the live file publishes.
+ * and contractAcademyDate() (COURSE_DATES_FAKE_NOW, else CONTRACT_TODAY_LA
+ * "2026-10-22"). This spec never reads the real calendar and never writes
+ * data/course-schedule.json. Live served checks stay relative to whatever the
+ * live file publishes.
  *
- * COURSE_DATES_FAKE_NOW is honoured only by contractAcademyDate(). The live
- * collect path uses academyDate() so a shifted clock cannot mask a stale
- * dashboard. CI runs this spec with COURSE_DATES_FAKE_NOW set to 2026-11-20 and
- * 2026-12-20 in America/Los_Angeles and UTC.
+ * COURSE_DATES_FAKE_NOW is honoured only by contractAcademyDate() and the
+ * synthetic builders that default to it. collectServedScheduleSnapshot uses
+ * servedSnapshotTodayLA() / academyDate(), so a shifted clock cannot mask a
+ * stale dashboard. CI runs this spec with COURSE_DATES_FAKE_NOW set to
+ * 2026-11-20 and 2026-12-20 in America/Los_Angeles and UTC.
  *
  * POLICY_DATE_ALLOWLIST is the exact canonical set of policy/legal dates
  * (currently January 1, 2025). Equivalent spellings of those ISO dates are
- * accepted. To add a date: confirm it is a policy or legal fact, not a class
- * date, then add the exact canonical string. The scan compares against
- * reviewedOn, not todayLA.
+ * accepted. A different day in the same month is not. To add a date: confirm
+ * it is a policy or legal fact, not a class date, then add the exact canonical
+ * string. The scan compares against reviewedOn, not todayLA.
  *
- * Year-less dates are only flagged inside a course date list (FAQ line or
- * llms.txt bullet). Dated copy (including "Oct. 12, 2026" and "10/12/2026") is
- * scanned everywhere. Prose such as "the January 9 class" or "June 30 each
- * year" is allowed.
+ * Year-less dates are flagged inside a course date list, on the rest of that
+ * FAQ line after the first period, and anywhere on an llms.txt course bullet.
+ * Dated copy is scanned everywhere. Unrelated prose such as "the January 9
+ * class" or "June 30 each year" is allowed.
  *
  * Dashboard staleness fails when builtOn is more than 7 days old and a rendered
  * date is already past. The 8-day fixture uses the frozen rows (October 17 is
@@ -63,8 +68,8 @@ import {
  */
 
 const builds = [
-  { name: "committed", snapshot: () => committedScheduleSnapshot(CONTRACT_TODAY_LA) },
-  { name: "dashboard", snapshot: () => dashboardScheduleSnapshot(CONTRACT_TODAY_LA) },
+  { name: "committed", snapshot: () => committedScheduleSnapshot() },
+  { name: "dashboard", snapshot: () => dashboardScheduleSnapshot() },
 ] as const;
 
 const PAST_COPY_FORMATS = [
@@ -75,6 +80,13 @@ const PAST_COPY_FORMATS = [
   { raw: "Oct. 12", yearless: true },
   { raw: "10/12/2026", yearless: false },
   { raw: "OCT 12, 2026", yearless: false },
+  { raw: "2026-10-12", yearless: false },
+  { raw: "Oct 12th, 2026", yearless: false },
+  { raw: "October 12th, 2026", yearless: false },
+  { raw: "10/12", yearless: true },
+  { raw: "10/12/26", yearless: false },
+  { raw: "12 October 2026", yearless: false },
+  { raw: "October 12 2026", yearless: false },
 ] as const;
 
 const COPY_PROBES = [
@@ -94,30 +106,43 @@ const COPY_PROBES = [
   { name: "policy-short-llms", text: "effective Jan 1, 2025 under the statute.", expect: "pass", surface: "llms" },
 ] as const;
 
+function withFakeNow<T>(value: string, run: () => T): T {
+  const previous = process.env.COURSE_DATES_FAKE_NOW;
+  process.env.COURSE_DATES_FAKE_NOW = value;
+  try {
+    return run();
+  } finally {
+    if (previous === undefined) delete process.env.COURSE_DATES_FAKE_NOW;
+    else process.env.COURSE_DATES_FAKE_NOW = previous;
+  }
+}
+
 test("synthesized committed and dashboard snapshots satisfy the served contract", () => {
-  assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot(CONTRACT_TODAY_LA)));
-  assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot(CONTRACT_TODAY_LA)));
+  assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot()));
+  assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot()));
 });
 
 test("dashboard build whose stored dates are all in the past is an explicit empty schedule", () => {
-  const snapshot = elapsedDashboardScheduleSnapshot(CONTRACT_TODAY_LA);
+  const snapshot = elapsedDashboardScheduleSnapshot();
   assert.equal(snapshot.status.empty, true);
   assert.deepEqual(snapshot.status.upcoming, []);
   assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
 });
 
 test("dashboard rollback with reviewedOn matching builtOn still passes", () => {
-  const snapshot = rolledBackDashboardSnapshot(CONTRACT_TODAY_LA);
+  const snapshot = rolledBackDashboardSnapshot();
   assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
   assert.match(dashboardScheduleWarnings(snapshot).join(" "), /more than a day older/u);
 });
 
 test("dashboard builtOn older than 7 days still showing a fixture past date fails", () => {
-  const snapshot = eightDayStaleDashboardSnapshot(CONTRACT_TODAY_LA);
-  assert.equal(snapshot.status.builtOn, shiftIsoDate(CONTRACT_TODAY_LA, -EIGHT_DAY_STALE_OFFSET));
+  const today = contractAcademyDate();
+  const snapshot = eightDayStaleDashboardSnapshot();
+  assert.equal(snapshot.todayLA, today);
+  assert.equal(snapshot.status.builtOn, shiftIsoDate(today, -EIGHT_DAY_STALE_OFFSET));
   assert.equal(snapshot.status.reviewedOn, CONTRACT_SCHEDULE.reviewedOn);
   assert.ok(
-    snapshot.homeRows.some((row) => row.isoDate < CONTRACT_TODAY_LA),
+    snapshot.homeRows.some((row) => row.isoDate < today),
     "8-day stale fixture must keep a naturally past row, not inject one",
   );
   assert.throws(
@@ -131,8 +156,8 @@ test("dashboard builtOn older than 7 days still showing a fixture past date fail
 });
 
 test("dashboard builtOn exactly 7 days old still showing a fixture past date passes", () => {
-  const snapshot = sevenDayStaleDashboardSnapshot(CONTRACT_TODAY_LA);
-  assert.equal(snapshot.status.builtOn, shiftIsoDate(CONTRACT_TODAY_LA, -SEVEN_DAY_STALE_OFFSET));
+  const snapshot = sevenDayStaleDashboardSnapshot();
+  assert.equal(snapshot.status.builtOn, shiftIsoDate(contractAcademyDate(), -SEVEN_DAY_STALE_OFFSET));
   assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
 });
 
@@ -166,8 +191,8 @@ test("dashboard builtOn does not fall back to reviewedOn", () => {
     "2026-10-21",
   );
   assert.equal(
-    resolvePublishedBuiltOn({ reviewedOn: liveCourseScheduleData.reviewedOn, source: "committed" }),
-    liveCourseScheduleData.reviewedOn,
+    resolvePublishedBuiltOn({ reviewedOn: String(LIVE_COURSE_SCHEDULE.reviewedOn), source: "committed" }),
+    LIVE_COURSE_SCHEDULE.reviewedOn,
   );
 });
 
@@ -184,7 +209,7 @@ test("JSON-LD walker reads pretty-printed hasCourseInstance dates", () => {
 
 test("policy date allowlist is the exact January 1, 2025 statute string", () => {
   assert.deepEqual([...POLICY_DATE_ALLOWLIST], ["January 1, 2025"]);
-  const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
+  const snapshot = committedScheduleSnapshot();
   snapshot.faqText += " January 2, 2025.";
   assert.throws(
     () => assertServedScheduleContract(snapshot),
@@ -199,8 +224,21 @@ test("policy date allowlist is the exact January 1, 2025 statute string", () => 
   );
 });
 
+test("equivalent allowlist spelling does not accept a different day in the same month", () => {
+  const snapshot = committedScheduleSnapshot();
+  snapshot.faqText += " January 15, 2025.";
+  assert.throws(
+    () => assertServedScheduleContract(snapshot),
+    (error: unknown) => {
+      assert.ok(error instanceof assert.AssertionError);
+      assert.match(error.message, /January 15, 2025/u);
+      return true;
+    },
+  );
+});
+
 test("FAQ date lists must match the course open dates exactly, not a subset", () => {
-  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(CONTRACT_TODAY_LA), "faq-drop-one");
+  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(), "faq-drop-one");
   assert.throws(
     () => assertServedScheduleContract(snapshot),
     (error: unknown) => {
@@ -212,7 +250,7 @@ test("FAQ date lists must match the course open dates exactly, not a subset", ()
 });
 
 test("llms.txt date lists must match the course open dates exactly, not a subset", () => {
-  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(CONTRACT_TODAY_LA), "llms-drop-one");
+  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(), "llms-drop-one");
   assert.throws(
     () => assertServedScheduleContract(snapshot),
     (error: unknown) => {
@@ -223,7 +261,7 @@ test("llms.txt date lists must match the course open dates exactly, not a subset
   );
 });
 
-test("copy-date parser reads short months, dotted months, numeric dates, and yearless dates", () => {
+test("copy-date parser reads ISO, ordinals, day-first, dotted, numeric, and yearless dates", () => {
   assert.equal(parseCopyDate("Oct 12, 2026", "2026"), "2026-10-12");
   assert.equal(parseCopyDate("October 12", "2026"), "2026-10-12");
   assert.equal(parseCopyDate("December 5, 2026", "2026"), "2026-12-05");
@@ -232,53 +270,120 @@ test("copy-date parser reads short months, dotted months, numeric dates, and yea
   assert.equal(parseCopyDate("10/12/2026", "2026"), "2026-10-12");
   assert.equal(parseCopyDate("OCT 12, 2026", "2026"), "2026-10-12");
   assert.equal(parseCopyDate("Jan 1, 2025", "2026"), "2025-01-01");
+  assert.equal(parseCopyDate("2026-10-12", "2026"), "2026-10-12");
+  assert.equal(parseCopyDate("Oct 12th, 2026", "2026"), "2026-10-12");
+  assert.equal(parseCopyDate("October 12th, 2026", "2026"), "2026-10-12");
+  assert.equal(parseCopyDate("10/12", "2026"), "2026-10-12");
+  assert.equal(parseCopyDate("10/12/26", "2026"), "2026-10-12");
+  assert.equal(parseCopyDate("12 October 2026", "2026"), "2026-10-12");
+  assert.equal(parseCopyDate("October 12 2026", "2026"), "2026-10-12");
+  assert.throws(() => parseCopyDate("November 31, 2026", "2026"));
+  assert.throws(() => assertValidIsoDate("2026-11-31"));
 });
 
-test("synthetic contract stays green when the live schedule file is refreshed", () => {
-  const livePath = resolve("data/course-schedule.json");
-  const original = readFileSync(livePath, "utf8");
-  try {
-    const mutated = structuredClone(liveCourseScheduleData);
-    mutated.reviewedOn = "2026-10-23";
-    for (const entry of mutated.entries) {
-      if (entry.courseId === "bls-cpr-1" && entry.isoDate === "2026-11-07") entry.status = "full";
-    }
-    mutated.entries = mutated.entries.filter((entry) => entry.isoDate >= "2026-10-01");
-    mutated.entries.push({ courseId: "bls-cpr-1", isoDate: "2027-01-09", status: "open" });
-    writeFileSync(livePath, `${JSON.stringify(mutated, null, 2)}\n`);
+test("synthetic contract stays green when a fixture feed is refreshed in memory", () => {
+  const mutated = structuredClone(CONTRACT_SCHEDULE);
+  mutated.reviewedOn = "2026-10-23";
+  const open = mutated.entries.find((entry) => entry.status === "open" && String(entry.isoDate) >= "2026-10-23");
+  assert.ok(open, "fixture must have an open class to mark full");
+  open.status = "full";
+  const removedIso = mutated.entries.find((entry) => String(entry.isoDate) < "2026-10-20" && String(entry.isoDate) > "2000-01-01")?.isoDate;
+  mutated.entries = mutated.entries.filter((entry) => entry.isoDate !== removedIso);
+  mutated.entries.push({ courseId: String(open.courseId), isoDate: "2027-01-09", status: "open" });
 
-    assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot(CONTRACT_TODAY_LA)));
-    assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot(CONTRACT_TODAY_LA)));
-    assert.throws(() => assertServedScheduleContract(eightDayStaleDashboardSnapshot(CONTRACT_TODAY_LA)));
+  assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot()));
+  assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot()));
+  assert.throws(() => assertServedScheduleContract(eightDayStaleDashboardSnapshot()));
 
-    const liveStatus = buildPublishedCourseScheduleStatus(mutated);
-    assert.equal(liveStatus.reviewedOn, "2026-10-23");
-    assert.equal(liveStatus.empty, liveStatus.upcoming.length === 0);
-    assert.ok(liveStatus.upcoming.every((entry) => entry.isoDate >= liveStatus.reviewedOn));
-    assert.equal(
-      resolvePublishedBuiltOn({ reviewedOn: mutated.reviewedOn, source: "committed" }),
-      mutated.reviewedOn,
-    );
-    assert.ok(liveStatus.upcoming.some((entry) => entry.courseId === "bls-cpr-1" && entry.isoDate === "2027-01-09"));
-    assert.equal(
-      liveStatus.upcoming.find((entry) => entry.courseId === "bls-cpr-1" && entry.isoDate === "2026-11-07")?.status,
-      "full",
-    );
-  } finally {
-    writeFileSync(livePath, original);
-  }
+  const refreshed = buildPublishedCourseScheduleStatus(publishedScheduleInput(mutated));
+  assert.equal(refreshed.reviewedOn, "2026-10-23");
+  assert.equal(refreshed.empty, refreshed.upcoming.length === 0);
+  assert.ok(refreshed.upcoming.every((entry) => entry.isoDate >= refreshed.reviewedOn));
+  assert.equal(
+    resolvePublishedBuiltOn({ reviewedOn: String(mutated.reviewedOn), source: "committed" }),
+    mutated.reviewedOn,
+  );
+  assert.ok(refreshed.upcoming.some((entry) => entry.isoDate === "2027-01-09"));
+  assert.equal(
+    refreshed.upcoming.find((entry) => entry.courseId === open.courseId && entry.isoDate === open.isoDate)?.status,
+    "full",
+  );
 });
 
-test("synthetic contract is bound to the frozen fixture module, not the live file", () => {
+test("a new live entry field does not break the published status builder", () => {
+  const mutated = structuredClone(CONTRACT_SCHEDULE);
+  mutated.entries = mutated.entries.map((entry) => ({ ...entry, location: "Roseville" }));
+  mutated.entries.push({ courseId: "bls-cpr-1", isoDate: "2027-01-09", status: "open" });
+  assert.doesNotThrow(() => buildPublishedCourseScheduleStatus(publishedScheduleInput(mutated)));
+});
+
+test("builders read the frozen fixture, not the live file", () => {
+  assertContractTracksLiveShape();
+  assert.equal(CONTRACT_SCHEDULE.contractFixture, CONTRACT_FIXTURE_PIN);
   assert.equal(CONTRACT_SCHEDULE_MODULE, "../fixtures/course-schedule.contract.json");
-  assert.equal(CONTRACT_SCHEDULE.reviewedOn, "2026-10-14");
+  const fixtureStatus = buildPublishedCourseScheduleStatus(publishedScheduleInput(CONTRACT_SCHEDULE));
+  const liveStatus = buildPublishedCourseScheduleStatus(publishedScheduleInput(LIVE_COURSE_SCHEDULE));
+  assert.notEqual(fixtureStatus.revision, liveStatus.revision);
+  assert.equal(committedScheduleSnapshot().status.revision, fixtureStatus.revision);
+  assert.equal(committedScheduleSnapshot().status.reviewedOn, CONTRACT_SCHEDULE.reviewedOn);
+});
+
+test("COURSE_DATES_FAKE_NOW drives snapshot today and stale offsets", () => {
+  withFakeNow("2026-11-20T20:00:00Z", () => {
+    assert.equal(contractAcademyDate(), "2026-11-20");
+    assert.equal(committedScheduleSnapshot().todayLA, "2026-11-20");
+    assert.equal(eightDayStaleDashboardSnapshot().todayLA, "2026-11-20");
+    assert.equal(eightDayStaleDashboardSnapshot().status.builtOn, "2026-11-12");
+    assert.throws(() => assertServedScheduleContract(eightDayStaleDashboardSnapshot()));
+  });
+  assert.equal(contractAcademyDate() === CONTRACT_TODAY_LA || Boolean(process.env.COURSE_DATES_FAKE_NOW), true);
+});
+
+test("collect today ignores COURSE_DATES_FAKE_NOW", () => {
+  const now = new Date("2031-06-15T19:00:00.000Z");
+  withFakeNow("2026-10-20T12:00:00-07:00", () => {
+    assert.equal(servedSnapshotTodayLA(now), "2031-06-15");
+    assert.equal(academyDate(now), "2031-06-15");
+    assert.equal(contractAcademyDate(), "2026-10-20");
+    assert.match(collectServedScheduleSnapshot.toString(), /servedSnapshotTodayLA\(/u);
+    assert.doesNotMatch(collectServedScheduleSnapshot.toString(), /contractAcademyDate\(/u);
+  });
+});
+
+test("year-less dates after the first period of a FAQ line fail", () => {
+  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(), "faq-after-period-noyear");
+  assert.throws(() => assertServedScheduleContract(snapshot));
+});
+
+test("year-less dates on an llms bullet outside Upcoming dates fail", () => {
+  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(), "llms-outside-upcoming-noyear");
+  assert.throws(() => assertServedScheduleContract(snapshot));
+});
+
+test("llms span logic flags year-less dates on a markdown course bullet", () => {
+  const snapshot = committedScheduleSnapshot();
+  snapshot.llmsText = "[BLS / CPR](/bls-cpr-1) Upcoming dates: October 12; November 7, 2026.\n";
+  assert.throws(() => assertServedScheduleContract(snapshot));
+});
+
+test("impossible calendar dates fail the served contract", () => {
+  const snapshot = committedScheduleSnapshot();
+  snapshot.status.upcoming.push({ courseId: "bls-cpr-1", isoDate: "2026-11-31", status: "open" });
+  assert.throws(
+    () => assertServedScheduleContract(snapshot),
+    (error: unknown) => {
+      assert.ok(error instanceof assert.AssertionError);
+      assert.match(error.message, /impossible calendar date 2026-11-31/u);
+      return true;
+    },
+  );
 });
 
 for (const probe of COPY_PROBES) {
   test(`copy probe ${probe.name} does not false-fail current-style copy`, () => {
-    const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
-    if ("surface" in probe && probe.surface === "llms") snapshot.llmsText += ` ${probe.text}`;
-    else snapshot.faqText += ` ${probe.text}`;
+    const snapshot = committedScheduleSnapshot();
+    if ("surface" in probe && probe.surface === "llms") snapshot.llmsText += `\n${probe.text}`;
+    else snapshot.faqText += `\n${probe.text}`;
     assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
   });
 }
@@ -286,7 +391,7 @@ for (const probe of COPY_PROBES) {
 for (const format of PAST_COPY_FORMATS) {
   for (const surface of ["faq", "llms"] as const) {
     test(`${surface} past format ${format.raw} fails the served contract`, () => {
-      const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
+      const snapshot = committedScheduleSnapshot();
       if (format.yearless) {
         const mutated = applyCourseDateMutant(
           snapshot,
@@ -327,19 +432,17 @@ for (const build of builds) {
   }
 }
 
-test("academy-local today is a calendar date", () => {
-  expect(academyDate()).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
-});
-
-test("contractAcademyDate honors COURSE_DATES_FAKE_NOW and academyDate ignores it", () => {
-  const previous = process.env.COURSE_DATES_FAKE_NOW;
-  process.env.COURSE_DATES_FAKE_NOW = "2026-11-20T12:00:00-08:00";
-  try {
+test("contractAcademyDate honors COURSE_DATES_FAKE_NOW and otherwise uses the pin", () => {
+  withFakeNow("2026-11-20T12:00:00-08:00", () => {
     assert.equal(contractAcademyDate(), "2026-11-20");
-    assert.notEqual(academyDate(), "2026-11-20");
-    assert.match(academyDate(), /^\d{4}-\d{2}-\d{2}$/u);
-  } finally {
-    if (previous === undefined) delete process.env.COURSE_DATES_FAKE_NOW;
-    else process.env.COURSE_DATES_FAKE_NOW = previous;
+  });
+  withFakeNow("2026-11-21T07:30:00Z", () => {
+    assert.equal(contractAcademyDate(), "2026-11-20");
+  });
+  withFakeNow("2026-11-21T08:30:00Z", () => {
+    assert.equal(contractAcademyDate(), "2026-11-21");
+  });
+  if (!process.env.COURSE_DATES_FAKE_NOW) {
+    assert.equal(contractAcademyDate(), CONTRACT_TODAY_LA);
   }
 });

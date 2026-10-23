@@ -3,7 +3,13 @@
   "source": "committed",
   "generatedAt": null,
   "reviewedOn": "2026-10-14",
+  "contractFixture": "tests/fixtures/course-schedule.contract.json",
   "entries": [
+    {
+      "courseId": "bls-cpr-1",
+      "isoDate": "1999-12-31",
+      "status": "full"
+    },
     {
       "courseId": "bls-cpr-1",
       "isoDate": "2026-06-06",

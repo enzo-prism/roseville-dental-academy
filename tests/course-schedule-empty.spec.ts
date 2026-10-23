@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { blockOpenAIAdsPixelNetwork } from "./support/qa-helpers";
 import {
-  academyDate,
   assertServedScheduleContract,
   collectServedScheduleSnapshot,
+  servedSnapshotTodayLA,
 } from "./support/course-schedule-contract";
 import { withIsolatedSchedule } from "./support/isolated-schedule";
 
@@ -77,7 +77,7 @@ test("a dashboard build whose stored dates are all in the past publishes empty a
 test("a fresh dashboard fixture feed satisfies the served contract", async ({ page, request }) => {
   test.setTimeout(180_000);
   await blockOpenAIAdsPixelNetwork(page.context());
-  const todayLA = academyDate();
+  const todayLA = servedSnapshotTodayLA();
   await withIsolatedSchedule(
     (data) => ({
       ...data,
