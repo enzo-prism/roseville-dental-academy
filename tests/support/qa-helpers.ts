@@ -984,6 +984,8 @@ export async function captureSnapshot(
   options?: {
     /** Open every native <details> (e.g. the FAQ accordion) before reading text. */
     expandDisclosures?: boolean;
+    /** Exclude rolling schedule fragments only for the static parity suite. */
+    staticContentParity?: boolean;
     settle?: boolean;
     viewport?: { height: number; width: number };
   },
@@ -1013,7 +1015,7 @@ export async function captureSnapshot(
   }
 
   const ui = await scanUi(page);
-  const data = await captureSnapshotRenderData(page, url);
+  const data = await captureSnapshotRenderData(page, url, options?.staticContentParity ?? false);
 
   runtime.dispose();
 
@@ -1041,7 +1043,7 @@ export async function captureSnapshot(
   };
 }
 
-async function captureSnapshotRenderData(page: Page, currentUrl: string): Promise<SnapshotRenderData> {
+async function captureSnapshotRenderData(page: Page, currentUrl: string, staticContentParity: boolean): Promise<SnapshotRenderData> {
   return page.evaluate(({ urlValue, scheduleSelectors }) => {
     const additiveParitySelectors = [
       "[data-rda-course-reviews]",
@@ -1177,7 +1179,7 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
       visibleInputs,
       visibleLinks,
     };
-  }, { urlValue: currentUrl, scheduleSelectors: parityContract.dynamicScheduleSelectors });
+  }, { urlValue: currentUrl, scheduleSelectors: staticContentParity ? parityContract.dynamicScheduleSelectors : [] });
 }
 
 export async function captureVisual(
