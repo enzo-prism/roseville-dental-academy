@@ -99,7 +99,7 @@ for (const source of ["committed", "dashboard"] as const) {
         await page.goto(`${origin}/lp/dental-assisting-enroll`);
         await expect(page.locator("[data-rda-lander-badge]")).toHaveText("Next start: Ask admissions");
         const llms = await (await request.get(`${origin}/llms.txt`)).text();
-        expect(llms).toMatch(/Dental Assisting Training: Ask admissions for current availability/u);
+        expect(llms).toMatch(/Upcoming starts: Ask admissions for current availability/u);
       },
     );
   });
@@ -129,7 +129,7 @@ test("cancelled DA dates drop off the hero, lander, JSON-LD, and llms.txt", asyn
       await page.route("https://formspree.io/**", (route) => route.abort());
       await page.goto(`${origin}/dental-assisting-program`);
       await expect(page.locator(`time[datetime="${cancelledIso}"]`)).toHaveCount(0);
-      await expect(page.locator(`time[datetime="${openIso}"]`)).toHaveCount(1);
+      await expect(page.locator(`[data-rda-hero-starts] time[datetime="${openIso}"]`)).toHaveCount(1);
       const schema = JSON.parse((await page.locator("#rda-ld-course-dental-assisting-program").textContent()) ?? "{}");
       expect((schema.hasCourseInstance ?? []).map((entry: { startDate: string }) => entry.startDate)).toEqual([openIso]);
       await page.goto(`${origin}/lp/dental-assisting-enroll`);
