@@ -1304,7 +1304,18 @@ export async function collectServedScheduleSnapshot(
   }
 
   await page.goto(href("/faqs-1"));
-  const faqText = (await page.locator("body").textContent()) ?? "";
+  // Read the FAQ document, including collapsed <details>, but drop scripts
+  // (RSC payload / seasonal startsOn) and decorative seasonal nodes so ISO
+  // dates in those layers are not treated as course-date copy.
+  const faqRoot = page.locator("[data-rda-faqs-page]").first();
+  const faqSource = (await faqRoot.count()) > 0 ? faqRoot : page.locator("body");
+  const faqText =
+    (await faqSource.evaluate((node) => {
+      const clone = node.cloneNode(true);
+      if (!(clone instanceof HTMLElement)) return node.textContent ?? "";
+      clone.querySelectorAll("script, style, noscript, [data-rda-seasonal]").forEach((el) => el.remove());
+      return clone.textContent ?? "";
+    })) ?? "";
 
   return {
     courses,
