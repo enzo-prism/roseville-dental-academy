@@ -159,6 +159,7 @@ test("mixed DA fixtures keep chips and lead the LP badge with the first open dat
     assert.ok(firstOpen, `${source} mixed fixture needs an open DA date`);
     assert.ok(da.some((entry) => entry.status === "full"), `${source} mixed fixture needs a Full DA date`);
     assert.ok(snapshot.courses["dental-assisting-program"].heroStarts.length > 0);
+    assert.equal(snapshot.courses["dental-assisting-program"].heroStarts[0]?.isoDate, firstOpen.isoDate);
     assert.equal(snapshot.courses["dental-assisting-program"].nextClass, "");
     const openLabel = expectedHeroChipLabel(firstOpen.isoDate, snapshot.status.reviewedOn);
     const badge = expectedNextStartsBadge(da, snapshot.status.reviewedOn);

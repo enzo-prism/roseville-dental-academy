@@ -118,12 +118,13 @@ test("hero and lander start helpers use synthetic dates, not the committed fixtu
 
   expect(selectHeroStartDates(synthetic)).toHaveLength(HERO_START_DATE_LIMIT);
   expect(selectHeroStartDates(synthetic).map((entry) => entry.isoDate)).toEqual([
-    "2026-11-20",
     "2026-12-05",
     "2027-01-08",
+    "2027-01-15",
   ]);
   expect(formatStartDatesSummary(synthetic)).toBe("Sat, Dec 5 · Fri, Jan 8, 2027 · Fri, Jan 15, 2027");
   expect(selectSummaryStartDates(synthetic)[0]?.isoDate).toBe("2026-12-05");
+  expect(selectHeroStartDates(synthetic)[0]?.isoDate).toBe("2026-12-05");
 
   const allFull = toUpcomingStartDates(
     [
@@ -145,9 +146,9 @@ test("hero and lander start helpers use synthetic dates, not the committed fixtu
     asOf,
   );
   expect(selectHeroStartDates(laterOpen).map((entry) => entry.isoDate)).toEqual([
+    "2026-12-05",
     "2026-11-20",
     "2026-11-21",
-    "2026-12-05",
   ]);
 
   expect(

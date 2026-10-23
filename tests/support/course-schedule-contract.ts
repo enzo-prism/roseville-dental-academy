@@ -376,12 +376,9 @@ export function expectedHeroStarts(
 ) {
   if (courseId !== "dental-assisting-program") return [];
   if (!published.some((entry) => entry.status !== "full")) return [];
-  const chips = published.slice(0, HERO_START_DATE_LIMIT);
-  if (!chips.some((entry) => entry.status !== "full")) {
-    const firstOpen = published.find((entry) => entry.status !== "full");
-    if (firstOpen) chips[chips.length - 1] = firstOpen;
-  }
-  return chips.map((entry) => ({
+  const open = published.filter((entry) => entry.status !== "full");
+  const full = published.filter((entry) => entry.status === "full");
+  return [...open, ...full].slice(0, HERO_START_DATE_LIMIT).map((entry) => ({
     full: entry.status === "full",
     isoDate: entry.isoDate,
     label: expectedHeroChipLabel(entry.isoDate, reviewedOn),

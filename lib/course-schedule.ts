@@ -246,24 +246,7 @@ export function toUpcomingStartDates(
     });
 }
 
-export function selectHeroStartDates(
-  dates: readonly UpcomingStartDate[],
-  limit = HERO_START_DATE_LIMIT,
-): UpcomingStartDate[] {
-  if (!dates.some((entry) => entry.status === "available")) {
-    return [];
-  }
-
-  const chips = dates.slice(0, limit);
-  if (chips.some((entry) => entry.status === "available")) {
-    return chips;
-  }
-
-  const firstOpen = dates.find((entry) => entry.status === "available");
-  return firstOpen ? [...chips.slice(0, Math.max(limit - 1, 0)), firstOpen] : [];
-}
-
-export function selectSummaryStartDates(
+function selectOpenLeadingStartDates(
   dates: readonly UpcomingStartDate[],
   limit = HERO_START_DATE_LIMIT,
 ): UpcomingStartDate[] {
@@ -274,6 +257,21 @@ export function selectSummaryStartDates(
   const open = dates.filter((entry) => entry.status === "available");
   const full = dates.filter((entry) => entry.status === "full");
   return [...open, ...full].slice(0, limit);
+}
+
+/** Open dates first, then Full, both in date order, capped at `limit`. Hidden when none are open. */
+export function selectHeroStartDates(
+  dates: readonly UpcomingStartDate[],
+  limit = HERO_START_DATE_LIMIT,
+): UpcomingStartDate[] {
+  return selectOpenLeadingStartDates(dates, limit);
+}
+
+export function selectSummaryStartDates(
+  dates: readonly UpcomingStartDate[],
+  limit = HERO_START_DATE_LIMIT,
+): UpcomingStartDate[] {
+  return selectOpenLeadingStartDates(dates, limit);
 }
 
 export function getUpcomingStartDates(
