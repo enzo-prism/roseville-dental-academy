@@ -1,19 +1,32 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import {
   COURSE_SCHEDULE_REVIEWED_ON,
+  HERO_START_DATE_LIMIT,
   buildCourseScheduleMonths,
+  formatNextStartsSummary,
+  formatStartDatesSummary,
+  formatWeekdayShortDate,
   getAvailableCourseDates,
-  getCourseSchedule,
+  getHeroStartDates,
   getNextAvailableCourseDate,
+  getUpcomingCourseSchedule,
   getUpcomingScheduleMonths,
+  selectHeroStartDates,
+  selectSummaryStartDates,
+  toUpcomingStartDates,
 } from "../lib/course-schedule";
 import { suppressSitePromo } from "./support/qa-helpers";
 import {
   COURSE_DATE_PATHS,
+  COURSE_SCHEDULE_IDS,
   assertServedScheduleContract,
   collectServedScheduleSnapshot,
   courseInstanceStartDates,
   dashboardScheduleWarnings,
+  expectedHeroChipLabel,
+  expectedHeroStarts,
+  formatOpenDateLabel,
+  shiftIsoDate,
 } from "./support/course-schedule-contract";
 import { execFile } from "node:child_process";
 import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -40,37 +53,122 @@ async function servesDashboardSchedule(request: APIRequestContext) {
 }
 
 test("reviewed schedule excludes elapsed dates without inventing sold-out history", () => {
-  expect(COURSE_SCHEDULE_REVIEWED_ON).toBe("2026-10-14");
-  expect(getUpcomingScheduleMonths().map((month) => month.month)).toEqual(["October", "November", "December"]);
-  expect(getAvailableCourseDates("dental-assisting-program")).toEqual(["November 20, 2026", "December 5, 2026"]);
-  expect(getAvailableCourseDates("bls-cpr-1")).toEqual(["October 17, 2026", "November 7, 2026", "December 5, 2026"]);
-  expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-18")).toBe("November 7, 2026");
-  expect(getNextAvailableCourseDate("bls-cpr-1", "2026-12-06")).toBeUndefined();
-  expect(getAvailableCourseDates("infection-control")).toEqual([
-    "November 14, 2026",
-    "December 5, 2026",
+  expect(COURSE_SCHEDULE_REVIEWED_ON).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
+
+  for (const month of getUpcomingScheduleMonths()) {
+    expect(month.entries.length).toBeGreaterThan(0);
+    for (const entry of month.entries) {
+      expect(entry.isoDate >= COURSE_SCHEDULE_REVIEWED_ON).toBe(true);
+    }
+  }
+
+  for (const id of COURSE_SCHEDULE_IDS) {
+    const upcoming = getUpcomingCourseSchedule(id);
+    const available = getAvailableCourseDates(id);
+    expect(available).toEqual(
+      upcoming
+        .filter((entry) => entry.status !== "full")
+        .map((entry) => formatOpenDateLabel(id, entry.isoDate)),
+    );
+    for (const entry of upcoming) {
+      expect(entry.isoDate >= COURSE_SCHEDULE_REVIEWED_ON).toBe(true);
+    }
+    expect(getNextAvailableCourseDate(id)).toBe(available[0]);
+    const last = upcoming.at(-1);
+    if (last) {
+      expect(getNextAvailableCourseDate(id, shiftIsoDate(last.isoDate, 1))).toBeUndefined();
+    }
+    const firstOpen = upcoming.find((entry) => entry.status !== "full");
+    if (firstOpen) {
+      expect(getNextAvailableCourseDate(id, firstOpen.isoDate)).toBe(formatOpenDateLabel(id, firstOpen.isoDate));
+    }
+  }
+});
+
+test("hero and lander start helpers use synthetic dates, not the committed fixture", () => {
+  const asOf = "2026-10-14";
+  expect(formatWeekdayShortDate("2026-11-20", asOf)).toBe("Fri, Nov 20");
+  expect(formatWeekdayShortDate("2026-12-05", asOf)).toBe("Sat, Dec 5");
+  expect(formatWeekdayShortDate("2027-01-08", asOf)).toBe("Fri, Jan 8, 2027");
+  expect(expectedHeroChipLabel("2026-11-20", asOf)).toBe("Fri, Nov 20");
+  expect(expectedHeroChipLabel("2027-01-08", asOf)).toBe("Fri, Jan 8, 2027");
+
+  const synthetic = toUpcomingStartDates(
+    [
+      { isoDate: "2026-11-13", status: "cancelled" },
+      { isoDate: "2026-11-20", status: "full" },
+      { isoDate: "2026-12-05", status: "open" },
+      { isoDate: "2027-01-08", status: "open" },
+      { isoDate: "2027-01-15", status: "open" },
+      { isoDate: "2027-01-22", status: "open" },
+      { isoDate: "2027-01-29", status: "open" },
+      { isoDate: "2026-09-12", status: "open" },
+    ],
+    asOf,
+    "dental-assisting-program",
+  );
+  expect(synthetic.map((entry) => [entry.isoDate, entry.status, entry.weekdayShort])).toEqual([
+    ["2026-11-20", "full", "Fri, Nov 20"],
+    ["2026-12-05", "available", "Sat, Dec 5"],
+    ["2027-01-08", "available", "Fri, Jan 8, 2027"],
+    ["2027-01-15", "available", "Fri, Jan 15, 2027"],
+    ["2027-01-22", "available", "Fri, Jan 22, 2027"],
+    ["2027-01-29", "available", "Fri, Jan 29, 2027"],
   ]);
-  expect(getNextAvailableCourseDate("infection-control")).toBe("November 14, 2026");
-  expect(getNextAvailableCourseDate("infection-control", "2026-10-18")).toBe("November 14, 2026");
-  expect(getNextAvailableCourseDate("infection-control", "2026-12-06")).toBeUndefined();
-  expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-10-17")?.status).toBe("full");
-  expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-11-07")).toBeUndefined();
-  expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-11-14")?.status).toBe("available");
-  expect(getCourseSchedule("infection-control").find((entry) => entry.isoDate === "2026-12-05")?.status).toBe("available");
-  expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-11-07")?.status).toBe("available");
-  expect(getCourseSchedule("radiation-safety").find((entry) => entry.isoDate === "2026-11-07")?.status).toBe("available");
-  expect(getAvailableCourseDates("radiation-safety")).toEqual(["November 7, 2026", "December 5, 2026"]);
-  expect(getNextAvailableCourseDate("radiation-safety", "2026-10-18")).toBe("November 7, 2026");
-  expect(getNextAvailableCourseDate("radiation-safety", "2026-12-06")).toBeUndefined();
-  expect(getAvailableCourseDates("coronal-polish")).toEqual(["November 14, 2026", "December 12, 2026"]);
-  expect(getAvailableCourseDates("sealants")).toEqual(["December 12, 2026"]);
-  expect(getNextAvailableCourseDate("dental-assisting-program", "2026-09-12")).toBe("November 20, 2026");
-  expect(getNextAvailableCourseDate("bls-cpr-1", "2026-10-17")).toBe("October 17, 2026");
-  expect(getNextAvailableCourseDate("radiation-safety", "2026-10-17")).toBe("November 7, 2026");
-  expect(getNextAvailableCourseDate("sealants", "2026-10-24")).toBe("December 12, 2026");
-  expect(getCourseSchedule("bls-cpr-1").find((entry) => entry.isoDate === "2026-08-01")?.status).toBe("available");
-  expect(getCourseSchedule("sealants").find((entry) => entry.isoDate === "2026-10-24")?.status).toBe("full");
-  expect(getCourseSchedule("coronal-polish").find((entry) => entry.isoDate === "2026-10-24")?.status).toBe("full");
+
+  expect(selectHeroStartDates(synthetic)).toHaveLength(HERO_START_DATE_LIMIT);
+  expect(selectHeroStartDates(synthetic).map((entry) => entry.isoDate)).toEqual([
+    "2026-12-05",
+    "2027-01-08",
+    "2027-01-15",
+  ]);
+  expect(formatStartDatesSummary(synthetic)).toBe("Sat, Dec 5 · Fri, Jan 8, 2027 · Fri, Jan 15, 2027");
+  expect(selectSummaryStartDates(synthetic)[0]?.isoDate).toBe("2026-12-05");
+  expect(selectHeroStartDates(synthetic)[0]?.isoDate).toBe("2026-12-05");
+
+  const allFull = toUpcomingStartDates(
+    [
+      { isoDate: "2026-11-20", status: "full" },
+      { isoDate: "2026-12-05", status: "full" },
+    ],
+    asOf,
+  );
+  expect(selectHeroStartDates(allFull)).toEqual([]);
+  expect(formatStartDatesSummary(allFull)).toBeUndefined();
+
+  const laterOpen = toUpcomingStartDates(
+    [
+      { isoDate: "2026-11-20", status: "full" },
+      { isoDate: "2026-11-21", status: "full" },
+      { isoDate: "2026-11-22", status: "full" },
+      { isoDate: "2026-12-05", status: "open" },
+    ],
+    asOf,
+  );
+  expect(selectHeroStartDates(laterOpen).map((entry) => entry.isoDate)).toEqual([
+    "2026-12-05",
+    "2026-11-20",
+    "2026-11-21",
+  ]);
+
+  expect(
+    formatStartDatesSummary([
+      { date: "November 20, 2026", isoDate: "2026-11-20", status: "full", weekdayShort: "Fri, Nov 20" },
+      { date: "December 5, 2026", isoDate: "2026-12-05", status: "available", weekdayShort: "Sat, Dec 5" },
+    ]),
+  ).toBe("Sat, Dec 5 · Fri, Nov 20 (Full)");
+
+  const cancelledMonths = buildCourseScheduleMonths(
+    [
+      { courseId: "dental-assisting-program", isoDate: "2026-11-20", status: "cancelled" },
+      { courseId: "dental-assisting-program", isoDate: "2026-12-05", status: "open" },
+    ],
+    asOf,
+  );
+  expect(cancelledMonths.flatMap((month) => month.entries.map((entry) => entry.isoDate))).toEqual(["2026-12-05"]);
+
+  expect(formatNextStartsSummary("dental-assisting-program", "9999-01-01")).toBeUndefined();
+  expect(getHeroStartDates("dental-assisting-program", "9999-01-01")).toEqual([]);
 });
 
 test("dashboard schedule data builds months, labels, and course order", () => {
@@ -384,6 +482,15 @@ test("course JSON-LD omits sold-out instances", async ({ page, request }) => {
     "2026-12-05",
   ]);
   expect((infectionSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).not.toContain("2026-11-07");
+
+  await page.goto("/dental-assisting-program");
+  const daSchema = JSON.parse(
+    (await page.locator("#rda-ld-course-dental-assisting-program").textContent()) ?? "{}",
+  ) as { hasCourseInstance?: Array<{ startDate?: string }> };
+  expect((daSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).toEqual([
+    "2026-11-20",
+    "2026-12-05",
+  ]);
 });
 
 test("infection-control page and FAQs omit November 7 while keeping later dates", async ({ page, request }) => {
@@ -402,6 +509,87 @@ test("infection-control page and FAQs omit November 7 while keeping later dates"
   const faqBody = await page.locator("body").textContent() ?? "";
   expect(faqBody).toContain("Infection Control: November 14, 2026; December 5, 2026");
   expect(faqBody).not.toContain("Infection Control: October 17, 2026; November 7, 2026");
+});
+
+test("DA program hero lists upcoming weekday starts above the fold", async ({ page, request }) => {
+  const published = await (await request.get("/api/course-schedule-status")).json();
+  expect(published.reviewedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
+  const da = published.upcoming.filter((entry: { courseId: string }) => entry.courseId === "dental-assisting-program");
+  const expectedStarts = expectedHeroStarts("dental-assisting-program", da, published.reviewedOn);
+  const nextOpen = da.find((entry: { status: string }) => entry.status !== "full");
+
+  const assertHero = async (width: number) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/dental-assisting-program");
+    const course = page.locator('[data-rda-live-course="dental-assisting-program"]');
+    const starts = course.locator('[data-rda-hero-starts="dental-assisting-program"]');
+    const nextClass = course.locator(".ac-course-facts > div").filter({ hasText: "Next class" }).locator("dd");
+
+    if (expectedStarts.length > 0) {
+      await expect(starts).toBeVisible();
+      await expect(starts.getByText("Next starts", { exact: true })).toBeVisible();
+      await expect(starts.locator("[data-rda-hero-start]")).toHaveCount(expectedStarts.length);
+      await expect(nextClass).toHaveCount(0);
+      for (const chip of expectedStarts) {
+        await expect(starts.locator(`time[datetime="${chip.isoDate}"]`)).toHaveText(chip.label);
+      }
+      if (expectedStarts.some((entry) => entry.isoDate === "2026-11-20")) {
+        await expect(starts.locator('time[datetime="2026-11-20"]')).toHaveText("Fri, Nov 20");
+      }
+      if (expectedStarts.some((entry) => entry.isoDate === "2026-12-05")) {
+        await expect(starts.locator('time[datetime="2026-12-05"]')).toHaveText("Sat, Dec 5");
+      }
+    } else {
+      await expect(starts).toHaveCount(0);
+      await expect(nextClass).toHaveText(nextOpen ? formatOpenDateLabel("dental-assisting-program", nextOpen.isoDate) : "Ask admissions");
+    }
+
+    await expect(course.locator('.ac-hero-actions a[href="#quick-sign-up"]')).toHaveText(/Ask about this course/);
+    await expect(page.locator("[data-rda-student-enroll-cta]")).toHaveCount(0);
+
+    const geometry = await page.evaluate(() => {
+      const startsNode = document.querySelector<HTMLElement>("[data-rda-hero-starts]");
+      const ctas = [
+        ...document.querySelectorAll<HTMLElement>(
+          '[data-rda-live-course="dental-assisting-program"] .ac-hero-actions a',
+        ),
+      ];
+      const fab = document.querySelector<HTMLElement>(".rda-whatsapp-fab");
+      const overlaps = (node: HTMLElement | null) => {
+        const rect = node?.getBoundingClientRect();
+        const fabRect = fab?.getBoundingClientRect();
+        return Boolean(
+          rect &&
+            fabRect &&
+            rect.left < fabRect.right &&
+            rect.right > fabRect.left &&
+            rect.top < fabRect.bottom &&
+            rect.bottom > fabRect.top,
+        );
+      };
+      const startsRect = startsNode?.getBoundingClientRect();
+      return {
+        ctaAboveFold: ctas.every((cta) => {
+          const rect = cta.getBoundingClientRect();
+          return rect.top >= 0 && rect.bottom <= window.innerHeight;
+        }),
+        ctaOverlapsFab: ctas.some((cta) => overlaps(cta)),
+        startsAboveFold: !startsRect || (startsRect.top >= 0 && startsRect.bottom <= window.innerHeight),
+        startsOverlapsFab: overlaps(startsNode),
+      };
+    });
+    expect(geometry.startsAboveFold).toBe(true);
+    expect(geometry.startsOverlapsFab).toBe(false);
+    expect(geometry.ctaAboveFold).toBe(true);
+    expect(geometry.ctaOverlapsFab).toBe(false);
+  };
+
+  await assertHero(1280);
+  await assertHero(390);
+  await assertHero(360);
+
+  await page.goto("/infection-control");
+  await expect(page.locator("[data-rda-hero-starts]")).toHaveCount(0);
 });
 
 test("AI discovery dates match the reviewed course schedule", async ({ request }) => {

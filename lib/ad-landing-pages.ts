@@ -1,5 +1,6 @@
 import {
   formatCourseDateLabel,
+  formatNextStartsSummary,
   getUpcomingCourseSchedule,
   getAvailableCourseDateList,
   getNextAvailableCourseDate,
@@ -131,6 +132,11 @@ function availableDates(courseId: CourseScheduleId) {
 
 function firstAvailableDate(courseId: CourseScheduleId) {
   return getNextAvailableCourseDate(courseId) ?? "Ask admissions";
+}
+
+function nextStartsBadge(courseId: CourseScheduleId) {
+  const summary = formatNextStartsSummary(courseId);
+  return summary ? `Next starts: ${summary}` : `Next start: ${firstAvailableDate(courseId)}`;
 }
 
 const dentalAssistingDates = availableDates("dental-assisting-program");
@@ -637,7 +643,7 @@ export const adLandingPages: AdLandingPage[] = [
       },
     ],
     hero: {
-      badge: `Next start: ${firstAvailableDate("dental-assisting-program")}`,
+      badge: nextStartsBadge("dental-assisting-program"),
       imageAlt:
         "Roseville Dental Academy students practicing hands-on dental assisting skills.",
       imageSrc: siteImages.programHero,

@@ -119,7 +119,7 @@ function IconLabel({
   const Icon = icon === "calendar" ? CalendarDays : CheckCircle2;
 
   return (
-    <span className="rda-ad-icon-label">
+    <span className="rda-ad-icon-label" data-rda-lander-badge={icon === "calendar" ? "" : undefined}>
       <Icon aria-hidden="true" />
       {children}
     </span>

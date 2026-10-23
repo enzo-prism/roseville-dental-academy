@@ -4,6 +4,7 @@ import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
 import { adLandingPages } from "../../lib/ad-landing-pages";
 import {
+  HERO_START_DATE_LIMIT,
   SATURDAY_ACADEMY_START_DATE,
   courseScheduleCourseDetails,
   type CourseScheduleId,
@@ -92,6 +93,7 @@ export type HomeScheduleRow = {
 
 export type CoursePageSnapshot = {
   dates: Array<{ full: boolean; isoDate: string; label: string }>;
+  heroStarts: Array<{ full: boolean; isoDate: string; label: string }>;
   ldScripts: string[];
   nextAvailable: string | undefined;
   nextClass: string;
@@ -108,6 +110,7 @@ export type ServedScheduleSnapshot = {
   homeEmptyCopy: string;
   homeRows: HomeScheduleRow[];
   interestOptions: InterestOptionSnapshot[];
+  landerBadge: string;
   landerDates: Record<string, string[]>;
   llmsText: string;
   pageLdScripts: Record<string, string[]>;
@@ -137,6 +140,7 @@ const REVISION = /^[0-9a-f]{64}$/u;
 const MONTH_LONG =
   "January|February|March|April|May|June|July|August|September|October|November|December";
 const MONTH_SHORT = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec";
+const MONTH_SHORT_LABELS = MONTH_SHORT.split("|").filter((label) => label !== "Sept");
 const MONTH_NAME = `${MONTH_LONG}|${MONTH_SHORT}`;
 const ORDINAL = "(?:st|nd|rd|th)";
 const MONTH_DAY_YEAR = new RegExp(`(?:${MONTH_LONG}) \\d{1,2}, \\d{4}`, "gu");
@@ -205,6 +209,7 @@ export const STALE_DASHBOARD_FAIL_DAYS = 7;
 export const CONTRACT_TODAY_LA = "2026-10-22";
 export const SEVEN_DAY_STALE_OFFSET = 7;
 export const EIGHT_DAY_STALE_OFFSET = 8;
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 export function publishedScheduleInput(data: CourseScheduleFile) {
   return {
@@ -355,6 +360,46 @@ export function formatScheduleDate(isoDate: string) {
     timeZone: "UTC",
     year: "numeric",
   });
+}
+
+export function expectedHeroChipLabel(isoDate: string, asOf: string) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const weekday = WEEKDAY_SHORT[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  const label = `${weekday}, ${MONTH_SHORT_LABELS[month - 1]} ${day}`;
+  return isoDate.slice(0, 4) === asOf.slice(0, 4) ? label : `${label}, ${year}`;
+}
+
+export function expectedHeroStarts(
+  courseId: CourseScheduleId,
+  published: PublishedCourseScheduleStatus["upcoming"],
+  reviewedOn: string,
+) {
+  if (courseId !== "dental-assisting-program") return [];
+  if (!published.some((entry) => entry.status !== "full")) return [];
+  const open = published.filter((entry) => entry.status !== "full");
+  const full = published.filter((entry) => entry.status === "full");
+  return [...open, ...full].slice(0, HERO_START_DATE_LIMIT).map((entry) => ({
+    full: entry.status === "full",
+    isoDate: entry.isoDate,
+    label: expectedHeroChipLabel(entry.isoDate, reviewedOn),
+  }));
+}
+
+export function expectedNextStartsBadge(
+  published: PublishedCourseScheduleStatus["upcoming"],
+  reviewedOn: string,
+) {
+  const open = published.filter((entry) => entry.status !== "full");
+  if (!open.length) return "Next start: Ask admissions";
+  const full = published.filter((entry) => entry.status === "full");
+  const summary = [...open, ...full]
+    .slice(0, HERO_START_DATE_LIMIT)
+    .map((entry) => {
+      const label = expectedHeroChipLabel(entry.isoDate, reviewedOn);
+      return entry.status === "full" ? `${label} (Full)` : label;
+    })
+    .join(" · ");
+  return `Next starts: ${summary}`;
 }
 
 export function formatOpenDateLabel(courseId: CourseScheduleId, isoDate: string) {
@@ -546,11 +591,13 @@ function synthesizeCourse(status: PublishedCourseScheduleStatus, courseId: Cours
     label: formatOpenDateLabel(courseId, entry.isoDate),
   }));
   const open = dates.filter((entry) => !entry.full);
+  const heroStarts = expectedHeroStarts(courseId, entriesForCourse(status, courseId), status.reviewedOn);
   return {
     dates,
+    heroStarts,
     ldScripts: [courseLdScript(courseId, open.map((entry) => entry.isoDate))],
     nextAvailable: open[0]?.label,
-    nextClass: open[0]?.label ?? EMPTY_COURSE_COPY,
+    nextClass: heroStarts.length > 0 ? "" : open[0]?.label ?? EMPTY_COURSE_COPY,
   };
 }
 
@@ -622,6 +669,7 @@ export function snapshotFromPublishedStatus(
     homeEmptyCopy: status.empty ? EMPTY_HOME_COPY : "",
     homeRows: synthesizeHomeRows(status),
     interestOptions: synthesizeInterestOptions(status),
+    landerBadge: expectedNextStartsBadge(entriesForCourse(status, "dental-assisting-program"), status.reviewedOn),
     landerDates: synthesizeLanderDates(status),
     llmsText: discovery,
     pageLdScripts,
@@ -691,6 +739,87 @@ export function elapsedDashboardScheduleSnapshot(todayLA = contractAcademyDate()
   );
 }
 
+function withDentalAssistingStatus(
+  status: "full" | "open",
+  source: "committed" | "dashboard",
+  todayLA = contractAcademyDate(),
+): ServedScheduleSnapshot {
+  const reviewedOn = source === "dashboard" ? todayLA : String(LIVE_COURSE_SCHEDULE.reviewedOn);
+  const entries = LIVE_COURSE_SCHEDULE.entries.map((entry) =>
+    entry.courseId === "dental-assisting-program" && String(entry.isoDate) >= reviewedOn
+      ? { ...entry, status }
+      : { ...entry },
+  );
+  const hasUpcomingDa = entries.some(
+    (entry) => entry.courseId === "dental-assisting-program" && String(entry.isoDate) >= reviewedOn,
+  );
+  if (!hasUpcomingDa) {
+    entries.push(
+      { courseId: "dental-assisting-program", isoDate: shiftIsoDate(reviewedOn, 14), status },
+      { courseId: "dental-assisting-program", isoDate: shiftIsoDate(reviewedOn, 28), status },
+    );
+  }
+  return snapshotFromPublishedStatus(
+    buildPublishedCourseScheduleStatus({
+      ...publishedScheduleInput({
+        ...LIVE_COURSE_SCHEDULE,
+        builtOn: reviewedOn,
+        entries,
+        reviewedOn,
+        source,
+      }),
+    }),
+    { previewUrl: source === "dashboard", todayLA: source === "dashboard" ? todayLA : contractAcademyDate() },
+  );
+}
+
+export function allFullDentalAssistingSnapshot(
+  source: "committed" | "dashboard",
+  todayLA = contractAcademyDate(),
+): ServedScheduleSnapshot {
+  return withDentalAssistingStatus("full", source, todayLA);
+}
+
+export function mixedDentalAssistingSnapshot(
+  source: "committed" | "dashboard",
+  todayLA = contractAcademyDate(),
+): ServedScheduleSnapshot {
+  const reviewedOn = source === "dashboard" ? todayLA : String(LIVE_COURSE_SCHEDULE.reviewedOn);
+  const entries = LIVE_COURSE_SCHEDULE.entries.map((entry) => ({ ...entry }));
+  const daUpcoming = entries
+    .filter((entry) => entry.courseId === "dental-assisting-program" && String(entry.isoDate) >= reviewedOn)
+    .sort((left, right) => (String(left.isoDate) < String(right.isoDate) ? -1 : 1));
+  if (daUpcoming.length === 0) {
+    entries.push(
+      { courseId: "dental-assisting-program", isoDate: shiftIsoDate(reviewedOn, 14), status: "full" },
+      { courseId: "dental-assisting-program", isoDate: shiftIsoDate(reviewedOn, 28), status: "open" },
+    );
+  } else {
+    for (const [index, entry] of daUpcoming.entries()) {
+      entry.status = index === 0 ? "full" : "open";
+    }
+    if (daUpcoming.length === 1) {
+      entries.push({
+        courseId: "dental-assisting-program",
+        isoDate: shiftIsoDate(String(daUpcoming[0].isoDate), 14),
+        status: "open",
+      });
+    }
+  }
+  return snapshotFromPublishedStatus(
+    buildPublishedCourseScheduleStatus({
+      ...publishedScheduleInput({
+        ...LIVE_COURSE_SCHEDULE,
+        builtOn: reviewedOn,
+        entries,
+        reviewedOn,
+        source,
+      }),
+    }),
+    { previewUrl: source === "dashboard", todayLA: source === "dashboard" ? todayLA : contractAcademyDate() },
+  );
+}
+
 export function rolledBackDashboardSnapshot(todayLA = contractAcademyDate()): ServedScheduleSnapshot {
   const builtOn = shiftIsoDate(todayLA, -5);
   return snapshotFromPublishedStatus(
@@ -748,6 +877,7 @@ export function applyCourseDateMutant(
       for (const id of COURSE_SCHEDULE_IDS) {
         next.courses[id] = {
           dates: [],
+          heroStarts: [],
           ldScripts: [courseLdScript(id, [])],
           nextAvailable: undefined,
           nextClass: EMPTY_COURSE_COPY,
@@ -1108,6 +1238,7 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     assert.match(snapshot.homeEmptyCopy, /Ask admissions/u);
     for (const id of COURSE_SCHEDULE_IDS) {
       assert.deepEqual(snapshot.courses[id].dates, []);
+      assert.deepEqual(snapshot.courses[id].heroStarts, []);
       assert.deepEqual(
         snapshot.courses[id].ldScripts.flatMap((script) => courseInstanceStartDates(script)),
         [],
@@ -1144,7 +1275,15 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     const ldDates = rendered.ldScripts.flatMap((script) => courseInstanceStartDates(script));
     assert.deepEqual(ldDates, openDates, `${id} JSON-LD startDates must equal non-Full dates`);
     assert.equal(rendered.nextAvailable, openDates[0] ? formatOpenDateLabel(id, openDates[0]) : undefined);
-    assert.equal(rendered.nextClass, openDates[0] ? formatOpenDateLabel(id, openDates[0]) : EMPTY_COURSE_COPY);
+    const expectedStarts = expectedHeroStarts(id, published, status.reviewedOn);
+    assert.deepEqual(
+      rendered.heroStarts.map((entry) => [entry.isoDate, entry.full, entry.label]),
+      expectedStarts.map((entry) => [entry.isoDate, entry.full, entry.label]),
+    );
+    assert.equal(
+      rendered.nextClass,
+      expectedStarts.length > 0 ? "" : openDates[0] ? formatOpenDateLabel(id, openDates[0]) : EMPTY_COURSE_COPY,
+    );
 
     const homeForCourse = snapshot.homeRows
       .filter((row) => row.courses.some((course) => course.id === id))
@@ -1224,6 +1363,11 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     );
   }
 
+  assert.equal(
+    snapshot.landerBadge,
+    expectedNextStartsBadge(entriesForCourse(status, "dental-assisting-program"), status.reviewedOn),
+  );
+
   for (const path of COURSE_DATE_PATHS) {
     const scripts = snapshot.pageLdScripts[path] ?? [];
     for (const script of scripts) {
@@ -1271,12 +1415,16 @@ export async function collectServedScheduleSnapshot(
   const courses = {} as Record<CourseScheduleId, CoursePageSnapshot>;
   const pageLdScripts: Record<string, string[]> = {};
   const landerDates: Record<string, string[]> = {};
+  let landerBadge = "";
 
   for (const path of COURSE_DATE_PATHS) {
     await page.goto(href(path));
     pageLdScripts[path] = await page.locator('script[type="application/ld+json"]').allTextContents();
     if (path.startsWith("/lp/")) {
       landerDates[path] = (await page.locator(".rda-ad-date-list span").allTextContents()).map((date) => date.trim());
+    }
+    if (path === "/lp/dental-assisting-enroll") {
+      landerBadge = ((await page.locator("[data-rda-lander-badge]").textContent()) ?? "").replace(/\s+/gu, " ").trim();
     }
     const courseId = COURSE_SCHEDULE_IDS.find((id) => courseScheduleCourseDetails[id].href === path);
     if (!courseId) continue;
@@ -1292,11 +1440,19 @@ export async function collectServedScheduleSnapshot(
       const dt = [...node.querySelectorAll("dt")].find((item) => item.textContent?.includes("Next class"));
       return dt?.nextElementSibling?.textContent?.trim() ?? "";
     });
+    const heroStarts = await root.locator("[data-rda-hero-starts] [data-rda-hero-start]").evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        full: node.getAttribute("data-status") === "full",
+        isoDate: node.querySelector("time")?.getAttribute("datetime") ?? "",
+        label: node.querySelector("time")?.textContent?.trim() ?? "",
+      })),
+    );
     const body = (await root.innerText()) ?? "";
     const nextAvailable = body.match(/Next available date: ([^.]+)/u)?.[1];
     const courseScript = (await page.locator(`#rda-ld-course-${courseId}`).textContent()) ?? "{}";
     courses[courseId] = {
       dates,
+      heroStarts,
       ldScripts: [courseScript],
       nextAvailable,
       nextClass,
@@ -1329,6 +1485,7 @@ export async function collectServedScheduleSnapshot(
       }),
     })),
     interestOptions,
+    landerBadge,
     landerDates,
     llmsText: await llms.text(),
     pageLdScripts,

@@ -108,6 +108,10 @@ function isCourseScheduleId(value: string): value is CourseScheduleId {
   return (courseDisplayOrder as string[]).includes(value);
 }
 
+function isLiveCourseScheduleStatus(status: string): status is "open" | "full" {
+  return status === "open" || status === "full";
+}
+
 function isoDateParts(isoDate: string) {
   const [year, month, day] = isoDate.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day));
@@ -125,6 +129,9 @@ export function buildCourseScheduleMonths(
 
   for (const entry of entries) {
     if (!isCourseScheduleId(entry.courseId) || !/^\d{4}-\d{2}-\d{2}$/.test(entry.isoDate)) {
+      continue;
+    }
+    if (!isLiveCourseScheduleStatus(entry.status)) {
       continue;
     }
     const courses = byDate.get(entry.isoDate) ?? [];
@@ -192,6 +199,120 @@ export function formatCourseDateLabel(courseId: CourseScheduleId, date: string) 
   }
 
   return date;
+}
+
+export const HERO_START_DATE_LIMIT = 3;
+
+/** "Fri, Nov 20" — weekday + short month for hero / lander start chips. Adds the year when it differs from `asOf`. */
+export function formatWeekdayShortDate(isoDate: string, asOf = COURSE_SCHEDULE_REVIEWED_ON) {
+  const options: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" };
+  if (isoDate.slice(0, 4) !== asOf.slice(0, 4)) {
+    options.year = "numeric";
+  }
+  return formatIsoDate(isoDate, options);
+}
+
+export type UpcomingStartDate = {
+  date: string;
+  isoDate: string;
+  status: CourseScheduleStatus;
+  weekdayShort: string;
+};
+
+export type UpcomingStartDateInput = {
+  date?: string;
+  isoDate: string;
+  status: string;
+};
+
+export function toUpcomingStartDates(
+  entries: readonly UpcomingStartDateInput[],
+  asOf = COURSE_SCHEDULE_REVIEWED_ON,
+  courseId?: CourseScheduleId,
+): UpcomingStartDate[] {
+  return entries
+    .filter((entry) => isLiveCourseScheduleStatus(entry.status) && entry.isoDate >= asOf)
+    .slice()
+    .sort((left, right) => (left.isoDate < right.isoDate ? -1 : left.isoDate > right.isoDate ? 1 : 0))
+    .map((entry) => {
+      const date =
+        entry.date ?? formatIsoDate(entry.isoDate, { month: "long", day: "numeric", year: "numeric" });
+      return {
+        date: courseId ? formatCourseDateLabel(courseId, date) : date,
+        isoDate: entry.isoDate,
+        status: entry.status === "full" ? "full" : "available",
+        weekdayShort: formatWeekdayShortDate(entry.isoDate, asOf),
+      };
+    });
+}
+
+function selectOpenLeadingStartDates(
+  dates: readonly UpcomingStartDate[],
+  limit = HERO_START_DATE_LIMIT,
+): UpcomingStartDate[] {
+  if (!dates.some((entry) => entry.status === "available")) {
+    return [];
+  }
+
+  const open = dates.filter((entry) => entry.status === "available");
+  const full = dates.filter((entry) => entry.status === "full");
+  return [...open, ...full].slice(0, limit);
+}
+
+/** Open dates first, then Full, both in date order, capped at `limit`. Hidden when none are open. */
+export function selectHeroStartDates(
+  dates: readonly UpcomingStartDate[],
+  limit = HERO_START_DATE_LIMIT,
+): UpcomingStartDate[] {
+  return selectOpenLeadingStartDates(dates, limit);
+}
+
+export function selectSummaryStartDates(
+  dates: readonly UpcomingStartDate[],
+  limit = HERO_START_DATE_LIMIT,
+): UpcomingStartDate[] {
+  return selectOpenLeadingStartDates(dates, limit);
+}
+
+export function getUpcomingStartDates(
+  courseId: CourseScheduleId,
+  asOf = COURSE_SCHEDULE_REVIEWED_ON,
+): UpcomingStartDate[] {
+  return toUpcomingStartDates(
+    getUpcomingCourseSchedule(courseId, asOf).map((entry) => ({
+      date: entry.date,
+      isoDate: entry.isoDate,
+      status: entry.status === "full" ? "full" : "open",
+    })),
+    asOf,
+    courseId,
+  );
+}
+
+export function getHeroStartDates(
+  courseId: CourseScheduleId,
+  asOf = COURSE_SCHEDULE_REVIEWED_ON,
+): UpcomingStartDate[] {
+  return selectHeroStartDates(getUpcomingStartDates(courseId, asOf));
+}
+
+/** Compact line: "Fri, Nov 20 · Sat, Dec 5". Open dates lead; Full dates follow and append (Full). */
+export function formatStartDatesSummary(dates: readonly UpcomingStartDate[]) {
+  const selected = selectSummaryStartDates(dates);
+  if (!selected.length) {
+    return undefined;
+  }
+
+  return selected
+    .map((entry) => (entry.status === "full" ? `${entry.weekdayShort} (Full)` : entry.weekdayShort))
+    .join(" · ");
+}
+
+export function formatNextStartsSummary(
+  courseId: CourseScheduleId,
+  asOf = COURSE_SCHEDULE_REVIEWED_ON,
+) {
+  return formatStartDatesSummary(getUpcomingStartDates(courseId, asOf));
 }
 
 export function getUpcomingCourseSchedule(
