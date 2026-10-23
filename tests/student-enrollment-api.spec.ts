@@ -1192,7 +1192,9 @@ test.describe("student enrollment isolated full stack", () => {
         headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
       })
     ).text();
-    expect(roster).not.toContain(`orphan-refund-${planted}@example.test`);
+    expect(roster).toContain(`orphan-refund-${planted}@example.test`);
+    expect(roster).toContain("Refunded USD");
+    expect(roster).toContain("395.00");
   });
   test("staff review list is filtered by the active payment mode", async ({
     request,

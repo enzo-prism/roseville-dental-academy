@@ -83,7 +83,10 @@ async function main() {
   const migrations = await readAttributionMigrations(root);
   const statements = migrations.flatMap((migration) => migration.statements);
   const sql = neon(databaseUrl);
-  await sql.transaction((transaction) => statements.map((statement) => transaction.query(statement)));
+  await sql.transaction((transaction) => [
+    transaction.query("SET lock_timeout = '5s'"),
+    ...statements.map((statement) => transaction.query(statement)),
+  ]);
   console.log(JSON.stringify({ applied: statements.length, migrations: migrations.map((migration) => migration.name) }));
 }
 

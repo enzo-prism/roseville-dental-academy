@@ -311,7 +311,7 @@ const mutants = [
   {
     id: "V05",
     file: "lib/student-enrollment-stripe.ts",
-    find: "      if (studentSessionIsFullyRefunded(session)) {\n        await resolveOpenStudentRefundReview(held.id, session.id);\n        const current = await getStudentEnrollment(id);\n        if (current?.stripe_session_id === session.id) {\n          held = current;\n        } else {\n          return current ?? held;\n        }\n      } else {\n        return held;\n      }",
+    find: "      if (studentSessionIsFullyRefunded(session)) {\n        await resolveOpenStudentRefundReview(held.id, session.id);\n      }\n      const current = await getStudentEnrollment(id);\n      if (current?.stripe_session_id === session.id) {\n        held = current;\n      } else {\n        return current ?? held;\n      }",
     replace:
       "      await resolveOpenStudentRefundReview(held.id, session.id);\n      const current = await getStudentEnrollment(id);\n      if (current?.stripe_session_id === session.id) {\n        held = current;\n      } else {\n        return current ?? held;\n      }",
   },
@@ -384,7 +384,7 @@ const mutants = [
   {
     id: "S07",
     file: "db/migrations/006_student_enrollment_review.sql",
-    find: "  IF p_reason='session_mismatch' AND held.status NOT IN ('reserved','paid') THEN RAISE EXCEPTION 'Session mismatch review requires a reserved or paid enrollment'; END IF;",
+    find: "  IF p_reason='session_mismatch' AND held.status NOT IN ('reserved','paid','refunded') THEN RAISE EXCEPTION 'Session mismatch review requires a reserved, paid, or refunded enrollment'; END IF;",
     replace: "",
   },
   {
@@ -396,7 +396,7 @@ const mutants = [
   {
     id: "S10",
     file: "lib/student-enrollment.ts",
-    find: "    studentWebhookPaidCompletionEvent(eventType) &&\n    (existing?.status === \"reserved\" || existing?.status === \"paid\") &&",
+    find: "    studentWebhookPaidCompletionEvent(eventType) &&\n    (existing?.status === \"reserved\" ||\n      existing?.status === \"paid\" ||\n      existing?.status === \"refunded\") &&",
     replace:
       "    (existing?.status === \"reserved\" || existing?.status === \"paid\") &&",
   },

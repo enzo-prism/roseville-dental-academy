@@ -576,6 +576,10 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(upgrade).toContain(
       "ADD COLUMN IF NOT EXISTS refunded_amount integer NOT NULL DEFAULT 0",
     );
+    expect(upgrade).toContain(
+      "applied_refund := GREATEST(held.refunded_amount, review.refunded_amount)",
+    );
+    expect(upgrade).toContain("'reserved','paid','refunded'");
     expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
       "FROM student_enrollment_offerings o WHERE o.mode=${config.mode} AND o.enabled=true",
     );
@@ -616,8 +620,20 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     expect(releaseGate).toContain("~/.cache/ms-playwright");
     expect(releaseGate).toContain("playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}");
-    expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
+    expect(await readFile("lib/student-enrollment.ts", "utf8")).not.toContain(
       "WHERE o.mode=${mode} AND r.resolved_at IS NULL",
+    );
+    expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
+      "WHERE o.mode=${mode}",
+    );
+    expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
+      "r.refunded_amount",
+    );
+    expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
+      "ORDER BY r.resolved_at NULLS FIRST, r.created_at LIMIT 500",
+    );
+    expect(await readFile("scripts/migrate-attribution.mjs", "utf8")).toContain(
+      'transaction.query("SET lock_timeout = \'5s\'")',
     );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       "account.id !== config.account ||",
@@ -630,6 +646,12 @@ test("student database enforces shared inventory, separate modes, replay, roster
     );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       "current?.stripe_session_id === session.id",
+    );
+    expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
+      'held.status === "refunded"',
+    );
+    expect(await readFile("lib/student-enrollment.ts", "utf8")).toContain(
+      'existing?.status === "refunded"',
     );
     expect(await readFile("lib/student-enrollment-stripe.ts", "utf8")).toContain(
       'status === 409 && code === "idempotency_key_in_use"',
@@ -684,9 +706,13 @@ test("student database enforces shared inventory, separate modes, replay, roster
     expect(
       await readFile("scripts/kill-student-enrollment-mutants.mjs", "utf8"),
     ).toContain("db/seeds/infection-control-offerings.test.sql");
-    expect(await readFile(".gitignore", "utf8")).toContain(
+    expect(await readFile(".gitignore", "utf8")).toContain("dogfood-output");
+    expect(await readFile(".gitignore", "utf8")).not.toContain(
       "evidence/student-enrollment-mutants.log",
     );
+    expect(
+      await readFile("evidence/student-enrollment-mutants.log", "utf8"),
+    ).toContain("CONTROL SURVIVED");
     expect(
       await readFile("scripts/test-student-enrollment.mjs", "utf8"),
     ).toContain("tests/student-enrollment-retry.spec.ts");
@@ -1156,7 +1182,7 @@ test("student database enforces shared inventory, separate modes, replay, roster
         "SELECT flag_student_enrollment_review($1,'cs_test_s2','session_mismatch')",
         [unbound],
       ),
-    ).rejects.toThrow("reserved or paid enrollment");
+    ).rejects.toThrow("reserved, paid, or refunded enrollment");
     await db.query(
       "SELECT flag_student_enrollment_review($1,'cs_test_orphan','paid_after_release')",
       [unbound],
@@ -1803,6 +1829,9 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(page).toContain("refundedRosterPaymentLabel");
     expect(page).toContain("r.inventory_released_at");
     expect(page).toContain("r.inventory_released_by");
+    expect(page).toContain("r.resolution ?? \"open\"");
+    expect(page).toContain("r.refunded_amount");
+    expect(page).toContain("Refunded USD");
     const enroll = await readFile("app/enroll/page.tsx", "utf8");
     expect(enroll).toContain("live?.remaining");
     expect(enroll).toContain("${Math.max(0, remaining)} seats available");
@@ -1993,6 +2022,72 @@ test("resolve enrolled binds the paying session and can convert a reserved misma
         )
       ).rows[0],
     ).toEqual({ status: "paid", stripe_session_id: "cs_test_paid_bound" });
+    const refundedId = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,'2099-10-17',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded',$10)",
+      [
+        refundedId,
+        paidOffer,
+        "a2".repeat(32),
+        "Refunded Flag Adult",
+        "refunded-flag@example.test",
+        "916 555 0100",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        "cs_test_refunded_bound",
+      ],
+    );
+    await expect(
+      db.query(
+        "SELECT flag_student_enrollment_review($1,'cs_test_refunded_dup','session_mismatch')",
+        [refundedId],
+      ),
+    ).resolves.toBeTruthy();
+    const copyId = randomUUID();
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,'2099-10-17',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','reserved',$10)",
+      [
+        copyId,
+        paidOffer,
+        "b2".repeat(32),
+        "Copy Refund Adult",
+        "copy-refund@example.test",
+        "916 555 0100",
+        policy,
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        "cs_test_copy_old",
+      ],
+    );
+    await db.query(
+      "SELECT flag_student_enrollment_review($1,'cs_test_a2_paid','session_mismatch')",
+      [copyId],
+    );
+    await db.query(
+      "UPDATE student_enrollment_reviews SET refunded_amount=10000 WHERE enrollment_id=$1 AND session_id='cs_test_a2_paid'",
+      [copyId],
+    );
+    await db.query(
+      "SELECT resolve_student_enrollment_review($1,'cs_test_a2_paid','enrolled',$2)",
+      [copyId, "staff@example.test"],
+    );
+    expect(
+      (
+        await db.query<{
+          status: string;
+          stripe_session_id: string;
+          refunded_amount: number;
+        }>(
+          "SELECT status,stripe_session_id,refunded_amount FROM student_enrollments WHERE id=$1",
+          [copyId],
+        )
+      ).rows[0],
+    ).toEqual({
+      status: "paid",
+      stripe_session_id: "cs_test_a2_paid",
+      refunded_amount: 10000,
+    });
   } finally {
     await db.close();
   }

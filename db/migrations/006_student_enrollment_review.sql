@@ -6,11 +6,13 @@
 -- Apply with live payments off, in one transaction: run the filename-order
 -- migrator (it wraps every NNN_*.sql and strips these BEGIN/COMMIT). Standalone
 -- apply of this file is also one transaction.
--- Widens review reasons, flags reserved/paid session mismatches, binds the
--- paying Checkout session on enroll, and excludes the reviewed row from the
--- capacity count. Stripe refunds against an already-resolved review return
--- false instead of raising so webhooks can ACK, except a full refund of a
--- session that is now bound after staff enroll, which applies refunded.
+-- Widens review reasons, flags reserved/paid/refunded session mismatches,
+-- binds the paying Checkout session on enroll, copies any review
+-- refunded_amount onto the enrollment (and marks refunded when it equals
+-- the full amount), and excludes the reviewed row from the capacity count.
+-- Stripe refunds against an already-resolved review return false instead of
+-- raising so webhooks can ACK, except a refund of a session that is now
+-- bound after staff enroll, which applies the copied or incoming amount.
 SET lock_timeout = '5s';
 BEGIN;
 DO $reviews_reason$
@@ -46,7 +48,7 @@ BEGIN
   SELECT * INTO held FROM student_enrollments WHERE id=p_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Unknown enrollment'; END IF;
   IF p_reason='paid_after_release' AND held.status <> 'expired' THEN RAISE EXCEPTION 'Review flag requires an expired enrollment'; END IF;
-  IF p_reason='session_mismatch' AND held.status NOT IN ('reserved','paid') THEN RAISE EXCEPTION 'Session mismatch review requires a reserved or paid enrollment'; END IF;
+  IF p_reason='session_mismatch' AND held.status NOT IN ('reserved','paid','refunded') THEN RAISE EXCEPTION 'Session mismatch review requires a reserved, paid, or refunded enrollment'; END IF;
   INSERT INTO student_enrollment_reviews(enrollment_id,session_id,reason)
     VALUES(p_id,p_session,p_reason)
     ON CONFLICT (enrollment_id, session_id) DO NOTHING;
@@ -59,7 +61,7 @@ DROP FUNCTION IF EXISTS resolve_student_enrollment_review(uuid, text, text);
 -- fill capacity. Actor is required and written onto the review and events row.
 CREATE OR REPLACE FUNCTION resolve_student_enrollment_review(p_id uuid,p_session text,p_resolution text,p_actor text)
 RETURNS boolean LANGUAGE plpgsql AS $$
-DECLARE held student_enrollments; offer student_enrollment_offerings; review student_enrollment_reviews;
+DECLARE held student_enrollments; offer student_enrollment_offerings; review student_enrollment_reviews; applied_refund integer;
 BEGIN
   IF p_actor IS NULL OR length(btrim(p_actor))<3 THEN RAISE EXCEPTION 'Actor required'; END IF;
   IF p_resolution NOT IN ('enrolled','dismissed','refunded') THEN RAISE EXCEPTION 'Invalid review resolution'; END IF;
@@ -94,8 +96,18 @@ BEGIN
     END IF;
     -- Bind the Checkout session that actually paid, including mismatch and
     -- paid-after-release orphans. Never keep a stale reserved binding.
-    UPDATE student_enrollments SET status='paid',stripe_session_id=p_session,updated_at=now() WHERE id=p_id;
+    -- Copy any refund already recorded on this review (A2 / B-PARTIAL).
+    applied_refund := GREATEST(held.refunded_amount, review.refunded_amount);
+    UPDATE student_enrollments SET
+      status=CASE WHEN applied_refund>=held.amount THEN 'refunded' ELSE 'paid' END,
+      stripe_session_id=p_session,
+      refunded_amount=applied_refund,
+      updated_at=now()
+    WHERE id=p_id;
     INSERT INTO student_enrollment_mail(enrollment_id) VALUES(p_id) ON CONFLICT DO NOTHING;
+    IF applied_refund>=held.amount THEN
+      UPDATE student_enrollment_mail SET status='review' WHERE enrollment_id=p_id AND status IN ('pending','sending');
+    END IF;
   END IF;
   UPDATE student_enrollment_reviews SET resolved_at=now(),resolution=p_resolution,resolved_by=btrim(p_actor) WHERE enrollment_id=p_id AND session_id=p_session;
   INSERT INTO student_enrollment_events(event_id,enrollment_id,session_id,outcome,actor)

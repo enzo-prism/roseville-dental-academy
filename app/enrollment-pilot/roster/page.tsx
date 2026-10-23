@@ -176,14 +176,23 @@ export default async function StudentRoster() {
         Paid Checkout sessions that arrived after the seat was released or
         expired, or a paid session that does not match the Checkout session
         bound to the reserved hold. Do not treat these as verified enrollments
-        until staff reconciles the charge. The list stays visible while live
-        payments are off.
+        until staff reconciles the charge. Open and resolved reviews stay
+        visible while live payments are off, including any refund already
+        recorded on the review.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
             <tr>
-              {["Date", "Student", "Email", "Status", "Reason"].map((h) => (
+              {[
+                "Date",
+                "Student",
+                "Email",
+                "Status",
+                "Reason",
+                "Resolution",
+                "Refunded USD",
+              ].map((h) => (
                 <th key={h} className="border-b p-3">
                   {h}
                 </th>
@@ -199,6 +208,8 @@ export default async function StudentRoster() {
                   r.email,
                   r.status,
                   r.reason,
+                  r.resolution ?? "open",
+                  (Number(r.refunded_amount) / 100).toFixed(2),
                 ].map((v, i) => (
                   <td key={i} className="border-b p-3">
                     {String(v)}
@@ -209,7 +220,7 @@ export default async function StudentRoster() {
           </tbody>
         </table>
       </div>
-      {!reviews.length && <p>No orphan payments awaiting review.</p>}
+      {!reviews.length && <p>No payments needing review.</p>}
     </main>
   );
 }

@@ -354,7 +354,9 @@ export async function recordStudentSession(
       eventType === "checkout.session.async_payment_succeeded");
   if (
     foreignBound &&
-    (held.status === "reserved" || held.status === "paid") &&
+    (held.status === "reserved" ||
+      held.status === "paid" ||
+      held.status === "refunded") &&
     (paidCompletion || eventType === "charge.refunded")
   ) {
     assertStudentSession(session, held, config, { allowSessionMismatch: true });
@@ -363,14 +365,12 @@ export async function recordStudentSession(
       await recordReviewRefundedAmount(held.id, session, held, config);
       if (studentSessionIsFullyRefunded(session)) {
         await resolveOpenStudentRefundReview(held.id, session.id);
-        const current = await getStudentEnrollment(id);
-        if (current?.stripe_session_id === session.id) {
-          held = current;
-        } else {
-          return current ?? held;
-        }
+      }
+      const current = await getStudentEnrollment(id);
+      if (current?.stripe_session_id === session.id) {
+        held = current;
       } else {
-        return held;
+        return current ?? held;
       }
     } else {
       return held;
