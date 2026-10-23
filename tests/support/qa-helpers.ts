@@ -16,6 +16,7 @@ import {
 } from "@/lib/site-seasonal";
 
 import fixtures from "./qa-routes.json";
+import parityContract from "./content-parity-contract.json";
 
 export const localOrigin = process.env.LOCAL_ORIGIN ?? "http://127.0.0.1:3000";
 export const localUrl = new URL(localOrigin);
@@ -1041,12 +1042,15 @@ export async function captureSnapshot(
 }
 
 async function captureSnapshotRenderData(page: Page, currentUrl: string): Promise<SnapshotRenderData> {
-  return page.evaluate((urlValue) => {
+  return page.evaluate(({ urlValue, scheduleSelectors }) => {
     const additiveParitySelectors = [
       "[data-rda-course-reviews]",
       "[data-rda-promo-dialog]",
       "[data-rda-promo-overlay]",
       "[data-rda-seasonal]",
+      // Rolling schedule values are checked against the served publication by
+      // course-dates.spec.ts, not an October text snapshot.
+      ...scheduleSelectors,
     ];
 
     function normalizeValue(value: string) {
@@ -1132,10 +1136,16 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
     const visibleLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))
       .filter((anchor) => isVisible(anchor))
       .filter((anchor) => !isAdditiveParityElement(anchor))
-      .map((anchor) => ({
-        href: anchor.getAttribute("href") || "",
-        text: normalizeValue(anchor.textContent || ""),
-      }))
+      .map((anchor) => {
+        const copy = anchor.cloneNode(true) as HTMLAnchorElement;
+        for (const selector of scheduleSelectors) {
+          copy.querySelectorAll(selector).forEach((element) => element.remove());
+        }
+        return {
+          href: anchor.getAttribute("href") || "",
+          text: normalizeValue(copy.textContent || ""),
+        };
+      })
       .filter(({ href, text }) => href || text);
 
     const visibleImages = Array.from(document.images)
@@ -1167,7 +1177,7 @@ async function captureSnapshotRenderData(page: Page, currentUrl: string): Promis
       visibleInputs,
       visibleLinks,
     };
-  }, currentUrl);
+  }, { urlValue: currentUrl, scheduleSelectors: parityContract.dynamicScheduleSelectors });
 }
 
 export async function captureVisual(
