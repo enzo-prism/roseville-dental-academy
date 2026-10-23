@@ -494,7 +494,7 @@ export async function recordStudentSession(
       charge.amount_refunded > 0 &&
       charge.amount_refunded <= held.amount
     ) {
-      await studentDatabase()`UPDATE student_enrollments SET refunded_amount=GREATEST(refunded_amount,${charge.amount_refunded}) WHERE id=${id}::uuid`;
+      await recordStudentRefundedAmount(id, session, held, config);
     }
     if (charge.refunded === true && charge.amount_refunded === held.amount)
       outcome = "refunded";
