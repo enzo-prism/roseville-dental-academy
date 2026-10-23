@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { enrollmentDate } from "@/lib/enrollment-contract";
 import {
   studentDatabase,
   type StudentConfig,
@@ -93,4 +94,59 @@ export async function deliverStudentConfirmation(
   if (typeof result.id !== "string")
     throw new Error("Invalid delivery acknowledgement");
   await db`UPDATE student_enrollment_mail SET status='sent',provider_id=${result.id},delivered_at=now() WHERE enrollment_id=${held.id}::uuid AND status='sending'`;
+}
+export const STUDENT_CONFIRMATION_DRAIN_BATCH = 100;
+export const STUDENT_CONFIRMATION_DRAIN_MS = 20_000;
+export function studentEmailLiveDisabled(config: StudentConfig) {
+  return (
+    config.mode === "live" &&
+    process.env.RDA_STUDENT_EMAIL_LIVE_ENABLED !== "true"
+  );
+}
+export async function listStudentPendingConfirmations(
+  mode: StudentConfig["mode"],
+) {
+  return studentDatabase()`SELECT e.id,e.offering_id,e.course_date,e.owner_hash,e.student_name,e.email,e.phone,e.amount,e.currency,e.policy_version,e.policy_hash,e.policy_text,e.status,e.stripe_session_id,e.stripe_payment_intent,e.stripe_expires_at,e.created_at
+    FROM student_enrollments e
+    JOIN student_enrollment_mail m ON m.enrollment_id=e.id
+    JOIN student_enrollment_offerings o ON o.id=e.offering_id
+    WHERE e.status='paid' AND m.status IN ('pending','sending') AND o.mode=${mode}
+    ORDER BY e.created_at LIMIT 100`;
+}
+export async function countStudentPendingConfirmations(
+  mode: StudentConfig["mode"],
+) {
+  const rows =
+    await studentDatabase()`SELECT count(*)::int AS n
+    FROM student_enrollments e
+    JOIN student_enrollment_mail m ON m.enrollment_id=e.id
+    JOIN student_enrollment_offerings o ON o.id=e.offering_id
+    WHERE e.status='paid' AND m.status IN ('pending','sending') AND o.mode=${mode}`;
+  return Number(rows[0]?.n ?? 0);
+}
+export async function drainStudentConfirmations(config: StudentConfig) {
+  const rows = await listStudentPendingConfirmations(config.mode);
+  let errors = 0;
+  let attempted = 0;
+  const deadline = Date.now() + STUDENT_CONFIRMATION_DRAIN_MS;
+  for (const row of rows) {
+    if (Date.now() >= deadline) break;
+    attempted += 1;
+    try {
+      await deliverStudentConfirmation(
+        {
+          ...row,
+          course_date: enrollmentDate(row.course_date),
+        } as StudentEnrollment,
+        config,
+      );
+    } catch {
+      errors += 1;
+    }
+  }
+  return {
+    attempted,
+    remaining: await countStudentPendingConfirmations(config.mode),
+    errors,
+  };
 }

@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { randomUUID, createHash } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import { PGlite } from "@electric-sql/pglite";
@@ -12,6 +11,7 @@ import {
   deliverStudentConfirmation,
   studentConfirmationText,
 } from "@/lib/student-enrollment-mail";
+import { applyStudentEnrollmentSchema } from "./support/student-enrollment-schema";
 
 // Hermetic transport tests: fake credentials, PGlite only, no passthrough fetch.
 // The live-delivery branch is exercised without enabling any deployment flags.
@@ -25,9 +25,7 @@ async function fixture() {
     RDA_STUDENT_EMAIL_API_KEY: "fixture-mail-key",
     RDA_STUDENT_EMAIL_FROM: "Academy <academy@example.test>",
   });
-  await db.exec(
-    await readFile("db/migrations/005_student_enrollment.sql", "utf8"),
-  );
+  await applyStudentEnrollmentSchema((sql) => db.exec(sql));
   const offering = randomUUID(),
     id = randomUUID(),
     policy = CANCELLATION_POLICY_PARAGRAPHS.join("\n\n");
@@ -280,5 +278,26 @@ test("refund before delivery suppresses confirmation; test mode captures an immu
     expect((await capture.state()).payload.text).toContain("TEST ONLY");
   } finally {
     await capture.close();
+  }
+});
+test("confirmation send requires a paid enrollment", async () => {
+  const f = await fixture();
+  try {
+    await f.db.query(
+      "UPDATE student_enrollments SET status='reserved' WHERE id=$1",
+      [f.id],
+    );
+    await deliverStudentConfirmation(f.held, f.config);
+    expect(f.calls).toHaveLength(0);
+    expect((await f.state()).status).toBe("pending");
+    await f.db.query(
+      "UPDATE student_enrollments SET status='paid' WHERE id=$1",
+      [f.id],
+    );
+    await deliverStudentConfirmation(f.held, f.config);
+    expect(f.calls).toHaveLength(1);
+    expect((await f.state()).status).toBe("sent");
+  } finally {
+    await f.close();
   }
 });

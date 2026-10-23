@@ -133,13 +133,14 @@ export function assertStudentSession(
   session: StudentSession,
   held: StudentEnrollment,
   config: StudentConfig,
-  options?: { allowExpiredOrphan?: boolean },
+  options?: { allowExpiredOrphan?: boolean; allowSessionMismatch?: boolean },
 ) {
   const prefix =
     config.mode === "test"
       ? /^cs_test_[A-Za-z0-9]+$/
       : /^cs_live_[A-Za-z0-9]+$/;
   const orphan = options?.allowExpiredOrphan === true;
+  const mismatch = options?.allowSessionMismatch === true;
   if (
     session.object !== "checkout.session" ||
     !prefix.test(session.id) ||
@@ -155,8 +156,13 @@ export function assertStudentSession(
     session.metadata?.integration !== "rda-student-v1" ||
     session.metadata?.environment !== config.mode ||
     session.metadata?.course_date !== held.course_date ||
-    (!orphan && session.expires_at !== Number(held.stripe_expires_at)) ||
     (!orphan &&
+      !mismatch &&
+      held.status !== "paid" &&
+      held.status !== "refunded" &&
+      session.expires_at !== Number(held.stripe_expires_at)) ||
+    (!orphan &&
+      !mismatch &&
       held.stripe_session_id !== null &&
       held.stripe_session_id !== session.id)
   )
@@ -173,6 +179,53 @@ export function studentSessionIsFullyRefunded(session: StudentSession) {
     charge.amount_refunded === charge.amount &&
     charge.amount === session.amount_total
   );
+}
+function studentRefundCharge(
+  session: StudentSession,
+  held: StudentEnrollment,
+  config: StudentConfig,
+) {
+  const charge =
+    typeof session.payment_intent === "object"
+      ? session.payment_intent?.latest_charge
+      : null;
+  if (
+    !charge ||
+    charge.amount !== held.amount ||
+    charge.currency !== held.currency ||
+    charge.livemode !== (config.mode === "live") ||
+    !Number.isInteger(charge.amount_refunded) ||
+    charge.amount_refunded <= 0 ||
+    charge.amount_refunded > held.amount
+  )
+    return null;
+  return charge;
+}
+async function recordStudentRefundedAmount(
+  enrollmentId: string,
+  session: StudentSession,
+  held: StudentEnrollment,
+  config: StudentConfig,
+) {
+  const charge = studentRefundCharge(session, held, config);
+  if (!charge) return;
+  await studentDatabase()`UPDATE student_enrollments SET refunded_amount=GREATEST(refunded_amount,${charge.amount_refunded}) WHERE id=${enrollmentId}::uuid`;
+}
+async function recordReviewRefundedAmount(
+  enrollmentId: string,
+  session: StudentSession,
+  held: StudentEnrollment,
+  config: StudentConfig,
+) {
+  const charge = studentRefundCharge(session, held, config);
+  if (!charge) return;
+  await studentDatabase()`UPDATE student_enrollment_reviews SET refunded_amount=GREATEST(refunded_amount,${charge.amount_refunded}) WHERE enrollment_id=${enrollmentId}::uuid AND session_id=${session.id}`;
+}
+async function resolveOpenStudentRefundReview(
+  enrollmentId: string,
+  sessionId: string,
+) {
+  await studentDatabase()`SELECT resolve_student_enrollment_review(${enrollmentId}::uuid,${sessionId},'refunded','stripe-charge-refunded')`;
 }
 export async function retrieveStudentSession(
   id: string,
@@ -286,18 +339,78 @@ export async function recordStudentSession(
 ) {
   const id = session.metadata?.enrollment_id;
   if (!/^[a-f0-9-]{36}$/i.test(id ?? "")) throw new Error("Invalid enrollment");
-  const held = await getStudentEnrollment(id);
+  let held = await getStudentEnrollment(id);
   if (!held) throw new Error("Unknown enrollment");
   const mode =
     await studentDatabase()`SELECT mode FROM student_enrollment_offerings WHERE id=${held.offering_id}::uuid`;
   if (mode[0]?.mode !== config.mode)
     throw new Error("Wrong ledger environment");
+  const foreignBound =
+    held.stripe_session_id != null && held.stripe_session_id !== session.id;
+  const paidCompletion =
+    session.status === "complete" &&
+    session.payment_status === "paid" &&
+    (eventType === "checkout.session.completed" ||
+      eventType === "checkout.session.async_payment_succeeded");
+  if (
+    foreignBound &&
+    (held.status === "reserved" ||
+      held.status === "paid" ||
+      held.status === "refunded") &&
+    (paidCompletion || eventType === "charge.refunded")
+  ) {
+    assertStudentSession(session, held, config, { allowSessionMismatch: true });
+    await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'session_mismatch')`;
+    if (eventType === "charge.refunded") {
+      await recordReviewRefundedAmount(held.id, session, held, config);
+      if (studentSessionIsFullyRefunded(session)) {
+        await resolveOpenStudentRefundReview(held.id, session.id);
+      }
+      const current = await getStudentEnrollment(id);
+      if (current?.stripe_session_id === session.id) {
+        held = current;
+      } else {
+        return current ?? held;
+      }
+    } else {
+      return held;
+    }
+  }
+  if (
+    (eventType === "checkout.session.expired" ||
+      eventType === "checkout.session.async_payment_failed") &&
+    (held.status === "paid" || held.status === "refunded")
+  ) {
+    if (held.stripe_session_id !== session.id) {
+      console.info(
+        "student-enrollment: expired session is no longer bound to any row",
+        { eventType, enrollmentId: held.id },
+      );
+    }
+    return held;
+  }
+  if (
+    (eventType === "checkout.session.expired" ||
+      eventType === "checkout.session.async_payment_failed") &&
+    foreignBound
+  ) {
+    const bound =
+      await studentDatabase()`SELECT id FROM student_enrollments WHERE stripe_session_id=${session.id}`;
+    if (!bound.length) {
+      console.info(
+        "student-enrollment: expired session is no longer bound to any row",
+        { eventType, enrollmentId: held.id },
+      );
+      return held;
+    }
+  }
   assertStudentSession(session, held, config, {
     allowExpiredOrphan: held.status === "expired",
   });
   if (held.status === "expired") {
     if (session.status === "complete" && session.payment_status === "paid") {
       await studentDatabase()`SELECT flag_student_enrollment_review(${held.id}::uuid,${session.id},'paid_after_release')`;
+      await recordReviewRefundedAmount(held.id, session, held, config);
       const orphanCharge =
         typeof session.payment_intent === "object"
           ? session.payment_intent?.latest_charge
@@ -310,7 +423,7 @@ export async function recordStudentSession(
         orphanCharge.refunded === true &&
         orphanCharge.amount_refunded === held.amount
       ) {
-        await studentDatabase()`SELECT resolve_student_enrollment_review(${held.id}::uuid,${session.id},'refunded','stripe-charge-refunded')`;
+        await resolveOpenStudentRefundReview(held.id, session.id);
       }
     }
     return held;
@@ -381,7 +494,7 @@ export async function recordStudentSession(
       charge.amount_refunded > 0 &&
       charge.amount_refunded <= held.amount
     ) {
-      await studentDatabase()`UPDATE student_enrollments SET refunded_amount=GREATEST(refunded_amount,${charge.amount_refunded}) WHERE id=${id}::uuid`;
+      await recordStudentRefundedAmount(id, session, held, config);
     }
     if (charge.refunded === true && charge.amount_refunded === held.amount)
       outcome = "refunded";

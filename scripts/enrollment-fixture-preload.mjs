@@ -11,6 +11,7 @@ if (process.env.RDA_ENROLLMENT_FIXTURE_MODE !== "local-only"
 const db = await PGlite.create();
 await db.exec(await readFile(new URL("../db/migrations/004_enrollment_test_pilot.sql", import.meta.url), "utf8"));
 await db.exec(await readFile(new URL("../db/migrations/005_student_enrollment.sql", import.meta.url), "utf8"));
+await db.exec(await readFile(new URL("../db/migrations/006_student_enrollment_review.sql", import.meta.url), "utf8"));
 if (process.env.RDA_STUDENT_PAYMENTS_MODE) {
   if (process.env.RDA_STUDENT_PAYMENTS_MODE !== "test" || process.env.RDA_STUDENT_STRIPE_TEST_KEY !== "sk_test_fixture"
     || process.env.RDA_STUDENT_STRIPE_TEST_WEBHOOK_SECRET !== "whsec_fixture"

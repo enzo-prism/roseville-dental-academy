@@ -1192,7 +1192,9 @@ test.describe("student enrollment isolated full stack", () => {
         headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
       })
     ).text();
-    expect(roster).not.toContain(`orphan-refund-${planted}@example.test`);
+    expect(roster).toContain(`orphan-refund-${planted}@example.test`);
+    expect(roster).toContain("Refunded USD");
+    expect(roster).toContain("395.00");
   });
   test("staff review list is filtered by the active payment mode", async ({
     request,
@@ -1360,6 +1362,27 @@ test.describe("student enrollment isolated full stack", () => {
     expect(reservedRoster).toContain(reservedEmail);
     expect(reservedRoster).toContain("unbound");
     expect(reservedRoster).not.toContain("TEST ONLY · paid");
+    const paidHold = randomUUID();
+    const paidEmail = `paid-roster-${paidHold}@example.test`;
+    await control({
+      plantSessionlessHold: {
+        id: paidHold,
+        offeringId: december,
+        owner: createHash("sha256").update("a".repeat(64)).digest("hex"),
+        name: "Paid Roster Adult",
+        email: paidEmail,
+        phone: "916 555 0112",
+        expiresAt,
+        status: "paid",
+      },
+    });
+    const paidRoster = await (
+      await request.get("/enrollment-pilot/roster", {
+        headers: { Cookie: `${ENROLLMENT_PILOT_COOKIE}=${staff}` },
+      })
+    ).text();
+    expect(paidRoster).toContain(paidEmail);
+    expect(paidRoster).toContain("TEST ONLY · paid");
   });
   test("/enroll remaining matches checkout when a refunded seat still occupies", async ({
     request,

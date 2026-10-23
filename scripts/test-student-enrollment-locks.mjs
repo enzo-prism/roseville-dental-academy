@@ -42,6 +42,87 @@ const reserveParams = (id, offeringId, index, mode) => [
   mode,
 ];
 
+function splitSqlStatements(sql) {
+  const statements = [];
+  let current = "";
+  for (let i = 0; i < sql.length; ) {
+    if (sql.startsWith("--", i)) {
+      const end = sql.indexOf("\n", i);
+      i = end === -1 ? sql.length : end + 1;
+      continue;
+    }
+    const dollar = sql.slice(i).match(/^\$[A-Za-z0-9_]*\$/);
+    if (dollar) {
+      const tag = dollar[0];
+      const end = sql.indexOf(tag, i + tag.length);
+      if (end === -1) {
+        current += sql.slice(i);
+        break;
+      }
+      current += sql.slice(i, end + tag.length);
+      i = end + tag.length;
+      continue;
+    }
+    if (sql[i] === "'") {
+      let j = i + 1;
+      while (j < sql.length) {
+        if (sql[j] === "'" && sql[j + 1] === "'") {
+          j += 2;
+          continue;
+        }
+        if (sql[j] === "'") {
+          j += 1;
+          break;
+        }
+        j += 1;
+      }
+      current += sql.slice(i, j);
+      i = j;
+      continue;
+    }
+    if (sql[i] === ";") {
+      const statement = current.trim();
+      if (statement) statements.push(statement);
+      current = "";
+      i += 1;
+      continue;
+    }
+    current += sql[i];
+    i += 1;
+  }
+  const tail = current.trim();
+  if (tail) statements.push(tail);
+  return statements;
+}
+
+async function applyOfferingSeed(fileUrl, applicationName) {
+  const sql = await readFile(fileUrl, "utf8");
+  const seeder = new pg.Client({ connectionString: url });
+  await seeder.connect();
+  try {
+    await seeder.query(`SET application_name = '${applicationName}'`);
+    try {
+      for (const statement of splitSqlStatements(sql)) {
+        await seeder.query(statement);
+      }
+      return { failed: false, output: "" };
+    } catch (error) {
+      const output = String(error.message);
+      try {
+        await seeder.query("ROLLBACK");
+      } catch {
+        /* already aborted or autocommit */
+      }
+      return {
+        failed: /stale or unexpected|expected 2 rows/i.test(output),
+        output,
+      };
+    }
+  } finally {
+    await seeder.end();
+  }
+}
+
 let passed = 0;
 async function test(name, fn) {
   await fn();
@@ -55,6 +136,12 @@ try {
   await admin.query(
     await readFile(
       new URL("../db/migrations/005_student_enrollment.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await admin.query(
+    await readFile(
+      new URL("../db/migrations/006_student_enrollment_review.sql", import.meta.url),
       "utf8",
     ),
   );
@@ -318,38 +405,19 @@ try {
       ],
     );
     await admin.query("COMMIT");
-    const seed = await readFile(
+    const applied = await applyOfferingSeed(
       new URL("../db/seeds/infection-control-offerings.test.sql", import.meta.url),
-      "utf8",
+      "rda-student-offering-seed-on-live-data",
     );
-    if (!/^\s*BEGIN;/m.test(seed) || !/COMMIT;\s*$/.test(seed.trim())) {
-      throw new Error("TEST seed must wrap guard/insert/verify in BEGIN/COMMIT (M57)");
-    }
-    const seeder = new pg.Client({ connectionString: url });
-    await seeder.connect();
-    try {
-      await seeder.query("SET application_name = 'rda-student-offering-seed-on-live-data'");
-      let failed = false;
-      try {
-        await seeder.query(seed);
-      } catch (error) {
-        failed = /stale or unexpected|expected 2 rows/i.test(String(error.message));
-        try {
-          await seeder.query("ROLLBACK");
-        } catch {
-          /* already aborted */
-        }
-        if (!failed) throw error;
-      }
-      if (!failed) throw new Error("stale TEST seed should fail verify (M57b)");
-      const leftover = await admin.query(
-        "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05'",
+    if (!applied.failed)
+      throw new Error(
+        `stale TEST seed should fail verify (M57b): ${applied.output}`,
       );
-      if (leftover.rows.length) {
-        throw new Error("Failed TEST seed left a Dec 5 row (M57 / transaction removed)");
-      }
-    } finally {
-      await seeder.end();
+    const leftover = await admin.query(
+      "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05'",
+    );
+    if (leftover.rows.length) {
+      throw new Error("Failed TEST seed left a Dec 5 row (M57 / transaction removed)");
     }
   });
 
@@ -596,38 +664,19 @@ try {
       "UPDATE student_enrollment_offerings SET enabled=true, review_reference='stale live' WHERE id=$1",
       [liveOffer],
     );
-    const seed = await readFile(
+    const applied = await applyOfferingSeed(
       new URL("../db/seeds/infection-control-offerings.sql", import.meta.url),
-      "utf8",
+      "rda-student-offering-seed",
     );
-    if (!/^\s*BEGIN;/m.test(seed) || !/COMMIT;\s*$/.test(seed.trim())) {
-      throw new Error("Live seed must wrap guard/insert/verify in BEGIN/COMMIT (M57b)");
-    }
-    const seeder = new pg.Client({ connectionString: url });
-    await seeder.connect();
-    try {
-      await seeder.query("SET application_name = 'rda-student-offering-seed'");
-      let failed = false;
-      try {
-        await seeder.query(seed);
-      } catch (error) {
-        failed = /stale or unexpected|expected 2 rows/i.test(String(error.message));
-        try {
-          await seeder.query("ROLLBACK");
-        } catch {
-          /* already aborted */
-        }
-        if (!failed) throw error;
-      }
-      if (!failed) throw new Error("stale live seed should fail verify (M57b)");
-      const leftover = await admin.query(
-        "SELECT 1 FROM student_enrollment_offerings WHERE mode='live' AND course_date='2026-12-05'",
+    if (!applied.failed)
+      throw new Error(
+        `stale live seed should fail verify (M57b): ${applied.output}`,
       );
-      if (leftover.rows.length) {
-        throw new Error("Failed live seed left a Dec 5 row (M57b / BEGIN removed)");
-      }
-    } finally {
-      await seeder.end();
+    const leftover = await admin.query(
+      "SELECT 1 FROM student_enrollment_offerings WHERE mode='live' AND course_date='2026-12-05'",
+    );
+    if (leftover.rows.length) {
+      throw new Error("Failed live seed left a Dec 5 row (M57b / BEGIN removed)");
     }
   });
 
@@ -874,6 +923,216 @@ try {
     );
     if (event.rows[0]?.actor !== "staff@example.test" || event.rows[0]?.outcome !== "dismissed") {
       throw new Error("resolve_student_enrollment_review must write an actor event (M56)");
+    }
+  });
+
+  await test("MF4 main 005 then 006 matches a fresh apply and re-run is a no-op", async () => {
+    const catalogSql = `
+      SELECT kind, name, def FROM (
+        SELECT 'function'::text AS kind,
+          p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' AS name,
+          pg_get_functiondef(p.oid) AS def
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public'
+          AND p.proname LIKE '%student_enrollment%'
+        UNION ALL
+        SELECT 'constraint',
+          c.conrelid::regclass::text || ':' || c.conname,
+          pg_get_constraintdef(c.oid)
+        FROM pg_constraint c
+        JOIN pg_class t ON t.oid = c.conrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        WHERE n.nspname = 'public' AND t.relname LIKE 'student_enrollment%'
+        UNION ALL
+        SELECT 'index',
+          i.relname,
+          pg_get_indexdef(i.oid)
+        FROM pg_class i
+        JOIN pg_namespace n ON n.oid = i.relnamespace
+        WHERE n.nspname = 'public' AND i.relkind = 'i'
+          AND i.relname LIKE 'student_enrollment%'
+        UNION ALL
+        SELECT 'column',
+          a.attrelid::regclass::text || '.' || a.attname,
+          format_type(a.atttypid, a.atttypmod) || CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+        FROM pg_attribute a
+        JOIN pg_class t ON t.oid = a.attrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        WHERE n.nspname = 'public' AND t.relkind = 'r'
+          AND t.relname LIKE 'student_enrollment%' AND a.attnum > 0 AND NOT a.attisdropped
+      ) catalog
+      ORDER BY 1, 2, 3
+    `;
+    const shipped = await readFile(
+      new URL("../db/migrations/005_student_enrollment.sql", import.meta.url),
+      "utf8",
+    );
+    const upgrade = await readFile(
+      new URL("../db/migrations/006_student_enrollment_review.sql", import.meta.url),
+      "utf8",
+    );
+    const ctlUrl = url.replace(/\/rda_locks(?:\?.*)?$/, "/postgres");
+    const ctl = new pg.Client({ connectionString: ctlUrl });
+    await ctl.connect();
+    const dump = async (database) => {
+      const client = new pg.Client({
+        connectionString: url.replace(/\/rda_locks(?:\?.*)?$/, `/${database}`),
+      });
+      await client.connect();
+      try {
+        const rows = await client.query(catalogSql);
+        return JSON.stringify(rows.rows);
+      } finally {
+        await client.end();
+      }
+    };
+    const applyBoth = async (database) => {
+      const client = new pg.Client({
+        connectionString: url.replace(/\/rda_locks(?:\?.*)?$/, `/${database}`),
+      });
+      await client.connect();
+      try {
+        await client.query(shipped);
+        await client.query(upgrade);
+      } finally {
+        await client.end();
+      }
+    };
+    try {
+      await ctl.query("DROP DATABASE IF EXISTS rda_upgrade_fresh");
+      await ctl.query("DROP DATABASE IF EXISTS rda_upgrade_main");
+      await ctl.query("CREATE DATABASE rda_upgrade_fresh");
+      await ctl.query("CREATE DATABASE rda_upgrade_main");
+      await applyBoth("rda_upgrade_fresh");
+      const mainOnly = new pg.Client({
+        connectionString: url.replace(
+          /\/rda_locks(?:\?.*)?$/,
+          "/rda_upgrade_main",
+        ),
+      });
+      await mainOnly.connect();
+      await mainOnly.query(shipped);
+      await mainOnly.end();
+      const afterMain = new pg.Client({
+        connectionString: url.replace(
+          /\/rda_locks(?:\?.*)?$/,
+          "/rda_upgrade_main",
+        ),
+      });
+      await afterMain.connect();
+      await afterMain.query(upgrade);
+      await afterMain.end();
+      const fresh = await dump("rda_upgrade_fresh");
+      const upgraded = await dump("rda_upgrade_main");
+      if (fresh !== upgraded) {
+        throw new Error("main 005 then 006 catalog differs from a fresh 005+006 apply");
+      }
+      await applyBoth("rda_upgrade_fresh");
+      const rerun = await dump("rda_upgrade_fresh");
+      if (rerun !== fresh) {
+        throw new Error("re-applying 005 then 006 changed the catalog");
+      }
+      if (!upgrade.includes("AND id<>p_id AND student_enrollment_occupies_seat")) {
+        throw new Error("006 must carry the self-excluding capacity count");
+      }
+      if (!shipped.includes("COALESCE(stripe_session_id,p_session)")) {
+        throw new Error("005 must remain the shipped main file");
+      }
+    } finally {
+      await ctl.query("DROP DATABASE IF EXISTS rda_upgrade_fresh").catch(() => {});
+      await ctl.query("DROP DATABASE IF EXISTS rda_upgrade_main").catch(() => {});
+      await ctl.end();
+    }
+  });
+
+  await test("MF5 enrolled refund waits on the review lock and still applies", async () => {
+    const enrollmentId = randomUUID();
+    const offeringId = randomUUID();
+    const leftover = `cs_test_mf5_k1_${enrollmentId.replaceAll("-", "").slice(0, 8)}`;
+    const paid = `cs_test_mf5_k2_${enrollmentId.replaceAll("-", "").slice(0, 8)}`;
+    await admin.query(
+      `INSERT INTO student_enrollment_offerings(
+        id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled
+      ) VALUES ($1,'test','infection-control','2099-08-15',39500,0,$2,$3,$4,now(),'lock mf5 race',true)`,
+      [offeringId, policyVersion, policyHash, policyText],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status,stripe_session_id) VALUES($1,$2,'2099-08-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','reserved',$10)",
+      [
+        enrollmentId,
+        offeringId,
+        "f5".repeat(32),
+        "MF5 Race Adult",
+        "mf5-race@example.test",
+        "916 555 0100",
+        policyVersion,
+        policyHash,
+        policyText,
+        leftover,
+      ],
+    );
+    await admin.query(
+      "SELECT flag_student_enrollment_review($1,$2,'session_mismatch')",
+      [enrollmentId, paid],
+    );
+    const locker = new pg.Client({ connectionString: url });
+    const waiter = new pg.Client({ connectionString: url });
+    await Promise.all([locker.connect(), waiter.connect()]);
+    try {
+      await locker.query("BEGIN");
+      await locker.query(
+        "SELECT * FROM student_enrollment_reviews WHERE enrollment_id=$1 AND session_id=$2 FOR UPDATE",
+        [enrollmentId, paid],
+      );
+      await waiter.query("SET lock_timeout = '400ms'");
+      let timedOut = false;
+      try {
+        await waiter.query(
+          "SELECT resolve_student_enrollment_review($1,$2,'refunded',$3)",
+          [enrollmentId, paid, "stripe-charge-refunded"],
+        );
+      } catch (error) {
+        timedOut = /lock timeout|canceling statement/i.test(String(error.message));
+        if (!timedOut) throw error;
+      }
+      if (!timedOut) {
+        throw new Error("MF5 refund did not wait on the paused enroll transaction");
+      }
+      await locker.query(
+        "SELECT resolve_student_enrollment_review($1,$2,'enrolled',$3)",
+        [enrollmentId, paid, "staff@example.test"],
+      );
+      await locker.query("COMMIT");
+      await waiter.query("SET lock_timeout = '5s'");
+      const result = await waiter.query(
+        "SELECT resolve_student_enrollment_review($1,$2,'refunded',$3) AS ok",
+        [enrollmentId, paid, "stripe-charge-refunded"],
+      );
+      const row = await admin.query(
+        "SELECT status,stripe_session_id,refunded_amount,inventory_released_at FROM student_enrollments WHERE id=$1",
+        [enrollmentId],
+      );
+      if (result.rows[0]?.ok !== true) {
+        throw new Error("MF5 stripe refund after enroll must apply (ca4797e returned false)");
+      }
+      if (
+        row.rows[0]?.status !== "refunded" ||
+        row.rows[0]?.stripe_session_id !== paid ||
+        Number(row.rows[0]?.refunded_amount) !== 39500 ||
+        row.rows[0]?.inventory_released_at != null
+      ) {
+        throw new Error(
+          `MF5 lost the enrolled-session refund: status=${row.rows[0]?.status} session=${row.rows[0]?.stripe_session_id} refunded_amount=${row.rows[0]?.refunded_amount}`,
+        );
+      }
+    } finally {
+      try {
+        await locker.query("ROLLBACK");
+      } catch {
+        /* committed or idle */
+      }
+      await Promise.all([locker.end(), waiter.end()]);
     }
   });
 

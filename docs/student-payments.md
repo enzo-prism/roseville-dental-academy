@@ -23,7 +23,9 @@ the public schedule earlier and must not be seeded or offered at checkout.
 Canonical config: `lib/student-enrollment-offerings.ts`.
 Reviewed insert (disabled live offerings only): `db/seeds/infection-control-offerings.sql`.
 Isolated TEST-mode insert (enabled offerings): `db/seeds/infection-control-offerings.test.sql`.
-Schema only, zero offerings: `db/migrations/005_student_enrollment.sql`.
+Schema: `db/migrations/005_student_enrollment.sql` (shipped) plus
+`db/migrations/006_student_enrollment_review.sql` (review-function upgrade).
+Zero offerings.
 
 `db/seeds/infection-control-offerings.test.sql` is **only** for an isolated preview or
 test database. It inserts the same two dates as `mode='test'`, `enabled=true`,
@@ -45,11 +47,16 @@ or enabled flag do not match.
 ## October 21 2026 preview exception
 
 By Enzo's decision on October 21, 2026, the Vercel preview for this branch used the
-production database with `db/seeds/infection-control-offerings.test.sql` applied there.
-That contradicts the isolated-database rule above. Test-mode queries stay filtered by
+production database. That preview applied the then-current `005_student_enrollment.sql`
+and `db/seeds/infection-control-offerings.test.sql` to the production database.
+That contradicts the isolated-database rule above. Go-live applies
+`006_student_enrollment_review.sql` on that same database (the filename-order
+migrator re-applies `005` then `006`; `006` is idempotent on a DB that already
+has the shipped `005`). Test-mode queries stay filtered by
 `mode='test'`, but ad-hoc SQL against `student_enrollment_roster` is live-only; use
-`student_enrollment_roster_test` for TEST paid rows. Do not repeat this. After preview
-sign-off, clean TEST rows with the SQL below — **do not run it from this task**.
+`student_enrollment_roster_test` for TEST paid rows. Do not repeat the preview
+exception. After preview sign-off, clean TEST rows with the SQL below —
+**do not run it from this task**.
 
 ```sql
 -- TEST-mode-only cleanup. Never delete mode='live' rows.
@@ -109,11 +116,13 @@ and SHA-256 of the exact policy paragraphs joined by two newlines, and those exa
 in `policy_text`. Each reservation copies that accepted policy snapshot. The reviewed seed
 inserts both dates with `external_seats=0`, `amount=39500`, `capacity=12`, and `enabled=false`.
 No application API creates or enables offerings.
-Apply migration `005_student_enrollment.sql` using the filename-order migrator only against
-the verified RDA database after review. It is repeatable and seeds zero offerings. If
-production already applied an earlier copy of `005`, **re-apply the current file** so
-it picks up new functions (`flag_student_enrollment_review`, roster views) and the
-offerings `amount=39500` CHECK. Then apply
+Apply migrations using the filename-order migrator only against the verified RDA
+database after review. `005_student_enrollment.sql` is the shipped schema (repeatable,
+zero offerings). Production already has that October 21 copy from the preview.
+Go-live applies `006_student_enrollment_review.sql`, which is idempotent
+(`CREATE OR REPLACE` / `IF NOT EXISTS`) on a database that already has `005`.
+The migrator re-applies every `NNN_*.sql` file in order, so a single run upgrades
+`005` then `006`. Then apply
 `db/seeds/infection-control-offerings.sql` to insert the two disabled live offerings. Enable
 an offering only after the go-live checklist below. On an isolated preview or test database
 only, `db/seeds/infection-control-offerings.test.sql` can insert the same two dates as
@@ -208,12 +217,16 @@ silently change a queued confirmation or the bytes sent with its idempotency key
 text uses the policy accepted by that enrollment rather than the current site's policy.
 If an older private test database has no accepted-policy snapshot, do not invent it from
 today's text: rebuild the disposable fixture database or reconcile its original acceptance
-evidence before attempting delivery. No production database has been migrated by this task.
+evidence before attempting delivery. The October 21 preview applied the then-current
+`005` to the production database; go-live applies `006` on that same database.
 
 `/enrollment-pilot/roster` requires the existing separate staff password/session configuration.
 It shows verified paid/refunded students only, with no public roster API. Staff can retry
 a pending confirmation with authenticated same-origin JSON POST `{ "id": "<enrollment UUID>" }`
-to `/api/student-enrollment/retry-confirmation`. A `review` send requires comparing provider
+to `/api/student-enrollment/retry-confirmation`. To drain every paid `pending`/`sending`
+outbox row, POST `{ "drain": true }` to the same route. That drain is idempotent and
+uses webhook configuration, so it still works while live payments are off. Enable live
+email before draining or the rows stay queued. A `review` send requires comparing provider
 logs before any deliberate resend; do not reset its status blindly. Keep the pilot staff
 origin aligned with the deployed enrollment origin.
 
@@ -302,7 +315,8 @@ the repository.
 
 1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
    secure form. Configure them only on the isolated test deployment and test database.
-2. Apply `005_student_enrollment.sql` on the isolated test database. Then set
+2. Apply `005_student_enrollment.sql` then `006_student_enrollment_review.sql`
+   on the isolated test database (or run the filename-order migrator). Then set
    `application_name = 'rda-student-offering-seed-isolated'` and apply
    `db/seeds/infection-control-offerings.test.sql` (mode=`test`, `enabled=true`).
    Confirm the two dates, `amount=39500`, `capacity=12`, `external_seats=0`. Never
@@ -320,11 +334,14 @@ the repository.
    other date must remain purchasable.
 7. After test-mode sign-off, configure live keys through the same secure form on the
    live environment. Do not reuse test secrets.
-8. **Re-apply** `005_student_enrollment.sql` on production even if an earlier copy
-   already ran. The file is repeatable (`CREATE OR REPLACE` / `IF NOT EXISTS`) and this
-   revision adds `flag_student_enrollment_review`, `resolve_student_enrollment_review`,
-   `student_enrollment_reviews`, the roster views, and an `amount=39500` CHECK that
-   `CREATE TABLE IF NOT EXISTS` would otherwise skip on an older table. Then set
+8. **Run the migrator** on production with live payments off
+   (`RDA_STUDENT_PAYMENTS_LIVE_ENABLED` unset). The October 21
+   preview already applied the then-current `005` to the production database.
+   The filename-order migrator re-applies every `NNN_*.sql` in one transaction,
+   including idempotent `006` (`CREATE OR REPLACE` / `IF NOT EXISTS`) on that
+   schema: it widens review reasons, replaces `flag_student_enrollment_review` /
+   `resolve_student_enrollment_review`, binds the paying Checkout session on
+   enroll, and excludes the reviewed row from the capacity count. Then set
    `application_name = 'rda-student-offering-seed'` and apply
    `db/seeds/infection-control-offerings.sql` (`mode=live`, `enabled=false`). The
    post-seed verify must succeed.
@@ -332,7 +349,10 @@ the repository.
    so `/enroll` can take a charge. Enable the two live offerings. **Before any live
    purchase**, also set `RDA_STUDENT_EMAIL_LIVE_ENABLED=true` plus
    `RDA_STUDENT_EMAIL_API_KEY` and `RDA_STUDENT_EMAIL_FROM`. A paid live webhook
-   otherwise throws in confirmation delivery and Stripe retries get 503 forever.
+   still records the seat if mail is off or the provider fails; confirmation stays
+   queued. Drain those rows with staff POST `{ "drain": true }` to
+   `/api/student-enrollment/retry-confirmation` after email is enabled. The drain
+   works while live payments are off.
    **Leave `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` unset.** The public Infection Control
    "Enroll and pay in full" CTA stays hidden on this redeploy. `/enroll` stays
    reachable by direct URL during this CTA-off window and is the verification URL
@@ -381,13 +401,29 @@ verification purchase:
 3. Leave `RDA_STUDENT_EMAIL_LIVE_ENABLED` on until every paid confirmation has
    left `pending`/`sending`, then unset it. Later webhooks still record refunds
    and other state changes while mail is disabled; they queue the outbox
-   instead of returning 503.
+   instead of returning 503. If email was already off, turn it back on and POST
+   `{ "drain": true }` to `/api/student-enrollment/retry-confirmation` (staff
+   session, same origin). The drain works while live payments are off and is
+   safe to repeat.
 4. Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` back to anything except `true` and
    disable the two live offerings (`enabled=false`). `/enroll` then fail-closes.
    New Checkout sessions stop. Do not delete offerings that already have
    enrollments.
-5. Do not drop `005` objects from production as a rollback. Re-apply the file
-   after review if functions are missing.
+5. Check Stripe Dashboard → Developers → Webhooks → the student enrollment
+   endpoint → failed deliveries. Unbound or expired-unbound paid completions
+   while payments are off return 503 so Stripe retries for about three days.
+   Dashboard resend only works within 15 days of event creation (Stripe CLI:
+   30 days). After that window the event is unrecoverable from Stripe; look
+   the charge up in the merchant dashboard and reconcile from the staff
+   roster, or run `resolve_student_enrollment_review` for a flagged row. Do
+   not copy event payloads or customer data into tickets.
+6. Do not drop `005` or `006` objects from production as a rollback. Re-apply
+   both files (or run the migrator) after review if functions are missing. The
+   staff roster uses webhook
+   configuration, so `session_mismatch` and `paid_after_release` reviews stay
+   visible while live payments are off. Do not treat them as verified seats.
+   `resolve_student_enrollment_review(..., 'enrolled', ...)` binds the
+   Checkout session that actually paid before a later refund can land.
 
 Launch remains blocked until that checklist is finished. No real charges, refunds, student
 emails, bank changes, or credential creation are part of this development release. This

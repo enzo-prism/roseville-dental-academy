@@ -7,6 +7,7 @@ import {
   getStudentEnrollment,
   studentConfig,
   studentWebhookConfig,
+  studentWebhookForeignPaidCompletion,
   studentWebhookPaidCompletionEvent,
   studentWebhookShouldRecord,
 } from "@/lib/student-enrollment";
@@ -87,6 +88,10 @@ export async function POST(request: Request) {
         paymentsEnabled,
         studentSessionIsFullyRefunded(session),
         boundToSession,
+      ) &&
+      !(
+        studentWebhookForeignPaidCompletion(event.type, existing, session.id) &&
+        paidCompletion
       )
     ) {
       if (paidCompletion)

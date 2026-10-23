@@ -5,7 +5,7 @@ import {
   listStudentReservedHolds,
   listStudentReviews,
   refundedRosterPaymentLabel,
-  studentConfig,
+  studentWebhookConfig,
   studentDatabase,
 } from "@/lib/student-enrollment";
 
@@ -17,7 +17,7 @@ function expireLabel(value: unknown) {
 
 export default async function StudentRoster() {
   const staff = await enrollmentOwner(),
-    config = studentConfig();
+    config = studentWebhookConfig();
   if (!staff)
     return (
       <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
@@ -174,14 +174,25 @@ export default async function StudentRoster() {
       <h2 className="font-heading text-2xl">Payments needing staff review</h2>
       <p>
         Paid Checkout sessions that arrived after the seat was released or
-        expired. Do not treat these as verified enrollments until staff
-        reconciles the charge.
+        expired, or a paid session that does not match the Checkout session
+        bound to the reserved hold. Do not treat these as verified enrollments
+        until staff reconciles the charge. Open and resolved reviews stay
+        visible while live payments are off, including any refund already
+        recorded on the review.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
             <tr>
-              {["Date", "Student", "Email", "Status", "Reason"].map((h) => (
+              {[
+                "Date",
+                "Student",
+                "Email",
+                "Status",
+                "Reason",
+                "Resolution",
+                "Refunded USD",
+              ].map((h) => (
                 <th key={h} className="border-b p-3">
                   {h}
                 </th>
@@ -197,6 +208,8 @@ export default async function StudentRoster() {
                   r.email,
                   r.status,
                   r.reason,
+                  r.resolution ?? "open",
+                  (Number(r.refunded_amount) / 100).toFixed(2),
                 ].map((v, i) => (
                   <td key={i} className="border-b p-3">
                     {String(v)}
@@ -207,7 +220,7 @@ export default async function StudentRoster() {
           </tbody>
         </table>
       </div>
-      {!reviews.length && <p>No orphan payments awaiting review.</p>}
+      {!reviews.length && <p>No payments needing review.</p>}
     </main>
   );
 }

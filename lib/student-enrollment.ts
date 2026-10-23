@@ -127,6 +127,22 @@ export function studentWebhookShouldRecord(
     (studentWebhookPaidCompletionEvent(eventType) && boundToSession)
   );
 }
+export function studentWebhookForeignPaidCompletion(
+  eventType: string,
+  existing:
+    | { status: string; stripe_session_id: string | null }
+    | undefined,
+  sessionId: string,
+) {
+  return (
+    studentWebhookPaidCompletionEvent(eventType) &&
+    (existing?.status === "reserved" ||
+      existing?.status === "paid" ||
+      existing?.status === "refunded") &&
+    existing.stripe_session_id != null &&
+    existing.stripe_session_id !== sessionId
+  );
+}
 export function studentPublicEnrollCtaEnabled() {
   return (
     studentConfig()?.mode === "live" &&
@@ -198,12 +214,12 @@ export async function getStudentEnrollment(id: string) {
     : undefined;
 }
 export async function listStudentReviews(mode: StudentConfig["mode"]) {
-  return studentDatabase()`SELECT e.id,e.student_name,e.email,e.status,r.session_id,r.reason,r.created_at,r.resolved_at,r.resolution,o.course_date
+  return studentDatabase()`SELECT e.id,e.student_name,e.email,e.status,r.session_id,r.reason,r.created_at,r.resolved_at,r.resolution,r.refunded_amount,o.course_date
     FROM student_enrollment_reviews r
     JOIN student_enrollments e ON e.id=r.enrollment_id
     JOIN student_enrollment_offerings o ON o.id=e.offering_id
-    WHERE o.mode=${mode} AND r.resolved_at IS NULL
-    ORDER BY r.created_at LIMIT 500`;
+    WHERE o.mode=${mode}
+    ORDER BY r.resolved_at NULLS FIRST, r.created_at LIMIT 500`;
 }
 export async function listStudentReservedHolds(
   mode: StudentConfig["mode"],
