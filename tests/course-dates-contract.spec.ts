@@ -45,9 +45,11 @@ import {
  * data/course-schedule.json. Live served checks stay relative to whatever the
  * live file publishes.
  *
- * COURSE_DATES_FAKE_NOW is honoured only by contractAcademyDate() and the
- * synthetic builders that default to it. collectServedScheduleSnapshot uses
- * servedSnapshotTodayLA() / academyDate(), so a shifted clock cannot mask a
+ * COURSE_DATES_FAKE_NOW is honoured by contractAcademyDate() and the
+ * synthetic builders that default to it. Fixture-relationship tests pass
+ * CONTRACT_TODAY_LA so clock cells stay on the frozen snapshot. The dedicated
+ * FAKE_NOW test uses the defaults, so unpin mutants die. collectServedScheduleSnapshot
+ * uses servedSnapshotTodayLA() / academyDate(), so a shifted clock cannot mask a
  * stale dashboard. CI runs this spec with COURSE_DATES_FAKE_NOW set to
  * 2026-11-20 and 2026-12-20 in America/Los_Angeles and UTC.
  *
@@ -68,8 +70,8 @@ import {
  */
 
 const builds = [
-  { name: "committed", snapshot: () => committedScheduleSnapshot() },
-  { name: "dashboard", snapshot: () => dashboardScheduleSnapshot() },
+  { name: "committed", snapshot: () => committedScheduleSnapshot(CONTRACT_TODAY_LA) },
+  { name: "dashboard", snapshot: () => dashboardScheduleSnapshot(CONTRACT_TODAY_LA) },
 ] as const;
 
 const PAST_COPY_FORMATS = [
@@ -118,31 +120,29 @@ function withFakeNow<T>(value: string, run: () => T): T {
 }
 
 test("synthesized committed and dashboard snapshots satisfy the served contract", () => {
-  assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot()));
-  assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot()));
+  assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot(CONTRACT_TODAY_LA)));
+  assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot(CONTRACT_TODAY_LA)));
 });
 
 test("dashboard build whose stored dates are all in the past is an explicit empty schedule", () => {
-  const snapshot = elapsedDashboardScheduleSnapshot();
+  const snapshot = elapsedDashboardScheduleSnapshot(CONTRACT_TODAY_LA);
   assert.equal(snapshot.status.empty, true);
   assert.deepEqual(snapshot.status.upcoming, []);
   assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
 });
 
 test("dashboard rollback with reviewedOn matching builtOn still passes", () => {
-  const snapshot = rolledBackDashboardSnapshot();
+  const snapshot = rolledBackDashboardSnapshot(CONTRACT_TODAY_LA);
   assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
   assert.match(dashboardScheduleWarnings(snapshot).join(" "), /more than a day older/u);
 });
 
 test("dashboard builtOn older than 7 days still showing a fixture past date fails", () => {
-  const today = contractAcademyDate();
-  const snapshot = eightDayStaleDashboardSnapshot();
-  assert.equal(snapshot.todayLA, today);
-  assert.equal(snapshot.status.builtOn, shiftIsoDate(today, -EIGHT_DAY_STALE_OFFSET));
+  const snapshot = eightDayStaleDashboardSnapshot(CONTRACT_TODAY_LA);
+  assert.equal(snapshot.status.builtOn, shiftIsoDate(CONTRACT_TODAY_LA, -EIGHT_DAY_STALE_OFFSET));
   assert.equal(snapshot.status.reviewedOn, CONTRACT_SCHEDULE.reviewedOn);
   assert.ok(
-    snapshot.homeRows.some((row) => row.isoDate < today),
+    snapshot.homeRows.some((row) => row.isoDate < CONTRACT_TODAY_LA),
     "8-day stale fixture must keep a naturally past row, not inject one",
   );
   assert.throws(
@@ -156,8 +156,8 @@ test("dashboard builtOn older than 7 days still showing a fixture past date fail
 });
 
 test("dashboard builtOn exactly 7 days old still showing a fixture past date passes", () => {
-  const snapshot = sevenDayStaleDashboardSnapshot();
-  assert.equal(snapshot.status.builtOn, shiftIsoDate(contractAcademyDate(), -SEVEN_DAY_STALE_OFFSET));
+  const snapshot = sevenDayStaleDashboardSnapshot(CONTRACT_TODAY_LA);
+  assert.equal(snapshot.status.builtOn, shiftIsoDate(CONTRACT_TODAY_LA, -SEVEN_DAY_STALE_OFFSET));
   assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
 });
 
@@ -209,7 +209,7 @@ test("JSON-LD walker reads pretty-printed hasCourseInstance dates", () => {
 
 test("policy date allowlist is the exact January 1, 2025 statute string", () => {
   assert.deepEqual([...POLICY_DATE_ALLOWLIST], ["January 1, 2025"]);
-  const snapshot = committedScheduleSnapshot();
+  const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
   snapshot.faqText += " January 2, 2025.";
   assert.throws(
     () => assertServedScheduleContract(snapshot),
@@ -225,7 +225,7 @@ test("policy date allowlist is the exact January 1, 2025 statute string", () => 
 });
 
 test("equivalent allowlist spelling does not accept a different day in the same month", () => {
-  const snapshot = committedScheduleSnapshot();
+  const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
   snapshot.faqText += " January 15, 2025.";
   assert.throws(
     () => assertServedScheduleContract(snapshot),
@@ -238,7 +238,7 @@ test("equivalent allowlist spelling does not accept a different day in the same 
 });
 
 test("FAQ date lists must match the course open dates exactly, not a subset", () => {
-  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(), "faq-drop-one");
+  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(CONTRACT_TODAY_LA), "faq-drop-one");
   assert.throws(
     () => assertServedScheduleContract(snapshot),
     (error: unknown) => {
@@ -250,7 +250,7 @@ test("FAQ date lists must match the course open dates exactly, not a subset", ()
 });
 
 test("llms.txt date lists must match the course open dates exactly, not a subset", () => {
-  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(), "llms-drop-one");
+  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(CONTRACT_TODAY_LA), "llms-drop-one");
   assert.throws(
     () => assertServedScheduleContract(snapshot),
     (error: unknown) => {
@@ -291,9 +291,9 @@ test("synthetic contract stays green when a fixture feed is refreshed in memory"
   mutated.entries = mutated.entries.filter((entry) => entry.isoDate !== removedIso);
   mutated.entries.push({ courseId: String(open.courseId), isoDate: "2027-01-09", status: "open" });
 
-  assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot()));
-  assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot()));
-  assert.throws(() => assertServedScheduleContract(eightDayStaleDashboardSnapshot()));
+  assert.doesNotThrow(() => assertServedScheduleContract(committedScheduleSnapshot(CONTRACT_TODAY_LA)));
+  assert.doesNotThrow(() => assertServedScheduleContract(dashboardScheduleSnapshot(CONTRACT_TODAY_LA)));
+  assert.throws(() => assertServedScheduleContract(eightDayStaleDashboardSnapshot(CONTRACT_TODAY_LA)));
 
   const refreshed = buildPublishedCourseScheduleStatus(publishedScheduleInput(mutated));
   assert.equal(refreshed.reviewedOn, "2026-10-23");
@@ -324,8 +324,8 @@ test("builders read the frozen fixture, not the live file", () => {
   const fixtureStatus = buildPublishedCourseScheduleStatus(publishedScheduleInput(CONTRACT_SCHEDULE));
   const liveStatus = buildPublishedCourseScheduleStatus(publishedScheduleInput(LIVE_COURSE_SCHEDULE));
   assert.notEqual(fixtureStatus.revision, liveStatus.revision);
-  assert.equal(committedScheduleSnapshot().status.revision, fixtureStatus.revision);
-  assert.equal(committedScheduleSnapshot().status.reviewedOn, CONTRACT_SCHEDULE.reviewedOn);
+  assert.equal(committedScheduleSnapshot(CONTRACT_TODAY_LA).status.revision, fixtureStatus.revision);
+  assert.equal(committedScheduleSnapshot(CONTRACT_TODAY_LA).status.reviewedOn, CONTRACT_SCHEDULE.reviewedOn);
 });
 
 test("COURSE_DATES_FAKE_NOW drives snapshot today and stale offsets", () => {
@@ -351,23 +351,23 @@ test("collect today ignores COURSE_DATES_FAKE_NOW", () => {
 });
 
 test("year-less dates after the first period of a FAQ line fail", () => {
-  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(), "faq-after-period-noyear");
+  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(CONTRACT_TODAY_LA), "faq-after-period-noyear");
   assert.throws(() => assertServedScheduleContract(snapshot));
 });
 
 test("year-less dates on an llms bullet outside Upcoming dates fail", () => {
-  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(), "llms-outside-upcoming-noyear");
+  const snapshot = applyCourseDateMutant(committedScheduleSnapshot(CONTRACT_TODAY_LA), "llms-outside-upcoming-noyear");
   assert.throws(() => assertServedScheduleContract(snapshot));
 });
 
 test("llms span logic flags year-less dates on a markdown course bullet", () => {
-  const snapshot = committedScheduleSnapshot();
+  const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
   snapshot.llmsText = "[BLS / CPR](/bls-cpr-1) Upcoming dates: October 12; November 7, 2026.\n";
   assert.throws(() => assertServedScheduleContract(snapshot));
 });
 
 test("impossible calendar dates fail the served contract", () => {
-  const snapshot = committedScheduleSnapshot();
+  const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
   snapshot.status.upcoming.push({ courseId: "bls-cpr-1", isoDate: "2026-11-31", status: "open" });
   assert.throws(
     () => assertServedScheduleContract(snapshot),
@@ -381,7 +381,7 @@ test("impossible calendar dates fail the served contract", () => {
 
 for (const probe of COPY_PROBES) {
   test(`copy probe ${probe.name} does not false-fail current-style copy`, () => {
-    const snapshot = committedScheduleSnapshot();
+    const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
     if ("surface" in probe && probe.surface === "llms") snapshot.llmsText += `\n${probe.text}`;
     else snapshot.faqText += `\n${probe.text}`;
     assert.doesNotThrow(() => assertServedScheduleContract(snapshot));
@@ -391,7 +391,7 @@ for (const probe of COPY_PROBES) {
 for (const format of PAST_COPY_FORMATS) {
   for (const surface of ["faq", "llms"] as const) {
     test(`${surface} past format ${format.raw} fails the served contract`, () => {
-      const snapshot = committedScheduleSnapshot();
+      const snapshot = committedScheduleSnapshot(CONTRACT_TODAY_LA);
       if (format.yearless) {
         const mutated = applyCourseDateMutant(
           snapshot,
