@@ -257,3 +257,7 @@ CI installs Node.js `24` and pnpm `10.34.5`; `package.json` pins `node: 24.x` pl
 ## Paid-media integrity gate
 
 Release Gate also runs `pnpm test:attribution-db` and `pnpm test:attribution` after the six presentation suites. API-unavailable tests explicitly clear DATABASE_URL and sync/cron credentials. Meta lead flow tests are localhost-only and intercept third-party submissions/collectors; they are not a production Test Events check. See `docs/meta-ads-readiness.md`.
+
+## Published schedule versus content baselines
+
+Content parity compares stable copy, prices, approvals, navigation and assets. The narrowly scoped schedule fragments in `tests/support/content-parity-contract.json` are excluded by both capture and comparison. Course dates, full/open states, hero starts, form options and expired dates are instead checked against `/api/course-schedule-status` by `tests/course-dates.spec.ts` and the clock matrix. This prevents a legitimate dashboard publication or elapsed date from failing an old October text snapshot. Do not broaden these selectors to hide non-schedule content changes.

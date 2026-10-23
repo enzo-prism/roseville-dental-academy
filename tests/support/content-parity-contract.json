@@ -1,0 +1,15 @@
+{
+  "dynamicScheduleSelectors": [
+    ".ac-hero-chip",
+    ".ac-next-dates",
+    ".ac-course-card-next",
+    ".ac-schedule",
+    ".rda-interest-option-date",
+    ".ac-course-facts > div:not([data-rda-quick-fact])",
+    ".ac-course-dates",
+    "[data-rda-hero-starts]",
+    ".ac-enroll-card > p.sr-only",
+    ".ac-enroll-card > p.ac-body",
+    "[data-rda-home-course-block=\"schedule\"] > .ac-container > p"
+  ]
+}

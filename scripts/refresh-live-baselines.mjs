@@ -1,3 +1,4 @@
+import parityContract from "../tests/support/content-parity-contract.json" with { type: "json" };
 import { chromium } from "playwright";
 
 import {
@@ -219,7 +220,7 @@ async function captureContentSnapshot(page, url, assetMap) {
 
   await settlePage(page);
 
-  const raw = await page.evaluate(() => {
+  const raw = await page.evaluate((scheduleSelectors) => {
     // Mirrors the additive parity selectors in tests/support/qa-helpers.ts. The
     // site promo dialog/overlay is suppressed in every parity suite via
     // suppressSitePromo, so baseline capture must exclude it too. The same goes
@@ -229,6 +230,7 @@ async function captureContentSnapshot(page, url, assetMap) {
       "[data-rda-promo-dialog]",
       "[data-rda-promo-overlay]",
       "[data-rda-seasonal]",
+      ...scheduleSelectors,
     ];
 
     function isVisible(element) {
@@ -300,10 +302,16 @@ async function captureContentSnapshot(page, url, assetMap) {
     const links = Array.from(document.querySelectorAll("a[href]"))
       .filter((anchor) => isVisible(anchor))
       .filter((anchor) => !isAdditiveParityElement(anchor))
-      .map((anchor) => ({
-        href: anchor.getAttribute("href") || "",
-        text: anchor.textContent || "",
-      }))
+      .map((anchor) => {
+        const copy = anchor.cloneNode(true);
+        for (const selector of scheduleSelectors) {
+          copy.querySelectorAll(selector).forEach((element) => element.remove());
+        }
+        return {
+          href: anchor.getAttribute("href") || "",
+          text: copy.textContent || "",
+        };
+      })
       .filter(({ href, text }) => href || text);
 
     const images = Array.from(document.images)
@@ -335,7 +343,7 @@ async function captureContentSnapshot(page, url, assetMap) {
       links,
       title: document.title,
     };
-  });
+  }, parityContract.dynamicScheduleSelectors);
 
   return {
     aboveFoldImages: raw.aboveFoldImages
