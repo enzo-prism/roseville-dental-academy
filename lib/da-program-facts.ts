@@ -1,10 +1,11 @@
+import { CANCELLATION_POLICY_SUMMARY } from "@/lib/academy-policies";
+import { dentalAssistingProgram } from "@/lib/academy-catalog";
 import {
   getAvailableCourseDates,
   getNextAvailableCourseDate,
   getUpcomingCourseSchedule,
   SATURDAY_ACADEMY_START_DATE,
 } from "@/lib/course-schedule";
-import { dentalAssistingProgram } from "@/lib/academy-catalog";
 import { googleReviewsAggregate, siteContact } from "@/lib/site-data";
 
 // Core Dental Assisting Program facts shared by the local SEO pages and the
@@ -28,7 +29,7 @@ export const daProgramFacts = {
   schedule:
     "1 class day (Monday, Friday, or Saturday — pick one) plus 1 assigned internship day",
   format: "Online lectures, homework, chairside experience, and assigned externship hours",
-  nonrefundable: "All Roseville Dental Academy courses are nonrefundable.",
+  cancellationPolicy: CANCELLATION_POLICY_SUMMARY,
 } as const;
 
 export function getNextDaStartLabel(): string {

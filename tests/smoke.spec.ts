@@ -2237,6 +2237,18 @@ test("local SEO landing pages serve indexable metadata, schema, and sitemap entr
       h1: "Programa de Asistente Dental",
     },
   ];
+  expect(landingPages.map((landing) => landing.path)).toEqual([
+    "/dental-assisting-school",
+    "/dental-assisting-school/sacramento",
+    "/dental-assisting-school/rocklin",
+    "/dental-assisting-school/lincoln",
+    "/dental-assisting-school/folsom",
+    "/dental-assisting-school/citrus-heights",
+    "/dental-assisting-school/auburn",
+    "/for-dental-offices",
+    "/rda-certification-courses",
+    "/es/programa-de-asistente-dental",
+  ]);
   const sitemap = await (await request.get(`${localOrigin}/sitemap.website.xml`)).text();
   const llms = await (await request.get(`${localOrigin}/llms.txt`)).text();
   const mismatches: string[] = [];
@@ -2275,12 +2287,36 @@ test("local SEO landing pages serve indexable metadata, schema, and sitemap entr
     }
   }
 
+  const expectedHreflang = {
+    "en-US": "/dental-assisting-program",
+    "es-US": "/es/programa-de-asistente-dental",
+    "x-default": "/dental-assisting-program",
+  } as const;
+
+  const readHreflangMap = () =>
+    page.evaluate(() => {
+      const map: Record<string, string> = {};
+      for (const link of document.querySelectorAll<HTMLLinkElement>('link[rel="alternate"][hreflang]')) {
+        map[link.hreflang] = new URL(link.href).pathname;
+      }
+      return map;
+    });
+
+  for (const pairedPath of ["/dental-assisting-program", "/es/programa-de-asistente-dental"]) {
+    await page.goto(`${localOrigin}${pairedPath}`, { waitUntil: "domcontentloaded" });
+    const hreflang = await readHreflangMap();
+    expect(hreflang, pairedPath).toMatchObject(expectedHreflang);
+    expect(hreflang["es-US"], `${pairedPath} must keep es-US`).toBe(
+      "/es/programa-de-asistente-dental",
+    );
+    expect(hreflang["en-US"], `${pairedPath} must keep en-US`).toBe("/dental-assisting-program");
+    expect(hreflang["x-default"], `${pairedPath} must keep x-default`).toBe(
+      "/dental-assisting-program",
+    );
+  }
+
   await page.goto(`${localOrigin}/es/programa-de-asistente-dental`, { waitUntil: "domcontentloaded" });
   await expect(page.locator("main#rda-main-content")).toHaveAttribute("lang", "es");
-  await expect(page.locator('link[rel="alternate"][hreflang="en-US"]')).toHaveAttribute(
-    "href",
-    /\/dental-assisting-program$/,
-  );
 
   const missingCity = await request.get(`${localOrigin}/dental-assisting-school/not-a-city`);
   expect(missingCity.status()).toBe(404);

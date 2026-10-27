@@ -14,6 +14,11 @@ import {
 } from "@/components/site/seo-landing-parts";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { Button } from "@/components/ui/button";
+import {
+  CANCELLATION_POLICY_PATH,
+  CANCELLATION_POLICY_SUMMARY,
+  CANCELLATION_POLICY_TITLE,
+} from "@/lib/academy-policies";
 import { daProgramFacts, getOpenDaStartEntries, PHONE_HREF } from "@/lib/da-program-facts";
 import {
   SPANISH_DA_ENGLISH_PATH,
@@ -165,9 +170,19 @@ export function SpanishProgramPage() {
                 detail: "No hay requisitos previos.",
               },
               {
-                label: "Reembolsos",
-                value: "No reembolsable",
-                detail: "Ningún curso de Roseville Dental Academy es reembolsable.",
+                label: "Cancellation and refund policy",
+                value: "Official English policy",
+                detail: (
+                  <span lang="en">
+                    {CANCELLATION_POLICY_SUMMARY}{" "}
+                    <Link
+                      className="text-primary underline-offset-4 hover:underline"
+                      href={CANCELLATION_POLICY_PATH}
+                    >
+                      {CANCELLATION_POLICY_TITLE}
+                    </Link>
+                  </span>
+                ),
               },
             ]}
             label="Datos del Programa de Asistente Dental"

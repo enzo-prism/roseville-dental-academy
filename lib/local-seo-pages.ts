@@ -1,3 +1,4 @@
+import { CANCELLATION_POLICY_SUMMARY } from "@/lib/academy-policies";
 import type { LiveRoute } from "@/lib/live-route-data";
 import type { RdaPathCourseId } from "@/lib/rda-course-path";
 
@@ -206,7 +207,7 @@ export const localCities: LocalCity[] = [
       {
         question: "What does the program cost and how do payments work?",
         answer:
-          "Tuition is $2,500. There is a $1,000 minimum down payment, with the balance paid weekly over the nine weeks. All Roseville Dental Academy courses are nonrefundable.",
+          `Tuition is $2,500. There is a $1,000 minimum down payment, with the balance paid weekly over the nine weeks. ${CANCELLATION_POLICY_SUMMARY}`,
       },
       {
         question: "Which class days can I choose?",

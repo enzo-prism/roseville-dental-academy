@@ -132,7 +132,7 @@ export function LocalCityPage({ city }: { city: LocalCity }) {
               {
                 label: "Tuition",
                 value: daProgramFacts.tuitionLabel,
-                detail: `${daProgramFacts.minimumDownPaymentLabel} minimum down payment, with the balance paid weekly over the nine weeks. ${daProgramFacts.nonrefundable}`,
+                detail: `${daProgramFacts.minimumDownPaymentLabel} minimum down payment, with the balance paid weekly over the nine weeks. ${daProgramFacts.cancellationPolicy}`,
               },
               {
                 label: "Next open start date",

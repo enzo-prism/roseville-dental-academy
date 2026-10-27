@@ -14,6 +14,7 @@ import {
   SeoSection,
 } from "@/components/site/seo-landing-parts";
 import { Button } from "@/components/ui/button";
+import { CANCELLATION_POLICY_SUMMARY } from "@/lib/academy-policies";
 import { courseScheduleNote } from "@/lib/course-schedule";
 import { PHONE_HREF } from "@/lib/da-program-facts";
 import {
@@ -110,8 +111,7 @@ export function RdaCoursePathPage() {
                 <span>{rdaPathCoursesTotalLabel}</span>
               </p>
               <p className="text-sm leading-6 text-muted-foreground">
-                Sum of the individual course prices ({rdaPathTotalHours} course hours in all). All Roseville Dental Academy courses are
-                nonrefundable.
+                Sum of the individual course prices ({rdaPathTotalHours} course hours in all). {CANCELLATION_POLICY_SUMMARY}
               </p>
             </div>
           </SeoCallout>

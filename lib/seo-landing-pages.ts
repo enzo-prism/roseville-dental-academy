@@ -1,3 +1,4 @@
+import { CANCELLATION_POLICY_SUMMARY } from "@/lib/academy-policies";
 import {
   CERTIFICATE_EXPIRATION_FAQ_QUESTION,
   getCertificateExpirationAnswer,
@@ -113,12 +114,12 @@ export const spanishDaFaqs: SeoFaq[] = [
   {
     question: "¿Cómo funciona el pago?",
     answer:
-      "El costo del programa es de $2,500. Se requiere un pago inicial mínimo de $1,000 y el saldo se paga semanalmente durante las nueve semanas. Ningún curso de Roseville Dental Academy es reembolsable.",
+      `El costo del programa es de $2,500. Se requiere un pago inicial mínimo de $1,000 y el saldo se paga semanalmente durante las nueve semanas. Official English cancellation and refund policy: ${CANCELLATION_POLICY_SUMMARY}`,
   },
   {
     question: "¿Las clases se imparten en español?",
     answer:
-      "Confirme con admisiones los detalles del idioma de las clases. Puede llamar al 916-888-9821 o escribirnos por WhatsApp.",
+      `Confirme con admisiones los detalles del idioma de las clases. Puede llamar al ${siteContact.phone} o escribirnos por WhatsApp.`,
   },
 ];
 
