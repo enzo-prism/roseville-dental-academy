@@ -32,10 +32,11 @@ import {
   Users,
 } from "lucide-react";
 
+import { AcademyMediaSection } from "@/components/academy/academy-media";
+import { courseIcons } from "@/components/academy/course-icons";
 import { HomeHero, type HeroSlide } from "@/components/academy/home/home-hero";
 import { LazyVideo } from "@/components/academy/lazy-video";
 import { PhotoLightboxGrid } from "@/components/academy/photo-lightbox";
-import { courseIcons } from "@/components/academy/course-icons";
 import { LiveContactSection } from "@/components/site/live-contact-section";
 import { LiveSignupSection } from "@/components/site/live-signup-section";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
@@ -45,6 +46,7 @@ import {
   getNextOpenShortDate,
 } from "@/lib/academy-catalog";
 import { academyInstructors } from "@/lib/academy-instructors";
+import { academyClassPhotos, academyHomeVideos } from "@/lib/academy-media";
 import {
   courseScheduleCourseDetails,
   courseScheduleNote,
@@ -249,6 +251,7 @@ function StudentsInAction() {
 
           <figure className="ac-photo ac-bento-tile ac-bento-video" data-reveal="zoom">
             <LazyVideo
+              captionsSrc="/assets/social/instagram/05-dya2wfosi08.vtt"
               label="Dental assisting students in lab coats celebrating with their instructor."
               poster="/assets/social/instagram/05-dya2wfosi08-poster.jpg"
               src="/assets/social/instagram/05-dya2wfosi08.mp4"
@@ -949,6 +952,18 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
       <LiveSignupSection pagePath="/" sourceLabel={sourceLabel} />
       <WhySection />
       <BoardSection />
+      <AcademyMediaSection
+        description="Recent first-day, celebration, and graduation photos from the academy Instagram, shown in full frame."
+        id="academy-class-photos"
+        items={academyClassPhotos}
+        title="Class photos from Instagram"
+      />
+      <AcademyMediaSection
+        description="Captioned classroom clips. Press play when you want sound — nothing autoplays with audio."
+        id="academy-home-videos"
+        items={academyHomeVideos}
+        title="Training clips, with captions"
+      />
       <GallerySection />
       <LiveContactSection compact />
       <SocialFollow />

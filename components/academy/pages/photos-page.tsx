@@ -1,18 +1,22 @@
 import { ArrowUpRight, Camera, Clapperboard } from "lucide-react";
 
+import { AcademyMediaSection } from "@/components/academy/academy-media";
 import { LazyVideo } from "@/components/academy/lazy-video";
 import { PageHero } from "@/components/academy/page-hero";
 import { PhotoGallery } from "@/components/academy/pages/photo-gallery";
 import { LiveSignupSection } from "@/components/site/live-signup-section";
+import { academyClassPhotos, academyTrainingVideos } from "@/lib/academy-media";
 import { photoGroups, socialLinks } from "@/lib/site-data";
 
 const studentVideos = [
   {
+    captionsSrc: "/assets/social/instagram/09-dxkwhb3eu9w.vtt",
     label: "Learning, laughing, and leveling up",
     poster: "/assets/social/instagram/09-dxkwhb3eu9w-poster.jpg",
     src: "/assets/social/instagram/09-dxkwhb3eu9w.mp4",
   },
   {
+    captionsSrc: "/assets/social/instagram/05-dya2wfosi08.vtt",
     label: "Us seeing our students turn into dental assistants",
     poster: "/assets/social/instagram/05-dya2wfosi08-poster.jpg",
     src: "/assets/social/instagram/05-dya2wfosi08.mp4",
@@ -61,6 +65,19 @@ export function PhotosPage({ sourceLabel }: { sourceLabel: string }) {
         </div>
       </section>
 
+      <AcademyMediaSection
+        description="August and September class photos, plus two evergreen training groups, shown in full frame."
+        id="academy-class-photos"
+        items={academyClassPhotos}
+        title="Recent class photos"
+      />
+      <AcademyMediaSection
+        description="Six captioned Instagram reels. Players stay on the poster until you press play, and they never autoplay with sound."
+        id="academy-training-videos"
+        items={academyTrainingVideos}
+        title="Class moments, captioned"
+      />
+
       <section aria-labelledby="ac-videos-title" className="ac-section ac-band-ink">
         <div className="ac-container">
           <div className="ac-heading-row">
@@ -84,7 +101,12 @@ export function PhotosPage({ sourceLabel }: { sourceLabel: string }) {
           <div className="ac-video-rail">
             {studentVideos.map((video) => (
               <figure className="ac-video-card" data-reveal="zoom" key={video.src}>
-                <LazyVideo label={video.label} poster={video.poster} src={video.src} />
+                <LazyVideo
+                  captionsSrc={video.captionsSrc}
+                  label={video.label}
+                  poster={video.poster}
+                  src={video.src}
+                />
                 <figcaption>{video.label}</figcaption>
               </figure>
             ))}

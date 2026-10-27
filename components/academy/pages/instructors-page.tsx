@@ -15,8 +15,10 @@ import {
   Users,
 } from "lucide-react";
 
+import { AcademyMediaSection } from "@/components/academy/academy-media";
 import { PageHero } from "@/components/academy/page-hero";
 import { LiveSignupSection } from "@/components/site/live-signup-section";
+import { academyTeamMedia } from "@/lib/academy-media";
 import { academyInstructors, countReviewMentions } from "@/lib/academy-instructors";
 import { googleReviews, instructorsPage, siteContact } from "@/lib/site-data";
 
@@ -221,6 +223,13 @@ export function InstructorsPage({ sourceLabel }: { sourceLabel: string }) {
           </div>
         </div>
       </section>
+
+      <AcademyMediaSection
+        description="A teaching milestone from the academy Instagram, plus a captioned introduction to Dr. Mike. No identity is assigned to a bio from the photo."
+        id="academy-team-media"
+        items={academyTeamMedia}
+        title="The team, from recent posts"
+      />
 
       <LiveSignupSection compact pagePath="/meet-the-instructors" sourceLabel={sourceLabel} />
     </div>

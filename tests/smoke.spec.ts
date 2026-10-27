@@ -855,7 +855,7 @@ test("official social channel pages render follow paths", async ({ page }, testI
             `[data-rda-social-brand-logo="${card.getAttribute("data-rda-social-post-card")}"]`,
           ).length,
           videoCount: card.querySelectorAll(
-            '[data-rda-social-local-media="video"] video[controls][preload="metadata"]',
+            '[data-rda-social-local-media="video"] video[controls][preload="none"]',
           ).length,
           videoPosterCount: card.querySelectorAll(
             '[data-rda-social-local-media="video"] video[poster]',
