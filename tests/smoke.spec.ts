@@ -2118,8 +2118,8 @@ test("photos page renders the full live-site gallery inventory", async ({ page }
 
   const mismatches: string[] = [];
 
-  if (result.count !== 72) {
-    mismatches.push(`expected 72 live gallery photos, found ${result.count}`);
+  if (result.count !== 76) {
+    mismatches.push(`expected 76 live gallery photos, found ${result.count}`);
   }
 
   if (result.broken.length > 0) {

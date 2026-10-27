@@ -32,7 +32,7 @@ export const academyTrainingVideos = [
   {
     ...instagramPost("DXXrGAKkqHB"),
     title: "What students learn in week three",
-    alt: "Dental assisting students sharing their class takeaways inside the academy clinic.",
+    alt: "Dental assisting students sharing their class takeaways outdoors at Roseville Dental Academy.",
   },
   {
     ...instagramPost("DXKwHb3Eu9w"),

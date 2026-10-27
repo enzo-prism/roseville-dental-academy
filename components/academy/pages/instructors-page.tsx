@@ -225,7 +225,7 @@ export function InstructorsPage({ sourceLabel }: { sourceLabel: string }) {
       </section>
 
       <AcademyMediaSection
-        description="A teaching milestone from the academy Instagram, plus a captioned introduction to Dr. Mike. No identity is assigned to a bio from the photo."
+        description="A teaching milestone from the academy Instagram, plus a captioned classroom introduction."
         id="academy-team-media"
         items={academyTeamMedia}
         title="The team, from recent posts"
