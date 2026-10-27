@@ -1557,8 +1557,8 @@ test("homepage gallery preview shows a larger photo showcase", async ({ page }, 
   );
   const uniqueSources = new Set(imageDetails.map((image) => image.src).filter(Boolean));
 
-  if (imageCount !== 9) {
-    mismatches.push(`expected 9 homepage gallery photos, found ${imageCount}`);
+  if (imageCount !== 12) {
+    mismatches.push(`expected 12 homepage gallery photos, found ${imageCount}`);
   }
 
   if (uniqueSources.size !== imageDetails.length) {
