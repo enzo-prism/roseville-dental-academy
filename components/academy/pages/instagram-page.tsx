@@ -120,7 +120,7 @@ export function InstagramPage({ page }: { page: SocialChannelPageData }) {
             <SocialMediaGrid page={page} />
           </div>
 
-          <aside className="space-y-4">
+          <aside className="space-y-4 pb-4">
             <Card className="border-border bg-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
