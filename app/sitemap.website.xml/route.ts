@@ -4,8 +4,10 @@ import {
 } from "@/lib/live-route-data";
 import { cancellationPolicyRoute } from "@/lib/academy-policies";
 import { journeyRoute } from "@/lib/journey-roadmap-data";
+import { getLocalSeoSitemapRoutes } from "@/lib/local-seo-pages";
 import { reviewsRoute } from "@/lib/reviews-route";
 import { getResourceSitemapRoutes } from "@/lib/resource-articles";
+import { getSeoLandingSitemapRoutes } from "@/lib/seo-landing-pages";
 import { SITE_URL } from "@/lib/site-config";
 import { socialChannelPages } from "@/lib/social-channel-data";
 
@@ -33,6 +35,8 @@ function priorityFor(path: string): string {
   if (path === "/journey" || path === "/reviews") return "0.8";
   if (path === "/resources") return "0.7";
   if (path === "/registration") return "0.7";
+  if (path === "/dental-assisting-school") return "0.7";
+  if (path === "/for-dental-offices" || path === "/rda-certification-courses") return "0.7";
   if (path.startsWith("/resources/")) return "0.6";
   return "0.6";
 }
@@ -48,7 +52,14 @@ export function GET() {
     entries.push({ path, priority: priorityFor(path) });
   }
 
-  for (const route of [journeyRoute, reviewsRoute, cancellationPolicyRoute, ...getResourceSitemapRoutes()]) {
+  for (const route of [
+    journeyRoute,
+    reviewsRoute,
+    cancellationPolicyRoute,
+    ...getResourceSitemapRoutes(),
+    ...getLocalSeoSitemapRoutes(),
+    ...getSeoLandingSitemapRoutes(),
+  ]) {
     const path = canonicalPathFor(route);
     if (seen.has(path)) continue;
     seen.add(path);

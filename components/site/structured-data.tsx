@@ -279,6 +279,33 @@ export function CourseStructuredData({ path }: { path: string }) {
   return <StructuredDataScript id={`rda-ld-course-${path.slice(1)}`} data={data} />;
 }
 
+export function FaqListStructuredData({
+  id,
+  faqs,
+}: {
+  id: string;
+  faqs: readonly { question: string; answer: string }[];
+}) {
+  if (faqs.length === 0) {
+    return null;
+  }
+
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  } satisfies JsonLdValue;
+
+  return <StructuredDataScript id={id} data={data} />;
+}
+
 export function FaqStructuredData() {
   const data = {
     "@context": "https://schema.org",
