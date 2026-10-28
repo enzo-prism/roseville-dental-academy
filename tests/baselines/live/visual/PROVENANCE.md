@@ -5,3 +5,7 @@ All PNGs here were captured on Linux (GitHub Actions `ubuntu-latest`, Playwright
 (PR #53), with reduced motion, the seasonal layer off, and the site promo suppressed. They match the Release Gate's
 Linux runner; macOS renders differ by large pixel counts, so recapture through the workflow rather than locally.
 See docs/release-qa.md ("Capturing baselines on Linux").
+
+Home desktop and mobile references were refreshed for the front desk program
+link in PR #65, using Linux capture run 40638954068 at commit 0c9a47b. The new
+section was inspected at both widths; all other route images are unchanged.
