@@ -662,7 +662,9 @@ body {
   padding-right: var(--marquee-gap, 1rem);
 }
 
-html.rda-motion .ac-marquee-track {
+/* Only while near the viewport (MotionObserver sets data-marquee-active), so
+   the browser can release the track's layer once it scrolls away. */
+html.rda-motion .ac-marquee[data-marquee-active] .ac-marquee-track {
   animation: ac-marquee var(--marquee-duration) linear infinite;
 }
 

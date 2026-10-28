@@ -302,11 +302,18 @@ function StudentsInAction() {
   );
 }
 
+// Each marquee track is one GPU layer as wide as its row, kept for the whole
+// loop. Every written review (~76) made rows ~12,800px wide (~80MB per track
+// at 3x), by far the largest layer on phones. /reviews has the rest.
+const MARQUEE_REVIEWS_PER_ROW = 10;
+
 function ReviewMarquee() {
   // Rating-only reviews have no written excerpt worth scrolling past.
   const written = googleReviews.filter((review) => !/^\d-star Google rating\.$/u.test(review.quote));
-  const half = Math.ceil(written.length / 2);
-  const rows = [written.slice(0, half), written.slice(half)];
+  const rows = [
+    written.slice(0, MARQUEE_REVIEWS_PER_ROW),
+    written.slice(MARQUEE_REVIEWS_PER_ROW, MARQUEE_REVIEWS_PER_ROW * 2),
+  ];
 
   return (
     <div className="ac-review-marquees" data-rda-review-marquee="true">
