@@ -230,6 +230,17 @@ email before draining or the rows stay queued. A `review` send requires comparin
 logs before any deliberate resend; do not reset its status blindly. Keep the pilot staff
 origin aligned with the deployed enrollment origin.
 
+The production Vercel cron also calls `GET /api/student-enrollment/confirmation-drain`
+every five minutes, authenticated with the existing `CRON_SECRET` bearer token. It
+only processes live paid `pending`/`sending` confirmations while live email is enabled;
+it keeps working when new payments are disabled. Each run uses the same immutable
+payloads, provider idempotency keys, send leases, 12-hour review cutoff, and bounded
+100-row / 20-second drain as the staff retry. It never retries `review` rows or sends
+test-mode mail. Responses contain counts only; a processing error returns 503 and
+eligible rows remain available for the next scheduled run. Check cron failures and
+the staff roster for mail requiring review. This five-minute schedule requires the
+existing Vercel Pro plan; daily scheduling would exceed the ambiguity review window.
+
 Do not resolve an orphan review by running
 `UPDATE student_enrollments SET status='paid'`. That bypasses the seat cap and can
 push a class to 13/12. Use the capacity-capped function, which refuses `enrolled`
