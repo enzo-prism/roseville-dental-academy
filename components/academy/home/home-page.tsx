@@ -944,6 +944,12 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
       <StudentsInAction />
       <ReviewsSection />
       <ProgramsSection />
+      <section className="ac-section ac-section-tight" aria-labelledby="ac-front-office-intro">
+        <div className="ac-container ac-social-follow-inner">
+          <div><p className="ac-eyebrow">New program</p><h2 className="ac-h3" id="ac-front-office-intro">Start on the front office side of dentistry.</h2><p className="ac-body">Explore beginner dental receptionist training in scheduling, insurance basics, patient communication, and office procedures.</p></div>
+          <Link className="ac-btn ac-btn-secondary" href="/dental-front-desk-program">Explore dental front desk <ArrowRight aria-hidden="true" /></Link>
+        </div>
+      </section>
       <InstructorsSection />
       <ScheduleSection />
       <LiveSignupSection pagePath="/" sourceLabel={sourceLabel} />
