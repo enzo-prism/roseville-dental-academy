@@ -4711,6 +4711,31 @@ body.rda-lightbox-open .rda-whatsapp-fab {
   width: 100%;
 }
 
+/* Compact (homepage) map: a tap-to-load stand-in that keeps the card's size. */
+.ac-map-placeholder {
+  align-content: center;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  display: grid;
+  gap: 0.75rem;
+  inset: 0;
+  justify-items: center;
+  padding: 1.5rem 1.5rem 4.5rem;
+  position: absolute;
+  text-align: center;
+}
+
+.ac-map-placeholder > svg {
+  color: var(--primary);
+  height: 2rem;
+  width: 2rem;
+}
+
+.ac-map-placeholder p {
+  margin: 0;
+  max-width: 22rem;
+}
+
 .dark .ac-contact-map iframe {
   filter: invert(0.9) hue-rotate(180deg) saturate(0.7) brightness(0.95);
 }

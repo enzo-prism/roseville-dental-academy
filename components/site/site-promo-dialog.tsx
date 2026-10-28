@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, X } from "lucide-react";
@@ -16,6 +17,10 @@ import {
 import { activeSitePromo, isSitePromoActive } from "@/lib/site-promo";
 
 const SHOW_DELAY_MS = 1500;
+// Phones: no timed full-screen popup on arrival (it covers the page and was
+// the slowest paint for new visitors). Open once the visitor has engaged.
+const PHONE_QUERY = "(max-width: 760px)";
+const PHONE_SCROLL_SCREENS = 1.5;
 const LEAD_FORM_SELECTOR = [
   "form[data-rda-signup-form]",
   "form[data-rda-contact-form]",
@@ -34,6 +39,14 @@ function readDismissed(storageKey: string) {
 function isLeadFormFieldActive() {
   const active = document.activeElement;
   return active instanceof HTMLElement && Boolean(active.closest(LEAD_FORM_SELECTOR));
+}
+
+// Anchor CTAs ("Ask About Classes") jump straight to a form; never cover it.
+function isLeadFormInView() {
+  return Array.from(document.querySelectorAll(LEAD_FORM_SELECTOR)).some((form) => {
+    const box = form.getBoundingClientRect();
+    return box.bottom > 0 && box.top < window.innerHeight;
+  });
 }
 
 function writeDismissed(storageKey: string) {
@@ -64,7 +77,19 @@ export function SitePromoDialog() {
       setOpen(true);
     };
 
-    const timer = window.setTimeout(openIfIdle, SHOW_DELAY_MS);
+    let timer: number | undefined;
+    const onScroll = () => {
+      if (window.scrollY < window.innerHeight * PHONE_SCROLL_SCREENS || isLeadFormInView()) return;
+      window.removeEventListener("scroll", onScroll);
+      openIfIdle();
+    };
+    const onPhone = window.matchMedia(PHONE_QUERY).matches;
+
+    if (onPhone) {
+      window.addEventListener("scroll", onScroll, { passive: true });
+    } else {
+      timer = window.setTimeout(openIfIdle, SHOW_DELAY_MS);
+    }
 
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
@@ -73,6 +98,7 @@ export function SitePromoDialog() {
       }
       cancelled = true;
       window.clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
     };
 
     document.addEventListener("focusin", onFocusIn);
@@ -80,6 +106,7 @@ export function SitePromoDialog() {
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("focusin", onFocusIn);
     };
   }, []);
@@ -118,8 +145,8 @@ export function SitePromoDialog() {
         size="default"
       >
         <div aria-hidden="true" className="ac-promo-photo">
-          {/* eslint-disable-next-line @next/next/no-img-element -- Small decorative class photo. */}
-          <img alt="" src="/assets/live/drive/class-group-scrubs.jpg" />
+          {/* Optimized: the 1400px original (544KB) was the slowest paint for new visitors. */}
+          <Image alt="" fill sizes="(max-width: 520px) 92vw, 28rem" src="/assets/live/drive/class-group-scrubs.jpg" />
           <span className="ac-chip ac-chip-live ac-promo-chip">Now enrolling</span>
         </div>
         <AlertDialogHeader className="gap-3 px-6 sm:place-items-start sm:text-left">

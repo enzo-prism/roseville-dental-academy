@@ -47,6 +47,7 @@ For UI or design-system changes, run the smallest meaningful set first, then bro
 - Flag a WhatsApp FAB that is not bottom-right, that ignores the safe area, or that stays visible over the mobile menu or promo dialog.
 - Flag docs that still describe the old snapshot-first homepage or the Sera design system.
 - Flag UI that only works in light mode, ignores reduced motion, or hides content until JavaScript runs.
+- Flag photos rendered with a plain `<img>` from `/public/assets` instead of `next/image` with a matching `sizes` (see "Images" in `/DESIGN.md`).
 - Flag endless animations on very wide or tall elements (for example a marquee track holding a whole data list) or loops that keep running off screen; on iPhones they hold GPU memory for the whole page visit.
 
 ## Cursor Cloud specific instructions

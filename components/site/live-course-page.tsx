@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -164,18 +165,20 @@ function renderTextWithLinks(text: string, links: LiveCourseLink[] = []) {
 function CourseMedia({
   loading = "lazy",
   media,
+  sizes,
 }: {
   loading?: "eager" | "lazy";
   media: LiveCourseMedia;
+  sizes: string;
 }) {
   if (media.type === "video") {
     return <LazyVideo label={media.alt} poster={media.poster} src={media.src} />;
   }
 
-  return (
-    // eslint-disable-next-line @next/next/no-img-element -- Literal asset URLs keep course imagery stable.
-    <img alt={media.alt} decoding="async" fetchPriority={loading === "eager" ? "high" : undefined} loading={loading} src={media.src} />
-  );
+  // Sized by the mosaic grid. The originals are up to 1800px / 670KB, which
+  // made the hero the slowest paint on phones, and prefetched course links
+  // pulled every original onto the homepage too.
+  return <Image alt={media.alt} fill preload={loading === "eager"} sizes={sizes} src={media.src} />;
 }
 
 function CourseHeroStartDates({
@@ -417,7 +420,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
             data-rda-course-hero="true"
           >
             <figure className="ac-photo ac-course-mosaic-main">
-              <CourseMedia loading="eager" media={course.image} />
+              <CourseMedia loading="eager" media={course.image} sizes="(max-width: 639px) 100vw, 34vw" />
             </figure>
             {supportingMedia.map((media, index) => (
               <figure
@@ -426,7 +429,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
                 key={media.src}
                 style={{ "--reveal-delay": index + 1 } as CSSProperties}
               >
-                <CourseMedia media={media} />
+                <CourseMedia media={media} sizes="(max-width: 639px) 50vw, 22vw" />
               </figure>
             ))}
             {duration ? (

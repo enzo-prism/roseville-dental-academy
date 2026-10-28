@@ -951,6 +951,10 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
       <StudentsInAction />
       <ReviewsSection />
       <ProgramsSection />
+      {/* Dates and the inquiry form come right after the courses so phones
+          reach them sooner, ahead of the instructors and front-desk intro. */}
+      <ScheduleSection />
+      <LiveSignupSection pagePath="/" sourceLabel={sourceLabel} />
       <section className="ac-section ac-section-tight" aria-labelledby="ac-front-office-intro">
         <div className="ac-container ac-social-follow-inner">
           <div><p className="ac-eyebrow">New program</p><h2 className="ac-h3" id="ac-front-office-intro">Start on the front office side of dentistry.</h2><p className="ac-body">Explore beginner dental receptionist training in scheduling, insurance basics, patient communication, and office procedures.</p></div>
@@ -958,8 +962,6 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
         </div>
       </section>
       <InstructorsSection />
-      <ScheduleSection />
-      <LiveSignupSection pagePath="/" sourceLabel={sourceLabel} />
       <WhySection />
       <BoardSection />
       <GallerySection />
