@@ -44,6 +44,9 @@ import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 type LiveSignupSectionProps = {
   className?: string;
   compact?: boolean;
+  defaultInterests?: readonly string[];
+  interestOptions?: readonly SignupInterestOption[];
+  heading?: string;
   pagePath?: string;
   sourceLabel: string;
 };
@@ -96,6 +99,9 @@ type ContactProgress = { email: boolean; name: boolean; phone: boolean };
 export function LiveSignupSection({
   className,
   compact = false,
+  defaultInterests,
+  interestOptions = signupInterestOptions,
+  heading = "Request Course Info",
   pagePath,
   sourceLabel,
 }: LiveSignupSectionProps) {
@@ -104,7 +110,7 @@ export function LiveSignupSection({
   const interestHelpId = `${formId}-interest-help`;
   const errorId = `${formId}-interest-error`;
   const [selectedInterests, setSelectedInterests] = useState<string[]>(() =>
-    signupInterestOptions.filter((option) => option.scheduleId && pagePath === `/${option.scheduleId}`)
+    defaultInterests ? [...defaultInterests] : interestOptions.filter((option) => option.scheduleId && pagePath === `/${option.scheduleId}`)
       .map((option) => option.value),
   );
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
@@ -176,7 +182,7 @@ export function LiveSignupSection({
               Takes about a minute
             </p>
             <h2 className="ac-h2" id={titleId}>
-              Request Course Info
+              {heading}
             </h2>
             <span aria-hidden="true" />
             <p className="ac-lede rda-signup-intro">
@@ -293,7 +299,7 @@ export function LiveSignupSection({
                   Pick one or more. Dates show the next open class.
                 </p>
                 <div className="rda-interest-options ac-tiles">
-                  {signupInterestOptions.map((option) => {
+                  {interestOptions.map((option) => {
                     const isSelected = selectedInterests.includes(option.value);
                     const InterestIcon = interestIcons[option.value] ?? BadgeCheck;
 
