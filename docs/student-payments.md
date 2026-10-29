@@ -8,24 +8,29 @@ and the separate public CTA flag are all present. `/enroll` itself is reachable 
 whenever Checkout is configured; the CTA flag does not hide that route. Existing inquiry
 forms remain available.
 
-## Confirmed sellable sessions
+## Course dates prepared for review
 
-Confirmed October 21, 2026 against the live `/infection-control` page:
+The dates, price, and class capacity below were checked October 21, 2026 against
+the live `/infection-control` page. They do not establish current seat availability.
+The owner reported the offline enrollment counts as unknown on October 28; keep
+both live offerings disabled until the academy confirms each date's current count.
 
 | Course date | ISO date | Price | Capacity | Offline seats already taken |
 | --- | --- | --- | --- | --- |
-| November 14, 2026 | `2026-11-14` | $395 (39500 cents, USD) | 12 | 0 |
-| December 5, 2026 | `2026-12-05` | $395 (39500 cents, USD) | 12 | 0 |
+| November 14, 2026 | `2026-11-14` | $395 (39500 cents, USD) | 12 | Unknown — keep disabled |
+| December 5, 2026 | `2026-12-05` | $395 (39500 cents, USD) | 12 | Unknown — keep disabled |
 
-Payment is in full. No other Infection Control date is sellable. November 7 was removed from
-the public schedule earlier and must not be seeded or offered at checkout.
+Payment is in full. Only these two Infection Control dates are configured for future
+checkout; neither is sellable until its inventory is reviewed and explicitly enabled.
+November 7 was removed from the public schedule earlier and must not be seeded or
+offered at checkout.
 
 Canonical config: `lib/student-enrollment-offerings.ts`.
 Reviewed insert (disabled live offerings only): `db/seeds/infection-control-offerings.sql`.
 Isolated TEST-mode insert (enabled offerings): `db/seeds/infection-control-offerings.test.sql`.
 Schema: `db/migrations/005_student_enrollment.sql` (shipped) plus
 `db/migrations/006_student_enrollment_review.sql` (review-function upgrade).
-Zero offerings.
+Schema migrations create zero offerings.
 
 `db/seeds/infection-control-offerings.test.sql` is **only** for an isolated preview or
 test database. It inserts the same two dates as `mode='test'`, `enabled=true`,
@@ -115,7 +120,13 @@ Each offering needs a review timestamp, a nonempty review reference, the current
 and SHA-256 of the exact policy paragraphs joined by two newlines, and those exact paragraphs
 in `policy_text`. Each reservation copies that accepted policy snapshot. The reviewed seed
 inserts both dates with `external_seats=0`, `amount=39500`, `capacity=12`, and `enabled=false`.
-No application API creates or enables offerings.
+That zero is a placeholder required by the initial disabled seed, not a confirmed offline
+enrollment count or permission to sell 12 seats. Before enabling either date, record its
+verified offline count in `external_seats` and its inventory review timestamp and source
+in `reviewed_at` / `review_reference`. Reconcile existing online reservations and payments
+as well. If the count is unknown, leave that offering disabled. The seed's initial-state
+verification does not approve inventory for sale; do not reapply it over later reviewed
+inventory. No application API creates or enables offerings.
 Apply migrations using the filename-order migrator only against the verified RDA
 database after review. `005_student_enrollment.sql` is the shipped schema (repeatable,
 zero offerings). Production already has that October 21 copy from the preview.
@@ -139,8 +150,11 @@ date, and Stripe expiry before requesting Checkout. Do not use this adult-only f
 Card details go directly to hosted Stripe Checkout. No advertising or lead-form conversion
 is fired on the enrollment routes. No PII goes into redirect URLs or browser storage.
 
-PostgreSQL locks the offering during allocation. Existing external seats plus reserved,
-paid, and refunded enrollments cannot exceed 12. Duplicate active email enrollments are
+PostgreSQL locks the offering during allocation. For each date, available seats are
+`capacity - external_seats - seat-occupying online enrollments`. The database helper
+`student_enrollment_occupies_seat` counts reserved and paid rows, plus refunded rows
+whose `inventory_released_at` is still null. A refund alone does not free inventory.
+These counts together cannot exceed the 12-student capacity. Duplicate active email enrollments are
 blocked. Price, policy and date cannot change after an offering has enrollments. Unknown
 provider failures preserve seats; a local clock never frees them. Session idempotency uses
 the persisted enrollment ID and an identical body. Lost responses can be recovered by a
@@ -247,6 +261,15 @@ eligible rows remain available for the next scheduled run. Check cron failures a
 the staff roster for mail requiring review. This five-minute schedule requires the
 existing Vercel Pro plan; daily scheduling would exceed the ambiguity review window.
 
+Preparing a verified sender and storing its restricted API key does not require turning
+on `RDA_STUDENT_EMAIL_LIVE_ENABLED`. Keep that flag off while the communication hold
+applies. Before any future authorized email test, inspect the current live outbox counts,
+statuses and stored sender/template information without copying student contact details.
+Do not assume historical counts prove the queue is empty. Turning the flag on can send
+every eligible paid `pending` / `sending` confirmation on the next cron run, even while
+new checkout is off. Do not enable it merely to validate credentials, invoke a retry/drain,
+rewrite immutable payloads, or reset `review` rows during a no-email preparation task.
+
 Do not resolve an orphan review by running
 `UPDATE student_enrollments SET status='paid'`. That bypasses the seat cap and can
 push a class to 13/12. Use the capacity-capped function, which refuses `enrolled`
@@ -330,6 +353,13 @@ Complete these steps in order. Live payments and live email stay off until their
 are set after the test-mode purchase. Do not put keys in chat, tickets, screenshots, or
 the repository.
 
+This is a future execution checklist, not permission to perform its charges, refunds or
+email sends. The October 29 preparation task prohibits all charges, emails and texts,
+including test messages. Sender/DNS verification, secure credential configuration and
+isolated capture-only checks can be prepared while all live gates stay off. Obtain the
+owner's separate authorization for the actual live payment and email test before the
+activation steps below.
+
 1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
    secure form. Configure them only on the isolated test deployment and test database.
 2. Apply `005_student_enrollment.sql` then `006_student_enrollment_review.sql`
@@ -361,19 +391,31 @@ the repository.
    enroll, and excludes the reviewed row from the capacity count. Then set
    `application_name = 'rda-student-offering-seed'` and apply
    `db/seeds/infection-control-offerings.sql` (`mode=live`, `enabled=false`). The
-   post-seed verify must succeed.
-9. Set live mode and `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment
-   so `/enroll` can take a charge. Enable the two live offerings. **Before any live
-   purchase**, also set `RDA_STUDENT_EMAIL_LIVE_ENABLED=true` plus
-   `RDA_STUDENT_EMAIL_API_KEY` and `RDA_STUDENT_EMAIL_FROM`. A paid live webhook
+   post-seed verify must succeed. Keep both offerings disabled while offline counts are
+   unknown. Obtain a current academy-confirmed offline count for each date and record
+   the count, review timestamp and evidence reference. Account for every seat-occupying
+   online row before enabling a date; `external_seats=0` in the disabled seed is not
+   evidence of zero offline enrollment.
+9. **Only for a separately authorized live payment/email test**, confirm the verified
+   sender and restricted email key are configured and audit the current outbox first,
+   including any paid `pending` / `sending` rows that the cron could send. Resolve any
+   delivery requiring review from provider evidence before enabling email; never reset
+   or rewrite an old payload blindly. Then set live mode and
+   `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment so `/enroll` can
+   take a charge. Enable only an offering whose offline count and total inventory were
+   just verified. **Before the authorized live purchase**, enable
+   `RDA_STUDENT_EMAIL_LIVE_ENABLED=true`. A paid live webhook
    still records the seat if mail is off or the provider fails; confirmation stays
    queued. Drain those rows with staff POST `{ "drain": true }` to
    `/api/student-enrollment/retry-confirmation` after email is enabled. The drain
    works while live payments are off.
    **Leave `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` unset.** The public Infection Control
    "Enroll and pay in full" CTA stays hidden on this redeploy. `/enroll` stays
-   reachable by direct URL during this CTA-off window and is the verification URL
-   only. Turning on live Checkout does not show the CTA.
+   reachable by direct URL during this CTA-off window. Hiding the CTA is not an
+   access restriction: anyone with the URL can reach enabled checkout. The current
+   flow has no staff-only live-payment test gate, so turning on live Checkout exposes
+   that enabled offering at `/enroll`. Plan the verification window with the owner;
+   do not describe it as private or protected by the hidden CTA.
 10. Make one **$395** verification purchase on `/enroll` using a **staff-owned**
     email address (not a student). Confirm the paid roster row and confirmation
     email, then refund that charge from the verified merchant dashboard. Refunded
@@ -386,8 +428,11 @@ the repository.
     );
     ```
 
-    Confirm 12 sellable seats remain on that date before continuing. This purchase
-    can happen while the public CTA is still off; open `/enroll` by URL.
+    Confirm the sellable count equals that date's reviewed capacity minus confirmed
+    offline seats and all remaining seat-occupying online enrollments. Do not assume
+    12 seats remain. Confirm the verification enrollment no longer occupies a seat.
+    The public CTA can still be off, but `/enroll` is reachable by anyone with the URL
+    while live Checkout and that offering are enabled.
 11. Only after that verification purchase is refunded and
     `release_refunded_student_seat` has recorded the actor and `released` event,
     set `RDA_STUDENT_PAYMENTS_PUBLIC_CTA=true` and redeploy so the public Enroll

@@ -2,7 +2,11 @@
 -- Not applied by the filename-order migrator. Apply only to the verified RDA
 -- database after reading docs/student-payments.md. Offerings stay disabled;
 -- live payments and live email remain off until their separate flags are set.
--- Confirmed Oct 21 2026: Nov 14 and Dec 5, 12 seats each, 0 offline, $395.
+-- Dates/price/capacity checked Oct 21 2026: Nov 14 and Dec 5, 12 each, $395.
+-- Offline counts remain UNKNOWN (owner confirmation Oct 28). external_seats=0
+-- below is an initial disabled-seed placeholder, NOT evidence of zero enrollment.
+-- Keep both live offerings disabled until each date's actual offline count and
+-- seat-occupying online rows are reconciled, with a current review reference.
 --
 -- policy_hash must remain the SHA-256 of policy_text (the approved paragraphs
 -- joined by two newlines). Recompute the hash if academy-policies.ts changes.
@@ -59,7 +63,7 @@ If Roseville Dental Academy cancels a course, students will be offered the optio
 
 By submitting payment, the student confirms that they have read, understood, and accepted this Cancellation and Refund Policy.$policy$,
     timestamptz '2026-10-21 00:00:00-07',
-    'Confirmed Oct 21 2026: November 14 and December 5, 12 seats each, 0 offline, 39500 USD',
+    'Dates/price/capacity checked Oct 21 2026; offline enrollment UNKNOWN: zero is a disabled-seed placeholder; inventory review required before activation',
     false
   ),
   (
@@ -83,7 +87,7 @@ If Roseville Dental Academy cancels a course, students will be offered the optio
 
 By submitting payment, the student confirms that they have read, understood, and accepted this Cancellation and Refund Policy.$policy$,
     timestamptz '2026-10-21 00:00:00-07',
-    'Confirmed Oct 21 2026: November 14 and December 5, 12 seats each, 0 offline, 39500 USD',
+    'Dates/price/capacity checked Oct 21 2026; offline enrollment UNKNOWN: zero is a disabled-seed placeholder; inventory review required before activation',
     false
   )
 ON CONFLICT (mode, course_id, course_date) DO NOTHING;
