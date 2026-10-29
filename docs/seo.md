@@ -110,7 +110,7 @@ Explicit `app/` routes win, so these paths are not shadowed.
 | --- | --- |
 | `/dental-assisting-school` | Hub for Sacramento-area commute pages |
 | `/dental-assisting-school/{city}` | Sacramento, Rocklin, Lincoln, Folsom, Citrus Heights, Auburn |
-| `/for-dental-offices` | 8-hour Infection Control requirement for employers |
+| `/for-dental-offices` | 8-hour Infection Control course option for office teams |
 | `/rda-certification-courses` | Five Board-approved / BLS courses in recommended order |
 | `/es/programa-de-asistente-dental` | Spanish summary of the 9-week program |
 
