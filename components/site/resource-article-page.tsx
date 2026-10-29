@@ -124,6 +124,26 @@ export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
           </section>
         ))}
 
+        {article.sources?.length ? (
+          <section aria-labelledby="resource-sources-heading" className="space-y-4">
+            <h2 className="font-heading text-2xl font-semibold text-foreground" id="resource-sources-heading">
+              Official sources
+            </h2>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Checked {article.dateModified}. Review the Board’s current requirements before enrolling or applying.
+            </p>
+            <ul className="list-disc space-y-3 pl-5 text-base leading-7 marker:text-primary">
+              {article.sources.map((source) => (
+                <li key={source.href}>
+                  <a className="text-primary underline underline-offset-4 hover:no-underline" href={source.href}>
+                    {source.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         {article.showCertificateExpiration ? <CertificateExpirationNotice /> : null}
 
         <section aria-labelledby="resource-faq-heading" className="space-y-4">
