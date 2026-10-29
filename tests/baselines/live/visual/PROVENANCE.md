@@ -9,3 +9,10 @@ See docs/release-qa.md ("Capturing baselines on Linux").
 Home desktop and mobile references were refreshed for the front desk program
 link in PR #65, using Linux capture run 40638954068 at commit 0c9a47b. The new
 section was inspected at both widths; all other route images are unchanged.
+
+Infection Control desktop and mobile references were refreshed for the
+role-specific training-options wording in PR #70, using Linux capture run
+40949860075 at reviewed source commit 9d26b89c4b561c954fe12385bfec240be91b703a.
+Both complete page images and the notice at desktop/mobile widths were
+inspected. Other route images were not replaced. The workflow used the same
+reduced-motion, seasonal, promo, and floating-widget isolation as above.

@@ -466,7 +466,7 @@ export const adLandingPages: AdLandingPage[] = [
     dates: infectionControlDates,
     eyebrow: "Infection Control compliance",
     facts: [
-      { label: "Requirement date", value: "Jan. 1, 2025" },
+      { label: "Course option", value: "Board-approved" },
       { label: "Provider", value: "IC189" },
       { label: "Course length", value: "8 hours" },
       { label: "Main line", value: "916-888-9821" },
@@ -486,7 +486,7 @@ export const adLandingPages: AdLandingPage[] = [
       },
       {
         alt: "Students learning infection control and sterilization workflow",
-        caption: "Course instruction built around the 8-hour Infection Control requirement.",
+        caption: "Course instruction for the academy's Board-approved 8-hour Infection Control option.",
         src: "/assets/live/courses/infection-control-sterilization.jpg",
       },
     ],
@@ -496,7 +496,7 @@ export const adLandingPages: AdLandingPage[] = [
         "Roseville Dental Academy student practicing infection control in a dental operatory.",
       imageSrc: "/assets/live/courses/rda-june-2026/infection-control-operatory.jpg",
       intro:
-        "If your office is reviewing personnel records, confirm whether each unlicensed dental assistant has the required 8-hour Infection Control course before performing duties involving potential exposure to infectious materials. Roseville Dental Academy can help dentists and office managers check the January 1, 2025 requirement, prerequisites, and upcoming IC189 dates.",
+        "Review each assistant's role, training records, and current Dental Board requirements before duties involving potential exposure to infectious materials. Roseville Dental Academy offers a Board-approved 8-hour Infection Control course (IC189) and can help with its prerequisites and upcoming dates.",
       title: "Check your office's Infection Control training records",
     },
     leadSelects: [
@@ -534,13 +534,13 @@ export const adLandingPages: AdLandingPage[] = [
       },
     ],
     metaDescription:
-      "Dentists and office managers can ask Roseville Dental Academy about the required 8-hour IC189 Infection Control course for unlicensed dental assistants, January 1, 2025 compliance, personnel records, and upcoming dates.",
+      "Ask Roseville Dental Academy about its Board-approved 8-hour IC189 Infection Control course, prerequisites, and dates. Confirm current training requirements for each role with the Dental Board.",
     metaTitle: "Infection Control Office Compliance | Roseville Dental Academy",
     path: "/lp/infection-control-office-compliance",
     primaryCtaLabel: "Check office requirements",
     proofPoints: [
       "The page is built for dentists and office managers reviewing unlicensed dental assistant personnel records.",
-      "It highlights the January 1, 2025 Infection Control requirement and IC189 course path.",
+      "It presents the IC189 eight-hour course option and directs offices to verify role-specific requirements.",
       "The form captures office role, compliance-check reason, class interest, UTM fields, and this campaign's unique form key.",
     ],
     reviews: [
@@ -583,7 +583,7 @@ export const adLandingPages: AdLandingPage[] = [
         items: [
           "Current CPR BLS certification through AHA or ARC.",
           "2-hour Dental Practice Act certification.",
-          "Completion of a board-approved 8-hour Infection Control course, such as Roseville Dental Academy provider IC189.",
+          "Documentation of the Infection Control training required for the assistant's role; the Board-approved 8-hour IC189 course is one option.",
         ],
       },
       {
