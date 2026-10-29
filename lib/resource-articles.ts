@@ -116,7 +116,7 @@ export const resourceArticles: ResourceArticle[] = [
     category: "Career Guide",
     readMinutes: 8,
     datePublished: "2026-07-12",
-    dateModified: "2026-09-09",
+    dateModified: "2026-10-29",
     showCertificateExpiration: true,
     heroImage: {
       src: "/assets/live/programs/dental-assisting-chairside.jpg",
@@ -125,7 +125,7 @@ export const resourceArticles: ResourceArticle[] = [
     intro:
       "California is one of the few states that regulates dental assisting in detail, so knowing the difference between an unlicensed dental assistant, a Registered Dental Assistant (RDA), and the certificates each role needs saves you time and money. This guide walks through how most people start a dental assisting career in California and where hands-on training fits in.",
     keyTakeaways: [
-      "You can start working as an unlicensed dental assistant in California without a state license, but you must complete a Dental Board approved 8-hour Infection Control course before any duties that could expose you to blood, saliva, or other potentially infectious materials, and you also need a Dental Practice Act course.",
+      "An unlicensed dental assistant does not hold an RDA license, but training requirements still apply. Confirm the current Infection Control and Dental Practice Act requirements for the role before duties with potential exposure to infectious materials.",
       "A career-focused training program shortens the learning curve by teaching chairside skills, x-ray safety, and workflow before you ever apply for a job.",
       "Becoming a Registered Dental Assistant (RDA) is a separate, later step that requires qualifying work experience, specific course certificates, and a state exam.",
     ],
@@ -186,7 +186,7 @@ export const resourceArticles: ResourceArticle[] = [
       {
         question: "Do you need a license to be a dental assistant in California?",
         answer:
-          "No. You can work as an unlicensed dental assistant in California without a state license. However, you must complete a Dental Board approved 8-hour Infection Control course and a Dental Practice Act course, and most offices also require BLS/CPR. A license (RDA) is only required to perform additional allowable duties.",
+          "An RDA license is separate from the entry-level unlicensed dental assistant role. Before clinical duties, confirm current Infection Control and Dental Practice Act training requirements for the role. The academy offers a Board-approved eight-hour Infection Control option; a license or permit application can have additional requirements.",
       },
       {
         question: "How do I start as a dental assistant with no experience?",
@@ -402,7 +402,7 @@ export const resourceArticles: ResourceArticle[] = [
     category: "Career Guide",
     readMinutes: 6,
     datePublished: "2026-07-12",
-    dateModified: "2026-09-09",
+    dateModified: "2026-10-29",
     showCertificateExpiration: true,
     heroImage: {
       src: "/assets/live/courses/bls-hands-on.jpg",
@@ -420,7 +420,7 @@ export const resourceArticles: ResourceArticle[] = [
         id: "dental-assistant",
         heading: "Dental Assistant (DA) — the entry point",
         paragraphs: [
-          "An unlicensed dental assistant performs basic supportive and chairside duties. You can start in this role without a state license, provided you complete the Dental Board approved 8-hour Infection Control course and a Dental Practice Act course, and most offices also require BLS/CPR.",
+          "An unlicensed dental assistant performs allowable basic supportive duties without an RDA license. Confirm the current training and supervision requirements before clinical work, including applicable Infection Control and Dental Practice Act training. The academy offers a Board-approved eight-hour Infection Control option.",
           "This is where nearly everyone begins, and the qualifying experience you gain here counts toward RDA eligibility.",
         ],
       },

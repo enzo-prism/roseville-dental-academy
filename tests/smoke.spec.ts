@@ -2053,6 +2053,7 @@ test("Infection Control copy distinguishes the eight-hour option from role-speci
     const schema = JSON.parse((await page.locator(collection.schema).textContent()) ?? "{}") as {
       mainEntity?: Array<{ name: string; acceptedAnswer: { text: string } }>;
     };
+    expect(JSON.stringify(schema)).not.toMatch(/must complete[^.]*8-hour Infection Control/i);
     const cards = page.locator(collection.cards);
     const questions = await cards.locator(collection.questions).allTextContents();
     expect(questions.length).toBeGreaterThan(0);
@@ -2060,6 +2061,11 @@ test("Infection Control copy distinguishes the eight-hour option from role-speci
     expect((schema.mainEntity ?? []).map((item) => item.acceptedAnswer.text)).toEqual(
       await cards.locator("p").allTextContents(),
     );
+  }
+
+  for (const slug of ["how-to-become-a-dental-assistant-in-california", "rda-vs-dental-assistant-california"]) {
+    const html = await (await request.get(`${localOrigin}/resources/${slug}`)).text();
+    expect(html).not.toMatch(/(?:must complete|provided you complete)[^.]*8-hour Infection Control/i);
   }
 
   const sitemap = await (await request.get(`${localOrigin}/sitemap.website.xml`)).text();

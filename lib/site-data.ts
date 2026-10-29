@@ -6,6 +6,7 @@ import {
 import {
   INFECTION_CONTROL_EMPLOYER_FAQ_ANSWER,
   INFECTION_CONTROL_EMPLOYER_FAQ_QUESTION,
+  INFECTION_CONTROL_REQUIREMENT_INTRO,
 } from "@/lib/infection-control-requirement";
 import type {
   AuthPageData,
@@ -813,8 +814,7 @@ export const faqItems = [
   },
   {
     question: "Why do new dental assistants ask about Infection Control?",
-    answer:
-      "California Dental Board guidance says unlicensed dental assistants must complete a board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials.",
+    answer: INFECTION_CONTROL_REQUIREMENT_INTRO,
   },
   {
     question: "What do students need before Coronal Polish?",
@@ -960,8 +960,7 @@ export const studentFaqHighlights = [
   },
   {
     question: "Why are offices asking about the 8-hour Infection Control course?",
-    answer:
-      "California Dental Board guidance says unlicensed dental assistants must complete a board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials.",
+    answer: INFECTION_CONTROL_REQUIREMENT_INTRO,
   },
   {
     question: INFECTION_CONTROL_EMPLOYER_FAQ_QUESTION,
