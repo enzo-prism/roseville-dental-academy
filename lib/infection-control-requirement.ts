@@ -1,27 +1,26 @@
-// California's 8-hour Infection Control requirement for unlicensed dental
-// assistants. Source: SB 1453 (Ashby, Chapter 483, Statutes of 2024), which
-// amended Business and Professions Code section 1750(c) effective January 1,
-// 2025; summarized by the Dental Board of California and the CDA. See
-// docs/course-approvals.md before changing any of these claims.
+// Shared wording for the academy's approved course and role-specific training.
+// Current source notes, including the September 2026 change, are maintained in
+// docs/course-approvals.md. Do not describe the eight-hour course as the only
+// qualifying option for every unlicensed dental assistant.
 
 export const INFECTION_CONTROL_REQUIREMENT_TITLE =
-  "California's 8-Hour Infection Control Requirement";
+  "California Infection Control Training: Check Your Role";
 
 export const INFECTION_CONTROL_REQUIREMENT_INTRO =
-  "Since January 1, 2025, California law (Business and Professions Code section 1750(c)) requires unlicensed dental assistants to complete a Dental Board of California-approved 8-hour Infection Control course before performing any basic supportive dental procedure that involves potential exposure to blood, saliva, or other potentially infectious materials.";
+  "Roseville Dental Academy offers a Dental Board of California-approved 8-hour Infection Control course (provider IC189). Training requirements depend on your role and whether you are applying for a license or permit.";
 
 export const INFECTION_CONTROL_REQUIREMENT_ITEMS = [
-  "The rule applies to every unlicensed dental assistant, regardless of hire date. It replaced the earlier allowance to finish the course within the first year of employment.",
-  "The employer is responsible for making sure each applicable dental assistant has completed the course.",
-  "The 2-hour Dental Practice Act course is a separate requirement and does not replace the 8-hour Infection Control course.",
-  "Dental assistants who already have proof of completing a Board-approved Infection Control course do not need to retake it.",
+  "The Board-approved 8-hour course is one training option for unlicensed dental assistants. Other qualifying options may be available under current California law.",
+  "Before duties involving potential exposure to blood, saliva, or other potentially infectious materials, employers should confirm that each assistant has completed the training required for their role.",
+  "The 2-hour Dental Practice Act course is separate from Infection Control training.",
+  "Check current Dental Board requirements before choosing a course or relying on an existing completion record.",
 ] as const;
 
 export const INFECTION_CONTROL_REQUIREMENT_OFFICE_NOTE =
-  "For dentists and office managers: check each dental assistant's employee file for an 8-hour Infection Control completion certificate. Roseville Dental Academy's course is Board-approved (provider IC189), and admissions can help register one new hire or your whole team.";
+  "For dentists and office managers: review each assistant's role and training documentation. Admissions can help with IC189 course prerequisites, dates, and registration. Confirm regulatory requirements with the Dental Board of California.";
 
 export const INFECTION_CONTROL_EMPLOYER_FAQ_QUESTION =
-  "Who is responsible for making sure dental assistants complete the 8-hour Infection Control course?";
+  "How should employers check a dental assistant's Infection Control training?";
 
 export const INFECTION_CONTROL_EMPLOYER_FAQ_ANSWER =
-  "The employer. Since January 1, 2025, every unlicensed dental assistant in California, regardless of hire date, must complete a Board-approved 8-hour Infection Control course before any duties involving potential exposure to blood, saliva, or other potentially infectious materials, and the dental office is responsible for making sure that happens. The 2-hour Dental Practice Act course does not replace it. Assistants who already have proof of a Board-approved Infection Control course do not need to retake it.";
+  "Employers should check each assistant's role, training records, and current Dental Board of California requirements before duties involving potential exposure to blood, saliva, or other potentially infectious materials. Roseville Dental Academy offers a Board-approved 8-hour course (IC189), which is one training option; requirements and qualifying options depend on the role and licensure or permit path. The 2-hour Dental Practice Act course is separate from Infection Control training.";
