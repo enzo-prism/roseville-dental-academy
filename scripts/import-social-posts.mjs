@@ -6,6 +6,7 @@ import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/p
 import { basename, extname, join, resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
 
@@ -207,8 +208,23 @@ async function discoverInstagram() {
   });
 }
 
-async function importInstagram() {
-  const discovered = await discoverInstagram();
+function instagramPostKey(sourceUrl) {
+  try {
+    const url = new URL(sourceUrl);
+    if (["instagram.com", "www.instagram.com", "m.instagram.com"].includes(url.hostname)) {
+      // Curated URLs include the profile name; discovery emits /p/ or /reel/.
+      // A shortcode identifies the same post across those URL forms and types.
+      const match = url.pathname.match(/\/(?:p|reel)\/([A-Za-z0-9_-]+)\/?$/);
+      if (match) return `instagram:${match[1]}`;
+    }
+  } catch {
+    // Keep unknown/malformed source strings distinct rather than dropping posts.
+  }
+  return `url:${sourceUrl}`;
+}
+
+export async function importInstagram(discover = discoverInstagram) {
+  const discovered = await discover();
   const outputDir = resolve(ASSET_ROOT, "instagram");
   // Course and gallery pages reuse selected posts, including local caption files.
   // A feed refresh must not remove media that those pages still reference.
@@ -219,12 +235,13 @@ async function importInstagram() {
       throw error;
     });
   const posts = previousManifest.posts.filter((post) => post.platform === "instagram");
-  const previousUrls = new Set(posts.map((post) => post.sourceUrl));
+  const previousPostKeys = new Set(posts.map((post) => instagramPostKey(post.sourceUrl)));
   await ensureDir(outputDir);
   const errors = [];
 
   for (const [index, item] of discovered.entries()) {
-    if (previousUrls.has(item.sourceUrl)) continue;
+    const postKey = instagramPostKey(item.sourceUrl);
+    if (previousPostKeys.has(postKey)) continue;
     try {
       const baseName = `${String(index + 1).padStart(2, "0")}-${slugify(item.id)}`;
       const mediaExt = item.mediaType === "video" ? ".mp4" : ".jpg";
@@ -258,6 +275,7 @@ async function importInstagram() {
         sourceUrl: item.sourceUrl,
         title: item.title,
       });
+      previousPostKeys.add(postKey);
     } catch (error) {
       errors.push(`${item.sourceUrl}: ${error.message}`);
     }
@@ -1049,7 +1067,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

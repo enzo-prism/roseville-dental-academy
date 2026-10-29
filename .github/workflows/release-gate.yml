@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify social media refresh preserves curated posts
+        run: pnpm test:social-import
+
       - name: Verify student enrollment locks on real Postgres
         env:
           STUDENT_LOCK_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/rda_locks
