@@ -799,7 +799,7 @@ export const faqItems = [
   {
     question: "Is your infection control course board approved?",
     answer:
-      "Yes. The academy lists the 8-hour Infection Control course with provider number IC189 and positions it as a California Dental Board requirement effective January 1, 2025.",
+      "Yes. Roseville Dental Academy offers a Dental Board of California-approved 8-hour Infection Control course with provider number IC189. Confirm current training requirements for your role with the Dental Board.",
   },
   {
     question: "Do you accept financial aid?",
@@ -1839,7 +1839,7 @@ export const coursePages: Record<string, CoursePageData> = {
       title: "Additional Information",
       eyebrow: "Additional information",
       copy: [
-        "The California Dental Board requires an 8-hour infection control course for those seeking qualifying certifications, effective January 1, 2025.",
+        "The academy offers a Board-approved 8-hour Infection Control course (IC189). Confirm current course requirements for your role and any license or permit application with the Dental Board of California.",
         "Students should arrive prepared for both didactic and practical work and review prerequisite documents before contacting the office to register.",
       ],
       image: siteImages.infection,

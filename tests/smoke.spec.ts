@@ -1998,76 +1998,77 @@ test("Dental Board certificate expiration copy is visible to students and applic
   expect(mismatches).toEqual([]);
 });
 
-test("8-hour Infection Control requirement copy renders where offices search for it", async ({ page, request }) => {
+test("Infection Control copy distinguishes the eight-hour option from role-specific requirements", async ({ page, request }) => {
   const guidePath = "/resources/california-8-hour-infection-control-requirement";
   const expectations: Array<{ phrases: string[]; route: string }> = [
     {
       route: "/infection-control",
       phrases: [
-        "California's 8-Hour Infection Control Requirement",
-        "Since January 1, 2025, California law (Business and Professions Code section 1750(c))",
-        "regardless of hire date",
-        "The employer is responsible for making sure each applicable dental assistant has completed the course.",
-        "does not replace the 8-hour Infection Control course",
+        "California Infection Control Training: Check Your Role",
+        "Training requirements depend on your role",
+        "The Board-approved 8-hour course is one training option",
+        "Check current Dental Board requirements",
       ],
     },
     {
       route: "/faqs-1",
-      phrases: [
-        "Who is responsible for making sure dental assistants complete the 8-hour Infection Control course?",
-      ],
+      phrases: ["How should employers check a dental assistant's Infection Control training?"],
     },
     {
       route: guidePath,
       phrases: [
-        "California's 8-Hour Infection Control Requirement for Dental Assistants",
-        "SB 1453",
+        "California Infection Control Training Options for Dental Assistants",
+        "Confirm the training that applies to your duties",
         "Upcoming Infection Control dates:",
       ],
     },
+    {
+      route: "/lp/infection-control-office-compliance",
+      phrases: [
+        "current Dental Board requirements",
+        "Board-approved 8-hour Infection Control course (IC189)",
+        "one option",
+      ],
+    },
   ];
-  const mismatches: string[] = [];
 
   for (const { phrases, route } of expectations) {
     const snapshot = await captureSnapshot(page, `${localOrigin}${route}`, {
       viewport: { width: 1280, height: 900 },
     });
-
-    if (snapshot.status !== 200) {
-      mismatches.push(`${route} returned ${snapshot.status}`);
-    }
-
-    for (const phrase of phrases) {
-      if (!snapshot.bodyText.includes(phrase)) {
-        mismatches.push(`${route} missing Infection Control requirement phrase: ${phrase}`);
-      }
-    }
+    expect(snapshot.status, route).toBe(200);
+    for (const phrase of phrases) expect(snapshot.bodyText, route).toContain(phrase);
+    expect(snapshot.bodyText, route).not.toContain("every unlicensed dental assistant must complete");
+    expect(snapshot.bodyText, route).not.toContain("regardless of hire date");
+    expect(snapshot.bodyText, route).not.toContain("January 1, 2025");
   }
 
-  // FAQPage markup on /faqs-1 must mirror the visible FAQ cards.
-  await page.goto(`${localOrigin}/faqs-1`);
-  const faqSchema = JSON.parse(
-    (await page.locator("script#rda-ld-faq").textContent()) ?? "{}",
-  ) as { mainEntity?: Array<{ name: string }> };
-  const visibleQuestions = await page
-    .locator(".rda-student-faq-card [data-slot='card-title']")
-    .allTextContents();
-
-  expect(visibleQuestions.length).toBeGreaterThan(0);
-  expect((faqSchema.mainEntity ?? []).map((item) => item.name)).toEqual(visibleQuestions);
+  // Both displayed FAQ collections must retain identical answers in JSON-LD.
+  const faqCollections = [
+    { route: "/faqs-1", schema: "script#rda-ld-faq", cards: ".rda-student-faq-card", questions: "[data-slot='card-title']" },
+    { route: guidePath, schema: "script[id^='rda-ld-article-faq-']", cards: "section[aria-labelledby='resource-faq-heading'] details", questions: "summary span" },
+  ];
+  for (const collection of faqCollections) {
+    await page.goto(`${localOrigin}${collection.route}`);
+    const schema = JSON.parse((await page.locator(collection.schema).textContent()) ?? "{}") as {
+      mainEntity?: Array<{ name: string; acceptedAnswer: { text: string } }>;
+    };
+    const cards = page.locator(collection.cards);
+    const questions = await cards.locator(collection.questions).allTextContents();
+    expect(questions.length).toBeGreaterThan(0);
+    expect((schema.mainEntity ?? []).map((item) => item.name)).toEqual(questions);
+    expect((schema.mainEntity ?? []).map((item) => item.acceptedAnswer.text)).toEqual(
+      await cards.locator("p").allTextContents(),
+    );
+  }
 
   const sitemap = await (await request.get(`${localOrigin}/sitemap.website.xml`)).text();
   const llms = await (await request.get(`${localOrigin}/llms.txt`)).text();
-
-  if (!sitemap.includes(guidePath)) {
-    mismatches.push(`sitemap missing ${guidePath}`);
-  }
-
-  if (!llms.includes(guidePath)) {
-    mismatches.push(`llms.txt missing ${guidePath}`);
-  }
-
-  expect(mismatches).toEqual([]);
+  expect(sitemap).toContain(guidePath);
+  expect(llms).toContain(guidePath);
+  expect(llms).toContain("approved 8-hour course option");
+  expect(llms).not.toContain("every unlicensed dental assistant must complete it");
+  expect(llms).not.toContain("Board approved dental training school");
 });
 
 test("photos page renders the full live-site gallery inventory", async ({ page }, testInfo) => {
