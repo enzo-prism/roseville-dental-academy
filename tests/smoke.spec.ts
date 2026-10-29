@@ -855,7 +855,7 @@ test("official social channel pages render follow paths", async ({ page }, testI
             `[data-rda-social-brand-logo="${card.getAttribute("data-rda-social-post-card")}"]`,
           ).length,
           videoCount: card.querySelectorAll(
-            '[data-rda-social-local-media="video"] video[controls][preload="metadata"]',
+            '[data-rda-social-local-media="video"] video[controls][preload="none"]',
           ).length,
           videoPosterCount: card.querySelectorAll(
             '[data-rda-social-local-media="video"] video[poster]',
@@ -1557,8 +1557,8 @@ test("homepage gallery preview shows a larger photo showcase", async ({ page }, 
   );
   const uniqueSources = new Set(imageDetails.map((image) => image.src).filter(Boolean));
 
-  if (imageCount !== 9) {
-    mismatches.push(`expected 9 homepage gallery photos, found ${imageCount}`);
+  if (imageCount !== 12) {
+    mismatches.push(`expected 12 homepage gallery photos, found ${imageCount}`);
   }
 
   if (uniqueSources.size !== imageDetails.length) {
@@ -2125,8 +2125,8 @@ test("photos page renders the full live-site gallery inventory", async ({ page }
 
   const mismatches: string[] = [];
 
-  if (result.count !== 72) {
-    mismatches.push(`expected 72 live gallery photos, found ${result.count}`);
+  if (result.count !== 76) {
+    mismatches.push(`expected 76 live gallery photos, found ${result.count}`);
   }
 
   if (result.broken.length > 0) {

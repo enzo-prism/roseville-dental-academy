@@ -12,7 +12,10 @@ export type SocialPostMediaType = "image" | "video";
 export type SocialChannelPost = {
   alt: string;
   caption: string;
+  captionsSrc?: string;
   comments?: number;
+  editorialPlacement?: "selected" | "archive";
+  height?: number;
   label: string;
   likes?: number;
   localSrc: string;
@@ -22,7 +25,27 @@ export type SocialChannelPost = {
   publishedAt?: string;
   sourceUrl: string;
   title: string;
+  width?: number;
 };
+
+// Last source post in the manually reviewed August/September class-media set.
+// Newer dated imports can join the open feed; older backfills need editorial
+// selection. Unknown dates are qualified separately, never called recent.
+const INSTAGRAM_REVIEWED_THROUGH = Date.parse("2026-09-25T23:58:20.000Z");
+
+export function partitionInstagramPosts(posts: readonly SocialChannelPost[]) {
+  const current: SocialChannelPost[] = [];
+  const archive: SocialChannelPost[] = [];
+  const undated: SocialChannelPost[] = [];
+  for (const post of posts) {
+    const publishedAt = post.publishedAt ? Date.parse(post.publishedAt) : Number.NaN;
+    if (!Number.isFinite(publishedAt)) undated.push(post);
+    else if (post.editorialPlacement === "selected") current.push(post);
+    else if (post.editorialPlacement === "archive" || publishedAt <= INSTAGRAM_REVIEWED_THROUGH) archive.push(post);
+    else current.push(post);
+  }
+  return { current, archive, undated };
+}
 
 export type SocialChannelImportStatus = {
   checkedAt: string;
@@ -114,8 +137,8 @@ export const socialChannelPages: SocialChannelPageData[] = [
     description:
       "Follow Roseville Dental Academy on Instagram for student photos, hands-on training moments, and course updates.",
     followLabel: "Follow on Instagram",
-    heroAlt: "Roseville Dental Academy students gathered for a class photo in scrubs.",
-    heroImage: "/assets/live/drive/class-group-scrubs.jpg",
+    heroAlt: "New dental assisting students gathered outside Roseville Dental Academy in September 2026.",
+    heroImage: "/assets/social/instagram/curated/2026-09-12-first-day.webp",
     icon: "instagram",
     intro:
       "Instagram highlights the academy visually: class photos, certificate moments, chairside practice, and the energy of students learning together.",

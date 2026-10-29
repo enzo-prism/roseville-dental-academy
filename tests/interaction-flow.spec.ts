@@ -897,13 +897,13 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator('[data-rda-stable-widget="board"] .ac-board-item')).toHaveCount(3);
 
       const galleryTiles = page.locator(".ac-gallery-home .ac-gallery-tile");
-      await expect(galleryTiles).toHaveCount(9);
+      await expect(galleryTiles).toHaveCount(12);
       await galleryTiles.first().click();
       const lightbox = page.getByRole("dialog", { name: "Photo viewer" });
       await expect(lightbox).toBeVisible();
-      await expect(lightbox).toContainText("1 / 9");
+      await expect(lightbox).toContainText("1 / 12");
       await lightbox.getByRole("button", { name: "Next photo" }).click();
-      await expect(lightbox).toContainText("2 / 9");
+      await expect(lightbox).toContainText("2 / 12");
       await expect(page.locator(".rda-whatsapp-fab")).toBeHidden();
       await lightbox.getByRole("button", { name: "Close photo viewer" }).click();
       await expect(lightbox).toBeHidden();

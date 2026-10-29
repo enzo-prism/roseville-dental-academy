@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   SOCIAL_IMPORT_REQUIRED_POSTS,
+  partitionInstagramPosts,
   type SocialChannelPageData,
   type SocialChannelPost,
 } from "@/lib/social-channel-data";
@@ -13,18 +14,19 @@ import {
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   month: "short",
+  timeZone: "America/Los_Angeles",
   year: "numeric",
 });
 
 function formatDate(value?: string) {
   if (!value) {
-    return "Recent";
+    return "Date unconfirmed";
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.valueOf())) {
-    return "Recent";
+    return "Date unconfirmed";
   }
 
   return dateFormatter.format(date);
@@ -51,9 +53,12 @@ function SocialLocalMedia({ post }: { post: SocialChannelPost }) {
           controls
           playsInline
           poster={post.posterSrc}
-          preload="metadata"
+          preload="none"
           src={post.localSrc}
         >
+          {post.captionsSrc ? (
+            <track default kind="captions" label="English" src={post.captionsSrc} srcLang="en" />
+          ) : null}
           <a href={post.localSrc}>Download video</a>
         </video>
         <span className="rda-social-video-badge" aria-hidden="true">
@@ -68,7 +73,7 @@ function SocialLocalMedia({ post }: { post: SocialChannelPost }) {
     <div className="rda-social-media-frame" data-rda-social-local-media="image">
       <Image
         alt={post.alt}
-        className="object-cover"
+        className={post.platform === "instagram" ? "object-contain" : "object-cover"}
         fill
         sizes="(max-width: 760px) 100vw, (max-width: 1200px) 62vw, 720px"
         src={post.localSrc}
@@ -204,12 +209,57 @@ export function SocialMediaGrid({ page }: { page: SocialChannelPageData }) {
   const hasEnoughPosts =
     page.scrapeStatus.status === "ready" &&
     page.socialPosts.length >= SOCIAL_IMPORT_REQUIRED_POSTS;
+  const { current: selectedPosts, archive: archivePosts, undated: undatedPosts } =
+    page.slug === "instagram"
+      ? partitionInstagramPosts(page.socialPosts)
+      : { current: page.socialPosts, archive: [], undated: [] };
 
   return hasEnoughPosts ? (
     <div className="grid min-w-0 gap-4" data-rda-social-local-grid={page.slug}>
-      {page.socialPosts.map((post, index) => (
+      {selectedPosts.map((post, index) => (
         <SocialPostCard index={index} key={post.sourceUrl} page={page} post={post} />
       ))}
+      {archivePosts.length ? (
+        <details className="rounded-lg border border-border bg-card p-4" data-rda-social-archive={page.slug}>
+          <summary className="min-h-11 cursor-pointer py-3 font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+            Earlier Instagram posts ({archivePosts.length})
+          </summary>
+          <p className="mb-4 text-sm text-muted-foreground">
+            These are historical posts. Class dates and seat availability in older posts may have
+            changed; contact admissions for current details.
+          </p>
+          <div className="grid min-w-0 gap-4">
+            {archivePosts.map((post, index) => (
+              <SocialPostCard
+                index={selectedPosts.length + index}
+                key={post.sourceUrl}
+                page={page}
+                post={post}
+              />
+            ))}
+          </div>
+        </details>
+      ) : null}
+      {undatedPosts.length ? (
+        <details className="rounded-lg border border-border bg-card p-4" data-rda-social-undated={page.slug}>
+          <summary className="min-h-11 cursor-pointer py-3 font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+            Instagram posts with unconfirmed dates ({undatedPosts.length})
+          </summary>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Publication dates could not be verified. Ask admissions for current class dates and seat availability.
+          </p>
+          <div className="grid min-w-0 gap-4">
+            {undatedPosts.map((post, index) => (
+              <SocialPostCard
+                index={selectedPosts.length + archivePosts.length + index}
+                key={post.sourceUrl}
+                page={page}
+                post={post}
+              />
+            ))}
+          </div>
+        </details>
+      ) : null}
     </div>
   ) : (
     <SocialImportBlocker page={page} />

@@ -6,6 +6,7 @@ import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/p
 import { basename, extname, join, resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
 
@@ -18,6 +19,8 @@ const ASSET_ROOT = resolve(PUBLIC_ROOT, "assets/social");
 const MANIFEST_PATH = resolve(ROOT, "lib/social-local-media-manifest.json");
 const SOURCE_PATH = resolve(ROOT, "data/social-post-sources.json");
 const CHECKED_AT = new Date().toISOString();
+// Keep the specifically held September 14 staff photo omitted pending consent.
+const EXCLUDED_INSTAGRAM_POST_KEYS = new Set(["instagram:DdS81OOBwxd"]);
 
 const userAgents = {
   facebookMobile:
@@ -207,14 +210,40 @@ async function discoverInstagram() {
   });
 }
 
-async function importInstagram() {
-  const discovered = await discoverInstagram();
+function instagramPostKey(sourceUrl) {
+  try {
+    const url = new URL(sourceUrl);
+    if (["instagram.com", "www.instagram.com", "m.instagram.com"].includes(url.hostname)) {
+      // Curated URLs include the profile name; discovery emits /p/ or /reel/.
+      // A shortcode identifies the same post across those URL forms and types.
+      const match = url.pathname.match(/\/(?:p|reel)\/([A-Za-z0-9_-]+)\/?$/);
+      if (match) return `instagram:${match[1]}`;
+    }
+  } catch {
+    // Keep unknown/malformed source strings distinct rather than dropping posts.
+  }
+  return `url:${sourceUrl}`;
+}
+
+export async function importInstagram(discover = discoverInstagram) {
+  const discovered = await discover();
   const outputDir = resolve(ASSET_ROOT, "instagram");
-  await resetDir(outputDir);
-  const posts = [];
+  // Course and gallery pages reuse selected posts, including local caption files.
+  // A feed refresh must not remove media that those pages still reference.
+  const previousManifest = await readFile(MANIFEST_PATH, "utf8")
+    .then((content) => JSON.parse(content))
+    .catch((error) => {
+      if (error.code === "ENOENT") return { posts: [] };
+      throw error;
+    });
+  const posts = previousManifest.posts.filter((post) => post.platform === "instagram");
+  const previousPostKeys = new Set(posts.map((post) => instagramPostKey(post.sourceUrl)));
+  await ensureDir(outputDir);
   const errors = [];
 
   for (const [index, item] of discovered.entries()) {
+    const postKey = instagramPostKey(item.sourceUrl);
+    if (EXCLUDED_INSTAGRAM_POST_KEYS.has(postKey) || previousPostKeys.has(postKey)) continue;
     try {
       const baseName = `${String(index + 1).padStart(2, "0")}-${slugify(item.id)}`;
       const mediaExt = item.mediaType === "video" ? ".mp4" : ".jpg";
@@ -248,6 +277,7 @@ async function importInstagram() {
         sourceUrl: item.sourceUrl,
         title: item.title,
       });
+      previousPostKeys.add(postKey);
     } catch (error) {
       errors.push(`${item.sourceUrl}: ${error.message}`);
     }
@@ -255,7 +285,7 @@ async function importInstagram() {
 
   return {
     errors,
-    posts,
+    posts: posts.sort((a, b) => Date.parse(b.publishedAt ?? "") - Date.parse(a.publishedAt ?? "")),
     status: posts.length >= REQUIRED_POSTS ? "ready" : "blocked",
   };
 }
@@ -1039,7 +1069,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
