@@ -19,6 +19,8 @@ const ASSET_ROOT = resolve(PUBLIC_ROOT, "assets/social");
 const MANIFEST_PATH = resolve(ROOT, "lib/social-local-media-manifest.json");
 const SOURCE_PATH = resolve(ROOT, "data/social-post-sources.json");
 const CHECKED_AT = new Date().toISOString();
+// Keep the specifically held September 14 staff photo omitted pending consent.
+const EXCLUDED_INSTAGRAM_POST_KEYS = new Set(["instagram:DdS81OOBwxd"]);
 
 const userAgents = {
   facebookMobile:
@@ -241,7 +243,7 @@ export async function importInstagram(discover = discoverInstagram) {
 
   for (const [index, item] of discovered.entries()) {
     const postKey = instagramPostKey(item.sourceUrl);
-    if (previousPostKeys.has(postKey)) continue;
+    if (EXCLUDED_INSTAGRAM_POST_KEYS.has(postKey) || previousPostKeys.has(postKey)) continue;
     try {
       const baseName = `${String(index + 1).padStart(2, "0")}-${slugify(item.id)}`;
       const mediaExt = item.mediaType === "video" ? ".mp4" : ".jpg";

@@ -37,3 +37,13 @@ The September 14 staff milestone photo is excluded from the manifest and assets 
 The merge retains the deployed early homepage schedule/form, front-desk program link, limited review marquee, optimized images, tap-to-load map, and Data Saver behavior. Captioned videos remain tap-to-play with `preload="none"`.
 
 On phones, class photos and training clips use the same compact swipe-rail pattern as course and instructor cards, keeping the homepage shorter while every item remains reachable.
+
+## Refresh identity and feed placement
+
+Refreshes compare Instagram shortcodes across profile-prefixed, short `/p/` and `/reel/` URLs, retaining editorial metadata and captions. Successful new imports also enter the seen set, so duplicate records within one refresh do not append twice.
+
+The six reviewed class posts carry explicit `editorialPlacement: selected`; the twelve legacy snapshot posts carry `archive`. The open feed may also show unflagged imports published after the last reviewed source timestamp (September 25, 2026, 23:58:20 UTC). Older backfills remain archived; missing or invalid publication dates appear in a separate qualified group. Asset filenames do not determine placement. This watermark is an editorial boundary, not proof of current class availability.
+
+The specific September 14 staff photo (`DdS81OOBwxd`) stays excluded by shortcode pending consent, including on subsequent refreshes. No other post is added to that exclusion. New imports still require editorial review before publication.
+
+`pnpm test:social-import` uses only temporary files and fixture downloads. It checks refresh identity, held-photo omission, caption retention and idempotence, then renders the actual feed component to verify new, older and undated imports while preserving the current six/twelve split.

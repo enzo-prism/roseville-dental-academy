@@ -57,6 +57,8 @@ test("Instagram refresh keeps curated posts and captions across URL aliases and 
       alt: "New fixture photo",
     };
     feed.push(newPost, { ...newPost, sourceUrl: "https://instagram.com/rosevilledentalacademy/p/New_refresh_01/?duplicate=true" });
+    const held = { ...newPost, id: "DdS81OOBwxd", sourceUrl: "https://www.instagram.com/p/DdS81OOBwxd/", sourceMediaUrl: "https://fixtures.invalid/held-staff-photo" };
+    feed.push(held, { ...held, sourceUrl: "https://instagram.com/rosevilledentalacademy/p/DdS81OOBwxd/?alias=true" });
     globalThis.fetch = async (url) => {
       assert.ok(String(url).startsWith("https://fixtures.invalid/"), "No real network is allowed");
       downloads.push(String(url));
@@ -67,6 +69,7 @@ test("Instagram refresh keeps curated posts and captions across URL aliases and 
     const first = await importInstagram(async () => feed);
     assert.deepEqual(first.errors, []);
     assert.equal(first.status, "ready");
+    assert.ok(!first.posts.some((post) => post.sourceUrl.includes("DdS81OOBwxd")), "The specific held staff photo must not be reimported through either URL form");
     assert.equal(first.posts.length, originals.length + 1, "Existing curated URLs and repeated discovered posts must not duplicate");
     assert.deepEqual(downloads, [newPost.sourceMediaUrl, newPost.sourcePosterUrl], "Only the genuinely new post downloads once");
     for (const original of originals) {

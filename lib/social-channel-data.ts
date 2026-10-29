@@ -14,6 +14,7 @@ export type SocialChannelPost = {
   caption: string;
   captionsSrc?: string;
   comments?: number;
+  editorialPlacement?: "selected" | "archive";
   height?: number;
   label: string;
   likes?: number;
@@ -26,6 +27,25 @@ export type SocialChannelPost = {
   title: string;
   width?: number;
 };
+
+// Last source post in the manually reviewed August/September class-media set.
+// Newer dated imports can join the open feed; older backfills need editorial
+// selection. Unknown dates are qualified separately, never called recent.
+const INSTAGRAM_REVIEWED_THROUGH = Date.parse("2026-09-25T23:58:20.000Z");
+
+export function partitionInstagramPosts(posts: readonly SocialChannelPost[]) {
+  const current: SocialChannelPost[] = [];
+  const archive: SocialChannelPost[] = [];
+  const undated: SocialChannelPost[] = [];
+  for (const post of posts) {
+    const publishedAt = post.publishedAt ? Date.parse(post.publishedAt) : Number.NaN;
+    if (!Number.isFinite(publishedAt)) undated.push(post);
+    else if (post.editorialPlacement === "selected") current.push(post);
+    else if (post.editorialPlacement === "archive" || publishedAt <= INSTAGRAM_REVIEWED_THROUGH) archive.push(post);
+    else current.push(post);
+  }
+  return { current, archive, undated };
+}
 
 export type SocialChannelImportStatus = {
   checkedAt: string;
