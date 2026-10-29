@@ -212,6 +212,12 @@ than 12 hours changes to `review` rather than risking a duplicate after the prov
 provider acceptance, not inbox delivery. Monitor delivery/bounces in the approved mail provider.
 Before its first attempt, each outbox row persists the complete sender, recipient, subject,
 text and template version. Every attempt sends that stored JSON, including the first.
+New live payloads use template version `rda-student-confirmation-v2` and set Resend's
+`reply_to` to the academy's public mailbox from `siteContact.email` (currently
+`rosevilledentalacademy@gmail.com`). The verified sending domain remains the `from`
+address; it does not need to receive replies. Existing stored payloads, including v1
+payloads without a reply-to, are never changed or enriched during retries. Test-mode
+captures retain v1 and do not add live reply routing.
 The database rejects later payload edits; later policy/template/sender changes cannot
 silently change a queued confirmation or the bytes sent with its idempotency key. The
 text uses the policy accepted by that enrollment rather than the current site's policy.
@@ -229,6 +235,17 @@ uses webhook configuration, so it still works while live payments are off. Enabl
 email before draining or the rows stay queued. A `review` send requires comparing provider
 logs before any deliberate resend; do not reset its status blindly. Keep the pilot staff
 origin aligned with the deployed enrollment origin.
+
+The production Vercel cron also calls `GET /api/student-enrollment/confirmation-drain`
+every five minutes, authenticated with the existing `CRON_SECRET` bearer token. It
+only processes live paid `pending`/`sending` confirmations while live email is enabled;
+it keeps working when new payments are disabled. Each run uses the same immutable
+payloads, provider idempotency keys, send leases, 12-hour review cutoff, and bounded
+100-row / 20-second drain as the staff retry. It never retries `review` rows or sends
+test-mode mail. Responses contain counts only; a processing error returns 503 and
+eligible rows remain available for the next scheduled run. Check cron failures and
+the staff roster for mail requiring review. This five-minute schedule requires the
+existing Vercel Pro plan; daily scheduling would exceed the ambiguity review window.
 
 Do not resolve an orphan review by running
 `UPDATE student_enrollments SET status='paid'`. That bypasses the seat cap and can

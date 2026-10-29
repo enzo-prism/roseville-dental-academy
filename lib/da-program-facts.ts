@@ -11,17 +11,13 @@ import { googleReviewsAggregate, siteContact } from "@/lib/site-data";
 // Core Dental Assisting Program facts shared by the local SEO pages and the
 // Spanish page. Wording mirrors lib/site-data.ts and lib/live-course-content.ts.
 // Start dates always come from lib/course-schedule.ts. Tuition matches the
-// catalog; the $1,000 minimum down payment is the figure from #30 (registration
-// form), not a new claim.
+// catalog; admissions confirms current payment arrangements.
 
 export const DA_PROGRAM_PATH = "/dental-assisting-program";
 
 export const daProgramFacts = {
   tuition: 2500,
   tuitionLabel: dentalAssistingProgram.price,
-  minimumDownPaymentLabel: "$1,000",
-  paymentPlan:
-    "$1,000 minimum down payment, with the balance paid weekly over the nine weeks",
   weeks: 9,
   hours: 210,
   internshipHours: 64,

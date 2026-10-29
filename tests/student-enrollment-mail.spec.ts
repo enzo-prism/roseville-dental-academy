@@ -2,6 +2,7 @@ import { randomUUID, createHash } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import { PGlite } from "@electric-sql/pglite";
 import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
+import { siteContact } from "@/lib/site-data";
 import {
   getStudentEnrollment,
   STUDENT_POLICY_HASH,
@@ -126,9 +127,10 @@ async function fixture() {
       (
         await db.query<{
           status: string;
-          payload: { from: string; to: string[]; text: string };
+          payload: { from: string; to: string[]; text: string; reply_to?: string };
+          template_version: string;
         }>(
-          "SELECT status,payload FROM student_enrollment_mail WHERE enrollment_id=$1",
+          "SELECT status,payload,template_version FROM student_enrollment_mail WHERE enrollment_id=$1",
           [id],
         )
       ).rows[0],
@@ -139,6 +141,53 @@ async function fixture() {
     },
   };
 }
+
+test("new live confirmations route replies to the academy mailbox while retaining the configured sender", async () => {
+  const f = await fixture();
+  try {
+    await deliverStudentConfirmation(f.held, f.config);
+    expect(f.calls).toHaveLength(1);
+    expect(JSON.parse(f.calls[0].body)).toMatchObject({
+      from: "Academy <academy@example.test>",
+      to: ["adult@example.test"],
+      reply_to: siteContact.email,
+    });
+    expect((await f.state()).payload.reply_to).toBe("rosevilledentalacademy@gmail.com");
+    expect((await f.state()).template_version).toBe("rda-student-confirmation-v2");
+  } finally {
+    await f.close();
+  }
+});
+
+test("legacy queued payloads retry without adding reply routing or changing their template version", async () => {
+  const f = await fixture();
+  try {
+    const legacyPayload = {
+      from: "Original sender <original@example.test>",
+      to: ["adult@example.test"],
+      subject: "Infection Control enrollment confirmation",
+      text: studentConfirmationText(f.held, "live"),
+    };
+    await f.db.query(
+      "UPDATE student_enrollment_mail SET payload=$2::jsonb,template_version='rda-student-confirmation-v1',payload_created_at=now() WHERE enrollment_id=$1",
+      [f.id, JSON.stringify(legacyPayload)],
+    );
+    f.setBehavior("timeout");
+    await expect(deliverStudentConfirmation(f.held, f.config)).rejects.toThrow("timed out");
+    expect(JSON.parse(f.calls[0].body)).toEqual(legacyPayload);
+    expect(JSON.parse(f.calls[0].body)).not.toHaveProperty("reply_to");
+    process.env.RDA_STUDENT_EMAIL_FROM = "Changed <changed@example.test>";
+    await f.retry();
+    await deliverStudentConfirmation(f.held, f.config);
+    expect(f.calls).toHaveLength(2);
+    expect(f.calls[1]).toEqual(f.calls[0]);
+    expect(f.accepted.size).toBe(1);
+    expect((await f.state()).payload).toEqual(legacyPayload);
+    expect((await f.state()).template_version).toBe("rda-student-confirmation-v1");
+  } finally {
+    await f.close();
+  }
+});
 
 test("ambiguous email timeout retries the exact immutable payload and confirms only once", async () => {
   const f = await fixture();
@@ -276,6 +325,8 @@ test("refund before delivery suppresses confirmation; test mode captures an immu
     expect(capture.calls).toHaveLength(0);
     expect((await capture.state()).status).toBe("captured");
     expect((await capture.state()).payload.text).toContain("TEST ONLY");
+    expect((await capture.state()).payload).not.toHaveProperty("reply_to");
+    expect((await capture.state()).template_version).toBe("rda-student-confirmation-v1");
   } finally {
     await capture.close();
   }

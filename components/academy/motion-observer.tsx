@@ -104,12 +104,33 @@ export function MotionObserver() {
       root.classList.add("rda-motion");
     }
 
+    // Marquees only run near the viewport; an endless animation keeps its wide
+    // track layer alive in GPU memory even after it scrolls off screen.
+    const marquees = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          entry.target.toggleAttribute("data-marquee-active", entry.isIntersecting);
+        }
+      },
+      { rootMargin: "200px 0px" },
+    );
+    const observeMarquees = () => {
+      if (reduced) return;
+      // Observing an element twice is a no-op.
+      document.querySelectorAll(".ac-marquee").forEach((element) => marquees.observe(element));
+    };
+
     scan();
-    const mutations = new MutationObserver(() => scan());
+    observeMarquees();
+    const mutations = new MutationObserver(() => {
+      scan();
+      observeMarquees();
+    });
     mutations.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       observer.disconnect();
+      marquees.disconnect();
       mutations.disconnect();
       root.classList.remove("rda-motion");
     };

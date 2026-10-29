@@ -156,7 +156,7 @@ export function SpanishProgramPage() {
                 label: "Costo",
                 value: daProgramFacts.tuitionLabel,
                 detail:
-                  "Pago inicial mínimo de $1,000; el saldo se paga semanalmente durante las nueve semanas.",
+                  "Consulte con admisiones las opciones de pago actuales.",
               },
               {
                 label: "Próximo inicio disponible",

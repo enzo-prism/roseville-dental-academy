@@ -114,7 +114,7 @@ export const spanishDaFaqs: SeoFaq[] = [
   {
     question: "¿Cómo funciona el pago?",
     answer:
-      `El costo del programa es de $2,500. Se requiere un pago inicial mínimo de $1,000 y el saldo se paga semanalmente durante las nueve semanas. Official English cancellation and refund policy: ${CANCELLATION_POLICY_SUMMARY}`,
+      `El costo del programa es de $2,500. Consulte con admisiones las opciones de pago actuales. Official English cancellation and refund policy: ${CANCELLATION_POLICY_SUMMARY}`,
   },
   {
     question: "¿Las clases se imparten en español?",

@@ -2706,6 +2706,47 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
     });
 
+    test("popup waits for scrolling on phones instead of opening on arrival", async ({ page }) => {
+      await page.setViewportSize({ height: 844, width: 390 });
+      await gotoSettled(page, "/", { allowPromo: true });
+
+      const dialog = page.locator("[data-rda-promo-dialog='true']");
+
+      // gotoSettled already waited past the 1.5s desktop timer.
+      await expect(dialog).toHaveCount(0);
+
+      await page.evaluate(() => window.scrollTo({ behavior: "instant", top: window.innerHeight * 2 }));
+      await expect(dialog).toBeVisible({ timeout: 8_000 });
+      await expect(dialog.locator("img")).toHaveAttribute("src", /\/_next\/image\?url=/);
+    });
+
+    test("popup does not cover the form after the hero CTA jumps to it on phones", async ({ page }) => {
+      await page.setViewportSize({ height: 844, width: 390 });
+      await gotoSettled(page, "/", { allowPromo: true });
+
+      await page.evaluate(() => {
+        document.querySelector("form[data-rda-signup-form]")?.scrollIntoView({ behavior: "instant", block: "start" });
+      });
+      await page.waitForTimeout(1_000);
+
+      await expect(page.locator("[data-rda-promo-dialog='true']")).toHaveCount(0);
+    });
+
+    test("homepage contact map loads only when tapped", async ({ page }) => {
+      await page.setViewportSize({ height: 844, width: 390 });
+      await gotoSettled(page, "/");
+
+      const contact = page.locator(".rda-contact-section").first();
+      const mapFrame = contact.locator('iframe[data-rda-google-map="true"]');
+
+      await contact.scrollIntoViewIfNeeded();
+      await expect(mapFrame).toHaveCount(0);
+
+      await contact.locator('[data-rda-map-load="true"]').click();
+      await expect(mapFrame).toHaveCount(1);
+      await expect(mapFrame).toHaveAttribute("title", "Google Maps location for Roseville Dental Academy");
+    });
+
     test("popup does not auto-open after a lead form field has focus", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await page.goto(`${localOrigin}/`, {

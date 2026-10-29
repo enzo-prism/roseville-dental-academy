@@ -81,7 +81,9 @@ recognize both the primary-only Meta PageView and the configured two-pixel
 
 The Dental Assisting announcement now promotes Friday November 20 and Saturday
 December 5 with a new dismissal key. The popup stays closed if a visitor is
-already using a lead form.
+already using a lead form. On desktop it opens 1.5s after load; on phones
+(max-width 760px) it waits until the visitor has scrolled 1.5 screens and no
+lead form is on screen, so it never covers the page on arrival.
 
 Elapsed dates are excluded from upcoming cards, dates, forms, and CourseInstance
 schema. Sold-out (`full`) dates stay on the page with a Full badge but are omitted

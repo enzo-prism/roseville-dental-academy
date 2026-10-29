@@ -146,3 +146,7 @@ a `pnpm snapshot:refresh` baseline update. Until then, the hub is discovered via
 ### Academy policy and private routes
 
 `/cancellation-policy` is public, canonical, and included in the website sitemap. The approved policy also appears in visible FAQ answers and matching FAQPage schema. `/student-jobs`, `/enrollment-pilot`, and their APIs are excluded from sitemaps and disallowed in robots.txt; they additionally return noindex/nofollow/noarchive and no-store headers. Robots rules do not grant authorization; password/session checks protect private HTML and RSC responses. Private routes suppress advertising pixels, attribution, analytics, and floating contact widgets.
+
+## October 29 local-page release review
+
+The city, office, course-path, and Spanish pages retain the current academy tuition and schedule sources. Unconfirmed CEREC/CT/Nomad equipment statements and new down-payment/weekly-payment prose are omitted; admissions confirms payment arrangements. The Spanish page labels and links the approved English cancellation summary rather than presenting an unapproved policy translation. It does not claim Spanish-language classes or staff. The sitemap keeps the already-live dental front desk inquiry page.

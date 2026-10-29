@@ -207,7 +207,7 @@ export const localCities: LocalCity[] = [
       {
         question: "What does the program cost and how do payments work?",
         answer:
-          `Tuition is $2,500. There is a $1,000 minimum down payment, with the balance paid weekly over the nine weeks. ${CANCELLATION_POLICY_SUMMARY}`,
+          `Tuition is $2,500. Ask admissions about current payment options. ${CANCELLATION_POLICY_SUMMARY}`,
       },
       {
         question: "Which class days can I choose?",
@@ -304,7 +304,7 @@ export const localCities: LocalCity[] = [
       {
         question: "How do I reserve a spot?",
         answer:
-          "Call admissions at 916-888-9821 or send the request form on this page. The minimum down payment is $1,000, with the balance paid weekly over the nine weeks.",
+          "Call admissions at 916-888-9821 or send the request form on this page. Admissions will confirm current payment options and availability.",
       },
     ],
     relatedResourceSlugs: [

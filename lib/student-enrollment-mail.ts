@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { enrollmentDate } from "@/lib/enrollment-contract";
+import { siteContact } from "@/lib/site-data";
 import {
   studentDatabase,
   type StudentConfig,
@@ -23,6 +24,7 @@ type ConfirmationPayload = {
   to: string[];
   subject: string;
   text: string;
+  reply_to?: string;
 };
 // The durable outbox is inserted in the same transaction as the paid roster entry.
 // Retried sends use one provider idempotency key; ambiguity beyond 12h needs operator review.
@@ -53,11 +55,15 @@ export async function deliverStudentConfirmation(
       to: [held.email],
       subject: "Infection Control enrollment confirmation",
       text: studentConfirmationText(held, config.mode),
+      ...(config.mode === "live" ? { reply_to: siteContact.email } : {}),
     };
+    const templateVersion = config.mode === "live"
+      ? "rda-student-confirmation-v2"
+      : "rda-student-confirmation-v1";
     // Concurrent initializers race through one conditional UPDATE. Every send,
     // including the first, reads the winning immutable JSON payload from storage.
     await db`UPDATE student_enrollment_mail SET payload=${JSON.stringify(payload)}::jsonb,
-      template_version='rda-student-confirmation-v1',payload_created_at=now()
+      template_version=${templateVersion},payload_created_at=now()
       WHERE enrollment_id=${held.id}::uuid AND payload IS NULL`;
   }
   await db`UPDATE student_enrollment_mail SET status='review' WHERE enrollment_id=${held.id}::uuid

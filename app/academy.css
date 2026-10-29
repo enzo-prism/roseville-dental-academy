@@ -662,7 +662,9 @@ body {
   padding-right: var(--marquee-gap, 1rem);
 }
 
-html.rda-motion .ac-marquee-track {
+/* Only while near the viewport (MotionObserver sets data-marquee-active), so
+   the browser can release the track's layer once it scrolls away. */
+html.rda-motion .ac-marquee[data-marquee-active] .ac-marquee-track {
   animation: ac-marquee var(--marquee-duration) linear infinite;
 }
 
@@ -4707,6 +4709,31 @@ body.rda-lightbox-open .rda-whatsapp-fab {
   inset: 0;
   position: absolute;
   width: 100%;
+}
+
+/* Compact (homepage) map: a tap-to-load stand-in that keeps the card's size. */
+.ac-map-placeholder {
+  align-content: center;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  display: grid;
+  gap: 0.75rem;
+  inset: 0;
+  justify-items: center;
+  padding: 1.5rem 1.5rem 4.5rem;
+  position: absolute;
+  text-align: center;
+}
+
+.ac-map-placeholder > svg {
+  color: var(--primary);
+  height: 2rem;
+  width: 2rem;
+}
+
+.ac-map-placeholder p {
+  margin: 0;
+  max-width: 22rem;
 }
 
 .dark .ac-contact-map iframe {

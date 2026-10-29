@@ -3,6 +3,7 @@ import {
   type LiveRoute,
 } from "@/lib/live-route-data";
 import { cancellationPolicyRoute } from "@/lib/academy-policies";
+import { frontOfficeRoute } from "@/lib/front-office-program";
 import { journeyRoute } from "@/lib/journey-roadmap-data";
 import { getLocalSeoSitemapRoutes } from "@/lib/local-seo-pages";
 import { reviewsRoute } from "@/lib/reviews-route";
@@ -56,6 +57,7 @@ export function GET() {
     journeyRoute,
     reviewsRoute,
     cancellationPolicyRoute,
+    frontOfficeRoute,
     ...getResourceSitemapRoutes(),
     ...getLocalSeoSitemapRoutes(),
     ...getSeoLandingSitemapRoutes(),

@@ -29,7 +29,7 @@ export function HotjarAnalytics() {
   }
 
   return (
-    <Script id="rda-hotjar-analytics" strategy="afterInteractive">
+    <Script id="rda-hotjar-analytics" strategy="lazyOnload">
       {`
         (function(h,o,t,j,a,r){
           h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};

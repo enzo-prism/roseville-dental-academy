@@ -132,7 +132,7 @@ export function LocalCityPage({ city }: { city: LocalCity }) {
               {
                 label: "Tuition",
                 value: daProgramFacts.tuitionLabel,
-                detail: `${daProgramFacts.minimumDownPaymentLabel} minimum down payment, with the balance paid weekly over the nine weeks. ${daProgramFacts.cancellationPolicy}`,
+                detail: `Ask admissions about current payment options. ${daProgramFacts.cancellationPolicy}`,
               },
               {
                 label: "Next open start date",
@@ -194,7 +194,6 @@ export function LocalCityPage({ city }: { city: LocalCity }) {
               "Training inside a working dental office, with instructor support — not a simulation-only classroom.",
               `A ${daProgramFacts.internshipHours}-hour internship built into the ${daProgramFacts.weeks}-week schedule.`,
               "Resume and job assistance as you prepare for an entry-level dental office role.",
-              "Exposure to a CEREC same-day crown setup, CT scans, and the Nomad x-ray unit.",
               <>
                 A{" "}
                 <a

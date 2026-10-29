@@ -90,6 +90,7 @@ try {
         "tests/student-enrollment-mail.spec.ts",
         "tests/student-enrollment-webhook-off.spec.ts",
         "tests/student-enrollment-retry.spec.ts",
+        "tests/student-enrollment-confirmation-drain.spec.ts",
       ],
       { cwd: root, env, stdio: "inherit" },
     );

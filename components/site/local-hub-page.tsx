@@ -120,7 +120,7 @@ export function LocalHubPage() {
               {
                 label: "Tuition",
                 value: daProgramFacts.tuitionLabel,
-                detail: `${daProgramFacts.minimumDownPaymentLabel} minimum down payment, with the balance paid weekly over the nine weeks.`,
+                detail: "Ask admissions about current payment options.",
               },
               {
                 label: "Next open start date",

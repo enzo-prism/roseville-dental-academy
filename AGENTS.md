@@ -17,7 +17,7 @@ Keep these contracts separate:
 - Preserve route titles, route aliases, status codes, form field names, third-party endpoints, and real academy imagery. Copy may change, but facts (prices, dates, approvals, policies, reviews) must come from `lib/` data and stay accurate; never invent claims, reviews, or credentials.
 - Use the Chairside direction from `/DESIGN.md`: warm paper / deep-navy "ink" surfaces, Roseville logo-blue primary, Fraunces headings, Plus Jakarta Sans body/nav/forms, Lucide icons, Radix behavior, rounded photo-first surfaces, and tokens that work in both light and dark mode (`.dark`, next-themes). Students in action, the instructor team, and reviews are the brand's lead content.
 - Every public lead form uses the form kit (`components/academy/form-kit.tsx`) and includes the required "How did you hear about us?" field (`lib/how-heard.ts`); keep its field names distinct from the hidden `how-heard` attribution stamp.
-- Motion goes through `MotionObserver` (`data-reveal`, `data-count-to`) and CSS gated by `html.rda-motion`; always honor `prefers-reduced-motion` and keep content visible without JavaScript.
+- Motion goes through `MotionObserver` (`data-reveal`, `data-count-to`, marquee `data-marquee-active`) and CSS gated by `html.rda-motion`; always honor `prefers-reduced-motion` and keep content visible without JavaScript. Endless animations must stay within the mobile GPU budget in `/DESIGN.md` ("Motion"): short tracks, and stopped while off screen.
 - Keep `snapshot/live/` as the migration/reference source; it only renders the `/m/*` utility screens now.
 - Keep React shell behavior in stable components instead of injected repair scripts or third-party GoDaddy runtime code.
 - The WhatsApp click-to-chat button (`components/site/whatsapp-fab.tsx`, mounted in `app/layout.tsx`) is the only persistent floating control. It owns the bottom-right corner on desktop, tablet, and mobile, with safe-area insets, and stays **below** dialogs/mobile menus. Stack order: page < FAB (`--rda-shell-z-fab`) < sheet **overlay** (`--rda-shell-z-dialog-overlay`) < sheet/menu **content** (`--rda-shell-z-dialog` / `--rda-shell-z-mobile-menu`). Never put the overlay above the panel — that blurs the nav and blocks taps. Hide the FAB when `body.rda-mobile-menu-open` or `body.is-mobile-nav-open`. It is hidden from QA visual/content baselines in `tests/support/qa-helpers.ts`. Do not remount an ElevenLabs (or other) chat widget.
@@ -47,6 +47,8 @@ For UI or design-system changes, run the smallest meaningful set first, then bro
 - Flag a WhatsApp FAB that is not bottom-right, that ignores the safe area, or that stays visible over the mobile menu or promo dialog.
 - Flag docs that still describe the old snapshot-first homepage or the Sera design system.
 - Flag UI that only works in light mode, ignores reduced motion, or hides content until JavaScript runs.
+- Flag photos rendered with a plain `<img>` from `/public/assets` instead of `next/image` with a matching `sizes` (see "Images" in `/DESIGN.md`).
+- Flag endless animations on very wide or tall elements (for example a marquee track holding a whole data list) or loops that keep running off screen; on iPhones they hold GPU memory for the whole page visit.
 
 ## Cursor Cloud specific instructions
 
