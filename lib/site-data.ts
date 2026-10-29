@@ -6,6 +6,7 @@ import {
 import {
   INFECTION_CONTROL_EMPLOYER_FAQ_ANSWER,
   INFECTION_CONTROL_EMPLOYER_FAQ_QUESTION,
+  INFECTION_CONTROL_REQUIREMENT_INTRO,
 } from "@/lib/infection-control-requirement";
 import type {
   AuthPageData,
@@ -799,7 +800,7 @@ export const faqItems = [
   {
     question: "Is your infection control course board approved?",
     answer:
-      "Yes. The academy lists the 8-hour Infection Control course with provider number IC189 and positions it as a California Dental Board requirement effective January 1, 2025.",
+      "Yes. Roseville Dental Academy offers a Dental Board of California-approved 8-hour Infection Control course with provider number IC189. Confirm current training requirements for your role with the Dental Board.",
   },
   {
     question: "Do you accept financial aid?",
@@ -813,8 +814,7 @@ export const faqItems = [
   },
   {
     question: "Why do new dental assistants ask about Infection Control?",
-    answer:
-      "California Dental Board guidance says unlicensed dental assistants must complete a board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials.",
+    answer: INFECTION_CONTROL_REQUIREMENT_INTRO,
   },
   {
     question: "What do students need before Coronal Polish?",
@@ -960,8 +960,7 @@ export const studentFaqHighlights = [
   },
   {
     question: "Why are offices asking about the 8-hour Infection Control course?",
-    answer:
-      "California Dental Board guidance says unlicensed dental assistants must complete a board-approved 8-hour Infection Control course before performing basic supportive dental procedures involving potential exposure to blood, saliva, or other potentially infectious materials.",
+    answer: INFECTION_CONTROL_REQUIREMENT_INTRO,
   },
   {
     question: INFECTION_CONTROL_EMPLOYER_FAQ_QUESTION,
@@ -1846,7 +1845,7 @@ export const coursePages: Record<string, CoursePageData> = {
       title: "Additional Information",
       eyebrow: "Additional information",
       copy: [
-        "The California Dental Board requires an 8-hour infection control course for those seeking qualifying certifications, effective January 1, 2025.",
+        "The academy offers a Board-approved 8-hour Infection Control course (IC189). Confirm current course requirements for your role and any license or permit application with the Dental Board of California.",
         "Students should arrive prepared for both didactic and practical work and review prerequisite documents before contacting the office to register.",
       ],
       image: siteImages.infection,

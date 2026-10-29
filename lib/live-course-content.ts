@@ -145,8 +145,8 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "Best next step",
     ],
     bodyText: [
-      "8-HOUR INFECTION CONTROL COURSE Unlicensed dental assistants who need the required board-approved infection control course before exposure to potentially infectious materials.",
-      "Who is it for? Unlicensed dental assistants who need the required board-approved infection control course before exposure to potentially infectious materials.",
+      "8-HOUR INFECTION CONTROL COURSE Dental assistants choosing a Board-approved 8-hour Infection Control course. Confirm current requirements for your role with the Dental Board of California.",
+      "Who is it for? Dental assistants choosing a Board-approved 8-hour Infection Control course. Confirm current requirements for your role with the Dental Board of California.",
       "Prerequisites Current BLS certification through AHA or ARC, plus a 2-hour Dental Practice Act certification.",
       "What students get at the end Completion certificate for the board-approved 8-hour Infection Control course.",
       "Price $395.",
