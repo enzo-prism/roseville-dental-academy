@@ -75,3 +75,18 @@ test("Instagram refresh keeps historical posts and new media source links", asyn
   await expect(firstPhoto).toHaveCSS("object-fit", "contain");
   await expect(page.locator('a[href*="DdS81OOBwxd"]')).toHaveCount(0);
 });
+
+test("phone visitors can reach every training clip in a compact swipe rail", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto("/photos", { waitUntil: "domcontentloaded" });
+  const rail = page.locator('[data-rda-academy-media="academy-training-videos"] .ac-media-grid');
+  await rail.scrollIntoViewIfNeeded();
+  expect(await rail.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+  await rail.evaluate((node) => { node.scrollLeft = node.scrollWidth; });
+  const last = rail.locator("article").last();
+  await expect.poll(async () => {
+    const box = await last.boundingBox();
+    return box ? box.x >= 0 && box.x + box.width <= 391 : false;
+  }).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+});

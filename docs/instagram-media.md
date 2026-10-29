@@ -35,3 +35,5 @@ The September 19 admissions meme and four August enrollment announcements were e
 The September 14 staff milestone photo is excluded from the manifest and assets pending consent. The new instructor media section and doctor introduction highlight are omitted; the existing instructor page and historical social posts remain unchanged. No identity or first-name approval is inferred.
 
 The merge retains the deployed early homepage schedule/form, front-desk program link, limited review marquee, optimized images, tap-to-load map, and Data Saver behavior. Captioned videos remain tap-to-play with `preload="none"`.
+
+On phones, class photos and training clips use the same compact swipe-rail pattern as course and instructor cards, keeping the homepage shorter while every item remains reachable.
