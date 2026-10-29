@@ -62,6 +62,7 @@ export type ResourceArticle = {
   relatedCourses: ResourceRelatedCourse[];
   relatedSlugs: string[];
   showCertificateExpiration?: boolean;
+  sources?: { label: string; href: string }[];
 };
 
 const DA_PROGRAM_COURSE: ResourceRelatedCourse = {
@@ -476,6 +477,7 @@ export const resourceArticles: ResourceArticle[] = [
     ],
     relatedCourses: [CORONAL_POLISH_COURSE, SEALANTS_COURSE, RADIATION_SAFETY_COURSE],
     relatedSlugs: [
+      "course-certificates-vs-rda-license-renewal-california",
       "how-to-become-a-dental-assistant-in-california",
       "how-long-does-it-take-to-become-a-dental-assistant",
       "dental-assistant-salary-sacramento",
@@ -666,6 +668,115 @@ export const resourceArticles: ResourceArticle[] = [
       "how-to-become-a-dental-assistant-in-california",
       "rda-vs-dental-assistant-california",
       "how-long-does-it-take-to-become-a-dental-assistant",
+    ],
+  },
+  {
+    slug: "course-certificates-vs-rda-license-renewal-california",
+    title: "Course Certificates vs. RDA License Renewal in California",
+    h1: "Course Certificates vs. RDA License Renewal in California",
+    description:
+      "Understand course completion certificates, California RDA application timing, and continuing education for license renewal before choosing a class.",
+    category: "Licensing Guide",
+    readMinutes: 4,
+    datePublished: "2026-10-29",
+    dateModified: "2026-10-29",
+    heroImage: {
+      src: "/assets/live/programs/dental-assisting-chairside.jpg",
+      alt: "Dental assisting instruction at Roseville Dental Academy.",
+    },
+    intro:
+      "Before booking a class, identify your goal: completing training, applying for a license, or renewing a license you already hold. Similar course names can serve different purposes.",
+    keyTakeaways: [
+      "A course completion certificate records training. It does not issue or renew an RDA license.",
+      "Application certificate age limits and license renewal requirements are separate rules.",
+      "Confirm the course purpose, provider approval, and CE units before paying.",
+    ],
+    sections: [
+      {
+        id: "three-different-steps",
+        heading: "Three different steps",
+        paragraphs: [
+          "A completion certificate is evidence of finishing a course. RDA licensure is a separate Dental Board process requiring an eligible pathway, documentation, an application, and an examination. Finishing a school program alone does not grant a license.",
+          "Renewal applies when you already hold a license or permit. Keep your training records and renewal records organized separately so you can find the right evidence when needed.",
+        ],
+      },
+      {
+        id: "application-certificate-timing",
+        heading: "Applying for a license: check your course dates",
+        paragraphs: [
+          "The Board’s July 2025 notice sets certificate age limits for RDA license, Orthodontic Assistant permit, and Dental Sedation Assistant permit applications. Count back from your application date:",
+        ],
+        bullets: [
+          "Dental Practice Act and Infection Control: completed within 2 years.",
+          "Coronal Polishing, Pit and Fissure Sealants, and Ultrasonic Scaling: within 5 years.",
+          "Radiation Safety: within 10 years.",
+          "The notice says these application age limits do not apply to unlicensed dental assistants.",
+        ],
+      },
+      {
+        id: "renewing-an-existing-license",
+        heading: "Renewing a license: check your CE requirements",
+        paragraphs: [
+          "For RDA, RDAEF, Orthodontic Assistant, and Dental Sedation Assistant renewal, the Board lists 25 continuing education units during the most recent two-year renewal period. The first renewal is exempt from CE requirements.",
+          "Mandatory coursework includes two units of Infection Control, two units of California Dental Practice Act, and qualifying Basic Life Support. BLS must include in-person skills practice and testing; an online-only course is not accepted. Check the Board’s full rules and approved provider lists before enrolling.",
+        ],
+      },
+      {
+        id: "choose-the-right-class",
+        heading: "Before you choose a class",
+        paragraphs: [
+          "The academy’s 8-hour Infection Control course (IC189) and a two-unit Infection Control renewal course serve different purposes. Do not assume the 8-hour class automatically meets your renewal CE requirement. Ask admissions to confirm the specific course’s purpose, approval, and CE eligibility.",
+        ],
+        bullets: [
+          "Write down whether you need job training, an application certificate, or renewal CE.",
+          "Find your intended application date or current license expiration date.",
+          "Gather your existing certificates and their completion dates.",
+          "Match the exact course and provider approval to your goal before registering.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "Does a course certificate make me a licensed RDA?",
+        answer:
+          "No. A certificate documents training; the Dental Board handles license applications and licensure. Review the Board’s application checklist for your pathway.",
+      },
+      {
+        question: "Do the application age limits mean every certificate expires for work?",
+        answer:
+          "No. The cited notice concerns license and permit applications and expressly excludes unlicensed dental assistants from those age limits. Check the rules for your actual duties and goal.",
+      },
+      {
+        question: "Can I assume the academy’s 8-hour Infection Control class counts as renewal CE?",
+        answer:
+          "No. Confirm the specific offering’s CE eligibility and provider approval before booking it for renewal.",
+      },
+    ],
+    relatedCourses: [
+      {
+        href: "/infection-control",
+        label: "8-Hour Infection Control (IC189)",
+        blurb: "Read the course details and confirm whether this offering fits your training or application goal.",
+      },
+      BLS_COURSE,
+    ],
+    relatedSlugs: [
+      "rda-vs-dental-assistant-california",
+      "how-to-become-a-dental-assistant-in-california",
+    ],
+    sources: [
+      {
+        label: "Dental Board: RDA application requirements",
+        href: "https://dbc.ca.gov/applicants/become_licensed_rda.shtml",
+      },
+      {
+        label: "Dental Board: July 2025 application certificate notice (PDF)",
+        href: "https://www.dbc.ca.gov/formspubs/20250701_rda.pdf",
+      },
+      {
+        label: "Dental Board: continuing education for license and permit renewal",
+        href: "https://dbc.ca.gov/licensees/assistant_continuing_education.shtml",
+      },
     ],
   },
 ];
