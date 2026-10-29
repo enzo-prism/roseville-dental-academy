@@ -1,0 +1,17 @@
+.ac-front-photo { margin: 0; }
+.ac-front-photo img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-media); }
+.ac-front-photo figcaption { margin-top: 1rem; color: var(--muted-foreground); font-size: .875rem; }
+.ac-front-topics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; margin-top: 3rem; }
+.ac-front-topic { padding: 1.5rem; border-radius: var(--radius-card); background: var(--card); border: 1px solid var(--border); }
+.ac-front-topic h3 { margin: 1rem 0; }
+.ac-front-fit, .ac-front-faq { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3rem; }
+.ac-front-benefits { list-style: none; margin: 0; padding: 0; display: grid; gap: 2rem; }
+.ac-front-benefits li { display: flex; gap: 1rem; }
+.ac-front-benefits > li > svg { width: 1.5rem; height: 1.5rem; flex-shrink: 0; color: var(--primary); }
+.ac-front-benefits h3 { margin: 0 0 .5rem; }
+.ac-front-benefits p { margin: 0; }
+.ac-front-question { border-bottom: 1px solid var(--border); padding: 1.5rem 0; }
+.ac-front-question summary { cursor: pointer; font-weight: 600; min-height: 2.75rem; }
+.ac-front-question p { margin: 1rem 0 0; }
+@media (max-width: 900px) { .ac-front-topics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ac-front-fit, .ac-front-faq { grid-template-columns: minmax(0, 1fr); gap: 2rem; } }
+@media (max-width: 560px) { .ac-front-topics { grid-template-columns: minmax(0, 1fr); } }

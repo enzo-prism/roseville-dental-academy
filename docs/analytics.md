@@ -4,7 +4,7 @@ Roseville Dental Academy uses Vercel Web Analytics for page views and custom eve
 
 ## Runtime Sources
 
-- `app/layout.tsx` mounts `@vercel/analytics/next`, GA4, Hotjar, Meta Pixel, the ChatGPT Ads Measurement Pixel, and the shared interaction listener.
+- `app/layout.tsx` mounts `@vercel/analytics/next`, GA4, Hotjar, Meta Pixel, the ChatGPT Ads Measurement Pixel, and the shared interaction listener. GA4 and Meta Pixel stay in `<head>` for early paid-media attribution; Hotjar loads with `lazyOnload` (after load, when the browser is idle) to keep it off the phone's main thread during startup.
 - `components/site/analytics-bootstrap.tsx` injects the GA4 and Meta Pixel snippets in the document head so a 2–3s in-app visit still records `page_view`.
 - `app/lp/[slug]/page.tsx` serves noindex ad landing pages for paid social campaigns. The three live Meta landers (`/lp/dental-assisting-enroll`, `/lp/coronal-sealants-renewal`, `/lp/infection-control-office-compliance`) use stripped chrome and a first-viewport form.
 - `components/site/interaction-analytics.tsx` is the custom event source of truth.

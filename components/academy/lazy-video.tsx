@@ -2,6 +2,14 @@
 
 import { useEffect, useRef } from "react";
 
+type NetworkInformation = { effectiveType?: string; saveData?: boolean };
+
+// Data Saver or a 2G-class link: no autoplay; the visitor taps play instead.
+function prefersLightData() {
+  const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
+  return Boolean(connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType ?? ""));
+}
+
 type LazyVideoProps = {
   captionsSrc?: string;
   className?: string;
@@ -15,7 +23,8 @@ type LazyVideoProps = {
 /**
  * Poster-first clip with `preload="none"`. Ambient clips stay muted and only
  * download/play while on screen. Controlled clips never autoplay (with or
- * without sound) and can carry an English captions track.
+ * without sound) and can carry an English captions track. Reduced motion
+ * keeps ambient clips on their posters; Data Saver / 2G offers tap-to-play.
  */
 export function LazyVideo({
   captionsSrc,
@@ -32,6 +41,11 @@ export function LazyVideo({
     const video = ref.current;
     if (!video || !ambient) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (prefersLightData()) {
+      video.src = src;
+      video.controls = true;
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {

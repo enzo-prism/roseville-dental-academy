@@ -44,13 +44,6 @@ export const academyTrainingVideos = [
     title: "Students preparing for their next steps",
     alt: "Roseville Dental Academy dental assisting students gathered in the clinic with a student milestone message.",
   },
-  {
-    ...instagramPost("DXc7rAYjdGX"),
-    title: "Meet Dr. Mike",
-    alt: "Roseville Dental Academy's introduction to Dr. Mike in the dental office.",
-  },
 ] as const;
 
 export const academyHomeVideos = academyTrainingVideos.slice(0, 2);
-
-export const academyTeamMedia = [instagramPost("DdS81OOBwxd"), academyTrainingVideos[5]] as const;

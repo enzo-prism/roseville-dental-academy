@@ -27,14 +27,14 @@ for (const width of [390, 1280]) {
   });
 }
 
-test("all six curated reels decode, seek, and load captions without Instagram requests", async ({ page }) => {
+test("all five curated reels decode, seek, and load captions without Instagram requests", async ({ page }) => {
   const remoteMediaRequests: string[] = [];
   page.on("request", (request) => {
     if (/cdninstagram|fbcdn|instagram\.com/.test(request.url())) remoteMediaRequests.push(request.url());
   });
   await page.goto("/photos", { waitUntil: "domcontentloaded" });
   const videos = page.locator('[data-rda-academy-media="academy-training-videos"] video');
-  await expect(videos).toHaveCount(6);
+  await expect(videos).toHaveCount(5);
   for (const video of await videos.all()) {
     await expect(video).toHaveAttribute("preload", "none");
     await expect(video).toHaveAttribute("controls", "");
@@ -66,11 +66,12 @@ test("all six curated reels decode, seek, and load captions without Instagram re
 
 test("Instagram refresh keeps historical posts and new media source links", async ({ page }) => {
   await page.goto("/instagram");
-  await expect(page.locator('[data-rda-social-post-card="instagram"]')).toHaveCount(19);
+  await expect(page.locator('[data-rda-social-post-card="instagram"]')).toHaveCount(18);
   await expect(page.locator('[data-rda-social-post-card="instagram"]').first()).toHaveAttribute(
     "data-rda-social-post-url",
     /DdusCGsR_Ar/,
   );
   const firstPhoto = page.locator('[data-rda-social-post-card="instagram"] img').first();
   await expect(firstPhoto).toHaveCSS("object-fit", "contain");
+  await expect(page.locator('a[href*="DdS81OOBwxd"]')).toHaveCount(0);
 });

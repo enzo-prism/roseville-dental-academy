@@ -3,6 +3,7 @@ import {
   type LiveRoute,
 } from "@/lib/live-route-data";
 import { cancellationPolicyRoute } from "@/lib/academy-policies";
+import { frontOfficeRoute } from "@/lib/front-office-program";
 import { journeyRoute } from "@/lib/journey-roadmap-data";
 import { reviewsRoute } from "@/lib/reviews-route";
 import { getResourceSitemapRoutes } from "@/lib/resource-articles";
@@ -48,7 +49,7 @@ export function GET() {
     entries.push({ path, priority: priorityFor(path) });
   }
 
-  for (const route of [journeyRoute, reviewsRoute, cancellationPolicyRoute, ...getResourceSitemapRoutes()]) {
+  for (const route of [journeyRoute, reviewsRoute, cancellationPolicyRoute, frontOfficeRoute, ...getResourceSitemapRoutes()]) {
     const path = canonicalPathFor(route);
     if (seen.has(path)) continue;
     seen.add(path);

@@ -188,14 +188,14 @@ Three things carry the brand, in this order: **real photos of students in action
 
 - `app/academy.css` owns the tokens (`:root` and `.dark`), every `ac-*` component style, motion primitives, and the redesign's seasonal accents. It is loaded after `app/globals.css`.
 - `app/globals.css` keeps Tailwind/shadcn setup, the `@theme inline` mapping, the shared stacking contract (`--rda-shell-z-*`), the WhatsApp FAB, the ad-lander (`rda-ad-*`), journey, resource, and social-page styles, and the original seasonal layer. Legacy `--rda-color-*` variables are aliased to the new tokens in `academy.css`, so older styles follow the theme.
-- `components/academy/*` holds the redesign: `home/` (homepage), `pages/` (instructors, photos, Instagram, reviews, contact, FAQs), the form kit, lightbox, lazy video (posters, `preload="none"`, optional captions/controls), academy media sections, page hero, theme provider/toggle, and the motion observer.
+- `components/academy/*` holds the redesign: `home/` (homepage), `pages/` (instructors, photos, reviews, contact, FAQs), the form kit, lightbox, lazy video, page hero, theme provider/toggle, and the motion observer.
 - Data stays in `lib/` (`site-data.ts`, `course-schedule.ts`, `academy-catalog.ts`, `academy-instructors.ts`, `how-heard.ts`). Components never hard-code prices, dates, or reviews.
 
 ## Light And Dark
 
 - `next-themes` (`components/academy/theme-provider.tsx`) toggles `.dark` on `<html>`; the default follows the system (`prefers-color-scheme`), and the header sun/moon toggle (`[data-rda-theme-toggle]`) overrides it per browser (`localStorage["rda-theme"]`).
 - Every surface reads tokens, so a component is dark-mode-ready by default. The **ink band** (`.ac-band-ink`, footer, reviews band, hero bands on journey/resources/social pages via `.ac-ink-hero`) stays deep navy in both themes; inside it, tokens are re-scoped to light-on-dark.
-- The Google Map iframe is inverted in dark mode. GoDaddy snapshot screens (`/m/*`) render as a light "island" card in both themes.
+- The Google Map iframe is inverted in dark mode. The compact contact block (homepage, stable widgets) shows a "Show map" placeholder and loads the embed on tap (~0.5MB of Maps code); the full `/contact` page embeds it straight away. GoDaddy snapshot screens (`/m/*`) render as a light "island" card in both themes.
 
 ## Tokens
 
@@ -219,8 +219,8 @@ Do not introduce raw colors in components. New durable values go here and in `ap
 
 ## Pages
 
-- **Home** (`components/academy/home/home-page.tsx`): photo-stack hero carousel (3 real class photos, Ken Burns, autoplay with pause, keyboard and dot controls) → skills ticker → "Students in action" bento (photos, an Instagram clip, count-up stats) → reviews ink band (score, 6 photo review cards, two-row marquee of every written review) → courses (DA flagship + 5 certification cards + extras) → instructors → schedule → Request Course Info form → why dental assisting → Dental Board details → recent Instagram class photos and captioned clips (`AcademyMediaSection` + `LazyVideo`) → gallery + TikTok → contact → social.
-- **Instructors**, **Photos** (filterable masonry + lightbox + captioned Instagram reels + social video rail), **Instagram** (`components/academy/pages/instagram-page.tsx`: PageHero, selected class photos/clips, then the local-media feed with a historical archive), **Reviews** (`/reviews`: rating breakdown, graduate stories, searchable/filterable wall of every review), **Contact**, and **FAQs** (searchable native `<details>` accordion) share `PageHero`.
+- **Home** (`components/academy/home/home-page.tsx`): photo-stack hero carousel (3 real class photos, Ken Burns, autoplay with pause, keyboard and dot controls) → skills ticker → "Students in action" bento (photos, an Instagram clip, count-up stats) → reviews ink band (score, 6 photo review cards, two-row marquee of the first 20 written reviews — capped so each track stays a small GPU layer on phones; it only animates while near the viewport) → courses (DA flagship + 5 certification cards + extras) → schedule → Request Course Info form → front-desk program intro → instructors → why dental assisting → Dental Board details → recent Instagram class photos and captioned clips (`AcademyMediaSection` + `LazyVideo`) → gallery + TikTok → contact (map loads on tap) → social. Schedule and the form sit right after the courses so phones reach them early; keep new sections below the form.
+- **Instructors**, **Photos** (filterable masonry + lightbox + captioned Instagram reels + social video rail), **Instagram** (`components/academy/pages/instagram-page.tsx`: selected class photos/clips followed by the channel archive), **Reviews** (`/reviews`: rating breakdown, graduate stories, searchable/filterable wall of every review), **Contact**, and **FAQs** (searchable native `<details>` accordion) share `PageHero`.
 - **Course pages** (`components/site/live-course-page.tsx`): hero with quick facts (price, duration) and photo mosaic. The Dental Assisting program hero lists up to three upcoming weekday start chips when at least one date is open (open dates lead, then Full chips in date order; all-full or empty falls back to a visible Next class "Ask admissions" fact). Other course heroes keep the Next class fact. Detail cards, a sticky enrollment sidebar with every upcoming date (Open/Full), course reviews in an ink band, then the course-preselected request form.
 - **404** is standalone (no primary nav) with a way back home.
 
@@ -237,8 +237,11 @@ All public lead forms use the form kit (`components/academy/form-kit.tsx`):
 ## Motion
 
 - `MotionObserver` (mounted once in `app/layout.tsx`) sets `html.rda-motion` and reveals `[data-reveal]` elements on scroll (`fade`, `zoom`, `left`, `right`; stagger with `--reveal-delay`) and counts up `[data-count-to]` numbers. Content is fully visible without JavaScript and anything already on screen is revealed instantly (no flash).
+- `MotionObserver` also sets `data-marquee-active` on each `.ac-marquee` only while it is within 200px of the viewport; the marquee animation runs only under that attribute. An endless transform animation keeps its whole track as one GPU layer, so off-screen marquees must stop.
+- **Images:** every photo goes through `next/image` with a `sizes` that matches its layout (course heroes, the promo popup, cards, galleries). Never render an original from `/public/assets` with a plain `<img>`: originals are up to 1800px / 670KB, a raw course hero made it the slowest paint on phones (~12s on slow 4G), and prefetched course links pulled every raw hero onto the homepage. Snapshot (`/m/*`) screens and paid-lander media are the existing exceptions.
+- **Mobile GPU budget:** every infinitely animated element is a GPU layer for as long as it runs (about width × height × 9 × 4 bytes on a 3× iPhone). Keep marquee tracks short (the home review marquee is capped at 10 reviews per row, ~3,400px). Never put a whole data list in a moving track: the uncapped review marquee (~12,800px per track, ~80MB each) was the leading suspect when iPhones closed the homepage near the footer in October 2026. Pause or remove loops that are off screen.
 - Hover lifts, image zooms, spring-eased icon tilts, marquees (pause on hover/focus), floating hero badges, and the hero dot progress bars.
-- `prefers-reduced-motion: reduce` disables reveals, marquee animation, Ken Burns, autoplay, count-ups, and videos (posters only). Clips use `LazyVideo`, which only downloads and plays while on screen.
+- `prefers-reduced-motion: reduce` disables reveals, marquee animation, Ken Burns, autoplay, count-ups, and videos (posters only). Clips use `LazyVideo`, which only downloads and plays while on screen; with Data Saver or a 2G-class connection it shows the poster with controls and downloads nothing until play.
 
 ## Components
 

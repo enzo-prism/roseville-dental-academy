@@ -32,6 +32,9 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
   // The full /contact page shows the form straight away; the compact homepage
   // block keeps it one tap away so the map and hours stay scannable.
   const [formOpen, setFormOpen] = useState(!compact);
+  // Same for the map: the embed pulls ~0.5MB of Google Maps code, so the
+  // compact block loads it on tap. /contact shows it straight away.
+  const [mapOpen, setMapOpen] = useState(!compact);
   const [updates, setUpdates] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [howHeardComplete, setHowHeardComplete] = useState(false);
@@ -146,14 +149,29 @@ export function LiveContactSection({ compact = false }: { compact?: boolean }) {
             data-reveal="zoom"
             role="region"
           >
-            <iframe
-              allowFullScreen
-              data-rda-google-map="true"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              src={siteContact.mapsEmbedUrl}
-              title="Google Maps location for Roseville Dental Academy"
-            />
+            {mapOpen ? (
+              <iframe
+                allowFullScreen
+                data-rda-google-map="true"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={siteContact.mapsEmbedUrl}
+                title="Google Maps location for Roseville Dental Academy"
+              />
+            ) : (
+              <div className="ac-map-placeholder">
+                <MapPin aria-hidden="true" />
+                <p>{siteContact.address}</p>
+                <button
+                  className="ac-btn ac-btn-secondary ac-btn-sm"
+                  data-rda-map-load="true"
+                  onClick={() => setMapOpen(true)}
+                  type="button"
+                >
+                  Show map
+                </button>
+              </div>
+            )}
             <a className="ac-map-chip" href={siteContact.directionsUrl} rel="noreferrer" target="_blank">
               <MapPin aria-hidden="true" />
               {siteContact.location}, Roseville

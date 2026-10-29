@@ -305,11 +305,18 @@ function StudentsInAction() {
   );
 }
 
+// Each marquee track is one GPU layer as wide as its row, kept for the whole
+// loop. Every written review (~76) made rows ~12,800px wide (~80MB per track
+// at 3x), by far the largest layer on phones. /reviews has the rest.
+const MARQUEE_REVIEWS_PER_ROW = 10;
+
 function ReviewMarquee() {
   // Rating-only reviews have no written excerpt worth scrolling past.
   const written = googleReviews.filter((review) => !/^\d-star Google rating\.$/u.test(review.quote));
-  const half = Math.ceil(written.length / 2);
-  const rows = [written.slice(0, half), written.slice(half)];
+  const rows = [
+    written.slice(0, MARQUEE_REVIEWS_PER_ROW),
+    written.slice(MARQUEE_REVIEWS_PER_ROW, MARQUEE_REVIEWS_PER_ROW * 2),
+  ];
 
   return (
     <div className="ac-review-marquees" data-rda-review-marquee="true">
@@ -947,9 +954,17 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
       <StudentsInAction />
       <ReviewsSection />
       <ProgramsSection />
-      <InstructorsSection />
+      {/* Dates and the inquiry form come right after the courses so phones
+          reach them sooner, ahead of the instructors and front-desk intro. */}
       <ScheduleSection />
       <LiveSignupSection pagePath="/" sourceLabel={sourceLabel} />
+      <section className="ac-section ac-section-tight" aria-labelledby="ac-front-office-intro">
+        <div className="ac-container ac-social-follow-inner">
+          <div><p className="ac-eyebrow">New program</p><h2 className="ac-h3" id="ac-front-office-intro">Start on the front office side of dentistry.</h2><p className="ac-body">Explore beginner dental receptionist training in scheduling, insurance basics, patient communication, and office procedures.</p></div>
+          <Link className="ac-btn ac-btn-secondary" href="/dental-front-desk-program">Explore dental front desk <ArrowRight aria-hidden="true" /></Link>
+        </div>
+      </section>
+      <InstructorsSection />
       <WhySection />
       <BoardSection />
       <AcademyMediaSection
