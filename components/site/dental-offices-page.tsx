@@ -42,8 +42,8 @@ export function DentalOfficesPage() {
         eyebrow="For dentists and office managers"
         intro={
           <p>
-            Get new hires through California&apos;s required 8-hour Infection Control course before
-            they start exposure-prone duties, and grow your team&apos;s skills with Board-approved
+            Help new hires train with our Board-approved 8-hour Infection Control course,
+            and grow your team&apos;s skills with Board-approved
             x-ray, coronal polish, and sealant courses in Roseville.
           </p>
         }
@@ -76,9 +76,11 @@ export function DentalOfficesPage() {
           intro={
             <p>
               Roseville Dental Academy&apos;s Infection Control course is Dental Board of California
-              approved (provider {infectionControl.providerNumber}). Check each new assistant&apos;s
-              employee file for a completion certificate before they begin duties with potential
-              exposure to blood, saliva, or other potentially infectious materials.
+              approved (provider {infectionControl.providerNumber}). Before assigning duties with potential
+              exposure to blood, saliva, or other potentially infectious materials, check the
+              assistant&apos;s training records and verify the applicable qualification with the
+              Dental Board of California. Requirements can depend on the assistant&apos;s background
+              and pathway.
             </p>
           }
         >

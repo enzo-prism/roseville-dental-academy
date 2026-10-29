@@ -150,3 +150,5 @@ a `pnpm snapshot:refresh` baseline update. Until then, the hub is discovered via
 ## October 29 local-page release review
 
 The city, office, course-path, and Spanish pages retain the current academy tuition and schedule sources. Unconfirmed CEREC/CT/Nomad equipment statements and new down-payment/weekly-payment prose are omitted; admissions confirms payment arrangements. The Spanish page labels and links the approved English cancellation summary rather than presenting an unapproved policy translation. It does not claim Spanish-language classes or staff. The sitemap keeps the already-live dental front desk inquiry page.
+
+The new office and course-path pages describe the academy’s approved 8-hour Infection Control offering without saying it is the only qualifying pathway. Employers are directed to verify current Dental Board requirements for the individual assistant; the September 2026 SB 1311 change makes the former blanket 8-hour claim inappropriate.

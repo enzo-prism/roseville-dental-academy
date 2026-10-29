@@ -72,8 +72,8 @@ export const rdaPathCourses: RdaPathCourse[] = [
     prerequisites:
       "Current BLS certification through AHA or ARC, plus a 2-hour Dental Practice Act certification.",
     summary:
-      "The Board-approved course unlicensed dental assistants must complete before duties involving potential exposure to blood, saliva, or other potentially infectious materials.",
-    officeUse: "Required before a new unlicensed assistant performs exposure-prone duties.",
+      "Board-approved 8-hour training in infection prevention for dental assistants. Verify the applicable qualification with the Dental Board before assigning duties involving potential exposure.",
+    officeUse: "One infection-control training option for new assistants; confirm the applicable Board requirements.",
   },
   {
     id: "radiation-safety",

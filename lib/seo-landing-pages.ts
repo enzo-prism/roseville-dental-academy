@@ -39,7 +39,7 @@ export const dentalOfficesFaqs: SeoFaq[] = [
   {
     question: "Can a new hire start chairside work before finishing Infection Control?",
     answer:
-      "Not in duties that involve potential exposure to blood, saliva, or other potentially infectious materials. Since January 1, 2025, the Board-approved 8-hour course must be completed before an unlicensed dental assistant performs those basic supportive procedures.",
+      "Before assigning duties involving potential exposure to blood, saliva, or other potentially infectious materials, verify the assistant's infection-control qualification under the current Dental Board rules. Roseville Dental Academy offers the Board-approved 8-hour course (IC189); ask admissions which course fits the assistant's background and goals.",
   },
   {
     question: "How do we register one assistant or several?",
