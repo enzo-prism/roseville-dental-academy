@@ -72,7 +72,7 @@ export function PhotosPage({ sourceLabel }: { sourceLabel: string }) {
         title="Recent class photos"
       />
       <AcademyMediaSection
-        description="Six captioned Instagram reels. Players stay on the poster until you press play, and they never autoplay with sound."
+        description="Captioned Instagram reels. Players stay on the poster until you press play, and they never autoplay with sound."
         id="academy-training-videos"
         items={academyTrainingVideos}
         title="Class moments, captioned"
