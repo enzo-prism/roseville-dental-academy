@@ -30,7 +30,7 @@ export function SeoPageMain({
 }) {
   return (
     <main
-      className="overflow-x-clip bg-background"
+      className="overflow-x-clip bg-background [&_[data-slot=button]]:min-h-11"
       data-rda-route={routeId}
       data-rda-seo-landing={routeId}
       id="rda-main-content"
