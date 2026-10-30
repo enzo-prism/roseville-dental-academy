@@ -351,6 +351,14 @@ timeout, temporary errors, concurrent claims, retry leases and the manual-review
 It never uses real mail credentials, sends external email, or enables a deployment flag.
 
 Fixture proof is not an actual Stripe test-mode transaction.
+The same runner also starts isolated live-mode configurations with synthetic keys
+and an outbound-network block to exercise the actual session/checkout routes.
+These checks cover anonymous, valid, expired and forged staff sessions, wrong
+origins, explicit public access, invalid audience settings and the live kill switch.
+Only the synthetic database rate-limit answer is mocked; denied requests cannot
+reach it, reserve a seat or contact a payment/email provider. Run this subset with
+`pnpm test:student-checkout-access` after a production build. It does not verify
+production staff credentials or authorize a live charge.
 
 ## Go-live checklist
 
