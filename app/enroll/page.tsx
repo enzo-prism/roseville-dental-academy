@@ -27,10 +27,19 @@ import {
   type StudentOffering,
 } from "@/lib/student-enrollment";
 
-export default async function EnrollmentPage() {
+export default async function EnrollmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cancelled?: string | string[] }>;
+}) {
   const config = studentConfig();
   const staffSession = (await cookies()).get(ENROLLMENT_PILOT_COOKIE)?.value;
   const checkoutAllowed = studentCanStartCheckout(config, staffSession);
+  const returningStaff =
+    (await searchParams).cancelled === "1" &&
+    config?.mode === "live" &&
+    studentCheckoutAudience() === "staff" &&
+    !checkoutAllowed;
   let offerings: StudentOffering[] = [];
   if (config && checkoutAllowed) {
     try {
@@ -88,7 +97,28 @@ export default async function EnrollmentPage() {
       </Card>
       {!checkoutOpen ? (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="space-y-4 pt-6">
+            {returningStaff && (
+              <div className="space-y-2" data-rda-staff-checkout-return="">
+                <p>
+                  Returning from payment? Continue to staff enrollment to view
+                  your saved checkout. If your staff session has expired, sign in
+                  again first.
+                </p>
+                {/* SiteLink uses a plain document navigation on private routes,
+                    restoring the Strict cookie after Stripe's cross-site return. */}
+                <SiteLink
+                  href="/enroll"
+                  className="block text-primary underline"
+                  data-rda-staff-checkout-resume=""
+                >
+                  Continue staff enrollment
+                </SiteLink>
+                <SiteLink href="/enrollment-pilot" className="block text-primary underline">
+                  Staff sign-in
+                </SiteLink>
+              </div>
+            )}
             <p>
               Online enrollment is currently unavailable. Please contact the
               academy to confirm course dates and availability.

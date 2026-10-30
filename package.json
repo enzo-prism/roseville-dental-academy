@@ -14,6 +14,7 @@
     "test:social-import": "node --test scripts/test-social-import.mjs scripts/test-social-display.cjs",
     "test:student-enrollment": "node scripts/test-student-enrollment.mjs",
     "test:student-checkout-access": "node scripts/test-student-checkout-access.mjs",
+    "test:student-checkout-return": "node scripts/test-student-checkout-return.mjs",
     "test:student-enrollment-locks": "node scripts/test-student-enrollment-locks.mjs",
     "test:student-enrollment-mutants": "node scripts/kill-student-enrollment-mutants.mjs",
     "preview:student-enrollment": "node scripts/test-student-enrollment.mjs --serve",

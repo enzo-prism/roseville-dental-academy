@@ -67,6 +67,14 @@ for (const spec of [{name:'default-staff'},{name:'explicit-public',audience:'pub
       assert(html.includes('Class capacity: 12. Contact the academy for available seats.'),'Unknown availability must be labelled as capacity');
       assert(!html.includes('Student details and payment'));
       rows.push({audience:spec.name,anonymous_page_closed:true,capacity_not_availability:true});
+      const beforeReturn=await readFile(networkLog,'utf8');
+      const returned=await fetch(local+'/enroll?cancelled=1');
+      const returnHtml=await returned.text();
+      assert(returnHtml.includes('Online enrollment is currently unavailable'));
+      assert(!returnHtml.includes('Student details and payment'));
+      assert.equal(returnHtml.includes('data-rda-staff-checkout-resume'),['default-staff','staff-origin-mismatch'].includes(spec.name));
+      assert.equal(await readFile(networkLog,'utf8'),beforeReturn,'A return flag never grants inventory access');
+      rows.push({audience:spec.name,anonymous_cancel_return_closed:true,return_flag_grants_access:false});
     }
     const network=(await readFile(networkLog,'utf8')).trim().split('\n').filter(Boolean).map(s=>JSON.parse(s));
     assert(network.every(row=>row.mocked==='allowance'),'All provider network must stay blocked');

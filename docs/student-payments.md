@@ -428,6 +428,12 @@ activation steps below.
    configured staff origin matches the live origin. Anonymous browsers must see
    closed enrollment, and both session creation and checkout must reject them.
    The authorized staff browser shows `STAFF VERIFICATION · REAL PAYMENT`.
+   Cancelling at Stripe returns to `/enroll?cancelled=1`. The Strict staff cookie
+   is intentionally absent on that cross-site return, so the closed page offers
+   **Continue staff enrollment** as a same-site document navigation. Follow it to
+   restore the existing staff session and saved-checkout controls; sign in again
+   first if the staff session expired. The return flag never grants access, clears
+   a saved hold, or contacts Stripe automatically.
    This access gate does not authorize any payment or email by itself: the owner's
    separate test permission, reviewed inventory and email-queue review still apply.
 10. Make one **$395** verification purchase on `/enroll` using a **staff-owned**
