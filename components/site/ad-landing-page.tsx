@@ -438,7 +438,9 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
         {page.facts.map((fact) => (
           <div className="rda-ad-fact" key={`${fact.label}-${fact.value}`}>
             <span>{fact.label}</span>
-            <strong>{fact.value}</strong>
+            <strong className={fact.value.length > 28 ? "rda-ad-fact-value-long" : undefined}>
+              {fact.value}
+            </strong>
           </div>
         ))}
       </section>
@@ -545,11 +547,39 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
           ))}
           <section className="rda-ad-detail-block">
             <h2>Upcoming dates</h2>
-            <div className="rda-ad-date-list">
-              {page.dates.map((date) => (
-                <span key={date}>{date}</span>
-              ))}
-            </div>
+            {page.dateGroups?.length ? (
+              <div className="rda-ad-date-groups">
+                {page.dateGroups.map((group) => (
+                  <div className="rda-ad-date-group" key={group.courseId}>
+                    <p className="rda-ad-date-group-label">{group.label}</p>
+                    <div className="rda-ad-date-list">
+                      {group.entries.map((entry) => (
+                        <span
+                          data-status={entry.status === "full" ? "full" : undefined}
+                          key={`${group.courseId}-${entry.isoDate}`}
+                        >
+                          <time dateTime={entry.isoDate}>{entry.label}</time>
+                          {entry.status === "full" ? (
+                            <span
+                              aria-label={`${group.label} ${entry.label} is full`}
+                              className="rda-course-date-flag"
+                            >
+                              Full
+                            </span>
+                          ) : null}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rda-ad-date-list">
+                {page.dates.map((date) => (
+                  <span key={date}>{date}</span>
+                ))}
+              </div>
+            )}
             <p className="rda-ad-muted">
               Dates are penciled in and admissions will confirm current availability.
             </p>

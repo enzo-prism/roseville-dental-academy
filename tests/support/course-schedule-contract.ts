@@ -463,8 +463,13 @@ function landerCourseIds(category: string): readonly CourseScheduleId[] {
 }
 
 function expectedLanderDates(status: PublishedCourseScheduleStatus, category: string) {
-  const lists = landerCourseIds(category).map((id) => openLabelsForCourse(status, id));
-  return lists.reduce((shared, dates) => shared.filter((date) => dates.includes(date)));
+  const ids = landerCourseIds(category);
+  if (ids.length > 1) {
+    return ids.flatMap((id) => entriesForCourse(status, id).map((entry) =>
+      `${id === "sealants" ? "Sealants" : courseScheduleCourseDetails[id].label}: ${formatOpenDateLabel(id, entry.isoDate)}${entry.status === "full" ? " (Full)" : ""}`,
+    ));
+  }
+  return openLabelsForCourse(status, ids[0]);
 }
 
 function courseLdScript(courseId: CourseScheduleId, startDates: string[]) {
@@ -1359,7 +1364,7 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     assert.deepEqual(
       snapshot.landerDates[page.path] ?? [],
       expectedLanderDates(status, page.contentCategory),
-      `${page.path} date list must match open dates`,
+      `${page.path} date list must match its courses and availability`,
     );
   }
 
@@ -1421,7 +1426,15 @@ export async function collectServedScheduleSnapshot(
     await page.goto(href(path));
     pageLdScripts[path] = await page.locator('script[type="application/ld+json"]').allTextContents();
     if (path.startsWith("/lp/")) {
-      landerDates[path] = (await page.locator(".rda-ad-date-list span").allTextContents()).map((date) => date.trim());
+      const groups = page.locator(".rda-ad-date-group");
+      landerDates[path] = await groups.count() > 0
+        ? await groups.evaluateAll((nodes) => nodes.flatMap((group) => {
+            const label = group.querySelector(".rda-ad-date-group-label")?.textContent?.trim();
+            return [...group.querySelectorAll(".rda-ad-date-list > span")].map((entry) =>
+              `${label}: ${entry.querySelector("time")?.textContent?.trim()}${entry.getAttribute("data-status") === "full" ? " (Full)" : ""}`,
+            );
+          }))
+        : (await page.locator(".rda-ad-date-list > span").allTextContents()).map((date) => date.trim());
     }
     if (path === "/lp/dental-assisting-enroll") {
       landerBadge = ((await page.locator("[data-rda-lander-badge]").textContent()) ?? "").replace(/\s+/gu, " ").trim();
