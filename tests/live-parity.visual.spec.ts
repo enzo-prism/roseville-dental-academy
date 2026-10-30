@@ -35,7 +35,13 @@ test("font readiness rejects a loaded font set that lacks required webfont faces
 for (const route of visualMappings) {
   for (const [viewportLabel, viewport] of Object.entries(visualViewports)) {
     test(`visual parity ${route.label} on ${viewportLabel}`, async ({ page }, testInfo) => {
-      const baseline = getVisualBaseline(route.localPath, viewportLabel);
+      let publication: unknown;
+      if (process.env.PREVIEW_URL?.trim() && route.localPath === "/" && viewportLabel === "mobile") {
+        const response = await page.request.get(`${localOrigin}/api/course-schedule-status`, { timeout: 10_000 });
+        expect(response.ok(), "Read the bundled schedule publication before choosing a reviewed mobile homepage reference").toBe(true);
+        publication = await response.json();
+      }
+      const baseline = getVisualBaseline(route.localPath, viewportLabel, publication);
       const localVisual = await captureVisual(
         page,
         `${localOrigin}${route.localPath}`,

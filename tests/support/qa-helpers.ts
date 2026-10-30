@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -16,6 +17,8 @@ import {
 } from "@/lib/site-seasonal";
 
 import fixtures from "./qa-routes.json";
+import calendarVisualRegistry from "../baselines/live/visual/calendar/registry.json";
+import { selectVisualCalendarBaseline } from "./visual-calendar-baseline";
 import parityContract from "./content-parity-contract.json";
 
 export const localOrigin = process.env.LOCAL_ORIGIN ?? "http://127.0.0.1:3000";
@@ -342,7 +345,7 @@ export function getContentBaseline(localPath: string) {
   };
 }
 
-export function getVisualBaseline(localPath: string, viewportLabel: string) {
+export function getVisualBaseline(localPath: string, viewportLabel: string, publication?: unknown) {
   const route = findSnapshotRoute(localPath);
 
   if (!route) {
@@ -361,10 +364,16 @@ export function getVisualBaseline(localPath: string, viewportLabel: string) {
   // reviewed default reference and opt into an explicit platform reference only
   // where one is committed; fonts, masks and diff tolerances remain enforced.
   const platformPath = join(dirname(baselinePath), process.platform, basename(baselinePath));
-  const selectedPath = existsSync(resolve(process.cwd(), platformPath)) ? platformPath : baselinePath;
+  const platformBaseline = existsSync(resolve(process.cwd(), platformPath)) ? platformPath : baselinePath;
+  const selected = selectVisualCalendarBaseline({ baselinePath: platformBaseline, localPath, viewportLabel,
+    platform: process.platform, remote: Boolean(process.env.PREVIEW_URL?.trim()), publication, registry: calendarVisualRegistry });
+  const image = readBaselineBinary(selected.baselinePath);
+  if (selected.imageSha256 && createHash("sha256").update(image).digest("hex") !== selected.imageSha256) {
+    throw new Error("Reviewed visual calendar baseline image does not match its registered hash.");
+  }
   return {
-    baselinePath: selectedPath,
-    image: readBaselineBinary(selectedPath),
+    baselinePath: selected.baselinePath,
+    image,
     route,
   };
 }

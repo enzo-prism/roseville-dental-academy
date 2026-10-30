@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "baselines": [
+    {
+      "source": "dashboard",
+      "upcomingRevision": "2a4844dfe18720a365b295260161d25a1fc893efeb81348c70e1bb330b3872ba",
+      "platform": "linux",
+      "baselinePath": "tests/baselines/live/visual/calendar/2a4844dfe18720a365b295260161d25a1fc893efeb81348c70e1bb330b3872ba/linux/home-mobile.png",
+      "imageSha256": "696814d258e4a57aa121abe89a5ffaafdb42a85b152a498ee799fc94af1409fe",
+      "recordedReviewedOn": "2026-10-29",
+      "recordedBuiltOn": "2026-10-29",
+      "sourceRevision": "e6da9ae960b4abb881477286b5eab3a421b4a6efbdec2d3f8da7595bb29b7c4e",
+      "sourceHead": "73a40dc5cb90a81fce08403eb7074fc215321ecf",
+      "sourceDeployment": "https://roseville-dental-academy-ayih4f0bb-enzo-design-prisms-projects.vercel.app",
+      "sourceRun": "https://github.com/enzo-prism/roseville-dental-academy/actions/runs/40997465482",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontDiagnostics": {
+        "browserState": {
+          "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36",
+          "fontsStatus": "loaded",
+          "scrollY": 0,
+          "activeElement": "BODY",
+          "nav": null
+        },
+        "platformFonts": [],
+        "usesExpectedNavFont": true
+      },
+      "reviewEvidence": {
+        "baselineHeight": 23175,
+        "dashboardHeight": 22846,
+        "calendarHeightChange": 329,
+        "preCalendarThresholdDifferences": 2,
+        "alignedPostCalendarThresholdDifferences": 0,
+        "threshold": 100,
+        "note": "Only alignment during diagnosis; the test oracle still compares full uncropped images with unchanged fonts, masks and tolerances."
+      },
+      "publicationAtCapture": {
+        "version": 1,
+        "revision": "e6da9ae960b4abb881477286b5eab3a421b4a6efbdec2d3f8da7595bb29b7c4e",
+        "upcomingRevision": "2a4844dfe18720a365b295260161d25a1fc893efeb81348c70e1bb330b3872ba",
+        "reviewedOn": "2026-10-29",
+        "builtOn": "2026-10-29",
+        "source": "dashboard",
+        "upcoming": [
+          {
+            "courseId": "bls-cpr-1",
+            "isoDate": "2026-11-07",
+            "status": "open"
+          },
+          {
+            "courseId": "radiation-safety",
+            "isoDate": "2026-11-07",
+            "status": "full"
+          },
+          {
+            "courseId": "coronal-polish",
+            "isoDate": "2026-11-14",
+            "status": "open"
+          },
+          {
+            "courseId": "infection-control",
+            "isoDate": "2026-11-14",
+            "status": "open"
+          },
+          {
+            "courseId": "sealants",
+            "isoDate": "2026-11-14",
+            "status": "full"
+          },
+          {
+            "courseId": "dental-assisting-program",
+            "isoDate": "2026-11-20",
+            "status": "open"
+          },
+          {
+            "courseId": "bls-cpr-1",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "dental-assisting-program",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "infection-control",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "radiation-safety",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "coronal-polish",
+            "isoDate": "2026-12-12",
+            "status": "open"
+          },
+          {
+            "courseId": "sealants",
+            "isoDate": "2026-12-12",
+            "status": "open"
+          }
+        ],
+        "empty": false
+      }
+    }
+  ]
+}
