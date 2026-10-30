@@ -827,15 +827,20 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   padding: 8px 10px;
 }
 
-.rda-ad-date-list > span[data-status="full"] {
-  background: var(--rda-color-status-full-surface);
-  border-color: var(--rda-color-status-full-border);
-  color: var(--rda-color-status-full-text);
+.rda-ad-date-group .rda-ad-date-list > span[data-status="full"] {
+  background: var(--destructive-soft);
+  border-color: color-mix(in oklab, var(--destructive) 45%, var(--border));
+  color: var(--foreground);
 }
 
-.rda-ad-date-list > span[data-status="full"] time {
+.rda-ad-date-group .rda-ad-date-list > span[data-status="full"] time {
   text-decoration: line-through;
-  text-decoration-color: var(--rda-color-status-full-line);
+  text-decoration-color: var(--destructive);
+}
+
+.rda-ad-date-group .rda-course-date-flag {
+  background: var(--destructive);
+  color: var(--primary-foreground);
 }
 
 .rda-ad-muted {

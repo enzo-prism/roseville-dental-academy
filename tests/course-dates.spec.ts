@@ -674,6 +674,29 @@ for (const slug of ["coronal-sealants-renewal", "rda-renewal-ready"] as const) {
         await expect(form).toHaveAttribute("action", definition.formspreeEndpoint!);
         await expect(form.locator('input[name="form_key"]')).toHaveValue(definition.formKey!);
       }
+      // The new Full rows must stay readable in both supported themes.
+      for (const dark of [false, true]) {
+        const contrast = await page.locator('.rda-ad-date-group [data-status="full"]').evaluateAll((nodes, dark) => {
+          document.documentElement.classList.toggle("dark", dark);
+          const luminance = (color: string) => {
+            const channels = color.match(/[\d.]+/g)!.slice(0, 3).map((channel) => Number(channel) / 255)
+              .map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+            return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+          };
+          const ratio = (front: string, back: string) => {
+            const values = [luminance(front), luminance(back)].sort((a, b) => b - a);
+            return (values[0] + 0.05) / (values[1] + 0.05);
+          };
+          return nodes.map((node) => {
+            const row = getComputedStyle(node), badge = getComputedStyle(node.querySelector(".rda-course-date-flag")!);
+            return { date: ratio(row.color, row.backgroundColor), badge: ratio(badge.color, badge.backgroundColor) };
+          });
+        }, dark);
+        for (const value of contrast) {
+          expect(value.date).toBeGreaterThanOrEqual(4.5);
+          expect(value.badge).toBeGreaterThanOrEqual(4.5);
+        }
+      }
       await expect(page.locator('[id="rda-ld-course-sealants"]')).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
