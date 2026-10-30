@@ -1,4 +1,10 @@
 import { SiteLink } from "@/components/site/site-link";
+import { cookies } from "next/headers";
+import { ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
+import {
+  studentCanStartCheckout,
+  studentCheckoutAudience,
+} from "@/lib/student-enrollment-access";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StudentEnrollmentForm } from "@/components/site/student-enrollment-form";
@@ -23,8 +29,10 @@ import {
 
 export default async function EnrollmentPage() {
   const config = studentConfig();
+  const staffSession = (await cookies()).get(ENROLLMENT_PILOT_COOKIE)?.value;
+  const checkoutAllowed = studentCanStartCheckout(config, staffSession);
   let offerings: StudentOffering[] = [];
-  if (config) {
+  if (config && checkoutAllowed) {
     try {
       offerings = await studentOfferings(config);
     } catch {
@@ -36,6 +44,9 @@ export default async function EnrollmentPage() {
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
       {config?.mode === "test" && (
         <Badge variant="outline">TEST ONLY · NO REAL ENROLLMENT</Badge>
+      )}
+      {checkoutAllowed && config?.mode === "live" && studentCheckoutAudience() === "staff" && (
+        <Badge variant="outline">STAFF VERIFICATION · REAL PAYMENT</Badge>
       )}
       <h1 className="font-heading text-3xl">Infection Control enrollment</h1>
       <p data-rda-checkout-policy="">
@@ -58,7 +69,7 @@ export default async function EnrollmentPage() {
                   {session.label} · {formatEnrollmentAmount(live?.amount ?? INFECTION_CONTROL_OFFERING_AMOUNT)}
                   {typeof remaining === "number"
                     ? ` · ${Math.max(0, remaining)} seats available`
-                    : ` · ${INFECTION_CONTROL_OFFERING_CAPACITY} seats`}
+                    : ` · Class capacity: ${INFECTION_CONTROL_OFFERING_CAPACITY}. Contact the academy for available seats.`}
                 </li>
               );
             })}

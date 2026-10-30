@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
+import { ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
+import { studentCanStartCheckout } from "@/lib/student-enrollment-access";
 import {
   studentConfig,
   studentOwner,
@@ -18,6 +20,12 @@ export async function studentRequest(request: Request) {
     return null;
   const owner = studentOwner((await cookies()).get(STUDENT_COOKIE)?.value);
   return owner ? { config, owner } : null;
+}
+export async function studentCheckoutRequest(request: Request) {
+  const access = await studentRequest(request);
+  if (!access) return null;
+  const staffSession = (await cookies()).get(ENROLLMENT_PILOT_COOKIE)?.value;
+  return studentCanStartCheckout(access.config, staffSession) ? access : null;
 }
 export async function studentAllowance(request: Request) {
   // Vercel replaces this header. Generic forwarding headers are deliberately ignored.

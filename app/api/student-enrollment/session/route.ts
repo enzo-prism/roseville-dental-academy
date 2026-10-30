@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { enrollmentResponse } from "@/lib/enrollment-http";
+import { ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
+import { studentCanStartCheckout } from "@/lib/student-enrollment-access";
 import {
   studentConfig,
   studentOwner,
@@ -17,6 +19,8 @@ export async function POST(request: Request) {
   )
     return enrollmentResponse({ error: "Enrollment unavailable." }, 503);
   const jar = await cookies();
+  if (!studentCanStartCheckout(config, jar.get(ENROLLMENT_PILOT_COOKIE)?.value))
+    return enrollmentResponse({ error: "Enrollment unavailable." }, 503);
   if (!studentOwner(jar.get(STUDENT_COOKIE)?.value))
     jar.set(STUDENT_COOKIE, randomBytes(32).toString("hex"), {
       httpOnly: true,
