@@ -1,4 +1,10 @@
 import { SiteLink } from "@/components/site/site-link";
+import { cookies } from "next/headers";
+import { ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
+import {
+  studentCanStartCheckout,
+  studentCheckoutAudience,
+} from "@/lib/student-enrollment-access";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StudentEnrollmentForm } from "@/components/site/student-enrollment-form";
@@ -21,10 +27,21 @@ import {
   type StudentOffering,
 } from "@/lib/student-enrollment";
 
-export default async function EnrollmentPage() {
+export default async function EnrollmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cancelled?: string | string[] }>;
+}) {
   const config = studentConfig();
+  const staffSession = (await cookies()).get(ENROLLMENT_PILOT_COOKIE)?.value;
+  const checkoutAllowed = studentCanStartCheckout(config, staffSession);
+  const returningStaff =
+    (await searchParams).cancelled === "1" &&
+    config?.mode === "live" &&
+    studentCheckoutAudience() === "staff" &&
+    !checkoutAllowed;
   let offerings: StudentOffering[] = [];
-  if (config) {
+  if (config && checkoutAllowed) {
     try {
       offerings = await studentOfferings(config);
     } catch {
@@ -36,6 +53,9 @@ export default async function EnrollmentPage() {
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
       {config?.mode === "test" && (
         <Badge variant="outline">TEST ONLY · NO REAL ENROLLMENT</Badge>
+      )}
+      {checkoutAllowed && config?.mode === "live" && studentCheckoutAudience() === "staff" && (
+        <Badge variant="outline">STAFF VERIFICATION · REAL PAYMENT</Badge>
       )}
       <h1 className="font-heading text-3xl">Infection Control enrollment</h1>
       <p data-rda-checkout-policy="">
@@ -58,7 +78,7 @@ export default async function EnrollmentPage() {
                   {session.label} · {formatEnrollmentAmount(live?.amount ?? INFECTION_CONTROL_OFFERING_AMOUNT)}
                   {typeof remaining === "number"
                     ? ` · ${Math.max(0, remaining)} seats available`
-                    : ` · ${INFECTION_CONTROL_OFFERING_CAPACITY} seats`}
+                    : ` · Class capacity: ${INFECTION_CONTROL_OFFERING_CAPACITY}. Contact the academy for available seats.`}
                 </li>
               );
             })}
@@ -77,7 +97,28 @@ export default async function EnrollmentPage() {
       </Card>
       {!checkoutOpen ? (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="space-y-4 pt-6">
+            {returningStaff && (
+              <div className="space-y-2" data-rda-staff-checkout-return="">
+                <p>
+                  Returning from payment? Continue to staff enrollment to view
+                  your saved checkout. If your staff session has expired, sign in
+                  again first.
+                </p>
+                {/* SiteLink uses a plain document navigation on private routes,
+                    restoring the Strict cookie after Stripe's cross-site return. */}
+                <SiteLink
+                  href="/enroll"
+                  className="block text-primary underline"
+                  data-rda-staff-checkout-resume=""
+                >
+                  Continue staff enrollment
+                </SiteLink>
+                <SiteLink href="/enrollment-pilot" className="block text-primary underline">
+                  Staff sign-in
+                </SiteLink>
+              </div>
+            )}
             <p>
               Online enrollment is currently unavailable. Please contact the
               academy to confirm course dates and availability.

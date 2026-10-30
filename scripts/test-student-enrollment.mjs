@@ -101,3 +101,13 @@ try {
 } finally {
   stop();
 }
+if (!process.argv.includes("--serve") && process.exitCode === 0) {
+  const access = spawn(process.execPath, [resolve(root, "scripts/test-student-checkout-access.mjs")],
+    { cwd: root, env, stdio: "inherit" });
+  process.exitCode = await new Promise((resolve) => access.once("exit", (code) => resolve(code ?? 1)));
+}
+if (!process.argv.includes("--serve") && process.exitCode === 0) {
+  const returned = spawn(process.execPath, [resolve(root, "scripts/test-student-checkout-return.mjs")],
+    { cwd: root, env, stdio: "inherit" });
+  process.exitCode = await new Promise((resolve) => returned.once("exit", (code) => resolve(code ?? 1)));
+}

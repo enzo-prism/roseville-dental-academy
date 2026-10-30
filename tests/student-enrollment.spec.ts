@@ -3,6 +3,11 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
 import { enrollmentDate } from "@/lib/enrollment-contract";
+import { createEnrollmentSession } from "@/lib/enrollment-auth";
+import {
+  studentCanStartCheckout,
+  studentCheckoutAudience,
+} from "@/lib/student-enrollment-access";
 import {
   CANCELLATION_POLICY_PARAGRAPHS,
   INFECTION_CONTROL_CHECKOUT_POLICY,
@@ -237,6 +242,7 @@ test("live flags without the public CTA flag render 0 Infection Control Enroll C
       RDA_STUDENT_STRIPE_ACCOUNT_ID: "acct_1UJHgLCOhHjREvRz",
       RDA_STUDENT_PAYMENTS_ORIGIN: "https://example.test",
       RDA_STUDENT_PAYMENTS_LIVE_ENABLED: "true",
+      RDA_STUDENT_PAYMENTS_ACCESS: "public",
       DATABASE_URL: "fixture",
     });
     delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA;
@@ -278,6 +284,78 @@ test("live flags without the public CTA flag render 0 Infection Control Enroll C
     expect(enroll).toContain("studentOfferings(config)");
     expect(enroll).not.toContain("RDA_STUDENT_PAYMENTS_PUBLIC_CTA");
     expect(enroll).not.toContain("studentPublicEnrollCta");
+  } finally {
+    process.env = before;
+  }
+});
+test("live checkout defaults to an authenticated same-origin staff verification", () => {
+  const before = { ...process.env };
+  try {
+    const staff = {
+      password: "fixture-staff-password-long",
+      secret: "fixture-staff-session-secret-xxxxxxxxxxxxxxxx",
+      origin: "https://example.test",
+    };
+    Object.assign(process.env, {
+      RDA_STUDENT_PAYMENTS_LIVE_ENABLED: "true",
+      RDA_ENROLLMENT_PILOT_PASSWORD: staff.password,
+      RDA_ENROLLMENT_PILOT_SESSION_SECRET: staff.secret,
+      RDA_ENROLLMENT_TEST_ORIGIN: staff.origin,
+    });
+    delete process.env.RDA_STUDENT_PAYMENTS_ACCESS;
+    const config = { mode: "live" as const, key: "rk_live_fixture", webhookSecret: "whsec_fixture", account: "acct_fixture", origin: staff.origin };
+    expect(studentCheckoutAudience()).toBe("staff");
+    expect(studentCanStartCheckout(config)).toBe(false);
+    const token = createEnrollmentSession(staff);
+    expect(studentCanStartCheckout(config, token)).toBe(true);
+    expect(studentCanStartCheckout(config, `${token}tampered`)).toBe(false);
+    expect(studentCanStartCheckout(config, createEnrollmentSession(staff, Date.now() - 3 * 60 * 60 * 1000))).toBe(false);
+    process.env.RDA_ENROLLMENT_TEST_ORIGIN = "https://different.example.test";
+    expect(studentCanStartCheckout(config, token)).toBe(false);
+    process.env.RDA_ENROLLMENT_TEST_ORIGIN = staff.origin;
+    process.env.RDA_ENROLLMENT_PILOT_PASSWORD = "rotated-fixture-staff-password";
+    expect(studentCanStartCheckout(config, token)).toBe(false);
+  } finally {
+    process.env = before;
+  }
+});
+test("public checkout is explicit and never overrides the live kill switch", () => {
+  const before = { ...process.env };
+  try {
+    const config = { mode: "live" as const, key: "rk_live_fixture", webhookSecret: "whsec_fixture", account: "acct_fixture", origin: "https://example.test" };
+    process.env.RDA_STUDENT_PAYMENTS_ACCESS = "public";
+    delete process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED;
+    expect(studentCanStartCheckout(config)).toBe(false);
+    process.env.RDA_STUDENT_PAYMENTS_LIVE_ENABLED = "true";
+    expect(studentCanStartCheckout(config)).toBe(true);
+    process.env.RDA_STUDENT_PAYMENTS_ACCESS = "Public";
+    expect(studentCheckoutAudience()).toBeNull();
+    expect(studentCanStartCheckout(config)).toBe(false);
+    expect(studentCanStartCheckout(null)).toBe(false);
+    expect(studentCanStartCheckout({ ...config, mode: "test" })).toBe(true);
+  } finally {
+    process.env = before;
+  }
+});
+test("public links stay hidden when live checkout is restricted to staff", () => {
+  const before = { ...process.env };
+  try {
+    Object.assign(process.env, {
+      RDA_STUDENT_PAYMENTS_MODE: "live",
+      RDA_STUDENT_STRIPE_LIVE_KEY: "rk_live_fixture",
+      RDA_STUDENT_STRIPE_LIVE_WEBHOOK_SECRET: "whsec_fixture",
+      RDA_STUDENT_STRIPE_ACCOUNT_ID: "acct_1UJHgLCOhHjREvRz",
+      RDA_STUDENT_PAYMENTS_ORIGIN: "https://example.test",
+      RDA_STUDENT_PAYMENTS_LIVE_ENABLED: "true",
+      RDA_STUDENT_PAYMENTS_PUBLIC_CTA: "true",
+      DATABASE_URL: "fixture",
+    });
+    delete process.env.RDA_STUDENT_PAYMENTS_ACCESS;
+    expect(studentPublicEnrollCtas()).toHaveLength(0);
+    process.env.RDA_STUDENT_PAYMENTS_ACCESS = "invalid";
+    expect(studentPublicEnrollCtas()).toHaveLength(0);
+    process.env.RDA_STUDENT_PAYMENTS_ACCESS = "public";
+    expect(studentPublicEnrollCtas()).toHaveLength(1);
   } finally {
     process.env = before;
   }

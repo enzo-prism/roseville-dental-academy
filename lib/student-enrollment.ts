@@ -6,6 +6,7 @@ import {
   enrollmentDate,
 } from "@/lib/enrollment-contract";
 import { isCanonicalInfectionControlDate } from "@/lib/student-enrollment-offerings";
+import { studentCheckoutAudience } from "@/lib/student-enrollment-access";
 
 export const STUDENT_COOKIE = "__Host-rda-student-checkout";
 export const STUDENT_POLICY_HASH = createHash("sha256")
@@ -146,6 +147,7 @@ export function studentWebhookForeignPaidCompletion(
 export function studentPublicEnrollCtaEnabled() {
   return (
     studentConfig()?.mode === "live" &&
+    studentCheckoutAudience() === "public" &&
     process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA === "true"
   );
 }

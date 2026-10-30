@@ -196,9 +196,14 @@ are preferred, with only account-read and Checkout create/read/list/expire permi
 - `RDA_STUDENT_STRIPE_TEST_KEY`, `RDA_STUDENT_STRIPE_TEST_WEBHOOK_SECRET`: test/sandbox configuration.
 - `RDA_STUDENT_STRIPE_LIVE_KEY`, `RDA_STUDENT_STRIPE_LIVE_WEBHOOK_SECRET`: live configuration, only after separate approval.
 - `RDA_STUDENT_PAYMENTS_LIVE_ENABLED`: defaults off; only exact `true` permits live Checkout.
+- `RDA_STUDENT_PAYMENTS_ACCESS`: defaults to `staff`; only exact `public` permits
+  anonymous live checkout. In `staff` mode the enrollment page, browser-session
+  endpoint and checkout endpoint require the existing valid staff pilot session,
+  with the staff origin matching `RDA_STUDENT_PAYMENTS_ORIGIN`. Invalid values fail
+  closed. Isolated `test` mode retains its captured, synthetic checkout behavior.
 - `RDA_STUDENT_PAYMENTS_PUBLIC_CTA`: defaults off; only exact `true` shows the public
-  "Enroll and pay in full" CTA on `/infection-control`. Live Checkout on `/enroll` does
-  not require this flag.
+  "Enroll and pay in full" CTA on `/infection-control`, and only when access is
+  explicitly `public`. This presentation flag alone does not authorize checkout.
 - `RDA_STUDENT_EMAIL_LIVE_ENABLED`: separate default-off outbound-email flag.
 - `RDA_STUDENT_EMAIL_API_KEY`, `RDA_STUDENT_EMAIL_FROM`: Resend credential and verified academy sender, only after separate approval.
 
@@ -346,6 +351,14 @@ timeout, temporary errors, concurrent claims, retry leases and the manual-review
 It never uses real mail credentials, sends external email, or enables a deployment flag.
 
 Fixture proof is not an actual Stripe test-mode transaction.
+The same runner also starts isolated live-mode configurations with synthetic keys
+and an outbound-network block to exercise the actual session/checkout routes.
+These checks cover anonymous, valid, expired and forged staff sessions, wrong
+origins, explicit public access, invalid audience settings and the live kill switch.
+Only the synthetic database rate-limit answer is mocked; denied requests cannot
+reach it, reserve a seat or contact a payment/email provider. Run this subset with
+`pnpm test:student-checkout-access` after a production build. It does not verify
+production staff credentials or authorize a live charge.
 
 ## Go-live checklist
 
@@ -409,13 +422,20 @@ activation steps below.
    queued. Drain those rows with staff POST `{ "drain": true }` to
    `/api/student-enrollment/retry-confirmation` after email is enabled. The drain
    works while live payments are off.
-   **Leave `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` unset.** The public Infection Control
-   "Enroll and pay in full" CTA stays hidden on this redeploy. `/enroll` stays
-   reachable by direct URL during this CTA-off window. Hiding the CTA is not an
-   access restriction: anyone with the URL can reach enabled checkout. The current
-   flow has no staff-only live-payment test gate, so turning on live Checkout exposes
-   that enabled offering at `/enroll`. Plan the verification window with the owner;
-   do not describe it as private or protected by the hidden CTA.
+   **Keep `RDA_STUDENT_PAYMENTS_ACCESS=staff` and leave
+   `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` unset.** Sign in through the existing
+   `/enrollment-pilot` staff login, then visit `/enroll` in that browser. Verify the
+   configured staff origin matches the live origin. Anonymous browsers must see
+   closed enrollment, and both session creation and checkout must reject them.
+   The authorized staff browser shows `STAFF VERIFICATION · REAL PAYMENT`.
+   Cancelling at Stripe returns to `/enroll?cancelled=1`. The Strict staff cookie
+   is intentionally absent on that cross-site return, so the closed page offers
+   **Continue staff enrollment** as a same-site document navigation. Follow it to
+   restore the existing staff session and saved-checkout controls; sign in again
+   first if the staff session expired. The return flag never grants access, clears
+   a saved hold, or contacts Stripe automatically.
+   This access gate does not authorize any payment or email by itself: the owner's
+   separate test permission, reviewed inventory and email-queue review still apply.
 10. Make one **$395** verification purchase on `/enroll` using a **staff-owned**
     email address (not a student). Confirm the paid roster row and confirmation
     email, then refund that charge from the verified merchant dashboard. Refunded
@@ -431,13 +451,15 @@ activation steps below.
     Confirm the sellable count equals that date's reviewed capacity minus confirmed
     offline seats and all remaining seat-occupying online enrollments. Do not assume
     12 seats remain. Confirm the verification enrollment no longer occupies a seat.
-    The public CTA can still be off, but `/enroll` is reachable by anyone with the URL
-    while live Checkout and that offering are enabled.
+    Keep access restricted to staff throughout this test. Expired or invalid staff
+    sessions cannot start a new checkout. Existing signed webhook reconciliation
+    and the student's browser-owned confirmation remain separate from this gate.
 11. Only after that verification purchase is refunded and
     `release_refunded_student_seat` has recorded the actor and `released` event,
-    set `RDA_STUDENT_PAYMENTS_PUBLIC_CTA=true` and redeploy so the public Enroll
-    CTA on `/infection-control` appears. The CTA is compiled at build time from that
-    separate flag and will not appear until this second redeploy.
+    set `RDA_STUDENT_PAYMENTS_ACCESS=public` and
+    `RDA_STUDENT_PAYMENTS_PUBLIC_CTA=true`, then redeploy so public checkout and
+    the Enroll CTA on `/infection-control` open together. Read back the live
+    deployment and its inventory; neither setting alone replaces launch approval.
 12. If an orphan `paid_after_release` review needs to become a paid seat, use
     `resolve_student_enrollment_review(..., 'enrolled', '<staff actor>')`. Do not
     raw-`UPDATE` the enrollment to `paid`. The function refuses when the class is
@@ -448,8 +470,10 @@ activation steps below.
 If live Checkout must be taken down after step 9 and before or after the
 verification purchase:
 
-1. Unset `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` (or leave it unset) so the public CTA
-   stays hidden, then redeploy.
+1. Set `RDA_STUDENT_PAYMENTS_ACCESS=staff` and unset
+   `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` so anonymous session/checkout requests stop
+   and the public CTA stays hidden, then redeploy. This does not cancel an already
+   issued Stripe session; reconcile existing sessions and payments normally.
 2. Refund any verification charge from the merchant dashboard first, then run
    `release_refunded_student_seat` so the seat is sellable again. Never
    `DELETE` from `student_enrollments` to free capacity. Do this before the

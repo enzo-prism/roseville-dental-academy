@@ -7,7 +7,7 @@ import {
   type StudentEnrollment,
 } from "@/lib/student-enrollment";
 import {
-  studentRequest,
+  studentCheckoutRequest,
   studentAllowance,
 } from "@/lib/student-enrollment-http";
 import {
@@ -20,7 +20,7 @@ import { ENROLLMENT_POLICY_VERSION, enrollmentDate } from "@/lib/enrollment-cont
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
-  const access = await studentRequest(request);
+  const access = await studentCheckoutRequest(request);
   if (!access)
     return enrollmentResponse(
       {
