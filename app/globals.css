@@ -570,6 +570,13 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   line-height: 1.1;
 }
 
+.rda-ad-fact strong.rda-ad-fact-value-long {
+  font-family: var(--rda-font-body);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .rda-ad-section-heading {
   display: grid;
   gap: 8px;
@@ -787,19 +794,53 @@ body.rda-promo-dialog-open .rda-whatsapp-fab {
   padding-left: 12px;
 }
 
+.rda-ad-date-groups {
+  display: grid;
+  gap: 16px;
+}
+
+.rda-ad-date-group-label {
+  color: var(--rda-color-muted);
+  font-family: var(--rda-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin: 0 0 8px;
+}
+
 .rda-ad-date-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.rda-ad-date-list span {
+.rda-ad-date-list > span {
+  align-items: center;
   background: var(--rda-color-accent-surface);
   border: 1px solid var(--rda-color-border-soft);
   border-radius: 6px;
   color: var(--rda-color-heading);
+  display: inline-flex;
   font-weight: 700;
+  gap: 8px;
   padding: 8px 10px;
+}
+
+.rda-ad-date-group .rda-ad-date-list > span[data-status="full"] {
+  background: var(--destructive-soft);
+  border-color: color-mix(in oklab, var(--destructive) 45%, var(--border));
+  color: var(--foreground);
+}
+
+.rda-ad-date-group .rda-ad-date-list > span[data-status="full"] time {
+  text-decoration: line-through;
+  text-decoration-color: var(--destructive);
+}
+
+.rda-ad-date-group .rda-course-date-flag {
+  background: var(--destructive);
+  color: var(--primary-foreground);
 }
 
 .rda-ad-muted {

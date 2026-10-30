@@ -16,6 +16,7 @@ import {
   toUpcomingStartDates,
 } from "../lib/course-schedule";
 import { suppressSitePromo } from "./support/qa-helpers";
+import { combinedRenewalDates, getAdLandingPage } from "../lib/ad-landing-pages";
 import {
   COURSE_DATE_PATHS,
   COURSE_SCHEDULE_IDS,
@@ -613,3 +614,91 @@ test("served schedule matches the published upcoming revision", async ({ page, r
     console.warn(`[course-dates] ${warning}`);
   }
 });
+
+
+test("combined renewal dates keep course identity, Full status and open choices separate", () => {
+  const schedule = combinedRenewalDates("2026-10-29");
+  expect(schedule.nextDate).toBe("Coronal Polish: November 14, 2026; Sealants: December 12, 2026");
+  expect(schedule.dateGroups[0].entries.find((entry) => entry.isoDate === "2026-11-14")?.status).toBe("available");
+  expect(schedule.dateGroups[1].entries.find((entry) => entry.isoDate === "2026-11-14")?.status).toBe("full");
+  expect(schedule.preferredOptions).toEqual([
+    "I'm flexible", "Coronal Polish: November 14, 2026", "Coronal Polish: December 12, 2026", "Sealants: December 12, 2026",
+  ]);
+  // Once November 14 has elapsed, no old opening or Full row survives.
+  const later = combinedRenewalDates("2026-11-15");
+  expect(later.nextDate).toBe("Coronal Polish: December 12, 2026; Sealants: December 12, 2026");
+  expect(later.preferredOptions).toEqual(["I'm flexible", "Coronal Polish: December 12, 2026", "Sealants: December 12, 2026"]);
+  expect(later.dateGroups.flatMap((group) => group.entries.map((entry) => entry.isoDate))).toEqual(["2026-12-12", "2026-12-12"]);
+  const empty = combinedRenewalDates("9999-01-01");
+  expect(empty.nextDate).toBe("Coronal Polish: Ask admissions; Sealants: Ask admissions");
+  expect(empty.preferredOptions).toEqual(["I'm flexible"]);
+  expect(empty.dateGroups.every((group) => group.entries.length === 0)).toBe(true);
+});
+
+for (const slug of ["coronal-sealants-renewal", "rda-renewal-ready"] as const) {
+  for (const width of [390, 1280]) {
+    test(`combined renewal ${slug} shows separate availability at ${width}px`, async ({ page, request }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`/lp/${slug}`);
+      const status = await (await request.get("/api/course-schedule-status")).json();
+      const longDateFact = page.locator(".rda-ad-fact strong.rda-ad-fact-value-long");
+      await expect(longDateFact).toHaveCSS("font-size", "15px");
+      await expect(longDateFact).toHaveCSS("line-height", "20.25px");
+      const groups = page.locator(".rda-ad-date-group");
+      await expect(groups).toHaveCount(2);
+      for (const [id, label] of [["coronal-polish", "Coronal Polish"], ["sealants", "Sealants"]] as const) {
+        const expected = status.upcoming.filter((entry: { courseId: string }) => entry.courseId === id);
+        const group = groups.filter({ has: page.locator(".rda-ad-date-group-label", { hasText: new RegExp(`^${label}$`) }) });
+        const actual = await group.locator(".rda-ad-date-list > span").evaluateAll((nodes) => nodes.map((node) => ({
+          isoDate: node.querySelector("time")?.getAttribute("datetime"),
+          full: node.getAttribute("data-status") === "full",
+          badge: node.querySelector(".rda-course-date-flag")?.textContent?.trim() ?? "",
+        })));
+        expect(actual).toEqual(expected.map((entry: { isoDate: string; status: string }) => ({
+          isoDate: entry.isoDate, full: entry.status === "full", badge: entry.status === "full" ? "Full" : "",
+        })));
+        const firstOpen = expected.find((entry: { status: string }) => entry.status !== "full");
+        await expect(page.locator(".rda-ad-fact").filter({ hasText: "Next date" })).toContainText(
+          `${label}: ${firstOpen ? formatOpenDateLabel(id, firstOpen.isoDate) : "Ask admissions"}`,
+        );
+      }
+      if (slug === "coronal-sealants-renewal") {
+        const options = ["I'm flexible", ...(["coronal-polish", "sealants"] as const).flatMap((id) =>
+          status.upcoming.filter((entry: { courseId: string; status: string }) => entry.courseId === id && entry.status !== "full")
+            .map((entry: { isoDate: string }) => `${id === "sealants" ? "Sealants" : "Coronal Polish"}: ${formatOpenDateLabel(id, entry.isoDate)}`),
+        )];
+        expect(await page.locator('select[name="Preferred class date"] option').allTextContents()).toEqual(options);
+        // Field names, endpoint identity and route attribution remain the same.
+        const definition = getAdLandingPage(slug)!;
+        const form = page.locator("form");
+        await expect(form).toHaveAttribute("action", definition.formspreeEndpoint!);
+        await expect(form.locator('input[name="form_key"]')).toHaveValue(definition.formKey!);
+      }
+      // The new Full rows must stay readable in both supported themes.
+      for (const dark of [false, true]) {
+        const contrast = await page.locator('.rda-ad-date-group [data-status="full"]').evaluateAll((nodes, dark) => {
+          document.documentElement.classList.toggle("dark", dark);
+          const luminance = (color: string) => {
+            const channels = color.match(/[\d.]+/g)!.slice(0, 3).map((channel) => Number(channel) / 255)
+              .map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+            return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+          };
+          const ratio = (front: string, back: string) => {
+            const values = [luminance(front), luminance(back)].sort((a, b) => b - a);
+            return (values[0] + 0.05) / (values[1] + 0.05);
+          };
+          return nodes.map((node) => {
+            const row = getComputedStyle(node), badge = getComputedStyle(node.querySelector(".rda-course-date-flag")!);
+            return { date: ratio(row.color, row.backgroundColor), badge: ratio(badge.color, badge.backgroundColor) };
+          });
+        }, dark);
+        for (const value of contrast) {
+          expect(value.date).toBeGreaterThanOrEqual(4.5);
+          expect(value.badge).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      await expect(page.locator('[id="rda-ld-course-sealants"]')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
+}

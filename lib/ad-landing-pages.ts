@@ -1,10 +1,12 @@
 import {
+  courseScheduleCourseDetails,
   formatCourseDateLabel,
   formatNextStartsSummary,
   getUpcomingCourseSchedule,
   getAvailableCourseDateList,
   getNextAvailableCourseDate,
   type CourseScheduleId,
+  type CourseScheduleStatus,
 } from "@/lib/course-schedule";
 import { siteImages } from "@/lib/site-data";
 
@@ -70,6 +72,12 @@ export type AdLandingConsent = {
   name: string;
 };
 
+export type AdLandingDateGroup = {
+  courseId: CourseScheduleId;
+  label: string;
+  entries: { isoDate: string; label: string; status: CourseScheduleStatus }[];
+};
+
 export type AdLandingPage = {
   audience: string;
   campaignIntent: string;
@@ -78,6 +86,7 @@ export type AdLandingPage = {
   contentCategory: string;
   courseInterests: string[];
   dates: string[];
+  dateGroups?: AdLandingDateGroup[];
   eyebrow: string;
   facts: AdLandingPageStat[];
   gallery?: AdLandingPageGalleryImage[];
@@ -143,10 +152,30 @@ const dentalAssistingDates = availableDates("dental-assisting-program");
 const infectionControlDates = availableDates("infection-control");
 const coronalPolishDates = availableDates("coronal-polish");
 const sealantsDates = availableDates("sealants");
-const availableSealantsDateSet = new Set(sealantsDates);
-const coronalSealantsDates = coronalPolishDates.filter((date) =>
-  availableSealantsDateSet.has(date),
-);
+// One lander can cover courses with different availability on the same day.
+// Keep each course label and Full status, rather than intersecting open dates.
+export function combinedRenewalDates(asOf?: string) {
+  const dateGroups: AdLandingDateGroup[] = (["coronal-polish", "sealants"] as const).map((courseId) => ({
+    courseId,
+    label: courseScheduleCourseDetails[courseId].shortLabel === "Sealants"
+      ? "Sealants" : courseScheduleCourseDetails[courseId].label,
+    entries: getUpcomingCourseSchedule(courseId, asOf).map((entry) => ({
+      isoDate: entry.isoDate,
+      label: formatCourseDateLabel(courseId, entry.date),
+      status: entry.status,
+    })),
+  }));
+  return {
+    dateGroups,
+    nextDate: dateGroups.map((group) =>
+      `${group.label}: ${group.entries.find((entry) => entry.status !== "full")?.label ?? "Ask admissions"}`,
+    ).join("; "),
+    preferredOptions: ["I'm flexible", ...dateGroups.flatMap((group) =>
+      group.entries.filter((entry) => entry.status !== "full").map((entry) => `${group.label}: ${entry.label}`),
+    )],
+  };
+}
+const renewalDates = combinedRenewalDates();
 
 function optionalFormspreeEndpoint(name: string, value: string | undefined) {
   const endpoint = value?.trim();
@@ -348,13 +377,14 @@ export const adLandingPages: AdLandingPage[] = [
     campaignIntent: "rda_renewal_bundle",
     contentCategory: "rda_certification_courses",
     courseInterests: ["Coronal Polish", "Pit and Fissure Sealants"],
-    dates: coronalSealantsDates,
+    dateGroups: renewalDates.dateGroups,
+    dates: sealantsDates,
     eyebrow: "RDA renewal-ready courses",
     facts: [
       { label: "Coronal Polish", value: "CP148" },
       { label: "Sealants", value: "PF186" },
       { label: "Combined price", value: "$1,050" },
-      { label: "Next date", value: firstAvailableDate("coronal-polish") },
+      { label: "Next date", value: renewalDates.nextDate },
     ],
     hero: {
       badge: "Coronal Polish + Sealants",
@@ -862,13 +892,14 @@ export const adLandingPages: AdLandingPage[] = [
     },
     contentCategory: "rda_certification_courses",
     courseInterests: ["Coronal Polish", "Pit and Fissure Sealants"],
-    dates: coronalSealantsDates,
+    dateGroups: renewalDates.dateGroups,
+    dates: sealantsDates,
     eyebrow: "Stay renewal-ready",
     facts: [
       { label: "Coronal Polish", value: "CP148" },
       { label: "Sealants", value: "PF186" },
       { label: "Combined price", value: "$1,050" },
-      { label: "Next date", value: firstAvailableDate("coronal-polish") },
+      { label: "Next date", value: renewalDates.nextDate },
     ],
     // The shared inbox has the verified live Google Sheets connection. Keep the
     // original dedicated form ID as form_key so CRM attribution remains exact.
@@ -921,7 +952,7 @@ export const adLandingPages: AdLandingPage[] = [
         icon: "calendar",
         label: "Preferred class date",
         name: "Preferred class date",
-        options: ["I'm flexible", ...coronalSealantsDates],
+        options: renewalDates.preferredOptions,
       },
     ],
     metaDescription:
