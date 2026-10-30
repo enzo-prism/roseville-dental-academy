@@ -32,7 +32,7 @@
     "test:interactions": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/interaction-flow.spec.ts tests/redesign.spec.ts",
     "test:attribution": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/attribution-api.spec.ts tests/attribution-integrity.spec.ts tests/browser-attribution.spec.ts tests/meta-ads-flow.spec.ts tests/meta-pixel-config.spec.ts tests/postback-worker.spec.ts tests/site-promo.spec.ts tests/qa-network-isolation.spec.ts",
     "test:parity-content": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.spec.ts",
-    "test:parity-visual": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.visual.spec.ts",
+    "test:parity-visual": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/live-parity.visual.spec.ts tests/visual-calendar-baseline.spec.ts",
     "test:ux": "BASELINE_DIR=${BASELINE_DIR:-tests/baselines/live} LOCAL_ORIGIN=${LOCAL_ORIGIN:-http://127.0.0.1:3000} playwright test tests/ux-stability.spec.ts",
     "test:design": "pnpm test:ux && pnpm test:parity-visual",
     "test:parity": "pnpm test:parity-content && pnpm test:parity-visual",
