@@ -16,8 +16,9 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 // Standalone 404: no primary navigation, just a calm way back. During the
-// Halloween season the ghost-lantern art hangs over the h1 (see the seasonal
-// rules for `.rda-not-found-content`), replacing the icon right before it.
+// Thanksgiving season the turkey-tooth stands over the h1, looking around for
+// the missing page (see the seasonal rules for `.rda-not-found-content`),
+// replacing the icon right before it.
 export default function NotFound() {
   return (
     <div
