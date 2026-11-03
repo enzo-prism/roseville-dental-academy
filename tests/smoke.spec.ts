@@ -108,17 +108,18 @@ test("SEO contracts use the serving host and safe structured data", async ({ pag
   expect(seo.organization).not.toHaveProperty("aggregateRating");
   expect(seo.organization).not.toHaveProperty("review");
   expect(seo.courseList?.["@type"]).toBe("ItemList");
-  expect(seo.courseList?.itemListElement).toHaveLength(6);
+  expect(seo.courseList?.itemListElement).toHaveLength(7);
   const courseItems = seo.courseList?.itemListElement ?? [];
   expect(courseItems.map((item: { position: number }) => item.position)).toEqual([
-    1, 2, 3, 4, 5, 6,
+    1, 2, 3, 4, 5, 6, 7,
   ]);
   const courseUrls = courseItems.map((item: { url: string }) => item.url);
-  expect(new Set(courseUrls).size).toBe(6);
+  expect(new Set(courseUrls).size).toBe(7);
   expect(courseItems.every((item: Record<string, unknown>) => !("item" in item))).toBeTruthy();
   expect(courseUrls).toEqual(
     expect.arrayContaining([
       "https://www.rosevilledentalacademy.com/dental-assisting-program",
+      "https://www.rosevilledentalacademy.com/dental-front-desk-program",
       "https://www.rosevilledentalacademy.com/bls-cpr-1",
       "https://www.rosevilledentalacademy.com/infection-control",
       "https://www.rosevilledentalacademy.com/radiation-safety",

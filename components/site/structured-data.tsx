@@ -38,6 +38,14 @@ const COURSE_SCHEMA_BY_PATH: Record<
     scheduleId: "dental-assisting-program",
     timeRequired: "PT210H",
   },
+  "/dental-front-desk-program": {
+    name: "Dental Front Desk / Receptionist Program",
+    description:
+      "Eight-week beginner dental front desk and receptionist training: phones, scheduling, insurance basics, HIPAA, and a one-day externship. Wednesday evening Zoom lectures plus half-day Saturday training in a dental office.",
+    courseMode: "Blended",
+    price: 2495,
+    scheduleId: "dental-front-desk-program",
+  },
   "/bls-cpr-1": {
     name: "BLS/CPR Certification for Healthcare Providers",
     description:

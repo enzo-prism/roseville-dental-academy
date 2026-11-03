@@ -19,6 +19,7 @@ const COURSE_IDS = new Set([
   "sealants",
   "infection-control",
   "dental-assisting-program",
+  "dental-front-desk-program",
 ]);
 
 function academyDate(now = new Date()) {

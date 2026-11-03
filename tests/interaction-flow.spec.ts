@@ -473,10 +473,10 @@ test.describe("live-style interaction flows", () => {
       expect(signupDesign).toMatchObject({
         fieldIconCount: 6,
         howHeardOptionCount: 5,
-        interestCheckboxCount: 8,
+        interestCheckboxCount: 9,
         layoutColumnCount: 2,
         optionColumnCount: 2,
-        optionIconCount: 8,
+        optionIconCount: 9,
         overflowX: 0,
       });
 
@@ -2400,8 +2400,8 @@ test.describe("live-style interaction flows", () => {
       await expect(phone).toHaveAttribute("type", "tel");
       await expect(phone).toHaveAttribute("required", "");
       await expect(notes).toBeVisible();
-      await expect(checkboxes).toHaveCount(8);
-      await expect(optionIcons).toHaveCount(8);
+      await expect(checkboxes).toHaveCount(9);
+      await expect(optionIcons).toHaveCount(9);
       await expect(form.locator('[data-rda-signup-icon="name"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="email"]')).toBeVisible();
       await expect(form.locator('[data-rda-signup-icon="phone"]')).toBeVisible();
@@ -2437,6 +2437,10 @@ test.describe("live-style interaction flows", () => {
       await expect(dentalAssisting).toBeVisible();
       await expect(form.getByRole("checkbox", { name: "BLS / CPR" })).toBeVisible();
       await expect(form.getByLabel("Front Office Program")).toHaveCount(0);
+      await expect(form.getByRole("checkbox", { name: "Dental Front Desk / Receptionist" })).toBeVisible();
+      await expect(form.locator(".ac-tile", { hasText: "Dental Front Desk / Receptionist" })).toContainText(
+        "Starts Jan 9 · 8 weeks · $2,495",
+      );
       await form.locator(".ac-tile", { hasText: "Dental Assisting Program" }).click();
       await expect(dentalAssisting).toBeChecked();
       await expect(selectedPayloads).toHaveCount(1);
@@ -2450,7 +2454,7 @@ test.describe("live-style interaction flows", () => {
       );
       const courseForm = page.locator('form[data-rda-signup-form="true"]').first();
       await expect(courseForm).toBeVisible();
-      await expect(courseForm.locator(".rda-interest-option-icon[data-rda-signup-icon]")).toHaveCount(8);
+      await expect(courseForm.locator(".rda-interest-option-icon[data-rda-signup-icon]")).toHaveCount(9);
       await expect(courseForm.locator('[data-rda-signup-icon="name"]')).toBeVisible();
       await expect(courseForm.locator('[data-rda-signup-icon="email"]')).toBeVisible();
       await expect(courseForm.locator('[data-rda-signup-icon="phone"]')).toBeVisible();

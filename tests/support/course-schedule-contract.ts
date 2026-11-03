@@ -33,6 +33,14 @@ export const COURSE_DATE_PATHS = [
   ...adLandingPages.map((page) => page.path),
 ] as const;
 
+// Courses whose own page renders the feed-driven course block. The Front Desk
+// program has a custom page with its published program facts and no dated
+// course block, so its feed dates are checked on the home schedule, the FAQ and
+// llms.txt only.
+export const COURSE_PAGE_SCHEDULE_IDS = COURSE_SCHEDULE_IDS.filter((id) =>
+  (COURSE_DATE_PATHS as readonly string[]).includes(courseScheduleCourseDetails[id].href),
+);
+
 export const COURSE_DATE_MUTANTS = [
   "empty-schedule",
   "stale-cutoff",
@@ -567,7 +575,7 @@ function courseWithMultipleOpenDates(status: PublishedCourseScheduleStatus) {
 function renderedIsoDates(snapshot: ServedScheduleSnapshot) {
   const dates = [
     ...snapshot.homeRows.map((row) => row.isoDate),
-    ...COURSE_SCHEDULE_IDS.flatMap((id) => snapshot.courses[id].dates.map((entry) => entry.isoDate)),
+    ...COURSE_PAGE_SCHEDULE_IDS.flatMap((id) => snapshot.courses[id].dates.map((entry) => entry.isoDate)),
   ];
   for (const labels of Object.values(snapshot.landerDates)) {
     for (const label of labels) {
@@ -1241,7 +1249,7 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     assert.deepEqual(status.upcoming, []);
     assert.deepEqual(snapshot.homeRows, []);
     assert.match(snapshot.homeEmptyCopy, /Ask admissions/u);
-    for (const id of COURSE_SCHEDULE_IDS) {
+    for (const id of COURSE_PAGE_SCHEDULE_IDS) {
       assert.deepEqual(snapshot.courses[id].dates, []);
       assert.deepEqual(snapshot.courses[id].heroStarts, []);
       assert.deepEqual(
@@ -1269,7 +1277,15 @@ export function assertServedScheduleContract(snapshot: ServedScheduleSnapshot) {
     assert.ok(date >= status.reviewedOn, `homepage ${date} precedes reviewedOn ${status.reviewedOn}`);
   }
 
-  for (const id of COURSE_SCHEDULE_IDS) {
+  for (const id of COURSE_SCHEDULE_IDS.filter((courseId) => !COURSE_PAGE_SCHEDULE_IDS.includes(courseId))) {
+    const published = entriesForCourse(status, id);
+    const homeForCourse = snapshot.homeRows
+      .filter((row) => row.courses.some((course) => course.id === id))
+      .map((row) => [row.isoDate, row.courses.find((course) => course.id === id)?.full]);
+    assert.deepEqual(homeForCourse, published.map((entry) => [entry.isoDate, entry.status === "full"]));
+  }
+
+  for (const id of COURSE_PAGE_SCHEDULE_IDS) {
     const published = entriesForCourse(status, id);
     const rendered = snapshot.courses[id];
     assert.deepEqual(
