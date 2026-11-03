@@ -29,3 +29,14 @@ the PR's head commit 90eb7208f4d28582d7a0777e63dc1d0d38dee0e3. The course grid
 now shows six cards in two rows; the rest of the page only moves down to make
 room. Home mobile still passes against its existing reference and was not
 replaced. All other route images are unchanged.
+
+Dental Assisting Program, Home, Infection Control, Member login and Photos
+desktop/mobile references were refreshed for the Dental Front Desk /
+Receptionist program in PR #79, using Linux capture run 41662304321 at commit
+20466c8, which matches the PR's head commit 0be3d75 except for a temporary
+capture workflow change that is not included here. Two changes were inspected:
+the Request Course Info form now lists the Front Desk program with its Jan 9
+start, and the footer course list now links the Front Desk program. Every other
+part of each page only moves down to make room. Content references for the same
+routes add only the new footer and menu link; the home images list was left as
+it was. All other route images are unchanged.
