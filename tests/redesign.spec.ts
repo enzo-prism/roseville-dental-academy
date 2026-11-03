@@ -251,6 +251,7 @@ test.describe("redesign contracts", () => {
       ["Radiation Safety", "$695"],
       ["Coronal Polish", "$500"],
       ["Sealants", "$550"],
+      ["Dental Front Desk / Receptionist", "$2,495"],
     ]) {
       await expect(menu).toContainText(label);
       await expect(menu).toContainText(price);

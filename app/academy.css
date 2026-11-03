@@ -1156,6 +1156,10 @@ html.rda-motion [data-reveal][data-revealed="true"] {
   width: 22rem;
 }
 
+.ac-mega-list ul + .ac-mega-list-label {
+  margin-top: 0.75rem;
+}
+
 .ac-mega-list-label {
   color: var(--muted-foreground);
   font-size: 0.72rem;

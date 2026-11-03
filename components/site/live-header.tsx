@@ -13,6 +13,7 @@ import {
   CircleHelp,
   FileUser,
   GraduationCap,
+  Headset,
   Home,
   Images,
   Menu,
@@ -44,6 +45,7 @@ import {
   dentalAssistingProgram,
   getNextOpenShortDate,
 } from "@/lib/academy-catalog";
+import { frontOfficeProgram } from "@/lib/front-office-program";
 import { googleReviewsAggregate, siteContact, socialLinks } from "@/lib/site-data";
 import {
   activeSitePromo,
@@ -251,6 +253,30 @@ function CoursesMegaMenu({ activePath }: { activePath: string }) {
               </li>
             );
           })}
+        </ul>
+        <p className="ac-mega-list-label">Front office</p>
+        <ul>
+          <li>
+            <NavigationMenuPrimitive.Link asChild>
+              <NavLink
+                activePath={activePath}
+                className="ac-mega-item rda-nav-link"
+                data-rda-front-desk-nav="true"
+                href={frontOfficeProgram.path}
+              >
+                <span className="ac-icon-tile">
+                  <NavIcon Icon={Headset} iconKey="headset" />
+                </span>
+                <span className="ac-mega-item-copy">
+                  <span className="ac-mega-item-title">{frontOfficeProgram.shortName}</span>
+                  <span className="ac-mega-item-meta">
+                    {frontOfficeProgram.facts.duration} · {frontOfficeProgram.facts.tuition} · Starts{" "}
+                    {frontOfficeProgram.facts.firstClassShort}
+                  </span>
+                </span>
+              </NavLink>
+            </NavigationMenuPrimitive.Link>
+          </li>
         </ul>
         <div className="ac-mega-footer">
           <NavigationMenuPrimitive.Link asChild>
@@ -492,6 +518,23 @@ export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: s
                       </SheetClose>
                     );
                   })}
+                  <SheetClose asChild>
+                    <NavLink
+                      activePath={activePath}
+                      className="rda-mobile-link ac-mobile-course"
+                      data-rda-front-desk-nav="true"
+                      href={frontOfficeProgram.path}
+                      onClick={closeMobileMenu}
+                    >
+                      <NavIcon className="rda-mobile-nav-icon" Icon={Headset} iconKey="headset" />
+                      <span className="ac-mobile-course-copy">
+                        <span>{frontOfficeProgram.shortName}</span>
+                        <small>
+                          {frontOfficeProgram.facts.tuition} · Starts {frontOfficeProgram.facts.firstClassShort}
+                        </small>
+                      </span>
+                    </NavLink>
+                  </SheetClose>
                   <p className="ac-mobile-group-label">The academy</p>
                   {[...primaryLinks, ...moreLinks].map((link) => (
                     <SheetClose asChild key={link.href}>
