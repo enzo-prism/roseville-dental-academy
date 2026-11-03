@@ -9,14 +9,15 @@ name: Capture visual baselines
 # Temporary helper branch: commits the captured PNGs to a review branch
 # instead of uploading an artifact. Delete this branch after use.
 on:
-  workflow_dispatch:
+  push:
+    branches: ["ci/capture-home-baseline-pr78"]
 
 permissions:
   contents: write
 
 jobs:
   capture:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'capture-visual-baselines')
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
