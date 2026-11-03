@@ -1,3 +1,4 @@
+import { frontOfficeInterests } from "@/lib/front-office-program";
 import { courseScheduleCourseDetails, courseScheduleNote, getAvailableCourseDateList, getNextCourseDateSentence, type CourseScheduleId } from "@/lib/course-schedule";
 import {
   CERTIFICATE_EXPIRATION_FAQ_QUESTION,
@@ -134,8 +135,10 @@ export const signupInterestOptions: SignupInterestOption[] = [
   },
   {
     // Same value the Front Desk page form sends, so leads stay grouped together.
+    // No scheduleId: the Jan 9 start lives in the dashboard feed only once it is
+    // entered there, so the tile states the published start instead.
+    availabilityLabel: frontOfficeInterests[0].availabilityLabel,
     label: "Dental Front Desk / Receptionist",
-    scheduleId: "dental-front-desk-program",
     value: "Front Office Program",
   },
   { label: "BLS / CPR", scheduleId: "bls-cpr-1", value: "BLS / CPR" },

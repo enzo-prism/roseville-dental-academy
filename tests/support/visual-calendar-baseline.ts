@@ -10,7 +10,7 @@ type Options = {
   publication?: unknown;
   registry: unknown;
 };
-const COURSES = new Set(["bls-cpr-1", "radiation-safety", "coronal-polish", "sealants", "infection-control", "dental-assisting-program"]);
+const COURSES = new Set(["bls-cpr-1", "radiation-safety", "coronal-polish", "sealants", "infection-control", "dental-assisting-program", "dental-front-desk-program"]);
 const HASH = /^[a-f0-9]{64}$/;
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid published schedule for visual baseline selection.");
