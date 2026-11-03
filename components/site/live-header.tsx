@@ -310,9 +310,9 @@ export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: s
     () => window.scrollY > 24,
     () => false,
   );
-  const coursesActive = [dentalAssistingProgram, ...certificationCourses].some((course) =>
-    isActive(activePath, course.href),
-  );
+  const coursesActive =
+    isActive(activePath, frontOfficeProgram.path) ||
+    [dentalAssistingProgram, ...certificationCourses].some((course) => isActive(activePath, course.href));
   const askHref = activePath === "/" ? "#quick-sign-up" : "/#quick-sign-up";
   const phoneHref = `tel:${siteContact.phone.replace(/\D/g, "")}`;
 
