@@ -22,3 +22,10 @@ role-specific training-options wording in PR #70, using Linux capture run
 Both complete page images and the notice at desktop/mobile widths were
 inspected. Other route images were not replaced. The workflow used the same
 reduced-motion, seasonal, promo, and floating-widget isolation as above.
+
+The Home desktop reference was refreshed for the Dental Front Desk /
+Receptionist course card in PR #77, using Linux capture run 41652154026 at
+the PR's head commit 90eb7208f4d28582d7a0777e63dc1d0d38dee0e3. The course grid
+now shows six cards in two rows; the rest of the page only moves down to make
+room. Home mobile still passes against its existing reference and was not
+replaced. All other route images are unchanged.

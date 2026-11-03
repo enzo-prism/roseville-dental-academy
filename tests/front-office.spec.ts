@@ -14,12 +14,19 @@ test("front desk page is discoverable and describes an inquiry, without invented
   await expect(page.getByRole("heading", { name: "Dental insurance basics", exact: true })).toBeVisible();
   await expect(page.locator('input[name="course_interest"]')).toHaveValue("Front Office Program");
   await expect(page.getByRole("checkbox", { name: /Dental Front Desk/ })).toBeChecked();
-  await expect(page.getByRole("main")).not.toContainText(/\$\d|guaranteed employment|Board.approved|9.week/);
+  // Tuition, first class day and length come from Dr. Narodovich's Nov 2, 2026 email.
+  await expect(page.getByRole("main")).toContainText("$2,495");
+  await expect(page.getByRole("main")).toContainText("January 9, 2027");
+  await expect(page.getByRole("main")).not.toContainText(/guaranteed employment|Board.approved|9.week/);
   await expect(page.getByRole("button", { name: "Request next steps" })).toBeVisible();
   expect(await (await request.get(`${localOrigin}/sitemap.website.xml`)).text()).toContain("/dental-front-desk-program");
   expect(await (await request.get(`${localOrigin}/llms.txt`)).text()).toContain("/dental-front-desk-program");
   await page.goto(localOrigin);
   await expect(page.getByRole("link", { name: "Explore dental front desk" })).toHaveAttribute("href", "/dental-front-desk-program");
+  const homeCard = page.locator('#courses [data-rda-home-front-desk-card="true"]');
+  await expect(homeCard).toHaveAttribute("href", "/dental-front-desk-program");
+  await expect(homeCard).toContainText("$2,495");
+  await expect(homeCard).toContainText("Next class Jan 9");
 });
 
 test("inquiry validates, retains course/source attribution, handles an error, and succeeds on retry", async ({ page }) => {

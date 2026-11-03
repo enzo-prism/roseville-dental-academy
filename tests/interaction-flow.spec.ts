@@ -643,13 +643,14 @@ test.describe("live-style interaction flows", () => {
       expect(displayedDates.every(date => date && date >= published.reviewedOn)).toBe(true);
 
       const courseCards = courseSystem.locator(".ac-course-card");
-      await expect(courseCards).toHaveCount(5);
+      await expect(courseCards).toHaveCount(6);
       for (const [name, href, price] of [
         ["BLS / CPR", "/bls-cpr-1", "$85"],
         ["Infection Control", "/infection-control", "$395"],
         ["Radiation Safety", "/radiation-safety", "$695"],
         ["Coronal Polish", "/coronal-polish", "$500"],
         ["Pit & Fissure Sealants", "/sealants", "$550"],
+        ["Dental Front Desk / Receptionist", "/dental-front-desk-program", "$2,495"],
       ]) {
         const card = courseCards.filter({ hasText: name });
         await expect(card).toHaveAttribute("href", href);
