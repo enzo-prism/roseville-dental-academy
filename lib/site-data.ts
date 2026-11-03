@@ -132,6 +132,12 @@ export const signupInterestOptions: SignupInterestOption[] = [
     scheduleId: "dental-assisting-program",
     value: "Dental Assisting Program",
   },
+  {
+    // Same value the Front Desk page form sends, so leads stay grouped together.
+    label: "Dental Front Desk / Receptionist",
+    scheduleId: "dental-front-desk-program",
+    value: "Front Office Program",
+  },
   { label: "BLS / CPR", scheduleId: "bls-cpr-1", value: "BLS / CPR" },
   {
     label: "Infection Control",

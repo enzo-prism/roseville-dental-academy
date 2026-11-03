@@ -14,6 +14,7 @@ import {
   Clock3,
   GraduationCap,
   HeartPulse,
+  Headset,
   ListChecks,
   LoaderCircle,
   Mail,
@@ -53,6 +54,7 @@ type LiveSignupSectionProps = {
 
 const interestIcons: Record<string, LucideIcon> = {
   "Dental Assisting Program": GraduationCap,
+  "Front Office Program": Headset,
   "BLS / CPR": HeartPulse,
   "Infection Control": ShieldCheck,
   "Radiation Safety": Radiation,

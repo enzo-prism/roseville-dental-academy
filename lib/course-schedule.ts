@@ -4,6 +4,7 @@ export type CourseScheduleId =
   | "bls-cpr-1"
   | "coronal-polish"
   | "dental-assisting-program"
+  | "dental-front-desk-program"
   | "infection-control"
   | "radiation-safety"
   | "sealants";
@@ -60,6 +61,11 @@ export const courseScheduleCourseDetails: Record<
     label: "Dental Assisting Training",
     shortLabel: "Dental Assisting",
   },
+  "dental-front-desk-program": {
+    href: "/dental-front-desk-program",
+    label: "Dental Front Desk / Receptionist",
+    shortLabel: "Front Desk",
+  },
   "infection-control": {
     href: "/infection-control",
     label: "Infection Control",
@@ -96,6 +102,7 @@ const courseDisplayOrder: CourseScheduleId[] = [
   "sealants",
   "infection-control",
   "dental-assisting-program",
+  "dental-front-desk-program",
 ];
 
 type CourseScheduleDataEntry = {

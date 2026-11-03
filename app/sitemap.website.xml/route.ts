@@ -37,6 +37,7 @@ function priorityFor(path: string): string {
   if (path === "/resources") return "0.7";
   if (path === "/registration") return "0.7";
   if (path === "/dental-assisting-school") return "0.7";
+  if (path === "/dental-front-desk-program") return "0.8";
   if (path === "/for-dental-offices" || path === "/rda-certification-courses") return "0.7";
   if (path.startsWith("/resources/")) return "0.6";
   return "0.6";

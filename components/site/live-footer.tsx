@@ -7,8 +7,16 @@ import { SeasonalFooterFog } from "@/components/site/seasonal-footer-fog";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE } from "@/lib/academy-policies";
-import { academyCourses } from "@/lib/academy-catalog";
+import { certificationCourses, dentalAssistingProgram } from "@/lib/academy-catalog";
+import { frontOfficeProgram } from "@/lib/front-office-program";
 import { googleReviewsAggregate, siteContact, socialLinks, whatsAppUrl } from "@/lib/site-data";
+
+// Programs first (Dental Assisting, then Front Desk), then the certification courses.
+const footerCourseLinks = [
+  { href: dentalAssistingProgram.href, name: dentalAssistingProgram.name },
+  { href: frontOfficeProgram.path, name: frontOfficeProgram.name },
+  ...certificationCourses.map((course) => ({ href: course.href, name: course.name })),
+];
 
 const academyLinks = [
   { href: "/meet-the-instructors", label: "Meet the Instructors" },
@@ -102,8 +110,8 @@ export function LiveFooter({ seasonal = false }: { seasonal?: boolean }) {
           <nav aria-label="Courses" className="ac-footer-col">
             <p className="ac-footer-heading">Courses</p>
             <ul>
-              {academyCourses.map((course) => (
-                <li key={course.id}>
+              {footerCourseLinks.map((course) => (
+                <li key={course.href}>
                   <Link href={course.href}>{course.name}</Link>
                 </li>
               ))}
