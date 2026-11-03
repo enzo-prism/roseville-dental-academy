@@ -1,8 +1,8 @@
 {
-  "captureOnly": "content",
-  "captureOrigin": "http://127.0.0.1:3156",
-  "platform": "darwin",
-  "generatedAt": "2026-10-29T20:31:01.404Z",
+  "captureOnly": "all",
+  "captureOrigin": "http://127.0.0.1:3100",
+  "platform": "linux",
+  "generatedAt": "2026-11-03T15:14:51.353Z",
   "liveOrigin": "https://rosevilledentalacademy.com",
   "results": [
     {
