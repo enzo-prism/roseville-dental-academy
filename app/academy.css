@@ -226,7 +226,7 @@ body {
     var(--ink);
   color: var(--ink-foreground);
   /* clip, not hidden: a hidden box becomes a scroll container and would
-     re-root scroll-driven animations (the seasonal divider pumpkins). */
+     re-root scroll-driven animations (the seasonal divider leaves). */
   overflow: clip;
 }
 
@@ -323,7 +323,7 @@ body {
   display: none;
 }
 
-/* Section heading block. The empty span is the seasonal pumpkin anchor
+/* Section heading block. The empty span is the seasonal leaf anchor
    (`.rda-section-heading > span:empty`), so keep it in the markup. */
 .ac-heading {
   display: grid;
@@ -2621,16 +2621,16 @@ textarea.ac-input {
   background: var(--success);
 }
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-confetti span {
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-confetti span {
   background: var(--seasonal-pumpkin);
 }
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-confetti span:nth-child(3n) {
-  background: #6b3fa0;
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-confetti span:nth-child(3n) {
+  background: var(--seasonal-cranberry);
 }
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-confetti span:nth-child(4n) {
-  background: var(--seasonal-candle);
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-confetti span:nth-child(4n) {
+  background: var(--seasonal-gold);
 }
 
 @keyframes ac-confetti {
@@ -6756,127 +6756,111 @@ html.rda-motion .ac-not-found-icon {
 }
 
 /* ==========================================================================
-   Halloween seasonal accents for the redesign (decorative only).
+   Thanksgiving seasonal accents for the redesign (decorative only).
    Same double gate as the rest of the seasonal layer: <html data-rda-season>
    plus [data-rda-seasonal-scope]. Nothing here adds text, controls, or layout.
    ========================================================================== */
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-ticker {
-  background: linear-gradient(90deg, #170b27 0%, #2c1146 50%, #170b27 100%);
+/* The skills ticker turns a roasted harvest brown with glowing gold icons. */
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-ticker {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--seasonal-bark) 55%, var(--ink)) 0%,
+    color-mix(in oklab, var(--seasonal-bark) 80%, var(--seasonal-cranberry)) 50%,
+    color-mix(in oklab, var(--seasonal-bark) 55%, var(--ink)) 100%
+  );
 }
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-ticker-track svg {
-  color: var(--seasonal-pumpkin);
-  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--seasonal-pumpkin) 60%, transparent));
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-ticker-track svg {
+  color: var(--seasonal-gold);
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--seasonal-gold) 55%, transparent));
 }
 
-/* A pumpkin sits beside the "Now enrolling" chip's live dot. */
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-hero-chip::after {
-  background: url("/assets/seasonal/halloween-2026/pumpkin.svg") center / contain no-repeat;
+/* A maple leaf stands in for the "Now enrolling" chip's live dot. */
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-hero-chip::after {
+  background: url("/assets/seasonal/thanksgiving-2026/maple-leaf.svg") center / contain no-repeat;
   content: "";
-  height: 1.1rem;
+  height: 1.05rem;
   order: -1;
-  width: 1.1rem;
+  rotate: -12deg;
+  width: 1.05rem;
 }
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-hero-chip.ac-chip-live::before {
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-hero-chip.ac-chip-live::before {
   display: none;
 }
 
-/* Ink bands get a harvest moon and a few twinkling stars. */
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-band-ink::before {
-  background:
-    radial-gradient(circle at 50% 50%, #fff4d6 0 38%, #ffd27a 52%, transparent 70%);
+/* Ink bands get a low harvest glow and a few leaves caught on the breeze. */
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-band-ink::before {
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in oklab, var(--seasonal-gold) 70%, transparent) 0 22%,
+    color-mix(in oklab, var(--seasonal-pumpkin) 28%, transparent) 46%,
+    transparent 70%
+  );
   border-radius: 50%;
-  box-shadow: 0 0 80px 30px color-mix(in oklab, var(--seasonal-candle) 30%, transparent);
   content: "";
-  height: 5.5rem;
-  opacity: 0.85;
+  filter: blur(6px);
+  height: 9rem;
+  opacity: 0.55;
   pointer-events: none;
   position: absolute;
-  right: max(2rem, calc((100vw - var(--container)) / 2 + 1rem));
-  top: 2.25rem;
-  width: 5.5rem;
+  right: max(1rem, calc((100vw - var(--container)) / 2 - 0.5rem));
+  top: 1.25rem;
+  width: 9rem;
 }
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-band-ink::after {
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 18%, #fff 50%, transparent),
-    radial-gradient(1.5px 1.5px at 28% 8%, #fff 50%, transparent),
-    radial-gradient(1px 1px at 44% 22%, #fff 50%, transparent),
-    radial-gradient(1.5px 1.5px at 63% 12%, #fff 50%, transparent),
-    radial-gradient(1px 1px at 78% 30%, #fff 50%, transparent),
-    radial-gradient(1.5px 1.5px at 90% 6%, #fff 50%, transparent),
-    radial-gradient(1px 1px at 6% 40%, #fff 50%, transparent);
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-band-ink::after {
+  background:
+    url("/assets/seasonal/thanksgiving-2026/maple-leaf.svg") 8% 26% / 1.1rem no-repeat,
+    url("/assets/seasonal/thanksgiving-2026/oak-leaf.svg") 31% 9% / 0.9rem no-repeat,
+    url("/assets/seasonal/thanksgiving-2026/maple-leaf-cranberry.svg") 58% 20% / 0.85rem no-repeat,
+    url("/assets/seasonal/thanksgiving-2026/oak-leaf.svg") 76% 34% / 1rem no-repeat,
+    url("/assets/seasonal/thanksgiving-2026/maple-leaf.svg") 94% 12% / 0.8rem no-repeat;
   content: "";
-  height: 14rem;
+  height: 12rem;
   inset: 0 0 auto;
-  opacity: 0.6;
+  opacity: 0.35;
   pointer-events: none;
   position: absolute;
 }
 
-html.rda-motion[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-band-ink::after {
-  animation: ac-twinkle 4s ease-in-out infinite alternate;
-}
-
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-band-ink > .ac-container {
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-band-ink > .ac-container {
   position: relative;
   z-index: 1;
 }
 
-/* Footer call-to-action glows like a jack-o'-lantern at dusk. */
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-footer-cta {
+/* The footer call-to-action warms up like a harvest sunset. */
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-footer-cta {
   background:
-    radial-gradient(120% 140% at 100% 0%, color-mix(in oklab, var(--seasonal-pumpkin) 55%, transparent), transparent 55%),
-    linear-gradient(120deg, #241238 0%, #3b1a56 45%, color-mix(in oklab, var(--brand-blue) 70%, #241238) 100%);
+    radial-gradient(90% 120% at 100% 0%, color-mix(in oklab, var(--seasonal-gold) 34%, transparent), transparent 60%),
+    linear-gradient(
+      120deg,
+      color-mix(in oklab, var(--seasonal-cranberry) 55%, var(--ink)) 0%,
+      color-mix(in oklab, var(--seasonal-bark) 75%, var(--seasonal-cranberry)) 55%,
+      color-mix(in oklab, var(--seasonal-pumpkin-deep) 70%, var(--seasonal-bark)) 100%
+    );
 }
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-footer-cta-title em {
-  color: var(--seasonal-candle);
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-footer-cta-title em {
+  color: var(--seasonal-gold);
 }
 
-/* The dark-mode toggle's moon picks up a candle glow. */
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-theme-toggle-moon {
-  color: var(--seasonal-pumpkin-deep);
-  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--seasonal-pumpkin) 55%, transparent));
-}
-
-/* Stats tile wears a little cobweb in the corner. */
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-bento-stats {
+/* The stats tile wears a little leafy sprig in its corner. */
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-bento-stats {
   position: relative;
 }
 
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-bento-stats::after {
-  background: url("/assets/seasonal/halloween-2026/cobweb.svg") top right / contain no-repeat;
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-bento-stats::after {
+  background: url("/assets/seasonal/thanksgiving-2026/leaf-sprig.svg") top right / contain no-repeat;
   content: "";
   height: 4.5rem;
-  opacity: 0.55;
+  opacity: 0.85;
   pointer-events: none;
   position: absolute;
   right: 0.5rem;
   top: 0.5rem;
   width: 4.5rem;
-}
-
-.dark [data-rda-seasonal-scope] .ac-bento-stats::after {
-  filter: invert(1);
-}
-
-@keyframes ac-twinkle {
-  from {
-    opacity: 0.25;
-  }
-
-  to {
-    opacity: 0.75;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-band-ink::after {
-    animation: none;
-  }
 }
 
 /* Promo dialog */
@@ -6987,10 +6971,10 @@ html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-bento-stats::aft
 }
 
 /* Seasonal layout fit for the redesign's taller section headings and heroes. */
-/* The heading block now includes the lede, so the divider pumpkin finishes
-   its roll while the heading enters the viewport (independent of its height). */
+/* The heading block now includes the lede, so the divider leaf finishes
+   settling while the heading enters the viewport (independent of its height). */
 @media screen {
-  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-heading.rda-section-heading > span:empty {
+  html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-heading.rda-section-heading > span:empty {
     border-radius: 99px;
     height: 2px;
   }
@@ -6998,27 +6982,34 @@ html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-bento-stats::aft
 
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-heading.rda-section-heading > span:empty::after {
+    html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-heading.rda-section-heading > span:empty::after {
       animation-range: entry 15% entry 100%;
     }
   }
 }
 
-/* Give the hero spider its own headroom on phones so it never hangs over the
-   enrollment chip or the headline. */
+/* Give the hero sprig and its falling leaf their own headroom on phones so
+   they never sit over the enrollment chip or the headline. */
 @media (max-width: 639px) {
-  html[data-rda-season="halloween"] [data-rda-seasonal-scope] .rda-home-hero-copy {
+  html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .rda-home-hero-copy {
+    --rda-seasonal-sprig-size: 52px;
+    --rda-leaf-fall: 14px;
     padding-top: 3.5rem;
+  }
+
+  /* The leaf lets go higher up so its whole fall stays in that headroom. */
+  html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .rda-home-hero-copy::after {
+    top: calc(var(--rda-seasonal-sprig-size) * 0.35);
   }
 }
 
-/* The ghost-lantern replaces the faint "404" numerals while it is out. */
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-not-found-code {
+/* The turkey-tooth replaces the faint "404" numerals while it is out. */
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-not-found-code {
   display: none;
 }
 
-/* Footer pumpkins and the ghost-tooth sit on the footer's top edge; keep the
-   last section's controls clear of them. */
-html[data-rda-season="halloween"] [data-rda-seasonal-scope] .ac-social-follow {
+/* The footer harvest and the turkey-tooth sit on the footer's top edge; keep
+   the last section's controls clear of them. */
+html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-social-follow {
   padding-bottom: 4.5rem;
 }
