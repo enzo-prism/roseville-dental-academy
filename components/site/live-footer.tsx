@@ -3,7 +3,7 @@ import { ArrowRight, Clock3, Mail, MapPin, Phone, Star } from "lucide-react";
 
 import { SiteLink as Link } from "@/components/site/site-link";
 import { SeasonalFooterDecor } from "@/components/site/seasonal-footer-decor";
-import { SeasonalFooterFog } from "@/components/site/seasonal-footer-fog";
+import { SeasonalFooterDrift } from "@/components/site/seasonal-footer-drift";
 import { SocialLinkButtons } from "@/components/site/social-link-buttons";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { CANCELLATION_POLICY_PATH, CANCELLATION_POLICY_SUMMARY, CANCELLATION_POLICY_TITLE } from "@/lib/academy-policies";
@@ -26,7 +26,7 @@ export function LiveFooter({ seasonal = false }: { seasonal?: boolean }) {
 
   return (
     <footer className="rda-live-footer" data-rda-shell-footer="true">
-      {seasonal ? <SeasonalFooterFog /> : null}
+      {seasonal ? <SeasonalFooterDrift /> : null}
       {seasonal ? <SeasonalFooterDecor /> : null}
       <div className="ac-container rda-footer-inner">
         <div className="ac-footer-cta">

@@ -22,7 +22,7 @@ import {
   getSeasonalFlybyStorageKey,
   getSeasonalLocalDate,
   getSeasonalPeekStorageKey,
-  halloween2026,
+  thanksgiving2026,
   isSeasonalThemeActive,
   isSeasonalThemeCurrent,
   type SeasonalTheme,
@@ -37,14 +37,16 @@ import { localOrigin, suppressSeasonalTheme, suppressSitePromo } from "./support
 // (activeSeasonalTheme is null), so the on-state browser checks skip while the
 // pure logic and out-of-season checks keep running.
 
-const MID_OCTOBER = "2026-10-15T10:00:00-07:00";
-const PEAK_DAY = "2026-10-31T10:00:00-07:00";
-const DAY_BEFORE_PEAK = "2026-10-30T10:00:00-07:00";
-const AFTER_SEASON = "2026-11-15T10:00:00-08:00";
-const GHOST_LABEL = "Release the Halloween bats";
-const PEEK_KEY = getSeasonalPeekStorageKey(halloween2026);
-// Banner moon breakpoint (globals.css "Seasonal layer", banner section).
-const MOON_MIN_WIDTH = 900;
+// Daylight saving ends Nov 1, 2026 at 2am: the rest of the season is UTC-8.
+const MID_SEASON = "2026-11-12T10:00:00-08:00";
+const PEAK_DAY = "2026-11-26T10:00:00-08:00";
+const DAY_BEFORE_PEAK = "2026-11-25T10:00:00-08:00";
+const AFTER_SEASON = "2026-12-15T10:00:00-08:00";
+const MASCOT_LABEL = "Toss the autumn leaves";
+const PEEK_KEY = getSeasonalPeekStorageKey(thanksgiving2026);
+const ASSETS = "/assets/seasonal/thanksgiving-2026";
+// Banner sun breakpoint (globals.css "Seasonal layer", banner section).
+const SUN_MIN_WIDTH = 900;
 const SEASONAL_ASSET_PATH = "/assets/seasonal/";
 const RETIRED = !activeSeasonalTheme;
 const RETIRED_REASON = "seasonal theme retired at build";
@@ -138,8 +140,8 @@ function seasonAttribute(page: Page) {
   return page.locator("html").getAttribute(SEASONAL_THEME_ATTRIBUTE);
 }
 
-function ghostButton(page: Page) {
-  return page.getByRole("button", { exact: true, name: GHOST_LABEL });
+function mascotButton(page: Page) {
+  return page.getByRole("button", { exact: true, name: MASCOT_LABEL });
 }
 
 async function visibleSeasonalCount(page: Page) {
@@ -180,7 +182,7 @@ async function assertSeasonOff(page: Page, assetRequests: string[]) {
   expect(await page.locator("html").getAttribute(SEASONAL_FLYBY_ATTRIBUTE)).toBeNull();
   expect(await page.locator("html").getAttribute(SEASONAL_PEAK_ATTRIBUTE)).toBeNull();
   expect(await visibleSeasonalCount(page)).toBe(0);
-  await expect(ghostButton(page)).toBeHidden();
+  await expect(mascotButton(page)).toBeHidden();
 
   for (const pseudo of await seasonalPseudoElements(page)) {
     expect(pseudo.content, pseudo.selector).toBe("none");
@@ -220,12 +222,12 @@ function footerDecor(page: Page) {
 }
 
 // React has hydrated the footer decor and run its effects: the visibility
-// observer always reports once, and only the client sets data-rda-ghost to
+// observer always reports once, and only the client sets data-rda-mascot to
 // anything but the server's "idle" or sets the look variables.
 async function waitForFooterHydration(page: Page) {
   await page.waitForFunction(
     () => {
-      const button = document.querySelector(".rda-seasonal-ghost-button");
+      const button = document.querySelector(".rda-seasonal-mascot-button");
 
       return Boolean(button && Object.keys(button).some((key) => key.startsWith("__reactProps")));
     },
@@ -237,20 +239,20 @@ async function waitForFooterHydration(page: Page) {
   await page.waitForTimeout(100);
 }
 
-/** Records every data-rda-ghost value from now on (starting with the current one). */
-async function recordGhostPhases(page: Page) {
+/** Records every data-rda-mascot value from now on (starting with the current one). */
+async function recordMascotPhases(page: Page) {
   await page.evaluate(() => {
-    const button = document.querySelector<HTMLElement>(".rda-seasonal-ghost-button")!;
-    const store = window as unknown as { __rdaGhostPhases: string[] };
+    const button = document.querySelector<HTMLElement>(".rda-seasonal-mascot-button")!;
+    const store = window as unknown as { __rdaMascotPhases: string[] };
 
-    store.__rdaGhostPhases = [button.getAttribute("data-rda-ghost") ?? ""];
-    new MutationObserver(() => store.__rdaGhostPhases.push(button.getAttribute("data-rda-ghost") ?? "")).observe(
+    store.__rdaMascotPhases = [button.getAttribute("data-rda-mascot") ?? ""];
+    new MutationObserver(() => store.__rdaMascotPhases.push(button.getAttribute("data-rda-mascot") ?? "")).observe(
       button,
-      { attributeFilter: ["data-rda-ghost"] },
+      { attributeFilter: ["data-rda-mascot"] },
     );
   });
 
-  return () => page.evaluate(() => (window as unknown as { __rdaGhostPhases: string[] }).__rdaGhostPhases);
+  return () => page.evaluate(() => (window as unknown as { __rdaMascotPhases: string[] }).__rdaMascotPhases);
 }
 
 /** Records every value of an attribute on the first match from now on (null = removed). */
@@ -282,10 +284,10 @@ function peekKeyValue(page: Page) {
   return page.evaluate((key) => window.sessionStorage.getItem(key), PEEK_KEY);
 }
 
-async function ghostLook(page: Page) {
-  return page.locator(".rda-seasonal-ghost-art").evaluate((svg) => ({
-    x: (svg as SVGElement).style.getPropertyValue("--rda-ghost-look-x"),
-    y: (svg as SVGElement).style.getPropertyValue("--rda-ghost-look-y"),
+async function mascotLook(page: Page) {
+  return page.locator(".rda-seasonal-mascot-art").evaluate((svg) => ({
+    x: (svg as SVGElement).style.getPropertyValue("--rda-mascot-look-x"),
+    y: (svg as SVGElement).style.getPropertyValue("--rda-mascot-look-y"),
   }));
 }
 
@@ -295,6 +297,8 @@ function animationNames(page: Page, selector: string, options: { running?: boole
     (element, { running, subtree }) =>
       element
         .getAnimations({ subtree: Boolean(subtree) })
+        // CSS transitions (hover lifts, fan scale) are not part of the contract.
+        .filter((animation) => "animationName" in animation)
         .filter((animation) => !running || animation.playState === "running")
         .map((animation) => (animation as CSSAnimation).animationName ?? "")
         .sort(),
@@ -320,53 +324,56 @@ function runningSeasonalAnimations(page: Page) {
 }
 
 /**
- * Seeks each flying banner bat to the moment the flyby attribute is removed and
- * reports whether it is already out of sight (past the banner or transparent),
- * so removing the attribute never makes a visible bat blink out mid-air.
- * Leaves the animations paused at that point.
+ * Seeks each tumbling banner leaf to the moment the flyby attribute is removed
+ * and reports whether it is already out of sight (past the banner or
+ * transparent), so removing the attribute never makes a visible leaf blink out
+ * mid-air. Leaves the animations paused at that point.
  */
-function bannerBatsAtFlybyEnd(page: Page) {
+function bannerLeavesAtFlybyEnd(page: Page) {
   return page.locator(".rda-promo-banner").evaluate((banner, end) => {
     const bannerRect = banner.getBoundingClientRect();
 
-    return Array.from(banner.querySelectorAll<HTMLElement>(".rda-seasonal-banner-bat"))
-      .filter((bat) => bat.getAnimations().length > 0)
-      .map((bat) => {
-        for (const animation of bat.getAnimations()) {
+    return Array.from(banner.querySelectorAll<HTMLElement>(".rda-seasonal-banner-leaf"))
+      .filter((leaf) => leaf.getAnimations().length > 0)
+      .map((leaf) => {
+        for (const animation of leaf.getAnimations({ subtree: true })) {
           animation.pause();
           animation.currentTime = end;
         }
 
-        const rect = bat.getBoundingClientRect();
-        const opacity = Number.parseFloat(window.getComputedStyle(bat).opacity);
+        const rect = leaf.getBoundingClientRect();
+        const opacity = Number.parseFloat(window.getComputedStyle(leaf).opacity);
 
         return {
           gone: rect.left >= bannerRect.right || rect.right <= bannerRect.left || opacity < 0.02,
-          peak: bat.classList.contains("rda-seasonal-banner-bat-peak"),
+          peak: leaf.classList.contains("rda-seasonal-banner-leaf-peak"),
         };
       });
   }, SEASONAL_FLYBY_DURATION_MS);
 }
 
-type SpiderReport = {
+type HeroArtReport = {
   animations: Array<{ iterations: number | null; name: string }>;
   backgroundImage: string;
   box: Box;
   content: string;
-  drop: string;
+  opacity: string;
   pointerEvents: string;
-  retract: string;
   viewportWidth: number;
 };
 
-/** The hero spider pseudo-element; its box covers the thread, the spider and its bob. */
-async function heroSpider(page: Page): Promise<SpiderReport | null> {
-  return page.evaluate(() => {
+/**
+ * The hero's corner sprig (::before) or falling leaf (::after). For the leaf,
+ * the box covers its whole fall: from where it lets go, swaying up to 16px
+ * left, down by --rda-leaf-fall.
+ */
+async function heroArt(page: Page, pseudo: "::after" | "::before"): Promise<HeroArtReport | null> {
+  return page.evaluate((pseudo) => {
     const copy = document.querySelector<HTMLElement>(".rda-home-hero-copy");
 
     if (!copy) return null;
 
-    const style = window.getComputedStyle(copy, "::after");
+    const style = window.getComputedStyle(copy, pseudo);
     const rect = copy.getBoundingClientRect();
     const px = (value: string) => Number.parseFloat(value);
     const width = px(style.width);
@@ -374,6 +381,8 @@ async function heroSpider(page: Page): Promise<SpiderReport | null> {
     // Absolutely positioned against the copy panel's padding box.
     const right = rect.left + copy.clientLeft + copy.clientWidth - px(style.right);
     const top = rect.top + copy.clientTop + px(style.top);
+    const fall = pseudo === "::after" ? px(window.getComputedStyle(copy).getPropertyValue("--rda-leaf-fall")) || 0 : 0;
+    const sway = pseudo === "::after" ? 16 : 0;
 
     return {
       animations: document
@@ -381,25 +390,24 @@ async function heroSpider(page: Page): Promise<SpiderReport | null> {
         .filter((animation) => {
           const effect = animation.effect as KeyframeEffect | null;
 
-          return effect?.target === copy && effect.pseudoElement === "::after";
+          return effect?.target === copy && effect.pseudoElement === pseudo;
         })
         .map((animation) => ({
           iterations: animation.effect?.getComputedTiming().iterations ?? null,
           name: (animation as CSSAnimation).animationName,
         })),
       backgroundImage: style.backgroundImage,
-      box: { bottom: top + height, left: right - width, right, top },
+      box: { bottom: top + height + fall, left: right - width - sway, right: right + (sway ? 4 : 0), top },
       content: style.content,
-      drop: style.getPropertyValue("--rda-spider-drop").trim(),
+      opacity: style.opacity,
       pointerEvents: style.pointerEvents,
-      retract: style.getPropertyValue("--rda-spider-retract").trim(),
       viewportWidth: document.documentElement.clientWidth,
     };
-  });
+  }, pseudo);
 }
 
-/** Ends the spider's finite drop/bob so its resting geometry can be read. */
-async function finishSpiderAnimations(page: Page) {
+/** Ends the falling leaf's one-off animation so its resting state can be read. */
+async function finishHeroLeaf(page: Page) {
   await page.evaluate(() => {
     const copy = document.querySelector(".rda-home-hero-copy");
 
@@ -415,7 +423,7 @@ async function finishSpiderAnimations(page: Page) {
 
 type DividerState = {
   // Inside an overflow-clipping box (its own, non-scrolling scroll container),
-  // where the view timeline is inactive and the pumpkin simply rests.
+  // where the view timeline is inactive and the leaf simply rests.
   clipped: boolean;
   content: string;
   height: string;
@@ -468,7 +476,7 @@ async function dividerStates(page: Page): Promise<DividerState[]> {
   );
 }
 
-function isSettledPumpkin(state: DividerState) {
+function isSettledLeaf(state: DividerState) {
   return (
     state.opacity === "1" &&
     ["none", "0deg"].includes(state.rotate) &&
@@ -477,15 +485,15 @@ function isSettledPumpkin(state: DividerState) {
 }
 
 // Hydration may lag the load event; retry the press until React answers.
-async function releaseBats(page: Page, press: () => Promise<void>) {
-  const bats = page.locator(".rda-seasonal-bat-burst .rda-seasonal-bat");
+async function tossLeaves(page: Page, press: () => Promise<void>) {
+  const leaves = page.locator(".rda-seasonal-leaf-burst .rda-seasonal-flying-leaf");
 
   await expect(async () => {
     await press();
-    await expect(bats).toHaveCount(4, { timeout: 750 });
+    await expect(leaves).toHaveCount(4, { timeout: 750 });
   }).toPass({ timeout: 15_000 });
 
-  return bats;
+  return leaves;
 }
 
 type Box = { bottom: number; left: number; right: number; top: number };
@@ -652,28 +660,28 @@ test.describe("seasonal theme: pure gating logic", () => {
     expect(getSeasonalLocalDate(new Date("2026-03-08T10:30:00Z"), "America/Los_Angeles")).toBe("2026-03-08");
   });
 
-  test("the window is October 1-31 inclusive on the academy calendar", () => {
-    const at = (iso: string) => isSeasonalThemeActive(halloween2026, new Date(iso));
+  test("the window is November 1-30 inclusive on the academy calendar", () => {
+    const at = (iso: string) => isSeasonalThemeActive(thanksgiving2026, new Date(iso));
 
-    expect(at("2026-09-30T23:59:59-07:00")).toBe(false);
-    expect(at("2026-10-01T00:00:00-07:00")).toBe(true);
-    expect(at("2026-10-15T12:00:00-07:00")).toBe(true);
-    expect(at("2026-10-31T23:59:59-07:00")).toBe(true);
-    expect(at("2026-11-01T00:00:00-07:00")).toBe(false);
-    expect(at("2025-10-15T12:00:00-07:00")).toBe(false);
-    expect(at("2027-10-15T12:00:00-07:00")).toBe(false);
+    expect(at("2026-10-31T23:59:59-07:00")).toBe(false);
+    expect(at("2026-11-01T00:00:00-07:00")).toBe(true);
+    expect(at("2026-11-12T12:00:00-08:00")).toBe(true);
+    expect(at("2026-11-30T23:59:59-08:00")).toBe(true);
+    expect(at("2026-12-01T00:00:00-08:00")).toBe(false);
+    expect(at("2025-11-15T12:00:00-08:00")).toBe(false);
+    expect(at("2027-11-15T12:00:00-08:00")).toBe(false);
   });
 
-  test("the theme is current (shipped by builds) until Oct 31 ends in Los Angeles", () => {
-    const current = (iso: string) => isSeasonalThemeCurrent(halloween2026, new Date(iso));
+  test("the theme is current (shipped by builds) until Nov 30 ends in Los Angeles", () => {
+    const current = (iso: string) => isSeasonalThemeCurrent(thanksgiving2026, new Date(iso));
 
-    expect(current("2026-09-15T12:00:00-07:00")).toBe(true);
-    expect(current("2026-10-31T23:59:00-07:00")).toBe(true);
-    expect(current("2026-11-01T06:59:00Z")).toBe(true);
-    expect(current("2026-11-01T00:00:00-07:00")).toBe(false);
-    expect(current("2026-11-01T07:00:00Z")).toBe(false);
-    expect(current("2027-10-15T12:00:00-07:00")).toBe(false);
-    expect(activeSeasonalTheme === null).toBe(!isSeasonalThemeCurrent(halloween2026, new Date()));
+    expect(current("2026-10-15T12:00:00-07:00")).toBe(true);
+    expect(current("2026-11-30T23:59:00-08:00")).toBe(true);
+    expect(current("2026-12-01T07:59:00Z")).toBe(true);
+    expect(current("2026-12-01T00:00:00-08:00")).toBe(false);
+    expect(current("2026-12-01T08:00:00Z")).toBe(false);
+    expect(current("2027-11-15T12:00:00-08:00")).toBe(false);
+    expect(activeSeasonalTheme === null).toBe(!isSeasonalThemeCurrent(thanksgiving2026, new Date()));
   });
 
   type FakeEnvironment = {
@@ -754,70 +762,70 @@ test.describe("seasonal theme: pure gating logic", () => {
   }
 
   test("inline <head> script gates, opts out, and schedules one flyby per session", () => {
-    const script = buildSeasonalThemeScript(halloween2026);
-    const flybyKey = getSeasonalFlybyStorageKey(halloween2026);
+    const script = buildSeasonalThemeScript(thanksgiving2026);
+    const flybyKey = getSeasonalFlybyStorageKey(thanksgiving2026);
 
-    const before = runInlineScript(script, "2026-09-30T23:30:00-07:00");
+    const before = runInlineScript(script, "2026-10-31T23:30:00-07:00");
     expect([...before.attributes.keys()]).toEqual([]);
-    expect(before.window[SEASONAL_SCRIPT_MARKER]).toBe(halloween2026.id);
+    expect(before.window[SEASONAL_SCRIPT_MARKER]).toBe(thanksgiving2026.id);
 
-    const after = runInlineScript(script, "2026-11-01T00:05:00-07:00");
+    const after = runInlineScript(script, "2026-12-01T00:05:00-08:00");
     expect([...after.attributes.keys()]).toEqual([]);
-    expect(after.window[SEASONAL_SCRIPT_MARKER]).toBe(halloween2026.id);
+    expect(after.window[SEASONAL_SCRIPT_MARKER]).toBe(thanksgiving2026.id);
 
     const session: Record<string, string> = {};
-    const first = runInlineScript(script, MID_OCTOBER, { sessionStorage: session });
-    expect(first.window[SEASONAL_SCRIPT_MARKER]).toBe(halloween2026.id);
-    expect(first.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
+    const first = runInlineScript(script, MID_SEASON, { sessionStorage: session });
+    expect(first.window[SEASONAL_SCRIPT_MARKER]).toBe(thanksgiving2026.id);
+    expect(first.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
     expect(first.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(true);
     expect(session[flybyKey]).toBe("1");
     expect(first.timers.map(({ delay }) => delay)).toEqual([SEASONAL_FLYBY_DURATION_MS]);
     first.timers[0].callback();
     expect(first.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
-    expect(first.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
+    expect(first.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
 
-    const second = runInlineScript(script, MID_OCTOBER, { sessionStorage: session });
-    expect(second.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
+    const second = runInlineScript(script, MID_SEASON, { sessionStorage: session });
+    expect(second.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
     expect(second.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
 
-    const reduced = runInlineScript(script, MID_OCTOBER, { readyState: "loading", reducedMotion: true });
-    expect(reduced.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
+    const reduced = runInlineScript(script, MID_SEASON, { readyState: "loading", reducedMotion: true });
+    expect(reduced.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
     expect(reduced.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
     expect(reduced.listeners).toEqual([]);
 
-    const optedOut = runInlineScript(script, MID_OCTOBER, {
+    const optedOut = runInlineScript(script, MID_SEASON, {
       localStorage: { [SEASONAL_OPT_OUT_STORAGE_KEY]: SEASONAL_OPT_OUT_VALUE },
     });
     expect([...optedOut.attributes.keys()]).toEqual([]);
-    expect(optedOut.window[SEASONAL_SCRIPT_MARKER]).toBe(halloween2026.id);
+    expect(optedOut.window[SEASONAL_SCRIPT_MARKER]).toBe(thanksgiving2026.id);
 
     // Unreadable session storage counts as "already seen": no flyby, theme stays.
-    const blockedSession = runInlineScript(script, MID_OCTOBER, { sessionStorage: "throws" });
-    expect(blockedSession.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
+    const blockedSession = runInlineScript(script, MID_SEASON, { sessionStorage: "throws" });
+    expect(blockedSession.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
     expect(blockedSession.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
   });
 
   test("the flyby is only spent on a page with a scoped banner", () => {
-    const script = buildSeasonalThemeScript(halloween2026);
+    const script = buildSeasonalThemeScript(thanksgiving2026);
     const session: Record<string, string> = {};
 
-    const lander = runInlineScript(script, MID_OCTOBER, { banner: false, sessionStorage: session });
-    expect(lander.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
+    const lander = runInlineScript(script, MID_SEASON, { banner: false, sessionStorage: session });
+    expect(lander.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
     expect(lander.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
     expect(lander.timers).toEqual([]);
     expect(session).toEqual({});
 
-    const home = runInlineScript(script, MID_OCTOBER, { sessionStorage: session });
+    const home = runInlineScript(script, MID_SEASON, { sessionStorage: session });
     expect(home.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(true);
-    expect(session[getSeasonalFlybyStorageKey(halloween2026)]).toBe("1");
+    expect(session[getSeasonalFlybyStorageKey(thanksgiving2026)]).toBe("1");
   });
 
   test("while the document is loading the flyby waits for DOMContentLoaded", () => {
-    const script = buildSeasonalThemeScript(halloween2026);
+    const script = buildSeasonalThemeScript(thanksgiving2026);
     const session: Record<string, string> = {};
-    const loading = runInlineScript(script, MID_OCTOBER, { readyState: "loading", sessionStorage: session });
+    const loading = runInlineScript(script, MID_SEASON, { readyState: "loading", sessionStorage: session });
 
-    expect(loading.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
+    expect(loading.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
     expect(loading.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
     expect(session).toEqual({});
     expect(loading.listeners.map(({ options, type }) => ({ options, type }))).toEqual([
@@ -827,18 +835,18 @@ test.describe("seasonal theme: pure gating logic", () => {
     loading.readyState = "interactive";
     loading.listeners[0].callback();
     expect(loading.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(true);
-    expect(session[getSeasonalFlybyStorageKey(halloween2026)]).toBe("1");
+    expect(session[getSeasonalFlybyStorageKey(thanksgiving2026)]).toBe("1");
     expect(loading.timers.map(({ delay }) => delay)).toEqual([SEASONAL_FLYBY_DURATION_MS]);
 
     // Deferred check still respects a missing banner.
-    const noBanner = runInlineScript(script, MID_OCTOBER, { banner: false, readyState: "loading", sessionStorage: {} });
+    const noBanner = runInlineScript(script, MID_SEASON, { banner: false, readyState: "loading", sessionStorage: {} });
     noBanner.listeners[0].callback();
     expect(noBanner.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
   });
 
   test("inline config escapes < so it cannot close the <script> element", () => {
     const hostile: SeasonalTheme = {
-      ...halloween2026,
+      ...thanksgiving2026,
       id: "</script><script>alert(1)</script><!--",
     };
     const script = buildSeasonalThemeScript(hostile);
@@ -850,7 +858,7 @@ test.describe("seasonal theme: pure gating logic", () => {
 
     // Still valid JS that round-trips the original value.
     const session: Record<string, string> = {};
-    const result = runInlineScript(script, MID_OCTOBER, { sessionStorage: session });
+    const result = runInlineScript(script, MID_SEASON, { sessionStorage: session });
     expect(result.window[SEASONAL_SCRIPT_MARKER]).toBe(hostile.id);
     expect(Object.keys(session)).toEqual([getSeasonalFlybyStorageKey(hostile)]);
   });
@@ -878,46 +886,50 @@ test.describe("seasonal theme: pure gating logic", () => {
     );
   });
 
-  test("peakOn is Halloween itself, inside the window", () => {
-    expect(halloween2026.peakOn).toBe("2026-10-31");
-    expect(halloween2026.peakOn >= halloween2026.startsOn).toBe(true);
-    expect(halloween2026.peakOn <= halloween2026.endsOn).toBe(true);
+  test("peakOn is Thanksgiving Day (the fourth Thursday), inside the window", () => {
+    expect(thanksgiving2026.peakOn).toBe("2026-11-26");
+    expect(new Date(`${thanksgiving2026.peakOn}T12:00:00Z`).getUTCDay()).toBe(4);
+    expect(Number(thanksgiving2026.peakOn.slice(-2))).toBeGreaterThan(21);
+    expect(thanksgiving2026.peakOn >= thanksgiving2026.startsOn).toBe(true);
+    expect(thanksgiving2026.peakOn <= thanksgiving2026.endsOn).toBe(true);
   });
 
   test("inline <head> script marks the peak day on the academy calendar only", () => {
-    const script = buildSeasonalThemeScript(halloween2026);
+    const script = buildSeasonalThemeScript(thanksgiving2026);
     const peak = (now: string, env: Partial<FakeEnvironment> = {}) => {
       const state = runInlineScript(script, now, { sessionStorage: {}, ...env });
 
       return { peak: state.attributes.has(SEASONAL_PEAK_ATTRIBUTE), state };
     };
 
-    // Oct 31 in Los Angeles, from just after midnight to just before the next one.
-    const early = peak("2026-10-31T00:05:00-07:00");
+    // Nov 26 in Los Angeles, from just after midnight to just before the next one.
+    const early = peak("2026-11-26T00:05:00-08:00");
     expect(early.peak).toBe(true);
     expect(early.state.attributes.get(SEASONAL_PEAK_ATTRIBUTE)).toBe("");
-    expect(early.state.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
+    expect(early.state.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
     expect(early.state.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(true);
-    // 23:30 Pacific is already Nov 1 in UTC.
-    expect(peak("2026-11-01T06:30:00Z").peak).toBe(true);
+    // 23:30 Pacific is already Nov 27 in UTC.
+    expect(peak("2026-11-27T07:30:00Z").peak).toBe(true);
 
-    // Oct 30 Pacific, including when it is already Oct 31 in UTC.
-    const dayBefore = peak("2026-10-30T23:59:00-07:00");
+    // Nov 25 Pacific, including when it is already Nov 26 in UTC.
+    const dayBefore = peak("2026-11-25T23:59:00-08:00");
     expect(dayBefore.peak).toBe(false);
-    expect(dayBefore.state.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("halloween");
-    expect(peak("2026-10-31T03:00:00Z").peak).toBe(false);
-    expect(peak(MID_OCTOBER).peak).toBe(false);
+    expect(dayBefore.state.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(peak("2026-11-26T03:00:00Z").peak).toBe(false);
+    expect(peak(MID_SEASON).peak).toBe(false);
+    // The day after is still in season, just not the peak.
+    expect(peak("2026-11-27T10:00:00-08:00").peak).toBe(false);
 
     // Over: nothing at all.
-    expect([...peak("2026-11-01T00:05:00-07:00").state.attributes.keys()]).toEqual([]);
+    expect([...peak("2026-12-01T00:05:00-08:00").state.attributes.keys()]).toEqual([]);
 
     // Reduced motion keeps the (static) peak flourish but skips the flyby.
-    const reduced = peak("2026-10-31T12:00:00-07:00", { reducedMotion: true });
+    const reduced = peak("2026-11-26T12:00:00-08:00", { reducedMotion: true });
     expect(reduced.peak).toBe(true);
     expect(reduced.state.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
 
     // Opted out: no gate at all, peak included.
-    const optedOut = peak("2026-10-31T12:00:00-07:00", {
+    const optedOut = peak("2026-11-26T12:00:00-08:00", {
       localStorage: { [SEASONAL_OPT_OUT_STORAGE_KEY]: SEASONAL_OPT_OUT_VALUE },
     });
     expect([...optedOut.state.attributes.keys()]).toEqual([]);
@@ -925,7 +937,7 @@ test.describe("seasonal theme: pure gating logic", () => {
 });
 
 test.describe("seasonal theme: calendar window in the browser", () => {
-  // UTC host clock: the Oct 31 23:30 Pacific case is already Nov 1 locally.
+  // UTC host clock: the Nov 30 23:30 Pacific case is already Dec 1 locally.
   test.use({ timezoneId: "UTC" });
 
   test.beforeEach(async ({ context }) => {
@@ -933,12 +945,13 @@ test.describe("seasonal theme: calendar window in the browser", () => {
   });
 
   for (const { expected, peak = false, when } of [
-    { expected: false, when: "2026-09-30T23:30:00-07:00" },
-    { expected: true, when: "2026-10-01T00:05:00-07:00" },
-    { expected: true, when: "2026-10-30T23:30:00-07:00" },
-    { expected: true, peak: true, when: "2026-10-31T00:05:00-07:00" },
-    { expected: true, peak: true, when: "2026-10-31T23:30:00-07:00" },
-    { expected: false, when: "2026-11-01T00:05:00-07:00" },
+    { expected: false, when: "2026-10-31T23:30:00-07:00" },
+    { expected: true, when: "2026-11-01T00:05:00-07:00" },
+    { expected: true, when: "2026-11-25T23:30:00-08:00" },
+    { expected: true, peak: true, when: "2026-11-26T00:05:00-08:00" },
+    { expected: true, peak: true, when: "2026-11-26T23:30:00-08:00" },
+    { expected: true, when: "2026-11-30T23:30:00-08:00" },
+    { expected: false, when: "2026-12-01T00:05:00-08:00" },
   ]) {
     test(`${when} Pacific is ${expected ? "on" : "off"}${peak ? " (peak day)" : ""}`, async ({ page }) => {
       test.skip(expected && RETIRED, RETIRED_REASON);
@@ -951,11 +964,11 @@ test.describe("seasonal theme: calendar window in the browser", () => {
         return;
       }
 
-      expect(await seasonAttribute(page)).toBe("halloween");
+      expect(await seasonAttribute(page)).toBe("thanksgiving");
       expect(await page.locator("html").getAttribute(SEASONAL_PEAK_ATTRIBUTE)).toBe(peak ? "" : null);
       await scrollToBottom(page);
       await expect(page.locator(".rda-seasonal-footer")).toBeVisible();
-      await expect(ghostButton(page)).toBeVisible();
+      await expect(mascotButton(page)).toBeVisible();
     });
   }
 
@@ -963,14 +976,14 @@ test.describe("seasonal theme: calendar window in the browser", () => {
     test.skip(RETIRED, RETIRED_REASON);
     // No React: only the prerendered <head> script can set the attribute.
     await page.route(/\/_next\/static\/chunks\/.*\.js(\?|$)/u, (route) => route.abort());
-    await page.clock.install({ time: new Date(MID_OCTOBER) });
-    await page.clock.pauseAt(new Date(MID_OCTOBER));
+    await page.clock.install({ time: new Date(MID_SEASON) });
+    await page.clock.pauseAt(new Date(MID_SEASON));
     await open(page, "/");
 
-    await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "halloween");
+    await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
     await expect(page.locator("html")).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
     expect(await page.evaluate((marker) => (window as unknown as Record<string, unknown>)[marker], SEASONAL_SCRIPT_MARKER)).toBe(
-      halloween2026.id,
+      thanksgiving2026.id,
     );
   });
 });
@@ -984,68 +997,64 @@ test.describe("seasonal theme: decorations while on", () => {
 
   for (const path of decoratedRoutes) {
     test(`footer decorations render on ${path}`, async ({ page }) => {
-      const response = await openAt(page, path, MID_OCTOBER);
+      const response = await openAt(page, path, MID_SEASON);
 
       expect(response?.status()).toBe(200);
-      expect(await seasonAttribute(page)).toBe("halloween");
+      expect(await seasonAttribute(page)).toBe("thanksgiving");
       await expect(page.locator(`[${SEASONAL_SCOPE_ATTRIBUTE}="true"]`)).toHaveCount(1);
       await scrollToBottom(page);
       await expect(page.locator(".rda-seasonal-footer")).toBeVisible();
-      await expect(page.locator(".rda-seasonal-footer-pumpkin")).toHaveCount(3);
-      await expect(ghostButton(page)).toBeVisible();
+      await expect(page.locator(".rda-seasonal-harvest-slot")).toHaveCount(3);
+      await expect(mascotButton(page)).toBeVisible();
 
-      const box = await ghostButton(page).boundingBox();
-      expect(box?.width ?? 0, "ghost button has a tappable size").toBeGreaterThanOrEqual(24);
-      expect(box?.height ?? 0, "ghost button has a tappable size").toBeGreaterThanOrEqual(24);
+      const box = await mascotButton(page).boundingBox();
+      expect(box?.width ?? 0, "mascot button has a tappable size").toBeGreaterThanOrEqual(24);
+      expect(box?.height ?? 0, "mascot button has a tappable size").toBeGreaterThanOrEqual(24);
     });
   }
 
-  test("hero cobweb, hero spider and divider pumpkins are drawn as non-interactive pseudo-elements", async ({ page }) => {
+  test("hero sprig, falling leaf and divider leaves are drawn as non-interactive pseudo-elements", async ({ page }) => {
     const assetRequests = trackSeasonalAssetRequests(page);
 
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
 
     const pseudos = await seasonalPseudoElements(page);
-    const cobwebs = pseudos.filter(({ selector }) => selector === ".rda-home-hero-copy::before");
-    const spiders = pseudos.filter(({ selector }) => selector === ".rda-home-hero-copy::after");
-    const pumpkins = pseudos.filter(({ selector }) => selector.startsWith(".rda-section-heading"));
+    const sprigs = pseudos.filter(({ selector }) => selector === ".rda-home-hero-copy::before");
+    const fallingLeaves = pseudos.filter(({ selector }) => selector === ".rda-home-hero-copy::after");
+    const dividerLeaves = pseudos.filter(({ selector }) => selector.startsWith(".rda-section-heading"));
 
-    expect(cobwebs.length).toBeGreaterThan(0);
-    expect(spiders.length).toBe(1);
-    expect(pumpkins.length).toBeGreaterThan(0);
+    expect(sprigs.length).toBeGreaterThan(0);
+    expect(fallingLeaves.length).toBe(1);
+    expect(dividerLeaves.length).toBeGreaterThan(0);
 
-    for (const pseudo of [...cobwebs, ...spiders, ...pumpkins]) {
+    for (const pseudo of [...sprigs, ...fallingLeaves, ...dividerLeaves]) {
       expect(pseudo.content, pseudo.selector).not.toBe("none");
       expect(pseudo.pointerEvents, pseudo.selector).toBe("none");
     }
 
-    // v2 pumpkin: 22.5x20.
+    // Divider maple leaf: 20x20.
     for (const state of await dividerStates(page)) {
-      expect(state.width).toBe("22.5px");
+      expect(state.width).toBe("20px");
       expect(state.height).toBe("20px");
     }
 
     await expect
       .poll(() => assetRequests.map((url) => new URL(url).pathname).sort())
       .toEqual(
-        expect.arrayContaining([
-          "/assets/seasonal/halloween-2026/cobweb.svg",
-          "/assets/seasonal/halloween-2026/pumpkin.svg",
-          "/assets/seasonal/halloween-2026/spider.svg",
-        ]),
+        expect.arrayContaining([`${ASSETS}/leaf-sprig.svg`, `${ASSETS}/maple-leaf.svg`, `${ASSETS}/oak-leaf.svg`]),
       );
 
     // Course pages carry the divider too.
     await open(page, "/infection-control");
-    const coursePumpkins = (await seasonalPseudoElements(page)).filter(({ selector }) =>
+    const courseLeaves = (await seasonalPseudoElements(page)).filter(({ selector }) =>
       selector.startsWith(".rda-section-heading"),
     );
-    expect(coursePumpkins.length).toBeGreaterThan(0);
-    expect(coursePumpkins.every(({ content }) => content !== "none")).toBe(true);
+    expect(courseLeaves.length).toBeGreaterThan(0);
+    expect(courseLeaves.every(({ content }) => content !== "none")).toBe(true);
   });
 
-  test("decorations are hidden from assistive tech, text-free, and the ghost is the only control", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
+  test("decorations are hidden from assistive tech, text-free, and the mascot is the only control", async ({ page }) => {
+    await openAt(page, "/", MID_SEASON);
 
     const report = await page.evaluate(() => {
       const seasonal = Array.from(document.querySelectorAll<HTMLElement>("[data-rda-seasonal]"));
@@ -1072,14 +1081,14 @@ test.describe("seasonal theme: decorations while on", () => {
     expect(report.svgsFocusable).toBe(0);
     expect(report.innerText).toEqual([]);
     expect(report.textContent).toEqual([]);
-    expect(report.focusables).toEqual([GHOST_LABEL]);
+    expect(report.focusables).toEqual([MASCOT_LABEL]);
   });
 
-  test("ghost button is reachable with Tab, shows a focus ring, and answers Enter and Space", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
+  test("mascot button is reachable with Tab, shows a focus ring, and answers Enter and Space", async ({ page }) => {
+    await openAt(page, "/", MID_SEASON);
     await scrollToBottom(page);
 
-    // Focus whatever precedes the ghost in tab order, then Tab onto it.
+    // Focus whatever precedes the mascot in tab order, then Tab onto it.
     const hasPrevious = await page.evaluate((label) => {
       const candidates = Array.from(
         document.querySelectorAll<HTMLElement>(
@@ -1097,13 +1106,13 @@ test.describe("seasonal theme: decorations while on", () => {
       previous?.focus();
 
       return Boolean(previous) && document.activeElement === previous;
-    }, GHOST_LABEL);
+    }, MASCOT_LABEL);
 
     expect(hasPrevious).toBe(true);
     await page.keyboard.press("Tab");
-    await expect(ghostButton(page)).toBeFocused();
+    await expect(mascotButton(page)).toBeFocused();
 
-    const ring = await ghostButton(page).evaluate((button) => {
+    const ring = await mascotButton(page).evaluate((button) => {
       const style = window.getComputedStyle(button);
 
       return {
@@ -1122,44 +1131,44 @@ test.describe("seasonal theme: decorations while on", () => {
     expect(ring.boxShadow).not.toBe("none");
     expect(ring.boxShadow).not.toMatch(/^rgba\([^)]*,\s*0\)/u);
 
-    await releaseBats(page, () => page.keyboard.press("Enter"));
-    await expect(page.locator(".rda-seasonal-bat")).toHaveCount(0, { timeout: 5_000 });
+    await tossLeaves(page, () => page.keyboard.press("Enter"));
+    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(0, { timeout: 5_000 });
 
-    await releaseBats(page, () => page.keyboard.press("Space"));
+    await tossLeaves(page, () => page.keyboard.press("Space"));
   });
 
-  test("easter egg releases four bats that clean themselves up", async ({ page }) => {
-    await openAt(page, "/contact", MID_OCTOBER);
+  test("easter egg releases four leaves that clean themselves up", async ({ page }) => {
+    await openAt(page, "/contact", MID_SEASON);
     await scrollToBottom(page);
 
-    const bats = await releaseBats(page, () => ghostButton(page).click());
+    const leaves = await tossLeaves(page, () => mascotButton(page).click());
 
-    expect(await bats.evaluateAll((elements) => elements.every((bat) => bat.closest('[aria-hidden="true"]')))).toBe(true);
-    await expect(ghostButton(page)).toHaveAttribute("data-rda-bursting", /^(odd|even)$/u);
+    expect(await leaves.evaluateAll((elements) => elements.every((leaf) => leaf.closest('[aria-hidden="true"]')))).toBe(true);
+    await expect(mascotButton(page)).toHaveAttribute("data-rda-bursting", /^(odd|even)$/u);
 
-    // Repeated presses restart the burst instead of stacking more bats.
+    // Repeated presses restart the burst instead of stacking more leaves.
     for (let press = 0; press < 5; press += 1) {
-      await ghostButton(page).click();
-      expect(await page.locator(".rda-seasonal-bat").count()).toBeLessThanOrEqual(4);
+      await mascotButton(page).click();
+      expect(await page.locator(".rda-seasonal-flying-leaf").count()).toBeLessThanOrEqual(4);
     }
 
-    await expect(page.locator(".rda-seasonal-bat")).toHaveCount(4);
-    await expect(page.locator(".rda-seasonal-bat-burst")).toHaveCount(1);
-    await expect(page.locator(".rda-seasonal-bat")).toHaveCount(0, { timeout: 5_000 });
-    await expect(page.locator(".rda-seasonal-bat-burst")).toHaveCount(0);
-    await expect(ghostButton(page)).not.toHaveAttribute("data-rda-bursting", /.*/);
+    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(4);
+    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
+    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(0, { timeout: 5_000 });
+    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(0);
+    await expect(mascotButton(page)).not.toHaveAttribute("data-rda-bursting", /.*/);
   });
 
-  test("bat burst is removed on the ~1.9s timer under a controlled clock", async ({ page }) => {
-    await page.clock.install({ time: new Date(MID_OCTOBER) });
+  test("leaf burst is removed on the ~1.9s timer under a controlled clock", async ({ page }) => {
+    await page.clock.install({ time: new Date(MID_SEASON) });
     await open(page, "/");
     await scrollToBottom(page);
 
-    await releaseBats(page, () => ghostButton(page).click());
+    await tossLeaves(page, () => mascotButton(page).click());
     await page.clock.runFor(1_000);
-    await expect(page.locator(".rda-seasonal-bat")).toHaveCount(4);
+    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(4);
     await page.clock.runFor(1_000);
-    await expect(page.locator(".rda-seasonal-bat")).toHaveCount(0);
+    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(0);
   });
 });
 
@@ -1171,8 +1180,8 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
   });
 
   test("runs once per session and clears itself after ~8s", async ({ page }) => {
-    await page.clock.install({ time: new Date(MID_OCTOBER) });
-    await page.clock.pauseAt(new Date(MID_OCTOBER));
+    await page.clock.install({ time: new Date(MID_SEASON) });
+    await page.clock.pauseAt(new Date(MID_SEASON));
     const assetRequests = trackSeasonalAssetRequests(page);
 
     await open(page, "/");
@@ -1182,7 +1191,7 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
     await expect(html).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
     await expect(html).not.toHaveAttribute(SEASONAL_PEAK_ATTRIBUTE, /.*/);
 
-    // v2: an inline flapping bat in the banner sky, not a ::after mask.
+    // Inline leaves in the banner sky, not a ::after mask.
     const sky = page.locator(`.rda-promo-banner > [data-rda-seasonal="banner"]`);
     await expect(sky).toHaveCount(1);
     await expect(sky).toHaveAttribute("aria-hidden", "true");
@@ -1191,16 +1200,21 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
       await page.locator(".rda-promo-banner").evaluate((banner) => window.getComputedStyle(banner, "::after").content),
     ).toBe("none");
 
-    const bat = ".rda-seasonal-banner-bat:not(.rda-seasonal-banner-bat-peak)";
-    await expect.poll(() => animationNames(page, bat)).toEqual(["rda-seasonal-banner-bank", "rda-seasonal-banner-swoop"]);
-    expect(await animationNames(page, `${bat} .rda-seasonal-flapping-bat`, { subtree: true })).toEqual([
-      "rda-seasonal-wing-left",
-      "rda-seasonal-wing-right",
-    ]);
-    // The peak-day bat stays parked off-peak.
-    expect(await animationNames(page, ".rda-seasonal-banner-bat-peak")).toEqual([]);
+    const gust = ".rda-seasonal-banner-leaf:not(.rda-seasonal-banner-leaf-peak)";
+    await expect.poll(() => page.locator(gust).count()).toBe(3);
+    for (let index = 0; index < 3; index += 1) {
+      const leaf = `${gust} >> nth=${index}`;
+      await expect.poll(() => animationNames(page, leaf)).toEqual(["rda-seasonal-banner-gust"]);
+      expect(await animationNames(page, `${leaf} >> .rda-seasonal-tumbling-leaf`)).toEqual(["rda-seasonal-tumble"]);
+    }
+    // The peak-day gust stays parked off-peak.
+    expect(await animationNames(page, ".rda-seasonal-banner-leaf-peak")).toEqual([]);
 
-    expect(await bannerBatsAtFlybyEnd(page)).toEqual([{ gone: true, peak: false }]);
+    expect(await bannerLeavesAtFlybyEnd(page)).toEqual([
+      { gone: true, peak: false },
+      { gone: true, peak: false },
+      { gone: true, peak: false },
+    ]);
 
     // The banner text is stacked above the sky (the sky is pointer-events: none,
     // so hit-testing cannot tell; compare the stacking instead).
@@ -1224,26 +1238,27 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
     await expect(html).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
     await page.clock.runFor(1_000);
     await expect(html).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
-    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "halloween");
+    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
     expect(await animationNames(page, ".rda-seasonal-banner-sky", { subtree: true })).toEqual([]);
-    expect(assetRequests.filter((url) => url.endsWith("/bat.svg"))).toEqual([]);
+    // The banner leaves are inline SVG: the flyby fetches no seasonal files.
+    expect(assetRequests.filter((url) => new URL(url).pathname.includes("banner"))).toEqual([]);
 
     // Same tab, later pages: sessionStorage remembers the flyby.
     await open(page, "/contact");
-    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "halloween");
+    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
     await expect(html).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(html).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
   });
 
   test("a page without a scoped banner does not spend the flyby", async ({ page }) => {
-    await page.clock.install({ time: new Date(MID_OCTOBER) });
-    await page.clock.pauseAt(new Date(MID_OCTOBER));
-    const flybyKey = getSeasonalFlybyStorageKey(halloween2026);
+    await page.clock.install({ time: new Date(MID_SEASON) });
+    await page.clock.pauseAt(new Date(MID_SEASON));
+    const flybyKey = getSeasonalFlybyStorageKey(thanksgiving2026);
     const html = page.locator("html");
 
     await open(page, "/lp/dental-assisting-enroll");
-    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "halloween");
+    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
     await expect(html).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
     expect(await page.evaluate((key) => window.sessionStorage.getItem(key), flybyKey)).toBeNull();
 
@@ -1254,14 +1269,14 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
 
   test("never runs with prefers-reduced-motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
 
-    await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "halloween");
+    await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
     await expect(page.locator("html")).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
   });
 });
 
-test.describe("seasonal theme: peak day (Halloween)", () => {
+test.describe("seasonal theme: peak day (Thanksgiving)", () => {
   test.skip(RETIRED, RETIRED_REASON);
 
   test.beforeEach(async ({ context }) => {
@@ -1276,8 +1291,8 @@ test.describe("seasonal theme: peak day (Halloween)", () => {
     await open(page, "/");
   }
 
-  function moon(page: Page) {
-    return page.locator(".rda-seasonal-banner-sky .rda-seasonal-moon").evaluate((element) => {
+  function sun(page: Page) {
+    return page.locator(".rda-seasonal-banner-sky .rda-seasonal-sun").evaluate((element) => {
       const style = window.getComputedStyle(element);
       const rect = element.getBoundingClientRect();
       const banner = element.closest(".rda-promo-banner")!.getBoundingClientRect();
@@ -1292,143 +1307,143 @@ test.describe("seasonal theme: peak day (Halloween)", () => {
     });
   }
 
-  function glowScale(page: Page) {
-    return page.locator(".rda-seasonal-pumpkin-slot").evaluateAll((slots) =>
-      slots
-        .map((slot) => slot.querySelector<HTMLElement>(".rda-seasonal-lantern-glow"))
-        .filter((glow): glow is HTMLElement => Boolean(glow))
-        .map(
-          (glow) =>
-            Math.round(
-              (Number.parseFloat(window.getComputedStyle(glow).width) / glow.parentElement!.getBoundingClientRect().width) *
-                100,
-            ) / 100,
-        ),
-    );
+  function steam(page: Page) {
+    return page.locator(".rda-seasonal-harvest-pie .rda-pie-steam").evaluate((element) => ({
+      animations: element
+        .getAnimations({ subtree: true })
+        .map((animation) => (animation as CSSAnimation).animationName)
+        .sort(),
+      opacity: window.getComputedStyle(element).opacity,
+    }));
   }
 
-  test(`on Oct 31 the moon rises (>=${MOON_MIN_WIDTH}px only) and a second bat follows`, async ({ page }) => {
+  test(`on Thanksgiving the harvest sun glows (>=${SUN_MIN_WIDTH}px only), a second gust follows and the pie steams`, async ({ page }) => {
     await openPinned(page, PEAK_DAY, 1280);
     const html = page.locator("html");
 
     await expect(html).toHaveAttribute(SEASONAL_PEAK_ATTRIBUTE, "");
     await expect(html).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
 
-    const wide = await moon(page);
+    const wide = await sun(page);
     expect(wide.display).toBe("block");
     expect(wide.width).toBeGreaterThan(10);
     expect(wide.height).toBeGreaterThan(10);
     expect(wide.insideBanner).toBe(true);
 
     await expect
-      .poll(() => animationNames(page, ".rda-seasonal-banner-bat-peak"))
-      .toEqual(["rda-seasonal-banner-bank", "rda-seasonal-banner-glide"]);
-    expect(await animationNames(page, ".rda-seasonal-banner-bat:not(.rda-seasonal-banner-bat-peak)")).toEqual([
-      "rda-seasonal-banner-bank",
-      "rda-seasonal-banner-swoop",
-    ]);
-    expect(await page.locator(".rda-seasonal-banner-bat").count()).toBe(2);
+      .poll(() => animationNames(page, ".rda-seasonal-banner-leaf-peak >> nth=0"))
+      .toEqual(["rda-seasonal-banner-gust"]);
+    expect(await animationNames(page, ".rda-seasonal-banner-leaf-peak >> nth=1")).toEqual(["rda-seasonal-banner-gust"]);
+    expect(await page.locator(".rda-seasonal-banner-leaf").count()).toBe(5);
 
-    // The lanterns burn brighter (bigger halo) on the night itself.
-    expect(new Set(await glowScale(page))).toEqual(new Set([1.9]));
+    // Steam rises from the pie on the day itself (paused while the footer is off screen).
+    const peakSteam = await steam(page);
+    expect(Number(peakSteam.opacity)).toBeGreaterThan(0.5);
+    expect(peakSteam.animations).toEqual(["rda-seasonal-steam", "rda-seasonal-steam"]);
 
-    // Both flights are out of sight by the time the flyby attribute goes.
+    // Every leaf of both gusts is out of sight by the time the flyby attribute goes.
     for (const width of [1280, 390]) {
       await page.setViewportSize({ height: 900, width });
-      expect(await bannerBatsAtFlybyEnd(page), `${width}px`).toEqual([
-        { gone: true, peak: false },
-        { gone: true, peak: true },
-      ]);
+      const leaves = await bannerLeavesAtFlybyEnd(page);
+      expect(leaves, `${width}px`).toHaveLength(5);
+      expect(leaves.every(({ gone }) => gone), `${width}px`).toBe(true);
+      expect(leaves.filter(({ peak }) => peak), `${width}px`).toHaveLength(2);
     }
 
-    for (const width of [MOON_MIN_WIDTH, 1440]) {
+    for (const width of [SUN_MIN_WIDTH, 1440]) {
       await page.setViewportSize({ height: 900, width });
-      expect((await moon(page)).display, `${width}px`).toBe("block");
+      expect((await sun(page)).display, `${width}px`).toBe("block");
     }
 
-    for (const width of [MOON_MIN_WIDTH - 1, 768, 390, 320]) {
+    for (const width of [SUN_MIN_WIDTH - 1, 768, 390, 320]) {
       await page.setViewportSize({ height: 900, width });
-      expect((await moon(page)).display, `${width}px`).toBe("none");
+      expect((await sun(page)).display, `${width}px`).toBe("none");
     }
   });
 
-  test("on Oct 30 there is no moon, no second bat and the regular lantern glow", async ({ page }) => {
+  test("the day before there is no sun, no second gust and no steam", async ({ page }) => {
     await openPinned(page, DAY_BEFORE_PEAK, 1440);
     const html = page.locator("html");
 
-    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "halloween");
+    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
     await expect(html).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
     await expect(html).not.toHaveAttribute(SEASONAL_PEAK_ATTRIBUTE, /.*/);
-    expect((await moon(page)).display).toBe("none");
+    expect((await sun(page)).display).toBe("none");
     await expect
-      .poll(() => animationNames(page, ".rda-seasonal-banner-bat:not(.rda-seasonal-banner-bat-peak)"))
-      .toEqual(["rda-seasonal-banner-bank", "rda-seasonal-banner-swoop"]);
-    expect(await animationNames(page, ".rda-seasonal-banner-bat-peak")).toEqual([]);
+      .poll(() => animationNames(page, ".rda-seasonal-banner-leaf:not(.rda-seasonal-banner-leaf-peak) >> nth=0"))
+      .toEqual(["rda-seasonal-banner-gust"]);
+    expect(await animationNames(page, ".rda-seasonal-banner-leaf-peak >> nth=0")).toEqual([]);
     expect(
       await page
-        .locator(".rda-seasonal-banner-bat-peak")
+        .locator(".rda-seasonal-banner-leaf-peak")
+        .first()
         .evaluate((element) => window.getComputedStyle(element).opacity),
     ).toBe("0");
-    expect(new Set(await glowScale(page))).toEqual(new Set([1.5]));
+    expect(await steam(page)).toEqual({ animations: [], opacity: "0" });
   });
 });
 
-test.describe("seasonal theme: hero spider", () => {
+test.describe("seasonal theme: hero sprig and falling leaf", () => {
   test.skip(RETIRED, RETIRED_REASON);
 
   test.beforeEach(async ({ context }) => {
     await isolate(context);
   });
 
-  test("drops in on its thread, settles, and climbs back up while the pointer is over the panel", async ({ page }) => {
+  test("a sprig sits in the corner and one leaf falls once, then is gone", async ({ page }) => {
     await page.setViewportSize({ height: 900, width: 1280 });
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
 
-    const spider = await heroSpider(page);
-    expect(spider).not.toBeNull();
-    expect(spider!.content).toBe('""');
-    expect(spider!.pointerEvents).toBe("none");
-    expect(spider!.backgroundImage).toContain("/assets/seasonal/halloween-2026/spider.svg");
-    expect(spider!.animations.map(({ name }) => name).sort()).toEqual([
-      "rda-seasonal-spider-bob",
-      "rda-seasonal-spider-drop",
+    const sprig = (await heroArt(page, "::before"))!;
+    expect(sprig.content).toBe('""');
+    expect(sprig.pointerEvents).toBe("none");
+    expect(sprig.backgroundImage).toContain(`${ASSETS}/leaf-sprig.svg`);
+    expect(sprig.animations).toEqual([]);
+
+    const leaf = (await heroArt(page, "::after"))!;
+    expect(leaf.content).toBe('""');
+    expect(leaf.pointerEvents).toBe("none");
+    expect(leaf.backgroundImage).toContain(`${ASSETS}/oak-leaf.svg`);
+    expect(leaf.animations).toEqual([{ iterations: 1, name: "rda-seasonal-leaf-fall" }]);
+
+    // After its one fall the leaf is transparent: nothing loops in the hero.
+    await finishHeroLeaf(page);
+    await expect.poll(async () => (await heroArt(page, "::after"))!.opacity).toBe("0");
+
+    // Hover sways the sprig once.
+    await page.locator(".rda-home-hero").first().hover();
+    await expect.poll(async () => (await heroArt(page, "::before"))!.animations.map(({ name }) => name)).toEqual([
+      "rda-seasonal-sway",
     ]);
-    // Drop once, bob a few times: nothing on the spider loops forever.
-    expect(spider!.animations.every(({ iterations }) => iterations !== Infinity)).toBe(true);
-
-    await finishSpiderAnimations(page);
-    await expect.poll(async () => (await heroSpider(page))!.drop).toBe("1");
-    expect((await heroSpider(page))!.retract).toBe("0");
-
-    // Hover retracts it (registered property transition), leaving brings it back.
-    await page.locator(".rda-home-hero-copy").hover();
-    await expect.poll(async () => Number((await heroSpider(page))!.retract)).toBeGreaterThan(0.95);
-    await page.mouse.move(2, 2);
-    await expect.poll(async () => Number((await heroSpider(page))!.retract)).toBeLessThan(0.05);
   });
 
   for (const viewport of layoutWidths) {
-    test(`spider and thread stay clear of hero text and controls at ${viewport.width}px`, async ({ page }, testInfo) => {
+    test(`sprig and falling leaf stay clear of hero text and controls at ${viewport.width}px`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport);
-      await openAt(page, "/", MID_OCTOBER);
-      await expect.poll(async () => (await heroSpider(page))?.content).toBe('""');
-      await finishSpiderAnimations(page);
+      await openAt(page, "/", MID_SEASON);
+      await expect.poll(async () => (await heroArt(page, "::before"))?.content).toBe('""');
 
-      const spider = (await heroSpider(page))!;
+      const sprig = (await heroArt(page, "::before"))!;
+      const leaf = (await heroArt(page, "::after"))!;
 
-      expect(spider.box.left).toBeGreaterThanOrEqual(0);
-      expect(spider.box.right).toBeLessThanOrEqual(spider.viewportWidth);
+      for (const art of [sprig, leaf]) {
+        expect(art.box.left).toBeGreaterThanOrEqual(0);
+        expect(art.box.right).toBeLessThanOrEqual(art.viewportWidth);
+      }
 
       const collisions = await page.evaluate(findInkCollisions, {
-        arts: [{ box: spider.box, label: "hero spider" }],
+        arts: [
+          { box: sprig.box, label: "hero sprig" },
+          { box: leaf.box, label: "falling leaf path" },
+        ],
         boxes: false,
         exclude: "",
         root: ".rda-home-hero",
         tolerance: 1,
       });
 
-      recordCollisions(testInfo, `hero spider @${viewport.width}`, collisions);
-      expect(collisions, "hero spider overlaps hero text or controls").toEqual([]);
+      recordCollisions(testInfo, `hero sprig @${viewport.width}`, collisions);
+      expect(collisions, "hero sprig or leaf overlaps hero text or controls").toEqual([]);
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
         "horizontal overflow",
@@ -1437,7 +1452,7 @@ test.describe("seasonal theme: hero spider", () => {
   }
 });
 
-test.describe("seasonal theme: divider pumpkins", () => {
+test.describe("seasonal theme: divider leaves", () => {
   test.skip(RETIRED, RETIRED_REASON);
 
   test.beforeEach(async ({ context }) => {
@@ -1446,9 +1461,9 @@ test.describe("seasonal theme: divider pumpkins", () => {
 
   for (const path of ["/", "/infection-control", "/contact"]) {
     for (const viewport of [{ height: 844, width: 390 }, { height: 900, width: 1440 }]) {
-      test(`pumpkins roll in with the scroll and settle in the notch on ${path} at ${viewport.width}px`, async ({ page }) => {
+      test(`leaves drift down with the scroll and settle in the notch on ${path} at ${viewport.width}px`, async ({ page }) => {
         await page.setViewportSize(viewport);
-        await openAt(page, path, MID_OCTOBER);
+        await openAt(page, path, MID_SEASON);
 
         const count = (await dividerStates(page)).length;
         expect(count).toBeGreaterThan(0);
@@ -1456,7 +1471,7 @@ test.describe("seasonal theme: divider pumpkins", () => {
         let checkedBefore = 0;
 
         for (let index = 0; index < count; index += 1) {
-          // Park the heading just below the fold: not rolled in yet.
+          // Park the heading just below the fold: not drifted in yet.
           const parked = await page.evaluate((i) => {
             const heading = document.querySelectorAll(".rda-section-heading > span:empty")[i]!.closest(".rda-section-heading")!;
             const rect = heading.getBoundingClientRect();
@@ -1470,8 +1485,8 @@ test.describe("seasonal theme: divider pumpkins", () => {
           const before = (await dividerStates(page))[index];
           expect(before.scrollDriven, `divider ${index} is scroll-driven`).toBe(true);
           if (parked && before.clipped) {
-            // Static fallback: never hidden, never caught mid-roll.
-            expect(isSettledPumpkin(before), `clipped divider ${index} rests: ${JSON.stringify(before)}`).toBe(true);
+            // Static fallback: never hidden, never caught mid-fall.
+            expect(isSettledLeaf(before), `clipped divider ${index} rests: ${JSON.stringify(before)}`).toBe(true);
           } else if (parked) {
             expect(before.opacity, `divider ${index} hidden before it enters`).toBe("0");
             checkedBefore += 1;
@@ -1486,7 +1501,7 @@ test.describe("seasonal theme: divider pumpkins", () => {
           await nextFrames(page);
 
           const after = (await dividerStates(page))[index];
-          expect(isSettledPumpkin(after), `divider ${index} settled: ${JSON.stringify(after)}`).toBe(true);
+          expect(isSettledLeaf(after), `divider ${index} settled: ${JSON.stringify(after)}`).toBe(true);
         }
 
         expect(checkedBefore).toBeGreaterThan(0);
@@ -1495,7 +1510,7 @@ test.describe("seasonal theme: divider pumpkins", () => {
   }
 });
 
-test.describe("seasonal theme: footer ghost", () => {
+test.describe("seasonal theme: footer mascot", () => {
   test.skip(RETIRED, RETIRED_REASON);
 
   test.beforeEach(async ({ context, page }) => {
@@ -1504,30 +1519,30 @@ test.describe("seasonal theme: footer ghost", () => {
   });
 
   test("hides until the footer scrolls into view, peeks once, and not again this session", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
-    const ghost = ghostButton(page);
+    await openAt(page, "/", MID_SEASON);
+    const mascot = mascotButton(page);
 
-    await expect(ghost).toHaveAttribute("data-rda-ghost", "hiding");
+    await expect(mascot).toHaveAttribute("data-rda-mascot", "hiding");
     await expect
-      .poll(() => page.locator(".rda-seasonal-ghost-stage").evaluate((stage) => window.getComputedStyle(stage).opacity))
+      .poll(() => page.locator(".rda-seasonal-mascot-stage").evaluate((stage) => window.getComputedStyle(stage).opacity))
       .toBe("0");
     expect(await peekKeyValue(page)).toBeNull();
 
-    const phases = await recordGhostPhases(page);
+    const phases = await recordMascotPhases(page);
     await scrollToFooterDecor(page);
 
     await expect.poll(phases).toContain("peek");
     expect(await peekKeyValue(page)).toBe("1");
-    await expect(ghost).toHaveAttribute("data-rda-ghost", /^(idle|hint)$/u, { timeout: 5_000 });
+    await expect(mascot).toHaveAttribute("data-rda-mascot", /^(idle|hint)$/u, { timeout: 5_000 });
     expect(
-      await page.locator(".rda-seasonal-ghost-stage").evaluate((stage) => window.getComputedStyle(stage).opacity),
+      await page.locator(".rda-seasonal-mascot-stage").evaluate((stage) => window.getComputedStyle(stage).opacity),
     ).toBe("1");
 
     // Same tab, next page: already introduced, so no hiding and no second peek.
     await open(page, "/contact");
     await waitForFooterHydration(page);
-    await expect(ghost).toHaveAttribute("data-rda-ghost", "idle");
-    const nextPhases = await recordGhostPhases(page);
+    await expect(mascot).toHaveAttribute("data-rda-mascot", "idle");
+    const nextPhases = await recordMascotPhases(page);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
     await page.waitForTimeout(1_000);
@@ -1536,34 +1551,34 @@ test.describe("seasonal theme: footer ghost", () => {
   });
 
   test("a footer already on screen at load is never hidden", async ({ context, page: measure }) => {
-    await openAt(measure, "/contact", MID_OCTOBER);
+    await openAt(measure, "/contact", MID_SEASON);
     const height = await measure.evaluate(() => document.documentElement.scrollHeight);
 
     // A fresh tab (no peek spent) with a window tall enough to show the whole page.
     const page = await context.newPage();
     await page.setViewportSize({ height: Math.min(height + 200, 6_000), width: 1280 });
-    await openAt(page, "/contact", MID_OCTOBER);
+    await openAt(page, "/contact", MID_SEASON);
     expect(
       await footerDecor(page).evaluate((element) => element.getBoundingClientRect().bottom <= window.innerHeight),
     ).toBe(true);
     await waitForFooterHydration(page);
-    const phases = await recordGhostPhases(page);
+    const phases = await recordMascotPhases(page);
 
     await page.waitForTimeout(500);
     expect(await phases()).toEqual(["idle"]);
     expect(await peekKeyValue(page)).toBeNull();
   });
 
-  test("keyboard focus reveals a hiding ghost at once and counts as the session's peek", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
-    const ghost = ghostButton(page);
+  test("keyboard focus reveals a hiding mascot at once and counts as the session's peek", async ({ page }) => {
+    await openAt(page, "/", MID_SEASON);
+    const mascot = mascotButton(page);
 
-    await expect(ghost).toHaveAttribute("data-rda-ghost", "hiding");
+    await expect(mascot).toHaveAttribute("data-rda-mascot", "hiding");
 
     // Focus without scrolling, so only the focus can be what reveals it.
-    await ghost.evaluate((button) => (button as HTMLElement).focus({ preventScroll: true }));
-    await expect(ghost).toBeFocused();
-    await expect(ghost).toHaveAttribute("data-rda-ghost", "peek");
+    await mascot.evaluate((button) => (button as HTMLElement).focus({ preventScroll: true }));
+    await expect(mascot).toBeFocused();
+    await expect(mascot).toHaveAttribute("data-rda-mascot", "peek");
     expect(
       await footerDecor(page).evaluate((element) => element.getBoundingClientRect().top > window.innerHeight),
       "footer still off screen",
@@ -1572,10 +1587,10 @@ test.describe("seasonal theme: footer ghost", () => {
 
     await open(page, "/contact");
     await waitForFooterHydration(page);
-    await expect(ghost).toHaveAttribute("data-rda-ghost", "idle");
+    await expect(mascot).toHaveAttribute("data-rda-mascot", "idle");
   });
 
-  test("an untouched ghost wiggles once as a hint; after a press it never does", async ({ browser }) => {
+  test("an untouched mascot wiggles once as a hint; after a press it never does", async ({ browser }) => {
     async function phasesAfterPeek(press: boolean) {
       const context = await browser.newContext({ viewport: { height: 900, width: 1280 } });
 
@@ -1583,22 +1598,22 @@ test.describe("seasonal theme: footer ghost", () => {
         await isolate(context);
         const page = await context.newPage();
 
-        await openAt(page, "/", MID_OCTOBER);
-        await expect(ghostButton(page)).toHaveAttribute("data-rda-ghost", "hiding");
-        const phases = await recordGhostPhases(page);
+        await openAt(page, "/", MID_SEASON);
+        await expect(mascotButton(page)).toHaveAttribute("data-rda-mascot", "hiding");
+        const phases = await recordMascotPhases(page);
 
         await scrollToFooterDecor(page);
         await expect.poll(phases).toContain("peek");
 
         if (press) {
-          await ghostButton(page).click();
-          await expect(ghostButton(page)).toHaveAttribute("data-rda-ghost", "idle");
+          await mascotButton(page).click();
+          await expect(mascotButton(page)).toHaveAttribute("data-rda-mascot", "idle");
         }
 
         // Peek (1.4s) + hint delay (2.6s) + hint (1s), with slack.
         await page.waitForTimeout(6_000);
 
-        return { final: await ghostButton(page).getAttribute("data-rda-ghost"), phases: await phases() };
+        return { final: await mascotButton(page).getAttribute("data-rda-mascot"), phases: await phases() };
       } finally {
         await context.close();
       }
@@ -1613,90 +1628,90 @@ test.describe("seasonal theme: footer ghost", () => {
     expect(pressed.final).toBe("idle");
   });
 
-  test("a press gasps, puffs mist and sends four bats along curved offset-paths that clean up", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
+  test("a press gasps, fans the feathers and tosses four leaves along curved offset-paths that clean up", async ({ page }) => {
+    await openAt(page, "/", MID_SEASON);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
-    const ghost = ghostButton(page);
+    const mascot = mascotButton(page);
     const mouths = () =>
-      page.locator(".rda-seasonal-ghost-art").evaluate((svg) => ({
-        gasp: window.getComputedStyle(svg.querySelector(".rda-ghost-mouth-gasp")!).opacity,
-        smile: window.getComputedStyle(svg.querySelector(".rda-ghost-mouth-smile")!).opacity,
+      page.locator(".rda-seasonal-mascot-art").evaluate((svg) => ({
+        gasp: window.getComputedStyle(svg.querySelector(".rda-mascot-mouth-gasp")!).opacity,
+        smile: window.getComputedStyle(svg.querySelector(".rda-mascot-mouth-smile")!).opacity,
       }));
 
     expect(await mouths()).toEqual({ gasp: "0", smile: "1" });
 
-    await releaseBats(page, () => ghost.click());
-    await expect(ghost).toHaveAttribute("data-rda-mood", "surprised");
-    // Each press flips data-rda-bursting so the boo squash replays.
-    const firstBurst = await ghost.getAttribute("data-rda-bursting");
+    await tossLeaves(page, () => mascot.click());
+    await expect(mascot).toHaveAttribute("data-rda-mood", "surprised");
+    // Each press flips data-rda-bursting so the gobble squash replays.
+    const firstBurst = await mascot.getAttribute("data-rda-bursting");
     expect(firstBurst).toMatch(/^(odd|even)$/u);
     await expect.poll(mouths).toEqual({ gasp: "1", smile: "0" });
+    expect(await animationNames(page, ".rda-seasonal-mascot-art .rda-mascot-fan")).toEqual([
+      firstBurst === "odd" ? "rda-seasonal-fan-display" : "rda-seasonal-fan-display-again",
+    ]);
 
-    const burst = await page.locator(".rda-seasonal-bat-burst").evaluate((element) => ({
+    const burst = await page.locator(".rda-seasonal-leaf-burst").evaluate((element) => ({
       ariaHidden: element.getAttribute("aria-hidden"),
-      bats: Array.from(element.querySelectorAll<HTMLElement>(".rda-seasonal-bat")).map((bat) => ({
-        animations: bat.getAnimations().map((animation) => (animation as CSSAnimation).animationName).sort(),
-        offsetPath: window.getComputedStyle(bat).offsetPath,
-        wings: bat.querySelectorAll(".rda-seasonal-flapping-bat .rda-bat-wing").length,
+      leaves: Array.from(element.querySelectorAll<HTMLElement>(".rda-seasonal-flying-leaf")).map((leaf) => ({
+        animations: leaf.getAnimations().map((animation) => (animation as CSSAnimation).animationName).sort(),
+        art: leaf.querySelectorAll("svg.rda-seasonal-flying-leaf-art").length,
+        offsetPath: window.getComputedStyle(leaf).offsetPath,
       })),
-      mist: element.querySelectorAll(".rda-seasonal-mist-puff").length,
       pointerEvents: window.getComputedStyle(element).pointerEvents,
     }));
 
     expect(burst.ariaHidden).toBe("true");
     expect(burst.pointerEvents).toBe("none");
-    expect(burst.mist).toBe(3);
-    expect(burst.bats).toHaveLength(4);
-    expect(new Set(burst.bats.map(({ offsetPath }) => offsetPath)).size).toBe(4);
+    expect(burst.leaves).toHaveLength(4);
+    expect(new Set(burst.leaves.map(({ offsetPath }) => offsetPath)).size).toBe(4);
 
-    for (const bat of burst.bats) {
-      expect(bat.offsetPath).toMatch(/^path\("M ?0 0 ?C/u);
-      expect(bat.wings).toBe(2);
-      expect(bat.animations).toEqual(["rda-seasonal-bat-bank", "rda-seasonal-bat-swoop"]);
+    for (const leaf of burst.leaves) {
+      expect(leaf.offsetPath).toMatch(/^path\("M ?0 0 ?C/u);
+      expect(leaf.art).toBe(1);
+      expect(leaf.animations).toEqual(["rda-seasonal-leaf-spin", "rda-seasonal-leaf-toss"]);
     }
 
-    await ghost.click();
-    await expect(ghost).toHaveAttribute("data-rda-bursting", firstBurst === "odd" ? "even" : "odd");
-    // "odd" plays rda-seasonal-boo, "even" rda-seasonal-boo-again: a new name restarts the squash.
-    expect((await animationNames(page, ".rda-seasonal-ghost-art")).some((name) => name.startsWith("rda-seasonal-boo"))).toBe(
-      true,
-    );
-    await expect(page.locator(".rda-seasonal-bat-burst")).toHaveCount(1);
+    await mascot.click();
+    await expect(mascot).toHaveAttribute("data-rda-bursting", firstBurst === "odd" ? "even" : "odd");
+    // "odd" plays rda-seasonal-gobble, "even" rda-seasonal-gobble-again: a new name restarts the squash.
+    expect(
+      (await animationNames(page, ".rda-seasonal-mascot-art")).some((name) => name.startsWith("rda-seasonal-gobble")),
+    ).toBe(true);
+    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
 
     // The gasp is brief; the burst clears itself after ~2s.
-    await expect(ghost).not.toHaveAttribute("data-rda-mood", /.*/, { timeout: 2_000 });
+    await expect(mascot).not.toHaveAttribute("data-rda-mood", /.*/, { timeout: 2_000 });
     await expect.poll(mouths).toEqual({ gasp: "0", smile: "1" });
-    await expect(page.locator(".rda-seasonal-bat-burst")).toHaveCount(0, { timeout: 4_000 });
-    await expect(page.locator(".rda-seasonal-mist-puff")).toHaveCount(0);
+    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(0, { timeout: 4_000 });
   });
 
   test("every third press adds a spin, alternating direction", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
     await waitForFooterHydration(page);
-    const ghost = ghostButton(page);
+    const mascot = mascotButton(page);
 
-    await ghost.click();
-    await ghost.click();
-    await expect(page.locator(".rda-seasonal-bat-burst")).toHaveCount(1);
-    await expect(ghost).not.toHaveAttribute("data-rda-spin", /.*/);
+    await mascot.click();
+    await mascot.click();
+    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
+    await expect(mascot).not.toHaveAttribute("data-rda-spin", /.*/);
 
-    await ghost.click();
-    await expect(ghost).toHaveAttribute("data-rda-spin", "odd");
-    expect(await animationNames(page, ".rda-seasonal-ghost-stage")).toContain("rda-seasonal-ghost-spin-odd");
+    await mascot.click();
+    await expect(mascot).toHaveAttribute("data-rda-spin", "odd");
+    expect(await animationNames(page, ".rda-seasonal-mascot-stage")).toContain("rda-seasonal-mascot-spin-odd");
 
-    await ghost.click();
-    await ghost.click();
-    await expect(ghost).toHaveAttribute("data-rda-spin", "odd");
-    await ghost.click();
-    await expect(ghost).toHaveAttribute("data-rda-spin", "even");
-    expect(await animationNames(page, ".rda-seasonal-ghost-stage")).toContain("rda-seasonal-ghost-spin-even");
+    await mascot.click();
+    await mascot.click();
+    await expect(mascot).toHaveAttribute("data-rda-spin", "odd");
+    await mascot.click();
+    await expect(mascot).toHaveAttribute("data-rda-spin", "even");
+    expect(await animationNames(page, ".rda-seasonal-mascot-stage")).toContain("rda-seasonal-mascot-spin-even");
   });
 
   test("footer loops rest while the footer is off screen", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
     await waitForFooterHydration(page);
     const playStates = () =>
       page.evaluate(() =>
@@ -1726,12 +1741,9 @@ test.describe("seasonal theme: footer ghost", () => {
 
     await expect(footerDecor(page)).not.toHaveAttribute("data-rda-awake", /.*/);
     const loops = await loopNames();
-    expect(loops).toEqual(
-      expect.arrayContaining(["rda-seasonal-bob", "rda-seasonal-candle-glow", "rda-seasonal-fog-drift"]),
-    );
-    // Blinks are scheduled by JS (data-rda-blink); the carved faces no longer flicker.
+    expect(loops).toEqual(["rda-seasonal-drift", "rda-seasonal-strut", "rda-seasonal-tumble"]);
+    // Blinks are scheduled by JS (data-rda-blink), not an endless CSS loop.
     expect(loops).not.toContain("rda-seasonal-blink");
-    expect(loops).not.toContain("rda-seasonal-candle");
     expect(await playStates()).toEqual(["paused"]);
 
     await scrollToFooterDecor(page);
@@ -1743,11 +1755,11 @@ test.describe("seasonal theme: footer ghost", () => {
     await expect.poll(playStates).toEqual(["paused"]);
   });
 
-  test("the ghost blinks now and then while awake, never while off screen", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
+  test("the mascot blinks now and then while awake, never while off screen", async ({ page }) => {
+    await openAt(page, "/", MID_SEASON);
     await waitForFooterHydration(page);
-    const ghost = ghostButton(page);
-    const blinks = await recordAttribute(page, ".rda-seasonal-ghost-button", "data-rda-blink");
+    const mascot = mascotButton(page);
+    const blinks = await recordAttribute(page, ".rda-seasonal-mascot-button", "data-rda-blink");
 
     // Off screen: no blink scheduled (longest gap is ~7s).
     await page.waitForTimeout(7_500);
@@ -1757,33 +1769,33 @@ test.describe("seasonal theme: footer ghost", () => {
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
     await expect.poll(async () => (await blinks()).some((value) => value !== null), { timeout: 10_000 }).toBe(true);
     // Each blink ends (the attribute is removed again).
-    await expect(ghost).not.toHaveAttribute("data-rda-blink", /.*/, { timeout: 2_000 });
+    await expect(mascot).not.toHaveAttribute("data-rda-blink", /.*/, { timeout: 2_000 });
     // The recorder reports mutations asynchronously; wait for the removal to land.
     await expect.poll(async () => (await blinks()).at(-1), { timeout: 2_000 }).toBeNull();
   });
 
-  test("a press while the ghost is hiding also spends the session's peek", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
-    const ghost = ghostButton(page);
+  test("a press while the mascot is hiding also spends the session's peek", async ({ page }) => {
+    await openAt(page, "/", MID_SEASON);
+    const mascot = mascotButton(page);
 
-    await expect(ghost).toHaveAttribute("data-rda-ghost", "hiding");
+    await expect(mascot).toHaveAttribute("data-rda-mascot", "hiding");
     // A synthetic click: no focus, no hover, no scroll.
-    await ghost.evaluate((button) => (button as HTMLButtonElement).click());
-    await expect(page.locator(".rda-seasonal-bat-burst")).toHaveCount(1);
-    await expect(ghost).not.toHaveAttribute("data-rda-ghost", "hiding");
+    await mascot.evaluate((button) => (button as HTMLButtonElement).click());
+    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
+    await expect(mascot).not.toHaveAttribute("data-rda-mascot", "hiding");
     expect(await peekKeyValue(page)).toBe("1");
   });
 
   test("the eyes glance toward a mouse pointer", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
-    await expect(ghostButton(page)).toHaveAttribute("data-rda-ghost", /^(idle|hint)$/u, { timeout: 5_000 });
+    await expect(mascotButton(page)).toHaveAttribute("data-rda-mascot", /^(idle|hint)$/u, { timeout: 5_000 });
 
-    const art = (await page.locator(".rda-seasonal-ghost-art").boundingBox())!;
+    const art = (await page.locator(".rda-seasonal-mascot-art").boundingBox())!;
     const centerX = art.x + art.width / 2;
     const centerY = art.y + art.height * 0.38;
-    const px = async (axis: "x" | "y") => Number.parseFloat((await ghostLook(page))[axis]) || 0;
+    const px = async (axis: "x" | "y") => Number.parseFloat((await mascotLook(page))[axis]) || 0;
 
     // Far right: full glance (2.2 units at most).
     await page.mouse.move(Math.min(1270, centerX + 400), centerY);
@@ -1804,7 +1816,7 @@ test.describe("seasonal theme: footer ghost", () => {
 
     // Leaving the window recentres the eyes.
     await page.evaluate(() => document.documentElement.dispatchEvent(new PointerEvent("pointerleave")));
-    await expect.poll(async () => (await ghostLook(page)).x).toBe("0.00px");
+    await expect.poll(async () => (await mascotLook(page)).x).toBe("0.00px");
   });
 
   test("the eyes ignore touch (coarse) pointers", async ({ browser }) => {
@@ -1814,30 +1826,33 @@ test.describe("seasonal theme: footer ghost", () => {
       await isolate(context);
       const page = await context.newPage();
 
-      await openAt(page, "/", MID_OCTOBER);
+      await openAt(page, "/", MID_SEASON);
       expect(await page.evaluate(() => window.matchMedia("(pointer: fine)").matches)).toBe(false);
       await scrollToFooterDecor(page);
       await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
-      const art = (await page.locator(".rda-seasonal-ghost-art").boundingBox())!;
+      const art = (await page.locator(".rda-seasonal-mascot-art").boundingBox())!;
 
       await page.mouse.move(art.x + 200, art.y);
       await page.mouse.move(art.x - 200, art.y + 50);
       await page.waitForTimeout(400);
-      expect(Number.parseFloat((await ghostLook(page)).x) || 0).toBe(0);
+      expect(Number.parseFloat((await mascotLook(page)).x) || 0).toBe(0);
 
-      // Hover effects are for hover-capable pointers only: a tap leaves the spider down.
+      // Hover flourishes are for hover-capable pointers only: once the tap's own
+      // fan flare is over, a sticky touch :hover leaves the fan at rest.
       expect(await page.evaluate(() => window.matchMedia("(hover: hover)").matches)).toBe(false);
-      await scrollToTop(page);
-      await page.locator(".rda-home-hero-copy").tap({ position: { x: 4, y: 4 } });
-      await page.waitForTimeout(1_300);
-      expect((await heroSpider(page))!.retract).toBe("0");
+      await mascotButton(page).tap();
+      await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(0, { timeout: 4_000 });
+      await page.waitForTimeout(400);
+      expect(
+        await page.locator(".rda-seasonal-mascot-art .rda-mascot-fan").evaluate((fan) => window.getComputedStyle(fan).scale),
+      ).toBe("none");
     } finally {
       await context.close();
     }
   });
 });
 
-test.describe("seasonal theme: footer fog", () => {
+test.describe("seasonal theme: footer drifting leaves", () => {
   test.skip(RETIRED, RETIRED_REASON);
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 
@@ -1847,12 +1862,12 @@ test.describe("seasonal theme: footer fog", () => {
 
   for (const path of ["/", "/contact", "/faqs-1", `${RESOURCES_BASE_PATH}/${firstResource.slug}`]) {
     for (const viewport of layoutWidths) {
-      test(`fog stays in the footer's top padding on ${path} at ${viewport.width}px`, async ({ page }, testInfo) => {
+      test(`drifting leaves stay in the footer's top padding on ${path} at ${viewport.width}px`, async ({ page }, testInfo) => {
         await page.setViewportSize(viewport);
-        await openAt(page, path, MID_OCTOBER);
+        await openAt(page, path, MID_SEASON);
         await scrollToBottom(page);
 
-        const fog = await page.locator('.rda-live-footer > [data-rda-seasonal="fog"]').evaluate((element) => {
+        const drift = await page.locator('.rda-live-footer > [data-rda-seasonal="drift"]').evaluate((element) => {
           const footer = element.parentElement!;
           const footerRect = footer.getBoundingClientRect();
           const rect = element.getBoundingClientRect();
@@ -1875,25 +1890,25 @@ test.describe("seasonal theme: footer fog", () => {
           };
         });
 
-        expect(fog.ariaHidden).toBe("true");
-        expect(fog.text).toBe("");
-        expect(fog.pointerEvents).toBe("none");
-        expect(fog.overflow).toBe("hidden");
-        expect(fog.zIndex).toBe("-1");
-        expect(fog.box.top).toBeGreaterThanOrEqual(fog.footer.top - 0.5);
-        expect(fog.box.left).toBeGreaterThanOrEqual(fog.footer.left - 0.5);
-        expect(fog.box.right).toBeLessThanOrEqual(fog.footer.right + 0.5);
-        expect(fog.box.bottom - fog.footer.top).toBeLessThanOrEqual(fog.footer.paddingTop);
+        expect(drift.ariaHidden).toBe("true");
+        expect(drift.text).toBe("");
+        expect(drift.pointerEvents).toBe("none");
+        expect(drift.overflow).toBe("hidden");
+        expect(drift.zIndex).toBe("-1");
+        expect(drift.box.top).toBeGreaterThanOrEqual(drift.footer.top - 0.5);
+        expect(drift.box.left).toBeGreaterThanOrEqual(drift.footer.left - 0.5);
+        expect(drift.box.right).toBeLessThanOrEqual(drift.footer.right + 0.5);
+        expect(drift.box.bottom - drift.footer.top).toBeLessThanOrEqual(drift.footer.paddingTop);
 
         const collisions = await page.evaluate(findInkCollisions, {
-          arts: [{ box: fog.box, label: "fog" }],
+          arts: [{ box: drift.box, label: "drifting leaves" }],
           exclude: "[data-rda-seasonal], .rda-whatsapp-fab, [data-rda-whatsapp]",
           root: ".rda-live-footer",
           tolerance: 0,
         });
 
-        recordCollisions(testInfo, `fog ${path} @${viewport.width}`, collisions);
-        expect(collisions, "fog overlaps footer text or controls").toEqual([]);
+        recordCollisions(testInfo, `drift ${path} @${viewport.width}`, collisions);
+        expect(collisions, "drifting leaves overlap footer text or controls").toEqual([]);
       });
     }
   }
@@ -1907,45 +1922,39 @@ test.describe("seasonal theme: reduced motion", () => {
     await isolate(context);
   });
 
-  test("only the bat fade animates; decorations stay static", async ({ page }) => {
-    await openAt(page, "/", MID_OCTOBER);
+  test("only the leaf fade animates; decorations stay static", async ({ page }) => {
+    await openAt(page, "/", MID_SEASON);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
     await page.locator(".rda-home-hero").first().hover().catch(() => undefined);
-    await releaseBats(page, () => ghostButton(page).click());
+    await tossLeaves(page, () => mascotButton(page).click());
     // Three presses would earn a spin with motion; reduced motion skips it.
-    await ghostButton(page).click();
-    await ghostButton(page).click();
-    await expect(page.locator(".rda-seasonal-bat-burst")).toHaveCount(1);
-    expect(await ghostButton(page).getAttribute("data-rda-spin")).toBeNull();
+    await mascotButton(page).click();
+    await mascotButton(page).click();
+    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
+    expect(await mascotButton(page).getAttribute("data-rda-spin")).toBeNull();
 
     const animations = await runningSeasonalAnimations(page);
 
     expect(animations.length).toBeGreaterThan(0);
     expect(animations.filter(({ infinite }) => infinite)).toEqual([]);
-    expect([...new Set(animations.map(({ name }) => name))]).toEqual(["rda-seasonal-bat-fade"]);
-    // No mist puffs either.
-    expect(
-      await page
-        .locator(".rda-seasonal-mist-puff")
-        .evaluateAll((puffs) => puffs.filter((puff) => window.getComputedStyle(puff).display !== "none").length),
-    ).toBe(0);
+    expect([...new Set(animations.map(({ name }) => name))]).toEqual(["rda-seasonal-leaf-fade"]);
   });
 
-  test("the ghost never hides or peeks, and the eyes do not track the pointer", async ({ page }) => {
+  test("the mascot never hides or peeks, and the eyes do not track the pointer", async ({ page }) => {
     await page.setViewportSize({ height: 900, width: 1280 });
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
     await waitForFooterHydration(page);
     await page.waitForTimeout(300);
 
-    const phases = await recordGhostPhases(page);
+    const phases = await recordMascotPhases(page);
 
     expect(await phases()).toEqual(["idle"]);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
 
-    const blinks = await recordAttribute(page, ".rda-seasonal-ghost-button", "data-rda-blink");
-    const art = (await page.locator(".rda-seasonal-ghost-art").boundingBox())!;
+    const blinks = await recordAttribute(page, ".rda-seasonal-mascot-button", "data-rda-blink");
+    const art = (await page.locator(".rda-seasonal-mascot-art").boundingBox())!;
     await page.mouse.move(art.x + art.width / 2 + 400, art.y + 20);
     await page.mouse.move(art.x + art.width / 2 - 400, art.y + 20);
     // Longer than the longest blink gap (~7s).
@@ -1955,16 +1964,16 @@ test.describe("seasonal theme: reduced motion", () => {
 
     expect(await phases()).toEqual(["idle"]);
     expect(await peekKeyValue(page)).toBeNull();
-    expect(Number.parseFloat((await ghostLook(page)).x) || 0).toBe(0);
-    expect(Number.parseFloat((await ghostLook(page)).y) || 0).toBe(0);
+    expect(Number.parseFloat((await mascotLook(page)).x) || 0).toBe(0);
+    expect(Number.parseFloat((await mascotLook(page)).y) || 0).toBe(0);
     expect(
-      await page.locator(".rda-seasonal-ghost-stage").evaluate((stage) => window.getComputedStyle(stage).opacity),
+      await page.locator(".rda-seasonal-mascot-stage").evaluate((stage) => window.getComputedStyle(stage).opacity),
     ).toBe("1");
   });
 
-  test("no seasonal loop runs anywhere: spider hangs still, pumpkins sit in their notches", async ({ page }) => {
+  test("no seasonal loop runs anywhere: no falling leaf, divider leaves sit in their notches", async ({ page }) => {
     await page.setViewportSize({ height: 900, width: 1280 });
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
     await page.waitForTimeout(300);
@@ -1972,14 +1981,17 @@ test.describe("seasonal theme: reduced motion", () => {
     expect(await runningSeasonalAnimations(page)).toEqual([]);
 
     await scrollToTop(page);
-    const spider = (await heroSpider(page))!;
-    expect(spider.content).toBe('""');
-    expect(spider.animations).toEqual([]);
-    expect(spider.drop).toBe("1");
+    const sprig = (await heroArt(page, "::before"))!;
+    expect(sprig.content).toBe('""');
+    expect(sprig.animations).toEqual([]);
+    // The falling leaf never lets go: it stays transparent.
+    const leaf = (await heroArt(page, "::after"))!;
+    expect(leaf.animations).toEqual([]);
+    expect(leaf.opacity).toBe("0");
 
     for (const state of await dividerStates(page)) {
       expect(state.scrollDriven).toBe(false);
-      expect(isSettledPumpkin(state), JSON.stringify(state)).toBe(true);
+      expect(isSettledLeaf(state), JSON.stringify(state)).toBe(true);
     }
 
     expect(await runningSeasonalAnimations(page)).toEqual([]);
@@ -2002,15 +2014,15 @@ test.describe("seasonal theme: scope exclusions", () => {
 
       // Private tools never receive the <head> script; elsewhere the theme is
       // on and only the route's scope keeps decorations out.
-      expect(await seasonAttribute(page)).toBe(isPrivateSiteRoute(path) ? null : "halloween");
+      expect(await seasonAttribute(page)).toBe(isPrivateSiteRoute(path) ? null : "thanksgiving");
       await expect(page.locator("script#rda-seasonal-theme")).toHaveCount(isPrivateSiteRoute(path) ? 0 : 1);
       await expect(page.locator(`[${SEASONAL_SCOPE_ATTRIBUTE}]`)).toHaveCount(0);
-      // Not just hidden: the banner sky, fog and footer decor are never rendered here.
+      // Not just hidden: the banner sky, drifting leaves and footer decor are never rendered here.
       await expect(page.locator("[data-rda-seasonal]")).toHaveCount(0);
-      await expect(page.locator(".rda-seasonal-banner-sky, .rda-seasonal-fog, .rda-seasonal-footer")).toHaveCount(0);
+      await expect(page.locator(".rda-seasonal-banner-sky, .rda-seasonal-drift, .rda-seasonal-footer")).toHaveCount(0);
       await scrollToBottom(page);
       expect(await visibleSeasonalCount(page)).toBe(0);
-      await expect(ghostButton(page)).toHaveCount(0);
+      await expect(mascotButton(page)).toHaveCount(0);
       expect(await peekKeyValue(page)).toBeNull();
 
       for (const pseudo of await seasonalPseudoElements(page)) {
@@ -2028,31 +2040,27 @@ const notFoundPaths = [
   { label: "a random path", path: `/seasonal-qa-missing-${Math.random().toString(36).slice(2, 10)}` },
 ];
 
-async function notFoundGhost(page: Page) {
+async function notFoundMascot(page: Page) {
   return page.evaluate(() => {
     const h1 = document.querySelector<HTMLElement>(".rda-not-found-content h1");
 
     if (!h1) return null;
 
     const style = window.getComputedStyle(h1, "::before");
-    const beam = window.getComputedStyle(h1, "::after");
+    const after = window.getComputedStyle(h1, "::after");
     const icon = document.querySelector<SVGElement>(".rda-not-found-content svg:has(+ h1)");
     const rect = h1.getBoundingClientRect();
     const px = (value: string) => Number.parseFloat(value);
     const width = px(style.width);
-    // Lantern art is 76x72.
-    const height = Number.isFinite(px(style.height)) ? px(style.height) : (width * 72) / 76;
+    // Turkey-tooth art is 108x82.
+    const height = Number.isFinite(px(style.height)) ? px(style.height) : (width * 82) / 108;
     // Absolutely positioned against the h1's padding box.
     const left = rect.left + h1.clientLeft + px(style.left);
     const bottom = rect.top + h1.clientTop + h1.clientHeight - px(style.bottom);
 
     return {
+      after: after.content,
       backgroundImage: style.backgroundImage,
-      beam: {
-        content: beam.content,
-        mixBlendMode: beam.mixBlendMode,
-        pointerEvents: beam.pointerEvents,
-      },
       box: { bottom, left, right: left + width, top: bottom - height },
       content: style.content,
       icon: icon
@@ -2065,48 +2073,48 @@ async function notFoundGhost(page: Page) {
   });
 }
 
-async function assertNotFoundGhost(page: Page, testInfo: TestInfo, title: string, still: boolean) {
-  await expect.poll(async () => (await notFoundGhost(page))?.content).not.toBe("none");
+async function assertNotFoundMascot(page: Page, testInfo: TestInfo, title: string, still: boolean) {
+  await expect.poll(async () => (await notFoundMascot(page))?.content).not.toBe("none");
 
-  const ghost = (await notFoundGhost(page))!;
-  const lantern = still ? "ghost-lantern-still.svg" : "ghost-lantern.svg";
+  const mascot = (await notFoundMascot(page))!;
+  const art = still ? "turkey-tooth-still.svg" : "turkey-tooth-search.svg";
 
-  expect(ghost.pointerEvents).toBe("none");
-  expect(ghost.backgroundImage).toContain(`/assets/seasonal/halloween-2026/${lantern}`);
-  expect(ghost.box.left).toBeGreaterThanOrEqual(0);
-  expect(ghost.box.right).toBeLessThanOrEqual(ghost.viewportWidth);
-  expect(ghost.box.top).toBeGreaterThanOrEqual(0);
-  // The beam: decorative, multiplied over the heading.
-  expect(ghost.beam).toEqual({ content: '""', mixBlendMode: "multiply", pointerEvents: "none" });
-  // The warning icon steps aside without reflow while the ghost is there.
-  expect(ghost.icon).not.toBeNull();
-  expect(ghost.icon!.visibility).toBe("hidden");
-  expect(ghost.icon!.height).toBeGreaterThan(0);
-  expect(ghost.scrollWidth, "horizontal overflow").toBeLessThanOrEqual(ghost.viewportWidth);
+  expect(mascot.pointerEvents).toBe("none");
+  expect(mascot.backgroundImage).toContain(`${ASSETS}/${art}`);
+  expect(mascot.box.left).toBeGreaterThanOrEqual(0);
+  expect(mascot.box.right).toBeLessThanOrEqual(mascot.viewportWidth);
+  expect(mascot.box.top).toBeGreaterThanOrEqual(0);
+  // One piece of art only: the heading's ::after stays unused.
+  expect(mascot.after).toBe("none");
+  // The warning icon steps aside without reflow while the mascot is there.
+  expect(mascot.icon).not.toBeNull();
+  expect(mascot.icon!.visibility).toBe("hidden");
+  expect(mascot.icon!.height).toBeGreaterThan(0);
+  expect(mascot.scrollWidth, "horizontal overflow").toBeLessThanOrEqual(mascot.viewportWidth);
 
   const collisions = await page.evaluate(findInkCollisions, {
-    arts: [{ box: ghost.box, label: "404 ghost" }],
+    arts: [{ box: mascot.box, label: "404 mascot" }],
     exclude: "",
     root: ".rda-not-found-page",
     tolerance: 1,
   });
 
   recordCollisions(testInfo, title, collisions);
-  expect(collisions, "404 ghost overlaps the heading, icon or copy").toEqual([]);
+  expect(collisions, "404 mascot overlaps the heading, icon or copy").toEqual([]);
 }
 
-async function assertNoNotFoundGhost(page: Page) {
-  const ghost = (await notFoundGhost(page))!;
+async function assertNoNotFoundMascot(page: Page) {
+  const mascot = (await notFoundMascot(page))!;
 
-  expect(ghost.content).toBe("none");
-  expect(ghost.beam.content).toBe("none");
-  expect(ghost.icon).not.toBeNull();
-  expect(ghost.icon!.visibility).toBe("visible");
+  expect(mascot.content).toBe("none");
+  expect(mascot.after).toBe("none");
+  expect(mascot.icon).not.toBeNull();
+  expect(mascot.icon!.visibility).toBe("visible");
 }
 
-test.describe("seasonal theme: 404 ghost", () => {
+test.describe("seasonal theme: 404 mascot", () => {
   test.skip(RETIRED, RETIRED_REASON);
-  // No bob or beam sweep: geometry is read from the resting position.
+  // No strut: geometry is read from the resting position.
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 
   test.beforeEach(async ({ context }) => {
@@ -2115,15 +2123,15 @@ test.describe("seasonal theme: 404 ghost", () => {
 
   for (const { label, path } of notFoundPaths) {
     for (const width of [320, 390, 1280]) {
-      test(`ghost with lantern floats above the heading at ${label}, ${width}px`, async ({ page }, testInfo) => {
+      test(`turkey-tooth stands above the heading at ${label}, ${width}px`, async ({ page }, testInfo) => {
         await page.setViewportSize({ height: width < 768 ? 760 : 900, width });
-        const response = await openAt(page, path, MID_OCTOBER);
+        const response = await openAt(page, path, MID_SEASON);
 
         expect(response?.status()).toBe(404);
         await expect(page.getByText("File not found", { exact: false }).first()).toBeVisible();
         // Next serves 404s as a client-rendered shell: the fallback applies the season.
-        await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "halloween");
-        await assertNotFoundGhost(page, testInfo, `404 ${label} @${width}`, true);
+        await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+        await assertNotFoundMascot(page, testInfo, `404 ${label} @${width}`, true);
         expect(await runningSeasonalAnimations(page)).toEqual([]);
         await expect(page.getByText("File not found", { exact: false }).first()).toBeVisible();
       });
@@ -2131,7 +2139,7 @@ test.describe("seasonal theme: 404 ghost", () => {
   }
 });
 
-test.describe("seasonal theme: 404 ghost with motion", () => {
+test.describe("seasonal theme: 404 mascot with motion", () => {
   test.skip(RETIRED, RETIRED_REASON);
 
   test.beforeEach(async ({ context }) => {
@@ -2139,48 +2147,28 @@ test.describe("seasonal theme: 404 ghost with motion", () => {
   });
 
   for (const width of [320, 390, 1280]) {
-    test(`animated lantern and sweeping beam never overflow at ${width}px`, async ({ page }, testInfo) => {
+    test(`the animated turkey-tooth struts without overflow at ${width}px`, async ({ page }, testInfo) => {
       await page.setViewportSize({ height: width < 768 ? 760 : 900, width });
-      const response = await openAt(page, "/registration", MID_OCTOBER);
+      const response = await openAt(page, "/registration", MID_SEASON);
 
       expect(response?.status()).toBe(404);
-      await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "halloween");
-      await expect.poll(async () => (await notFoundGhost(page))?.content).not.toBe("none");
+      await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+      await expect.poll(async () => (await notFoundMascot(page))?.content).not.toBe("none");
 
       const names = (await runningSeasonalAnimations(page)).map(({ name }) => name).sort();
-      expect(names).toEqual(["rda-seasonal-beam", "rda-seasonal-bob"]);
+      expect(names).toEqual(["rda-seasonal-strut"]);
 
-      // Pin the bob at rest, then check the beam at both ends of its sweep.
-      const extremes = await page.evaluate(() => {
-        const results: Array<{ rotate: string; scrollWidth: number; viewportWidth: number }> = [];
-        const h1 = document.querySelector(".rda-not-found-content h1")!;
-        const animations = document.getAnimations() as CSSAnimation[];
-        const bob = animations.find((animation) => animation.animationName === "rda-seasonal-bob");
-        const beam = animations.find((animation) => animation.animationName === "rda-seasonal-beam")!;
-
-        bob?.pause();
-        if (bob) bob.currentTime = 0;
-        beam.pause();
-
-        for (const time of [0, Number(beam.effect!.getComputedTiming().duration)]) {
-          beam.currentTime = time;
-          results.push({
-            rotate: window.getComputedStyle(h1, "::after").rotate,
-            scrollWidth: document.documentElement.scrollWidth,
-            viewportWidth: document.documentElement.clientWidth,
-          });
+      // Pin the strut at rest before measuring.
+      await page.evaluate(() => {
+        for (const animation of document.getAnimations() as CSSAnimation[]) {
+          if (animation.animationName === "rda-seasonal-strut") {
+            animation.pause();
+            animation.currentTime = 0;
+          }
         }
-
-        return results;
       });
 
-      expect(extremes.map(({ rotate }) => rotate)).toEqual(["30deg", "-26deg"]);
-
-      for (const extreme of extremes) {
-        expect(extreme.scrollWidth, `overflow at ${extreme.rotate}`).toBeLessThanOrEqual(extreme.viewportWidth);
-      }
-
-      await assertNotFoundGhost(page, testInfo, `404 motion @${width}`, false);
+      await assertNotFoundMascot(page, testInfo, `404 motion @${width}`, false);
     });
   }
 });
@@ -2190,34 +2178,34 @@ test.describe("seasonal theme: 404 out of season", () => {
     await isolate(context);
   });
 
-  test("no ghost after the season", async ({ page }) => {
+  test("no mascot after the season", async ({ page }) => {
     await openAt(page, "/registration", AFTER_SEASON);
 
     await expect(page.getByText("File not found", { exact: false }).first()).toBeVisible();
     // Give the client fallback a chance to (wrongly) switch the season on.
     await page.waitForTimeout(500);
     expect(await seasonAttribute(page)).toBeNull();
-    await assertNoNotFoundGhost(page);
+    await assertNoNotFoundMascot(page);
   });
 
-  test("no ghost when opted out mid-October", async ({ context, page }) => {
+  test("no mascot when opted out mid-season", async ({ context, page }) => {
     await suppressSeasonalTheme(context);
-    await openAt(page, "/registration", MID_OCTOBER);
+    await openAt(page, "/registration", MID_SEASON);
 
     await expect(page.getByText("File not found", { exact: false }).first()).toBeVisible();
     await page.waitForTimeout(500);
     expect(await seasonAttribute(page)).toBeNull();
-    await assertNoNotFoundGhost(page);
+    await assertNoNotFoundMascot(page);
   });
 });
 
 test.describe("seasonal theme: opt-out and parity", () => {
-  test("localStorage opt-out keeps decorations off mid-October", async ({ context, page }) => {
+  test("localStorage opt-out keeps decorations off mid-season", async ({ context, page }) => {
     await isolate(context);
     await suppressSeasonalTheme(context);
     const assetRequests = trackSeasonalAssetRequests(page);
 
-    await openAt(page, "/", MID_OCTOBER);
+    await openAt(page, "/", MID_SEASON);
     await assertSeasonOff(page, assetRequests);
     expect(await page.evaluate((key) => window.localStorage.getItem(key), SEASONAL_OPT_OUT_STORAGE_KEY)).toBe(
       SEASONAL_OPT_OUT_VALUE,
@@ -2236,10 +2224,10 @@ test.describe("seasonal theme: opt-out and parity", () => {
     await page.waitForTimeout(500);
 
     // The markup is there (prerendered) but inert: display none, no peek spent, no loops.
-    for (const kind of ["banner", "fog", "footer"]) {
+    for (const kind of ["banner", "drift", "footer"]) {
       await expect(page.locator(`[data-rda-seasonal="${kind}"]`)).toBeHidden();
     }
-    expect(await page.locator(".rda-seasonal-moon").evaluate((element) => window.getComputedStyle(element).display)).toBe(
+    expect(await page.locator(".rda-seasonal-sun").evaluate((element) => window.getComputedStyle(element).display)).toBe(
       "none",
     );
     expect(await peekKeyValue(page)).toBeNull();
@@ -2252,7 +2240,7 @@ test.describe("seasonal theme: opt-out and parity", () => {
     await expect(page.getByText("File not found", { exact: false }).first()).toBeVisible();
     await page.waitForTimeout(500);
     expect(await seasonAttribute(page)).toBeNull();
-    await assertNoNotFoundGhost(page);
+    await assertNoNotFoundMascot(page);
   });
 
   test("decorations add no text to the homepage", async ({ browser }) => {
@@ -2271,8 +2259,8 @@ test.describe("seasonal theme: opt-out and parity", () => {
 
         const page = await context.newPage();
 
-        await openAt(page, "/", MID_OCTOBER);
-        expect(await seasonAttribute(page)).toBe(seasonal ? "halloween" : null);
+        await openAt(page, "/", MID_SEASON);
+        expect(await seasonAttribute(page)).toBe(seasonal ? "thanksgiving" : null);
         await scrollToBottom(page);
 
         return page.evaluate(() => document.body.innerText.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim());
@@ -2291,7 +2279,7 @@ test.describe("seasonal theme: opt-out and parity", () => {
 
 test.describe("seasonal theme: layout safety", () => {
   test.skip(RETIRED, RETIRED_REASON);
-  // Reduced motion stops the ghost's bob and the pumpkin pop, so boxes are stable.
+  // Reduced motion stops the mascot's strut and the divider leaves, so boxes are stable.
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 
   test.beforeEach(async ({ context }) => {
@@ -2300,11 +2288,11 @@ test.describe("seasonal theme: layout safety", () => {
 
   test("the collision check itself catches text, controls and hairlines under the art", async ({ page }) => {
     await page.setViewportSize({ height: 900, width: 1280 });
-    await openAt(page, "/contact", MID_OCTOBER);
+    await openAt(page, "/contact", MID_SEASON);
     await scrollToBottom(page);
 
-    const ghost = (await page.locator(".rda-seasonal-ghost-art").boundingBox())!;
-    const box = { bottom: ghost.y + ghost.height, left: ghost.x, right: ghost.x + ghost.width, top: ghost.y };
+    const art = (await page.locator(".rda-seasonal-mascot-art").boundingBox())!;
+    const box = { bottom: art.y + art.height, left: art.x, right: art.x + art.width, top: art.y };
     const probe = async (html: string, style: string) => {
       await page.evaluate(
         ({ html, rect, style }) => {
@@ -2320,7 +2308,7 @@ test.describe("seasonal theme: layout safety", () => {
         { html, rect: box, style },
       );
       const hits = await page.evaluate(findInkCollisions, {
-        arts: [{ box, label: "ghost" }],
+        arts: [{ box, label: "mascot" }],
         exclude: "[data-rda-seasonal]",
         root: "#seasonal-qa-probe",
         tolerance: 1,
@@ -2344,55 +2332,39 @@ test.describe("seasonal theme: layout safety", () => {
 
   const matrix = [
     ...layoutWidths.flatMap((viewport) => layoutRoutes.map((path) => ({ path, peak: false, viewport }))),
-    // The peak day's bigger lantern halo, on the busiest footers.
+    // The peak day's pie steam, on the busiest footers.
     ...layoutWidths.flatMap((viewport) => ["/", "/contact", "/faqs-1"].map((path) => ({ path, peak: true, viewport }))),
   ];
 
   for (const { path, peak, viewport } of matrix) {
     test(`footer decor clears page ink on ${path} at ${viewport.width}px${peak ? " (peak day)" : ""}`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport);
-      const response = await openAt(page, path, peak ? PEAK_DAY : MID_OCTOBER);
+      const response = await openAt(page, path, peak ? PEAK_DAY : MID_SEASON);
 
       expect(response?.status()).toBe(200);
       await scrollToBottom(page);
       await scrollToBottom(page);
-      await ghostButton(page).scrollIntoViewIfNeeded();
-      await expect(ghostButton(page)).toBeVisible();
+      await mascotButton(page).scrollIntoViewIfNeeded();
+      await expect(mascotButton(page)).toBeVisible();
 
       expect(await page.locator("html").getAttribute(SEASONAL_PEAK_ATTRIBUTE)).toBe(peak ? "" : null);
 
       const arts = await page.evaluate(() =>
-        Array.from(
-          document.querySelectorAll<Element>(
-            ".rda-seasonal-footer-pumpkin, .rda-seasonal-ghost-art, .rda-seasonal-lantern-glow",
-          ),
-        ).map((element, index) => {
-          const rect = element.getBoundingClientRect();
-          const kind = element.classList.contains("rda-seasonal-ghost-art")
-            ? "ghost"
-            : element.classList.contains("rda-seasonal-lantern-glow")
-              ? "glow"
-              : "pumpkin";
-          // The halo is a closest-side radial gradient: its visible light is
-          // the inscribed ellipse, so test the box that ellipse fills
-          // (inset by (1 - 1/sqrt 2) / 2 of each side), not the corners.
-          const inset = kind === "glow" ? (1 - Math.SQRT1_2) / 2 : 0;
+        Array.from(document.querySelectorAll<Element>(".rda-seasonal-harvest-art, .rda-seasonal-mascot-art")).map(
+          (element, index) => {
+            const rect = element.getBoundingClientRect();
+            const kind = element.classList.contains("rda-seasonal-mascot-art") ? "mascot" : "harvest";
 
-          return {
-            box: {
-              bottom: rect.bottom - rect.height * inset,
-              left: rect.left + rect.width * inset,
-              right: rect.right - rect.width * inset,
-              top: rect.top + rect.height * inset,
-            },
-            label: `${kind}-${index + 1}`,
-          };
-        }),
+            return {
+              box: { bottom: rect.bottom, left: rect.left, right: rect.right, top: rect.top },
+              label: `${kind}-${index + 1}`,
+            };
+          },
+        ),
       );
 
-      expect(arts.filter(({ label }) => label.startsWith("pumpkin")).length).toBe(3);
-      expect(arts.filter(({ label }) => label.startsWith("ghost")).length).toBe(1);
-      expect(arts.filter(({ label }) => label.startsWith("glow")).length).toBe(2);
+      expect(arts.filter(({ label }) => label.startsWith("harvest")).length).toBe(3);
+      expect(arts.filter(({ label }) => label.startsWith("mascot")).length).toBe(1);
 
       const collisions = await page.evaluate(findInkCollisions, {
         arts,
@@ -2410,9 +2382,9 @@ test.describe("seasonal theme: layout safety", () => {
         const overlaps = (a: { bottom: number; left: number; right: number; top: number }, b: DOMRect) =>
           Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
           Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
-        // Pumpkins take the pointer (hover wobble), so nothing interactive may sit under them.
+        // The harvest takes the pointer (hover wobble), so nothing interactive may sit under it.
         const interactive = 'a[href], button, input, select, textarea, label, summary, [role="button"], [tabindex]';
-        const pumpkinsCoverControls = Array.from(document.querySelectorAll(".rda-seasonal-pumpkin-slot")).some((slot) => {
+        const harvestCoversControls = Array.from(document.querySelectorAll(".rda-seasonal-harvest-slot")).some((slot) => {
           const rect = slot.getBoundingClientRect();
           const points = [
             [rect.left + rect.width / 2, rect.top + rect.height / 2],
@@ -2435,7 +2407,7 @@ test.describe("seasonal theme: layout safety", () => {
           decorPointerEvents: decor ? window.getComputedStyle(decor).pointerEvents : "missing",
           fabCollision: Boolean(fabRect && artBoxes.some(({ box }) => overlaps(box, fabRect))),
           innerWidth: window.innerWidth,
-          pumpkinsCoverControls,
+          harvestCoversControls,
           scrollWidth: document.documentElement.scrollWidth,
         };
       }, arts);
@@ -2443,7 +2415,7 @@ test.describe("seasonal theme: layout safety", () => {
       expect.soft(report.scrollWidth, "horizontal overflow").toBeLessThanOrEqual(report.innerWidth);
       expect.soft(report.artOutsideViewport, "decor art leaves the viewport").toBe(false);
       expect.soft(report.decorPointerEvents).toBe("none");
-      expect.soft(report.pumpkinsCoverControls, "pumpkins must not cover links or controls").toBe(false);
+      expect.soft(report.harvestCoversControls, "the harvest must not cover links or controls").toBe(false);
       expect.soft(report.fabCollision, "footer decor overlaps the WhatsApp button").toBe(false);
       expect.soft(collisions, "footer decor overlaps page ink").toEqual([]);
     });
@@ -2471,7 +2443,7 @@ test.describe("seasonal theme: runtime health", () => {
   }
 
   for (const { label, when } of [
-    { label: "mid-October", when: MID_OCTOBER },
+    { label: "mid-season", when: MID_SEASON },
     { label: "the peak day", when: PEAK_DAY },
   ]) {
     test(`homepage logs no errors or hydration warnings on ${label}`, async ({ page }) => {
@@ -2479,17 +2451,17 @@ test.describe("seasonal theme: runtime health", () => {
 
       await page.setViewportSize({ height: 900, width: 1280 });
       await openAt(page, "/", when);
-      expect(await seasonAttribute(page)).toBe("halloween");
+      expect(await seasonAttribute(page)).toBe("thanksgiving");
       await page.locator(".rda-home-hero-copy").hover();
       await scrollToFooterDecor(page);
-      await expect.poll(() => page.locator(".rda-seasonal-ghost-button").getAttribute("data-rda-ghost")).not.toBe(
+      await expect.poll(() => page.locator(".rda-seasonal-mascot-button").getAttribute("data-rda-mascot")).not.toBe(
         "hiding",
       );
-      const art = (await page.locator(".rda-seasonal-ghost-art").boundingBox())!;
+      const art = (await page.locator(".rda-seasonal-mascot-art").boundingBox())!;
       await page.mouse.move(art.x + 200, art.y);
-      await releaseBats(page, () => ghostButton(page).click());
-      await ghostButton(page).click();
-      await ghostButton(page).click();
+      await tossLeaves(page, () => mascotButton(page).click());
+      await mascotButton(page).click();
+      await mascotButton(page).click();
       await page.waitForTimeout(2_500);
       // And another decorated page in the same session.
       await open(page, "/contact");
@@ -2504,7 +2476,7 @@ test.describe("seasonal theme: runtime health", () => {
     const problems = collectProblems(page);
 
     await openAt(page, "/registration", PEAK_DAY);
-    await expect.poll(async () => (await notFoundGhost(page))?.content).not.toBe("none");
+    await expect.poll(async () => (await notFoundMascot(page))?.content).not.toBe("none");
     await page.waitForTimeout(1_000);
 
     // The 404 status itself is logged as a failed resource load; nothing else may be.

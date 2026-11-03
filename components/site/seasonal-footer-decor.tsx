@@ -3,24 +3,18 @@
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { FlappingBat, GhostTooth, Pumpkin } from "@/components/site/seasonal/halloween-art";
+import { Acorn, Leaf, Pie, Pumpkin, TurkeyTooth } from "@/components/site/seasonal/thanksgiving-art";
 import { activeSeasonalTheme, getSeasonalPeekStorageKey } from "@/lib/site-seasonal";
 
-// Swooping flight paths for the easter-egg bats, from the ghost-tooth's head.
-const BAT_FLIGHTS = [
-  { bank: -12, delay: 0, path: "M0 0C-18 -26 -60 -30 -64 -70S-36 -126 -72 -150", size: 30 },
-  { bank: 6, delay: 80, path: "M0 0C10 -30 -20 -60 -6 -96S30 -150 4 -178", size: 26 },
-  { bank: 14, delay: 150, path: "M0 0C26 -18 70 -14 74 -56S40 -120 92 -146", size: 30 },
-  { bank: 20, delay: 230, path: "M0 0C34 -6 96 -10 118 -40S150 -86 176 -98", size: 22 },
+// Curved paths for the easter-egg leaves, tossed up from the mascot's fan.
+const LEAF_FLIGHTS = [
+  { delay: 0, kind: "maple", path: "M0 0C-18 -26 -60 -30 -64 -70S-36 -126 -72 -150", size: 24, spin: -540, tone: "pumpkin" },
+  { delay: 80, kind: "oak", path: "M0 0C10 -30 -20 -60 -6 -96S30 -150 4 -178", size: 20, spin: 420, tone: "gold" },
+  { delay: 150, kind: "maple", path: "M0 0C26 -18 70 -14 74 -56S40 -120 92 -146", size: 24, spin: 600, tone: "cranberry" },
+  { delay: 230, kind: "oak", path: "M0 0C34 -6 96 -10 118 -40S150 -86 176 -98", size: 18, spin: -480, tone: "pumpkin" },
 ] as const;
 
-const MIST_PUFFS = [
-  { delay: 0, x: -14, y: 4 },
-  { delay: 60, x: 12, y: -2 },
-  { delay: 120, x: 0, y: -14 },
-] as const;
-
-const BAT_BURST_DURATION_MS = 2_000;
+const LEAF_BURST_DURATION_MS = 2_000;
 const SURPRISE_DURATION_MS = 700;
 const PEEK_DURATION_MS = 1_400;
 const HINT_DELAY_MS = 2_600;
@@ -34,17 +28,18 @@ const BLINK_GAP_RANGE_MS = 4_200;
 const LOOK_RANGE_X = 2.2;
 const LOOK_RANGE_Y = 1.6;
 
-type GhostPhase = "hiding" | "hint" | "idle" | "peek";
+type MascotPhase = "hiding" | "hint" | "idle" | "peek";
 
 /**
- * Lit jack-o'-lanterns and the ghost-tooth mascot on the footer's top edge.
- * The ghost blinks, glances at the pointer, peeks out from behind the pumpkins
- * once per session, and is the season's easter egg: pressing it releases bats.
- * Hidden by CSS unless <html data-rda-season="halloween"> is set.
+ * A little harvest (acorn, pumpkin, pie) and the turkey-tooth mascot on the
+ * footer's top edge. The mascot blinks, glances at the pointer, peeks out from
+ * behind the harvest once per session, and is the season's easter egg:
+ * pressing it fans its feathers and tosses autumn leaves into the air.
+ * Hidden by CSS unless <html data-rda-season="thanksgiving"> is set.
  */
 export function SeasonalFooterDecor() {
   const [burst, setBurst] = useState(0);
-  const [phase, setPhase] = useState<GhostPhase>("idle");
+  const [phase, setPhase] = useState<MascotPhase>("idle");
   const [surprised, setSurprised] = useState(false);
   const [spin, setSpin] = useState(0);
   const [awake, setAwake] = useState(false);
@@ -52,7 +47,7 @@ export function SeasonalFooterDecor() {
   const root = useRef<HTMLDivElement>(null);
   const presses = useRef(0);
   const interacted = useRef(false);
-  const phaseRef = useRef<GhostPhase>("idle");
+  const phaseRef = useRef<MascotPhase>("idle");
   const timers = useRef(new Set<number>());
   const burstTimer = useRef<number | undefined>(undefined);
   const surpriseTimer = useRef<number | undefined>(undefined);
@@ -65,7 +60,7 @@ export function SeasonalFooterDecor() {
     timers.current.add(id);
   }
 
-  function changePhase(next: GhostPhase) {
+  function changePhase(next: MascotPhase) {
     phaseRef.current = next;
     setPhase(next);
   }
@@ -123,11 +118,11 @@ export function SeasonalFooterDecor() {
     );
     observer.observe(element);
 
-    const art = () => element.querySelector<SVGElement>(".rda-seasonal-ghost-art");
+    const art = () => element.querySelector<SVGElement>(".rda-seasonal-mascot-art");
     function look(x: number, y: number) {
       const svg = art();
-      svg?.style.setProperty("--rda-ghost-look-x", `${x.toFixed(2)}px`);
-      svg?.style.setProperty("--rda-ghost-look-y", `${y.toFixed(2)}px`);
+      svg?.style.setProperty("--rda-mascot-look-x", `${x.toFixed(2)}px`);
+      svg?.style.setProperty("--rda-mascot-look-y", `${y.toFixed(2)}px`);
     }
 
     // Eyes follow a mouse or trackpad pointer while the footer is on screen.
@@ -174,7 +169,7 @@ export function SeasonalFooterDecor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Blinks are scheduled here rather than as an endless CSS loop, so the ghost
+  // Blinks are scheduled here rather than as an endless CSS loop, so the mascot
   // costs nothing between blinks. Only while the footer is near the viewport.
   useEffect(() => {
     if (!awake || prefersReducedMotion()) return;
@@ -202,7 +197,7 @@ export function SeasonalFooterDecor() {
     if (phaseRef.current === "hiding") peek();
   }
 
-  function releaseBats() {
+  function tossLeaves() {
     interacted.current = true;
     if (phaseRef.current === "hiding") peek();
     if (phaseRef.current !== "idle") changePhase("idle");
@@ -214,7 +209,7 @@ export function SeasonalFooterDecor() {
     window.clearTimeout(surpriseTimer.current);
     surpriseTimer.current = window.setTimeout(() => setSurprised(false), SURPRISE_DURATION_MS);
     window.clearTimeout(burstTimer.current);
-    burstTimer.current = window.setTimeout(() => setBurst(0), BAT_BURST_DURATION_MS);
+    burstTimer.current = window.setTimeout(() => setBurst(0), LEAF_BURST_DURATION_MS);
   }
 
   return (
@@ -224,69 +219,54 @@ export function SeasonalFooterDecor() {
       data-rda-seasonal="footer"
       ref={root}
     >
-      <span aria-hidden="true" className="rda-seasonal-footer-pumpkins">
-        <span className="rda-seasonal-pumpkin-slot rda-seasonal-pumpkin-slot-small">
-          <Pumpkin className="rda-seasonal-footer-pumpkin" />
+      <span aria-hidden="true" className="rda-seasonal-harvest">
+        <span className="rda-seasonal-harvest-slot rda-seasonal-harvest-acorn">
+          <Acorn className="rda-seasonal-harvest-art" />
         </span>
-        <span className="rda-seasonal-pumpkin-slot rda-seasonal-pumpkin-slot-large">
-          <span className="rda-seasonal-lantern-glow" />
-          <Pumpkin className="rda-seasonal-footer-pumpkin" variant="smile" />
+        <span className="rda-seasonal-harvest-slot rda-seasonal-harvest-pumpkin">
+          <Pumpkin className="rda-seasonal-harvest-art" />
         </span>
-        <span className="rda-seasonal-pumpkin-slot rda-seasonal-pumpkin-slot-medium">
-          <span className="rda-seasonal-lantern-glow" />
-          <Pumpkin className="rda-seasonal-footer-pumpkin" variant="grin" />
+        <span className="rda-seasonal-harvest-slot rda-seasonal-harvest-pie">
+          <Pie className="rda-seasonal-harvest-art" />
         </span>
       </span>
       <button
-        aria-label="Release the Halloween bats"
-        className="rda-seasonal-ghost-button"
+        aria-label="Toss the autumn leaves"
+        className="rda-seasonal-mascot-button"
         data-rda-blink={blinking ? "true" : undefined}
-        // Alternates per press so the "boo" squash replays on every press.
+        // Alternates per press so the "gobble" squash replays on every press.
         data-rda-bursting={burst > 0 ? (burst % 2 ? "odd" : "even") : undefined}
-        data-rda-ghost={phase}
+        data-rda-mascot={phase}
         data-rda-mood={surprised ? "surprised" : undefined}
         data-rda-seasonal-egg="true"
         data-rda-spin={spin > 0 ? (spin % 2 ? "odd" : "even") : undefined}
-        onClick={releaseBats}
+        onClick={tossLeaves}
         onFocus={revealIfHiding}
         onPointerEnter={revealIfHiding}
         type="button"
       >
-        <span className="rda-seasonal-ghost-stage">
-          <span className="rda-seasonal-ghost rda-seasonal-footer-ghost">
-            <GhostTooth className="rda-seasonal-ghost-art" />
+        <span className="rda-seasonal-mascot-stage">
+          <span className="rda-seasonal-mascot">
+            <TurkeyTooth className="rda-seasonal-mascot-art" />
           </span>
         </span>
       </button>
       {burst > 0 ? (
-        <span aria-hidden="true" className="rda-seasonal-bat-burst" key={burst}>
-          {MIST_PUFFS.map((puff, index) => (
+        <span aria-hidden="true" className="rda-seasonal-leaf-burst" key={burst}>
+          {LEAF_FLIGHTS.map((flight, index) => (
             <span
-              className="rda-seasonal-mist-puff"
-              key={`mist-${index}`}
+              className="rda-seasonal-flying-leaf"
+              key={`leaf-${index}`}
               style={
                 {
-                  "--rda-mist-delay": `${puff.delay}ms`,
-                  "--rda-mist-x": `${puff.x}px`,
-                  "--rda-mist-y": `${puff.y}px`,
-                } as CSSProperties
-              }
-            />
-          ))}
-          {BAT_FLIGHTS.map((flight, index) => (
-            <span
-              className="rda-seasonal-bat"
-              key={`bat-${index}`}
-              style={
-                {
-                  "--rda-bat-bank": `${flight.bank}deg`,
-                  "--rda-bat-delay": `${flight.delay}ms`,
-                  "--rda-bat-size": `${flight.size}px`,
+                  "--rda-leaf-delay": `${flight.delay}ms`,
+                  "--rda-leaf-size": `${flight.size}px`,
+                  "--rda-leaf-spin": `${flight.spin}deg`,
                   offsetPath: `path("${flight.path}")`,
                 } as CSSProperties
               }
             >
-              <FlappingBat className="rda-seasonal-flapping-bat" />
+              <Leaf className="rda-seasonal-flying-leaf-art" kind={flight.kind} tone={flight.tone} />
             </span>
           ))}
         </span>

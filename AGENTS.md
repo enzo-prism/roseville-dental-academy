@@ -21,7 +21,7 @@ Keep these contracts separate:
 - Keep `snapshot/live/` as the migration/reference source; it only renders the `/m/*` utility screens now.
 - Keep React shell behavior in stable components instead of injected repair scripts or third-party GoDaddy runtime code.
 - The WhatsApp click-to-chat button (`components/site/whatsapp-fab.tsx`, mounted in `app/layout.tsx`) is the only persistent floating control. It owns the bottom-right corner on desktop, tablet, and mobile, with safe-area insets, and stays **below** dialogs/mobile menus. Stack order: page < FAB (`--rda-shell-z-fab`) < sheet **overlay** (`--rda-shell-z-dialog-overlay`) < sheet/menu **content** (`--rda-shell-z-dialog` / `--rda-shell-z-mobile-menu`). Never put the overlay above the panel — that blurs the nav and blocks taps. Hide the FAB when `body.rda-mobile-menu-open` or `body.is-mobile-nav-open`. It is hidden from QA visual/content baselines in `tests/support/qa-helpers.ts`. Do not remount an ElevenLabs (or other) chat widget.
-- Seasonal decorations (currently Halloween, `lib/site-seasonal.ts`) follow the "Seasonal Layer" rules in `/DESIGN.md`: gated by `<html data-rda-season>` from the `<head>` script, rendered only inside `[data-rda-seasonal-scope]` (public shells + 404; never `/lp/*`, utility/auth, or private routes), decorative and text-free, with the footer ghost-tooth button as the only control. QA isolation opts out via `localStorage["rda-seasonal-theme"] = "off"` and hides `[data-rda-seasonal]` in `tests/support/qa-helpers.ts`, with the mirrored constants and helpers for live capture in `scripts/live-clone-shared.mjs` (used by `scripts/refresh-live-baselines.mjs` and `scripts/capture-live-snapshot.mjs`); keep those mirrored. Run `pnpm test:seasonal` when touching it.
+- Seasonal decorations (currently Thanksgiving, `lib/site-seasonal.ts`) follow the "Seasonal Layer" rules in `/DESIGN.md`: gated by `<html data-rda-season>` from the `<head>` script, rendered only inside `[data-rda-seasonal-scope]` (public shells + 404; never `/lp/*`, utility/auth, or private routes), decorative and text-free, with the footer turkey-tooth button as the only control. QA isolation opts out via `localStorage["rda-seasonal-theme"] = "off"` and hides `[data-rda-seasonal]` in `tests/support/qa-helpers.ts`, with the mirrored constants and helpers for live capture in `scripts/live-clone-shared.mjs` (used by `scripts/refresh-live-baselines.mjs` and `scripts/capture-live-snapshot.mjs`); keep those mirrored. Run `pnpm test:seasonal` when touching it.
 - Prefer shadcn primitives and existing shell components before creating new patterns.
 - Do not introduce raw hex colors, typography families, radii, or spacing scales casually. If a new visual token is truly needed, update `/DESIGN.md` in the same change.
 - Use `.agents/skills/ui-design-system/SKILL.md` for recurring frontend/design tasks.
@@ -61,7 +61,7 @@ This is a single Next.js 16 app (App Router). Standard commands live in `README.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
