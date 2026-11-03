@@ -3871,8 +3871,9 @@ html.rda-motion .ac-hero-dot-fill[data-running="true"] {
     min-height: 100%;
   }
 
+  /* Six cards (five certifications + the front desk program) as two rows of three. */
   .ac-course-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -16,6 +16,7 @@ import {
   FileText,
   GraduationCap,
   HandHeart,
+  Headset,
   HeartPulse,
   Laptop,
   ListChecks,
@@ -53,6 +54,7 @@ import {
   getAvailableCourseDates,
   getUpcomingScheduleMonths,
 } from "@/lib/course-schedule";
+import { frontOfficeProgram } from "@/lib/front-office-program";
 import { homepageCourseSections } from "@/lib/homepage-course-sections";
 import {
   boardApprovalHighlights,
@@ -532,7 +534,7 @@ function ProgramsSection() {
                 style={{ "--reveal-delay": index } as CSSProperties}
               >
                 <span className="ac-course-card-media ac-photo">
-                  <Image alt={course.image.alt} fill sizes="(max-width: 760px) 100vw, 20vw" src={course.image.src} />
+                  <Image alt={course.image.alt} fill sizes="(max-width: 760px) 100vw, (max-width: 1023px) 34vw, 30vw" src={course.image.src} />
                   {course.approval ? (
                     <span className="ac-course-badge">
                       <BadgeCheck aria-hidden="true" />
@@ -559,6 +561,39 @@ function ProgramsSection() {
               </Link>
             );
           })}
+          <Link
+            className="ac-course-card ac-card ac-card-hover"
+            data-reveal=""
+            data-rda-home-front-desk-card="true"
+            href={frontOfficeProgram.path}
+            style={{ "--reveal-delay": certificationCourses.length } as CSSProperties}
+          >
+            <span className="ac-course-card-media ac-photo">
+              <Image
+                alt="Roseville Dental Academy students celebrating graduation outside the academy."
+                fill
+                sizes="(max-width: 760px) 100vw, (max-width: 1023px) 34vw, 30vw"
+                src="/assets/live/drive/certificate-celebration.jpg"
+              />
+              <span className="ac-course-badge">New program</span>
+            </span>
+            <span className="ac-course-card-body">
+              <span className="ac-icon-tile">
+                <Headset aria-hidden="true" />
+              </span>
+              <span className="ac-course-card-title">{frontOfficeProgram.shortName}</span>
+              <span className="ac-course-card-blurb">{frontOfficeProgram.blurb}</span>
+              <span className="ac-course-card-meta">
+                <span>{frontOfficeProgram.facts.duration}</span>
+                <strong>{frontOfficeProgram.facts.tuition}</strong>
+              </span>
+              <span className="ac-course-card-next">
+                <CalendarDays aria-hidden="true" />
+                {`Next class ${frontOfficeProgram.facts.firstClassShort}`}
+                <ArrowUpRight aria-hidden="true" className="ac-course-card-arrow" />
+              </span>
+            </span>
+          </Link>
         </div>
 
         <div className="ac-extra-grid">
