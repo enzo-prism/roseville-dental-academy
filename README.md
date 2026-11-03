@@ -4,7 +4,7 @@ This repo is the production Next.js site for [rosevilledentalacademy.com](https:
 
 Since the October 2026 redesign ("Chairside", see `DESIGN.md`) the site is React-owned end to end:
 
-- A photo-led design built around students in action, the instructor team, and real Google reviews, with light and dark mode (system default plus a header toggle), scroll motion, and a date-gated Halloween layer.
+- A photo-led design built around students in action, the instructor team, and real Google reviews, with light and dark mode (system default plus a header toggle), scroll motion, and a date-gated seasonal layer (Thanksgiving in November 2026).
 - React owns the shell (header with Courses mega menu, mobile sheet, footer, WhatsApp click-to-chat button) and every public page: home, course pages, instructors, photos, the `/reviews` page, contact, FAQs, journey, resources, and ad landers. There is no cookie banner and no ElevenLabs chat widget.
 - Only the `/m/*` account screens still render sanitized GoDaddy snapshot HTML from `snapshot/live/`.
 - All public lead forms share one form kit, including the required "How did you hear about us?" question.
@@ -25,7 +25,7 @@ runs the isolated pilot/student fixture suites; `pnpm preview:student-enrollment
 - `snapshot/live/html/*.html` contains frozen source pages; only the `/m/*` utility screens still render from them.
 - `public/__live/` and `public/assets/live/` contain mirrored live assets.
 - `tests/baselines/live/` contains committed content and visual baselines.
-- `lib/site-seasonal.ts` + `components/site/seasonal-*.tsx` are the date-gated seasonal decoration layer (Halloween, October 1–31 Pacific). A `<head>` script switches it on and off by the academy's calendar day without a redeploy; rules live in the "Seasonal Layer" section of `DESIGN.md`, and `pnpm test:seasonal` covers it.
+- `lib/site-seasonal.ts` + `components/site/seasonal-*.tsx` are the date-gated seasonal decoration layer (Thanksgiving, November 1–30 Pacific, peaking on Thanksgiving Day, Nov 26). A `<head>` script switches it on and off by the academy's calendar day without a redeploy; rules live in the "Seasonal Layer" section of `DESIGN.md`, and `pnpm test:seasonal` covers it.
 - `components/site/structured-data.tsx` emits all JSON-LD (Organization/LocalBusiness, WebSite, Course list, Course, FAQ, Breadcrumb, Article). Google-sourced testimonials remain visible content but are intentionally omitted from review schema.
 - `lib/resource-articles.ts` + `app/resources/**` are the indexable `/resources` content hub (SEO guides). See [docs/seo.md](docs/seo.md).
 

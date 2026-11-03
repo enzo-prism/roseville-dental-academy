@@ -37,7 +37,7 @@ export function LeadFormSuccess({ copy, title }: { copy: string; title: string }
 
   return (
     <div className="ac-success" data-rda-lead-form-success="true" role="status">
-      {/* Confetti is decorative; during the Halloween season it turns pumpkin-colored. */}
+      {/* Confetti is decorative; during the Thanksgiving season it turns harvest-colored. */}
       <span aria-hidden="true" className="ac-confetti">
         {Array.from({ length: CONFETTI_PIECES }, (_, index) => (
           <span key={index} style={{ "--i": index } as CSSProperties} />

@@ -136,7 +136,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1400 } });
   // The live Next site renders seasonal decorations by the calendar; never
-  // freeze them (or the ghost-tooth button markup) into snapshot/live.
+  // freeze them (or the mascot button markup) into snapshot/live.
   await suppressSeasonalTheme(page);
 
   const recordAsset = (candidate) => {
