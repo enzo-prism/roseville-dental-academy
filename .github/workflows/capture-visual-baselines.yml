@@ -50,7 +50,7 @@ jobs:
       - name: Capture visual baselines from the local production build
         env:
           CI: "true"
-          BASELINE_CAPTURE_ONLY: visual
+          BASELINE_CAPTURE_ONLY: content
           BASELINE_CAPTURE_ORIGIN: http://127.0.0.1:3100
         run: |
           pnpm start --hostname 127.0.0.1 --port 3100 &
@@ -61,7 +61,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "baselines/capture-home-baseline-pr78"
-          git add tests/baselines/live/visual
+          git checkout -b "baselines/capture-home-baseline-pr78-content"
+          git add tests/baselines/live/content
           git commit -m "Captured visual baselines from run $GITHUB_RUN_ID at $GITHUB_SHA" || echo "no changes"
-          git push origin "baselines/capture-home-baseline-pr78"
+          git push origin "baselines/capture-home-baseline-pr78-content"
