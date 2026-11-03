@@ -6,13 +6,13 @@ name: Capture visual baselines
 # branch's production build. Download the `visual-baselines` artifact, review
 # every image, and commit it to tests/baselines/live/visual/.
 
+# Temporary helper branch: commits the captured PNGs to a review branch
+# instead of uploading an artifact. Delete this branch after use.
 on:
-  pull_request:
-    types: [labeled, synchronize]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   capture:
@@ -56,10 +56,11 @@ jobs:
           npx --yes wait-on@8.0.1 --timeout 120000 http://127.0.0.1:3100/manifest.webmanifest
           node scripts/refresh-live-baselines.mjs
 
-      - name: Upload baselines
-        uses: actions/upload-artifact@v4
-        with:
-          name: visual-baselines
-          path: |
-            tests/baselines/live/visual
-            tests/baselines/live/refresh-summary.json
+      - name: Commit captured baselines to a review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "baselines/capture-home-baseline-pr77"
+          git add tests/baselines/live/visual
+          git commit -m "Captured visual baselines from run $GITHUB_RUN_ID at $GITHUB_SHA" || echo "no changes"
+          git push origin "baselines/capture-home-baseline-pr77"
