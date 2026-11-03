@@ -43,7 +43,10 @@
         "seasonal-pumpkin": "#e8862e",
         "seasonal-pumpkin-deep": "#c2621a",
         "seasonal-stem": "#5f7a3a",
-        "seasonal-candle": "#ffd27a"
+        "seasonal-gold": "#edb547",
+        "seasonal-cranberry": "#a8323e",
+        "seasonal-bark": "#7a4a2b",
+        "seasonal-cream": "#fff6e6"
       },
       "fontFamily": {
         "display": [

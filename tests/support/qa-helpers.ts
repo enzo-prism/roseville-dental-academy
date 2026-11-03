@@ -162,8 +162,8 @@ export async function blockOpenAIAdsPixelNetwork(
 }
 
 // The seasonal decoration layer (lib/site-seasonal.ts) switches itself on by the
-// academy's calendar day, so a suite run in October would otherwise render
-// Halloween decorations into parity, visual and layout checks. Every QA context
+// academy's calendar day, so a suite run in season would otherwise render
+// seasonal decorations into parity, visual and layout checks. Every QA context
 // opts out through the same localStorage key real visitors can use; the layer's
 // own coverage lives in tests/seasonal-theme.spec.ts. Mirrored in
 // scripts/live-clone-shared.mjs for live baseline/snapshot capture.
@@ -817,8 +817,8 @@ async function hideFloatingThirdPartyWidgets(page: Page) {
       `,
     })
     .catch(() => undefined);
-  // Seasonal pseudo-element decorations (hero cobweb, divider pumpkins, banner
-  // bat) are gated by these <html> attributes rather than [data-rda-seasonal],
+  // Seasonal pseudo-element decorations (hero sprig and falling leaf, divider
+  // leaves) are gated by these <html> attributes rather than [data-rda-seasonal],
   // so drop them too in case the opt-out in suppressSeasonalTheme was bypassed.
   await page
     .evaluate((attributes) => {

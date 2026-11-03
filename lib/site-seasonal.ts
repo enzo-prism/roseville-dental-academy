@@ -8,7 +8,7 @@
 export const SEASONAL_THEME_ATTRIBUTE = "data-rda-season";
 export const SEASONAL_FLYBY_ATTRIBUTE = "data-rda-season-flyby";
 export const SEASONAL_SCOPE_ATTRIBUTE = "data-rda-seasonal-scope";
-// Set on the theme's peak day (Halloween itself) for a little extra flourish.
+// Set on the theme's peak day (Thanksgiving Day itself) for a little extra flourish.
 export const SEASONAL_PEAK_ATTRIBUTE = "data-rda-season-peak";
 
 // Setting this localStorage key to "off" keeps decorations off for a browser.
@@ -25,16 +25,17 @@ export type SeasonalTheme = {
   id: string;
   peakOn: string;
   startsOn: string;
-  theme: "halloween";
+  theme: "thanksgiving";
   timeZone: string;
 };
 
-export const halloween2026: SeasonalTheme = {
-  id: "halloween-2026",
-  theme: "halloween",
-  startsOn: "2026-10-01",
-  endsOn: "2026-10-31",
-  peakOn: "2026-10-31",
+// Thanksgiving is the fourth Thursday of November (2026-11-26).
+export const thanksgiving2026: SeasonalTheme = {
+  id: "thanksgiving-2026",
+  theme: "thanksgiving",
+  startsOn: "2026-11-01",
+  endsOn: "2026-11-30",
+  peakOn: "2026-11-26",
   timeZone: "America/Los_Angeles",
 };
 
@@ -59,8 +60,8 @@ export function isSeasonalThemeCurrent(theme: SeasonalTheme, now: Date) {
 // Evaluated when pages are built/rendered: the first deploy after the season
 // drops the <head> script and the footer markup. Replace with next year's
 // dates (and a new asset folder) to bring the layer back.
-export const activeSeasonalTheme: SeasonalTheme | null = isSeasonalThemeCurrent(halloween2026, new Date())
-  ? halloween2026
+export const activeSeasonalTheme: SeasonalTheme | null = isSeasonalThemeCurrent(thanksgiving2026, new Date())
+  ? thanksgiving2026
   : null;
 
 export function isSeasonalThemeActive(theme: SeasonalTheme, now: Date) {
@@ -72,7 +73,7 @@ export function getSeasonalFlybyStorageKey(theme: SeasonalTheme) {
   return `rda-seasonal-flyby:${theme.id}`;
 }
 
-/** sessionStorage key for the footer ghost's once-per-session peek-and-wiggle intro. */
+/** sessionStorage key for the footer mascot's once-per-session peek-and-wiggle intro. */
 export function getSeasonalPeekStorageKey(theme: SeasonalTheme) {
   return `rda-seasonal-peek:${theme.id}`;
 }
