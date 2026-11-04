@@ -1628,12 +1628,14 @@ html.rda-motion [data-reveal][data-revealed="true"] {
   text-align: left;
 }
 
-.rda-live-footer a {
+/* Text links only: buttons keep their own colors. Unscoped, the hover rule
+   outranked .ac-btn-light and turned "Ask About Classes" sky-on-sky. */
+.rda-live-footer a:not(.ac-btn) {
   color: var(--ink-foreground);
   text-decoration: none;
 }
 
-.rda-live-footer a:hover {
+.rda-live-footer a:not(.ac-btn):hover {
   color: var(--brand-sky);
 }
 
@@ -1689,14 +1691,6 @@ html.rda-motion [data-reveal][data-revealed="true"] {
   gap: 0.75rem;
   position: relative;
   z-index: 1;
-}
-
-.rda-live-footer .ac-btn-light {
-  color: #0d2235;
-}
-
-.rda-live-footer .ac-btn-outline-light {
-  color: #fff;
 }
 
 .ac-footer-grid {
@@ -2113,10 +2107,14 @@ textarea.ac-input {
 .ac-field-has-icon .ac-input:focus + .ac-float-label .ac-field-icon,
 .ac-field-has-icon .ac-input:not(:placeholder-shown) + .ac-float-label .ac-field-icon {
   color: var(--primary);
-  left: 0.95rem;
+  /* The floated label moves to left: 2.85rem; offset back by the same amount
+     so the icon keeps its resting spot (0.95rem from the field edge). An X
+     transform here used to leave it 0.95rem too far right, over the label,
+     and slid it across the text on every focus. */
+  left: calc(0.95rem - 2.85rem);
   position: absolute;
   top: 0.62rem;
-  transform: translate(-1.9rem, 0.15rem);
+  transform: translateY(0.15rem);
 }
 
 .ac-input:not(:focus):not(:placeholder-shown) + .ac-float-label {
