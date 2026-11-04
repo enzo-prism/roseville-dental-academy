@@ -1061,7 +1061,6 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
       <TickerStrip />
       <StudentsInAction />
       <ReviewsSection />
-      <JobHelpSection />
       <ProgramsSection />
       {/* Dates and the inquiry form come right after the courses so phones
           reach them sooner, ahead of the instructors and front-desk intro. */}
@@ -1073,6 +1072,7 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
           <Link className="ac-btn ac-btn-secondary" href="/dental-front-desk-program">Explore dental front desk <ArrowRight aria-hidden="true" /></Link>
         </div>
       </section>
+      <JobHelpSection />
       <InstructorsSection />
       <WhySection />
       <BoardSection />
