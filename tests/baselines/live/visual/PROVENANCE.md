@@ -40,3 +40,12 @@ start, and the footer course list now links the Front Desk program. Every other
 part of each page only moves down to make room. Content references for the same
 routes add only the new footer and menu link; the home images list was left as
 it was. All other route images are unchanged.
+
+Home desktop/mobile and Dental Assisting Program desktop references were
+refreshed for the hiring and "complete program" copy in PR #84, using Linux
+capture run 41901782998 at the PR's head commit 958fe4d. Inspected changes:
+the hero lede, the program card's new eyebrow and intro, the new "Training
+that leads to a job" section after the front-desk intro, and the DA page's
+"Help getting hired" block. Everything else only moves down to make room.
+Dental Assisting Program mobile still passes against its existing reference
+and was not replaced. All other route images are unchanged.
