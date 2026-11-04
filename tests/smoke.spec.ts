@@ -1375,7 +1375,7 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
     "32-hour Radiation Safety course",
     "12-hour Coronal Polish course",
     "16-hour Pit and Fissure Sealant course for eligible assistants and RDAs",
-    "prepares you for an entry-level dental assisting job in 9 weeks",
+    "In 9 weeks (210 hours) you train for an entry-level dental assisting job",
   ];
   const mismatches: string[] = [];
 
