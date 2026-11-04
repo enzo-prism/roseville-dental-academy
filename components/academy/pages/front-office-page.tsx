@@ -12,7 +12,7 @@ export function FrontOfficePage() {
     <main className="ac-page" data-rda-front-office-page="true" id="rda-main-content">
       <PageHero
         breadcrumb="Dental Front Desk"
-        eyebrow="A new way to start in dentistry"
+        eyebrow="Dental front desk training"
         title={<>Your dental career starts at the <em>front desk.</em></>}
         intro="Learn the people skills and office essentials that keep a dental practice moving. A beginner-friendly program for people with little to no dental experience."
         actions={<><a className="ac-btn ac-btn-primary" href="#quick-sign-up">Request program details <ArrowRight aria-hidden="true" /></a><a className="ac-btn ac-btn-secondary" data-rda-lead-source="phone" href={`tel:${siteContact.phone.replace(/\D/g, "")}`}><Phone aria-hidden="true" />{siteContact.phone}</a></>}

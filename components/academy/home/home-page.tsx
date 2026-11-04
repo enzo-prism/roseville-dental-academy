@@ -575,7 +575,6 @@ function ProgramsSection() {
                 sizes="(max-width: 760px) 100vw, (max-width: 1023px) 34vw, 30vw"
                 src="/assets/live/drive/certificate-celebration.jpg"
               />
-              <span className="ac-course-badge">New program</span>
             </span>
             <span className="ac-course-card-body">
               <span className="ac-icon-tile">
@@ -995,7 +994,7 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
       <LiveSignupSection pagePath="/" sourceLabel={sourceLabel} />
       <section className="ac-section ac-section-tight" aria-labelledby="ac-front-office-intro">
         <div className="ac-container ac-social-follow-inner">
-          <div><p className="ac-eyebrow">New program</p><h2 className="ac-h3" id="ac-front-office-intro">Start on the front office side of dentistry.</h2><p className="ac-body">Explore beginner dental receptionist training in scheduling, insurance basics, patient communication, and office procedures.</p></div>
+          <div><p className="ac-eyebrow">Front desk program</p><h2 className="ac-h3" id="ac-front-office-intro">Start on the front office side of dentistry.</h2><p className="ac-body">Explore beginner dental receptionist training in scheduling, insurance basics, patient communication, and office procedures.</p></div>
           <Link className="ac-btn ac-btn-secondary" href="/dental-front-desk-program">Explore dental front desk <ArrowRight aria-hidden="true" /></Link>
         </div>
       </section>
