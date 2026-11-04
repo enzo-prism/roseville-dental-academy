@@ -30,3 +30,24 @@ export function OpenAIMeasurementChoice() {
     </div>
   </section>;
 }
+
+/**
+ * The same opt-in, placed inside a lead form so ad visitors see it before they
+ * submit. It starts unticked, carries no form name (nothing reaches Formspree)
+ * and hides once a choice was made elsewhere, unless it was made here.
+ */
+export function OpenAIMeasurementFormOptIn() {
+  const choice = useSyncExternalStore(subscribe, measurementChoice, () => "");
+  const enabled = useSyncExternalStore(() => () => {}, measurementEnabled, () => false);
+  const [touched, setTouched] = useState(false);
+  if (!enabled || (choice && !touched)) return null;
+  return <label className="ac-check rda-ad-form-consent" data-rda-openai-optin="true">
+    <input
+      checked={choice === "granted"}
+      onChange={(event) => { setTouched(true); setMeasurementChoice(event.currentTarget.checked ? "granted" : "denied"); }}
+      type="checkbox"
+    />
+    <span aria-hidden="true" className="ac-check-box" />
+    <span>Optional: allow OpenAI Ads to measure this inquiry using a random event ID and an ad click identifier, stored for up to 30 days. Your name, contact details, and form answers are not sent to OpenAI.</span>
+  </label>;
+}
