@@ -2,6 +2,10 @@
 
 `/student-jobs` is a server-gated, non-indexable board. No private postings are rendered in HTML or RSC without a valid session. It starts with an honest empty state: no approved jobs have been supplied.
 
+## Public hiring copy
+
+The public site points to this board as proof of job help: the homepage "Training that leads to a job" section (`#job-help`), the Dental Assisting page "Help getting hired" block, the journey's Graduate step, and the jobs FAQ (`JOB_HELP_FAQ_ANSWER` in `lib/site-data.ts`). Those claims rest on this board, on resume and application help, and on verbatim Google review excerpts (`jobHelpReviewQuotes`). There is no verified placement rate; do not add one without a written figure from the academy.
+
 ## Deployment configuration
 
 Set server-only variables (never prefix with `NEXT_PUBLIC_`):

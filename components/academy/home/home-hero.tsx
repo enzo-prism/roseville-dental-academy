@@ -77,8 +77,9 @@ export function HomeHero({ instructorFaces, nextClassLabel, rating, reviewCount,
             Begin Your Career in <em>Dental Assisting</em>
           </h1>
           <p className="ac-lede ac-hero-lede">
-            Train hands-on inside a working dental office with small classes, instructor coaching,
-            and a clear path to your next opportunity.
+            Train hands-on inside a working dental office with small classes and instructor coaching.
+            Dental offices need trained assistants, and our team helps you through the hiring process
+            when you finish.
           </p>
           <div className="ac-hero-actions">
             <a

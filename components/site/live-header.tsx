@@ -213,7 +213,7 @@ function CoursesMegaMenu({ activePath }: { activePath: string }) {
           <span className="ac-mega-feature-body">
             <span className="ac-mega-kicker">
               <NavIcon Icon={GraduationCap} iconKey="graduation-cap" size={14} />
-              Flagship program
+              Complete program
             </span>
             <span className="ac-mega-feature-title">{dentalAssistingProgram.name}</span>
             <span className="ac-mega-feature-meta">

@@ -20,7 +20,7 @@ export function StudentJobBoard({ jobs, authenticated, available, status, dataAv
             <LockKeyhole aria-hidden="true" className="size-4" /> Students &amp; alumni
           </p>
           <h1 className="mt-4 font-heading text-4xl font-semibold leading-tight sm:text-5xl">Student &amp; Alumni Job Board</h1>
-          <p className="mt-5 max-w-2xl leading-7 text-muted-foreground">Career opportunities shared with the Roseville Dental Academy community.</p>
+          <p className="mt-5 max-w-2xl leading-7 text-muted-foreground">Openings that dental offices share with Roseville Dental Academy students and graduates. Our team is here to help you through the hiring process.</p>
         </div>
       </section>
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">

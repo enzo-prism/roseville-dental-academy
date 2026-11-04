@@ -87,7 +87,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "DENTAL ASSISTING TRAINING COURSE New students seeking entry-level dental assisting training. The program prepares students for an entry-level position in a dental office.",
       "Who is it for? New students seeking entry-level dental assisting training.",
       "Prerequisites None. Students must be 16 or older.",
-      "What students get at the end Dental assisting training with chairside experience, resume and job assistance, and completion of a 64-hour internship component.",
+      "What students get at the end Dental assisting training with chairside experience, completion of a 64-hour internship component, and help getting hired: the team helps with your resume and job applications, and graduates can use the academy's private job board, where local dental offices post openings.",
       "Price $2,500.00.",
       "Duration 9 weeks; 210 hours total; 1 class day (Monday, Friday, or Saturday — pick one) plus 1 assigned internship day.",
       "Format Online lectures, homework, chairside experience, and assigned externship hours.",
