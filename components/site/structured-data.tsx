@@ -27,6 +27,7 @@ const COURSE_SCHEMA_BY_PATH: Record<
     price: number;
     scheduleId: CourseScheduleId;
     timeRequired?: string;
+    duration?: string;
   }
 > = {
   "/dental-assisting-program": {
@@ -45,6 +46,7 @@ const COURSE_SCHEMA_BY_PATH: Record<
     courseMode: "Blended",
     price: 2495,
     scheduleId: "dental-front-desk-program",
+    duration: "P8W",
   },
   "/bls-cpr-1": {
     name: "BLS/CPR Certification for Healthcare Providers",
@@ -239,6 +241,7 @@ function buildCourseInstances(
   scheduleId: CourseScheduleId,
   courseMode: "Blended" | "Onsite",
   courseWorkload?: string,
+  duration?: string,
 ): JsonLdValue[] {
   // Omit sold-out dates so crawlers do not advertise Full classes as open.
   // Visible page badges still list those dates; schema follows the next-open list.
@@ -248,7 +251,10 @@ function buildCourseInstances(
       "@type": "CourseInstance",
       courseMode,
       startDate: entry.isoDate,
-      location: buildCourseLocation(),
+      location: scheduleId === "dental-front-desk-program"
+        ? { "@type": "Place", name: "Sacramento Dental Medicine", url: "https://sacramentodentalmedicine.com/" }
+        : buildCourseLocation(),
+      ...(duration ? { duration } : {}),
       ...(courseWorkload ? { courseWorkload } : {}),
     }));
 }
@@ -279,6 +285,7 @@ export function CourseStructuredData({ path }: { path: string }) {
       courseInfo.scheduleId,
       courseInfo.courseMode,
       courseInfo.timeRequired,
+      courseInfo.duration,
     ),
     ...(courseInfo.courseCode ? { courseCode: courseInfo.courseCode } : {}),
     ...(courseInfo.timeRequired ? { timeRequired: courseInfo.timeRequired } : {}),
