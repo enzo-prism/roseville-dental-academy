@@ -813,21 +813,14 @@ html.rda-motion [data-reveal][data-revealed="true"] {
   top: 0.75rem;
 }
 
+/* The promo banner scrolls away with the page and the nav bar pins to the top:
+   LiveHeader measures the banner into --rda-banner-height and the sticky header
+   sits that far above the viewport. Nothing resizes on scroll, so the page never
+   reflows under the visitor. */
 .rda-live-header {
   position: sticky;
-  top: 0;
+  top: calc(var(--rda-banner-height, 0px) * -1);
   z-index: var(--rda-shell-z-header);
-}
-
-/* Promo banner collapses away once the visitor scrolls (grid 1fr -> 0fr). */
-.ac-banner-shell {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows var(--dur) var(--ease-out);
-}
-
-.rda-live-header[data-rda-header-scrolled="true"] .ac-banner-shell {
-  grid-template-rows: 0fr;
 }
 
 .rda-promo-banner {
@@ -1030,14 +1023,21 @@ html.rda-motion [data-reveal][data-revealed="true"] {
   transform: rotate(180deg);
 }
 
+/* One shared viewport morphs between the two menus. It is absolutely placed so
+   the menu's own width wins (as a flex item it shrank to the nav's width and
+   clipped the Courses mega menu). Courses centers under the nav; More lines up
+   with the nav's end, where its trigger is. */
 .ac-nav-viewport-anchor {
-  display: flex;
-  justify-content: center;
+  --ac-menu-align: 0.5;
   left: 0;
   perspective: 2000px;
   position: absolute;
   right: 0;
   top: calc(100% + 0.6rem);
+}
+
+.ac-nav-viewport-anchor[data-align="end"] {
+  --ac-menu-align: 1;
 }
 
 .ac-nav-viewport {
@@ -1046,14 +1046,21 @@ html.rda-motion [data-reveal][data-revealed="true"] {
   border-radius: 1.4rem;
   box-shadow: var(--shadow-lg);
   height: var(--radix-navigation-menu-viewport-height);
+  left: calc((100% - var(--radix-navigation-menu-viewport-width)) * var(--ac-menu-align));
   overflow: hidden;
-  position: relative;
+  position: absolute;
+  top: 0;
   transform-origin: top center;
   transition:
+    left var(--dur) var(--ease-out),
     width var(--dur) var(--ease-out),
     height var(--dur) var(--ease-out);
   width: var(--radix-navigation-menu-viewport-width);
   z-index: var(--rda-shell-z-dropdown);
+}
+
+.ac-nav-viewport-anchor[data-align="end"] .ac-nav-viewport {
+  transform-origin: top right;
 }
 
 .ac-nav-viewport[data-state="open"] {
@@ -1086,7 +1093,9 @@ html.rda-motion [data-reveal][data-revealed="true"] {
   border-radius: 1rem;
   color: #fff;
   display: grid;
-  grid-template-rows: 10.5rem auto;
+  /* The card stretches to the course list's height: the photo takes the
+     slack so the copy and date chip keep their natural size. */
+  grid-template-rows: minmax(10.5rem, 1fr) auto;
   overflow: hidden;
   text-decoration: none;
 }
@@ -1552,8 +1561,16 @@ html.rda-motion [data-reveal][data-revealed="true"] {
 }
 
 @media (min-width: 1100px) {
+  /* Hug the link row (auto margins still center it between brand and actions)
+     so the dropdown anchor's edges are the first and last triggers' edges. */
   .rda-desktop-nav {
     display: flex;
+    flex: 0 1 auto;
+    margin-inline: auto;
+  }
+
+  .ac-nav-actions {
+    margin-left: 0;
   }
 
   .ac-menu-button {
@@ -6904,8 +6921,10 @@ html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-bento-stats::
   display: none;
 }
 
-/* Tighter desktop nav until there is room for the full spacing. */
-@media (min-width: 1100px) and (max-width: 1439px) {
+/* Tighter desktop nav at every desktop width: the header row lives in
+   .ac-container, which stops growing at 76rem, so wider screens never gain room
+   for the full spacing (with it, the actions ran 75px past the container). */
+@media (min-width: 1100px) {
   .ac-nav-inner {
     gap: 0.75rem;
   }
