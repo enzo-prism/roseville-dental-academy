@@ -21,6 +21,7 @@ import Image from "next/image";
 
 import { FloatField, HowHeardField, validateFormControls } from "@/components/academy/form-kit";
 import { LeadFormError, LeadFormSuccess } from "@/components/site/lead-form-status";
+import { OpenAIMeasurementFormOptIn } from "@/components/site/openai-measurement-choice";
 import { trackGaEvent } from "@/components/site/google-analytics";
 import { trackSiteEvent } from "@/components/site/interaction-analytics";
 import { trackMetaPixelEvent } from "@/components/site/meta-pixel";
@@ -296,6 +297,7 @@ function AdLandingLeadForm({
               <span>{page.consent.label}</span>
             </label>
           ) : null}
+          <OpenAIMeasurementFormOptIn />
           {status === "error" ? <LeadFormError /> : null}
           <button
             className="ac-btn ac-btn-primary ac-btn-lg ac-submit ac-submit-block"

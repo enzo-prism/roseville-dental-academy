@@ -294,3 +294,28 @@ test("retired frame error cannot recreate a withdrawn reference after regrant", 
   await expect(frames).toHaveCount(1);
   expect(await frames.getAttribute("src")).not.toContain("oppref");
 });
+
+test("ad lander shows the opt-in inside the lead form, unticked, and ticking it grants measurement", async ({ page }) => {
+  const payloads: string[] = []; await mockVendor(page, payloads);
+  await page.goto(`/lp/dental-assisting-enroll?oppref=${CLICK}&utm_source=chatgpt`);
+  const optIn = page.locator("#ad-lead-form").getByRole("checkbox", { name: /allow OpenAI Ads to measure this inquiry/ });
+  await expect(optIn).toBeVisible();
+  await expect(optIn).not.toBeChecked();
+  expect(await optIn.getAttribute("name")).toBeNull();
+  expect(await page.locator("#openai-ads-measurement-frame").count()).toBe(0);
+  await optIn.check();
+  await expect(page.locator("#openai-ads-measurement-frame")).toHaveCount(1);
+  expect(await page.evaluate(key => localStorage.getItem(key), CONSENT_KEY)).toBe("granted");
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).value, CLICK_KEY)).toBe(CLICK);
+  await optIn.uncheck();
+  await expect(page.locator("#openai-ads-measurement-frame")).toHaveCount(0);
+  expect(await page.evaluate(key => localStorage.getItem(key), CLICK_KEY)).toBeNull();
+});
+
+test("in-form opt-in stays hidden once a choice was made elsewhere", async ({ page }) => {
+  await mockVendor(page, []);
+  await page.addInitScript(key => localStorage.setItem(key, "denied"), CONSENT_KEY);
+  await page.goto("/lp/dental-assisting-enroll");
+  await expect(page.locator("#ad-lead-form")).toBeVisible();
+  await expect(page.locator('[data-rda-openai-optin="true"]')).toHaveCount(0);
+});
