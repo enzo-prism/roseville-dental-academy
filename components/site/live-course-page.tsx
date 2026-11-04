@@ -1,9 +1,10 @@
-import type { CSSProperties, ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
+  BriefcaseBusiness,
   CalendarDays,
   ChevronRight,
   CircleDollarSign,
@@ -48,6 +49,7 @@ import type {
 import {
   courseReviewHighlights,
   googleReviewsUrl,
+  jobHelpReviewQuotes,
   siteContact,
   whatsAppUrl,
   type CourseReviewGroup,
@@ -323,6 +325,33 @@ function CourseReviews({
   );
 }
 
+function DentalAssistingJobHelp() {
+  const [offers] = jobHelpReviewQuotes;
+
+  return (
+    <article className="ac-course-section" data-rda-course-job-help="true" data-reveal="">
+      <span className="ac-icon-tile">
+        <BriefcaseBusiness aria-hidden="true" />
+      </span>
+      <div>
+        <h2 className="ac-h3">Help getting hired</h2>
+        <p className="ac-body">
+          Dental offices need trained assistants, and our team helps you through the hiring process
+          when you finish. We help with your resume and job applications, and local dental offices
+          post openings for our graduates on our private{" "}
+          <Link className="ac-inline-link" href="/student-jobs">
+            student and alumni job board
+          </Link>
+          .
+        </p>
+        <p className="ac-body">
+          &ldquo;{offers.quote}&rdquo; — {offers.name}, Google review
+        </p>
+      </div>
+    </article>
+  );
+}
+
 export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   const sections = splitCourseSections(course);
   const [hero, ...rest] = sections;
@@ -454,20 +483,24 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               const SectionIcon = sectionIcons[section.heading] ?? ClipboardList;
 
               return (
-                <article
-                  className="ac-course-section"
-                  data-reveal=""
-                  key={section.heading}
-                  style={{ "--reveal-delay": index % 2 } as CSSProperties}
-                >
-                  <span className="ac-icon-tile">
-                    <SectionIcon aria-hidden="true" />
-                  </span>
-                  <div>
-                    <h2 className="ac-h3">{section.heading}</h2>
-                    <p className="ac-body">{renderTextWithLinks(section.body, course.links)}</p>
-                  </div>
-                </article>
+                <Fragment key={section.heading}>
+                  <article
+                    className="ac-course-section"
+                    data-reveal=""
+                    style={{ "--reveal-delay": index % 2 } as CSSProperties}
+                  >
+                    <span className="ac-icon-tile">
+                      <SectionIcon aria-hidden="true" />
+                    </span>
+                    <div>
+                      <h2 className="ac-h3">{section.heading}</h2>
+                      <p className="ac-body">{renderTextWithLinks(section.body, course.links)}</p>
+                    </div>
+                  </article>
+                  {course.id === "dental-assisting-program" && section.heading === "What students get at the end" ? (
+                    <DentalAssistingJobHelp />
+                  ) : null}
+                </Fragment>
               );
             })}
             {hasStandaloneClinicalRequirements(course.id) ? <ClinicalRequirements /> : null}

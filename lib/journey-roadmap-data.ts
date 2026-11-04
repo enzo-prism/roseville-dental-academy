@@ -96,18 +96,18 @@ export const journeySteps: JourneyStep[] = [
   {
     bullets: [
       "Completion certificate",
-      "Resume and job assistance",
+      "Help through the hiring process",
       "Entry-level dental office skills",
     ],
     ctaHref: "/#quick-sign-up",
     ctaLabel: "Ask about classes",
     detail:
-      "Finish with the documents and job-readiness support that help you talk with dental offices and pursue your first role.",
+      "Finish with your completion certificate and real office experience, then our team helps you through the hiring process: your resume, your applications, and openings that local dental offices post for our graduates.",
     eyebrow: "Graduate",
     icon: "medal",
     id: "graduate-ready",
     number: 2,
-    support: "The goal is to leave with skills, confidence, and a clearer first-office plan.",
+    support: "Dental offices need trained assistants, and the goal is to leave ready to get hired.",
     title: "Graduate Job-Ready",
   },
   {

@@ -59,6 +59,7 @@ import { homepageCourseSections } from "@/lib/homepage-course-sections";
 import {
   boardApprovalHighlights,
   googleReviews,
+  jobHelpReviewQuotes,
   googleReviewsAggregate,
   googleReviewsUrl,
   homeGalleryHighlight,
@@ -145,7 +146,7 @@ const tickerItems = [
   { icon: HeartPulse, label: "BLS / CPR" },
   { icon: Sparkles, label: "Coronal polish" },
   { icon: BadgeCheck, label: "Pit & fissure sealants" },
-  { icon: FileText, label: "Resume help" },
+  { icon: FileText, label: "Resume & job help" },
   { icon: BriefcaseBusiness, label: "64-hour internship" },
   { icon: Users, label: "Small class sizes" },
   { icon: MapPin, label: "Roseville, CA" },
@@ -475,13 +476,18 @@ function ProgramsSection() {
           <div className="ac-program-feature-body">
             <p className="ac-eyebrow">
               <DaIcon aria-hidden="true" />
-              Flagship program
+              Full program · no experience needed
             </p>
             <h3 className="ac-h2">Dental Assisting Program</h3>
             <p className="ac-body">
-              Our accelerated program prepares you for an entry-level dental assisting job in 9 weeks
-              (210 hours). All lectures and hands-on learning happen in our office at Waikiki Dental,
-              with small classes and a 64-hour internship.
+              This is the complete program to become a dental assistant, even if you have never worked
+              in dentistry. The certification courses below are shorter, single-skill classes you can
+              add later.
+            </p>
+            <p className="ac-body">
+              In 9 weeks (210 hours) you train for an entry-level dental assisting job. All lectures and
+              hands-on learning happen in our office at Waikiki Dental, with small classes and a 64-hour
+              internship, and our team helps you through the hiring process when you finish.
             </p>
             <ul className="ac-check-list">
               <li>
@@ -490,7 +496,7 @@ function ProgramsSection() {
               </li>
               <li>
                 <HandHeart aria-hidden="true" />
-                Chairside experience, resume help, and job assistance
+                Job help from our team: your resume, applications, and openings from local offices
               </li>
               <li>
                 <UserCheck aria-hidden="true" />
@@ -666,6 +672,74 @@ function ProgramsSection() {
   );
 }
 
+function JobHelpSection() {
+  const items = [
+    {
+      Icon: BriefcaseBusiness,
+      title: "Openings from local offices",
+      body: "Dental offices post openings on our private job board for students and alumni, so you hear about real jobs near you.",
+    },
+    {
+      Icon: FileText,
+      title: "Help with your resume and applications",
+      body: "Our team helps you write your resume and apply for jobs, and your 64-hour internship in a working dental office gives you real experience to show employers.",
+    },
+  ];
+
+  return (
+    <section aria-labelledby="ac-job-help-title" className="ac-section" data-rda-home-job-help="true" id="job-help">
+      <div className="ac-container">
+        <SectionHeading
+          eyebrow="After you graduate"
+          id="ac-job-help-title"
+          intro="Dental offices around Roseville and Sacramento need trained assistants. Our job doesn't stop at your certificate: the team helps you through the hiring process and connects you with offices looking for new assistants."
+          title={
+            <>
+              Training that leads to <em>a job</em>
+            </>
+          }
+        />
+        <div className="ac-extra-grid">
+          {items.map(({ Icon, title, body }, index) => (
+            <article
+              className="ac-extra-card ac-card"
+              data-reveal=""
+              key={title}
+              style={{ "--reveal-delay": index } as CSSProperties}
+            >
+              <span className="ac-icon-tile">
+                <Icon aria-hidden="true" />
+              </span>
+              <div>
+                <h3 className="ac-h3">{title}</h3>
+                <p className="ac-body">{body}</p>
+              </div>
+            </article>
+          ))}
+          {jobHelpReviewQuotes.map((review, index) => (
+            <figure
+              className="ac-extra-card ac-card"
+              data-reveal=""
+              key={review.name}
+              style={{ "--reveal-delay": index + items.length } as CSSProperties}
+            >
+              <span className="ac-icon-tile">
+                <Quote aria-hidden="true" />
+              </span>
+              <div>
+                <blockquote className="ac-body">&ldquo;{review.quote}&rdquo;</blockquote>
+                <figcaption className="ac-body">
+                  <strong>{review.name}</strong> · Google review
+                </figcaption>
+              </div>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function InstructorsSection() {
   return (
     <section aria-labelledby="ac-team-title" className="ac-section ac-band-raised ac-team" data-rda-home-instructors="true">
@@ -802,7 +876,7 @@ function WhySection() {
           <SectionHeading
             eyebrow="Why dental assisting?"
             id="ac-why-title"
-            intro="A fast, hands-on way into healthcare — with steady demand, flexible hours, and room to grow."
+            intro="A fast, hands-on way into healthcare — dental offices need trained assistants, and the work offers flexible hours and room to grow."
             title={
               <>
                 A career that <em>opens doors</em>
@@ -987,6 +1061,7 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
       <TickerStrip />
       <StudentsInAction />
       <ReviewsSection />
+      <JobHelpSection />
       <ProgramsSection />
       {/* Dates and the inquiry form come right after the courses so phones
           reach them sooner, ahead of the instructors and front-desk intro. */}

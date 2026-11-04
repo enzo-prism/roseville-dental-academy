@@ -737,6 +737,21 @@ export const courseReviewHighlights: Record<CourseReviewId, CourseReviewGroup> =
   },
 };
 
+// Job help copy. Every claim here is backed by the academy's own job board
+// (app/student-jobs) and by the Google reviews above; there is no verified
+// placement rate, so never state one.
+export const JOB_HELP_FAQ_ANSWER =
+  "Yes. Helping graduates get hired is part of the program. Dental offices need trained assistants, and our team helps you through the hiring process: we help with your resume and job applications, your internship gives you real dental office experience, and we keep a password-protected job board where local dental offices post openings for our students and alumni. Current students and alumni can request access from the academy office, and employers are welcome to contact us to share an opening.";
+
+// Short excerpts quoted word for word from the Google reviews in `testimonials`.
+export const jobHelpReviewQuotes = [
+  { name: "Amanda Lehr", quote: "After completing the program I had multiple job offers." },
+  {
+    name: "Salvador Garcia",
+    quote: "They helped with resumes and applying to jobs, which is how I got hired.",
+  },
+] as const;
+
 export const careerStats: StatCardData[] = [
   {
     title: "Employment outlook",
@@ -799,7 +814,7 @@ export const faqItems = [
   {
     question: "What is included in the dental assisting training program?",
     answer:
-      "The program includes hands-on dental assisting training, N95 fit testing, internships with experienced dental staff in a live office, and resume and job placement assistance inside an accelerated format.",
+      "The program includes hands-on dental assisting training, N95 fit testing, internships with experienced dental staff in a live office, and resume and job placement assistance inside an accelerated format. When you finish, our team helps you through the hiring process and connects you with openings from local dental offices.",
   },
   {
     question: "Is your x-ray course board approved?",
@@ -863,7 +878,7 @@ export const faqItems = [
   {
     question: "Does Roseville Dental Academy help students and graduates find jobs?",
     answer:
-      "Yes. We maintain a password-protected job board for our students and alumni, where dental offices post openings for our graduates. Current students and alumni can request access from the academy office, and employers are welcome to contact us to share an opening with our students and graduates.",
+      JOB_HELP_FAQ_ANSWER,
   },
   {
     question: CERTIFICATE_EXPIRATION_FAQ_QUESTION,
@@ -1013,7 +1028,7 @@ export const studentFaqHighlights = [
   {
     question: "Does Roseville Dental Academy help students and graduates find jobs?",
     answer:
-      "Yes. We maintain a password-protected job board for our students and alumni, where dental offices post openings for our graduates. Current students and alumni can request access from the academy office, and employers are welcome to contact us to share an opening with our students and graduates.",
+      JOB_HELP_FAQ_ANSWER,
   },
   {
     question: CERTIFICATE_EXPIRATION_FAQ_QUESTION,
