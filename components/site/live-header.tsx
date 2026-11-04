@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { forwardRef, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { courseIcons } from "@/components/academy/course-icons";
 import { ThemeToggle } from "@/components/academy/theme-toggle";
@@ -300,6 +300,11 @@ function CoursesMegaMenu({ activePath }: { activePath: string }) {
 export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: string; seasonal?: boolean }) {
   const activePath = useActivePath(currentRoute);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // The last menu opened decides where the shared dropdown viewport sits. It is
+  // kept through the close animation so the panel does not jump while fading.
+  const [menuAlign, setMenuAlign] = useState<"center" | "end">("center");
+  const headerRef = useRef<HTMLElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const promoActive = useSyncExternalStore(
     subscribeToPromoTime,
     () => isSitePromoActive(activeSitePromo, Date.now()),
@@ -324,6 +329,34 @@ export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: s
     };
   }, [mobileOpen]);
 
+  // The sticky header sits at minus the banner's height, so the banner scrolls
+  // away with the page and the nav bar pins to the top. Nothing changes size on
+  // scroll, so the page never reflows (a collapsing banner made content jump and
+  // scroll anchoring toggle the banner back and forth near the threshold).
+  useEffect(() => {
+    const header = headerRef.current;
+    const banner = bannerRef.current;
+
+    if (!header || !banner) {
+      return;
+    }
+
+    const update = () => {
+      header.style.setProperty("--rda-banner-height", `${banner.offsetHeight}px`);
+    };
+
+    update();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(update);
+    observer.observe(banner);
+
+    return () => observer.disconnect();
+  }, []);
+
   function closeMobileMenu() {
     setMobileOpen(false);
   }
@@ -333,8 +366,9 @@ export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: s
       className="rda-live-header"
       data-rda-header-scrolled={scrolled ? "true" : undefined}
       data-rda-shell-header="true"
+      ref={headerRef}
     >
-      <div className="ac-banner-shell">
+      <div className="ac-banner-shell" ref={bannerRef}>
         <div className="rda-promo-banner" role="banner">
           {seasonal ? <SeasonalBannerSky /> : null}
           {promoActive ? (
@@ -376,6 +410,11 @@ export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: s
             aria-label="Primary"
             className="rda-desktop-nav"
             delayDuration={80}
+            onValueChange={(value) => {
+              if (value) {
+                setMenuAlign(value === "more" ? "end" : "center");
+              }
+            }}
           >
             <NavigationMenuPrimitive.List className="rda-nav-row">
               <NavigationMenuPrimitive.Item>
@@ -384,7 +423,7 @@ export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: s
                   <span>Home</span>
                 </NavLink>
               </NavigationMenuPrimitive.Item>
-              <NavigationMenuPrimitive.Item>
+              <NavigationMenuPrimitive.Item value="courses">
                 <NavigationMenuPrimitive.Trigger
                   className="rda-nav-link rda-nav-button"
                   data-active={coursesActive ? "true" : undefined}
@@ -405,7 +444,7 @@ export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: s
                   </NavLink>
                 </NavigationMenuPrimitive.Item>
               ))}
-              <NavigationMenuPrimitive.Item>
+              <NavigationMenuPrimitive.Item value="more">
                 <NavigationMenuPrimitive.Trigger className="rda-nav-link rda-nav-button">
                   <span>More</span>
                   <ChevronDown aria-hidden="true" className="rda-nav-chevron" size={15} />
@@ -437,7 +476,7 @@ export function LiveHeader({ currentRoute, seasonal = false }: { currentRoute: s
                 </NavigationMenuPrimitive.Content>
               </NavigationMenuPrimitive.Item>
             </NavigationMenuPrimitive.List>
-            <div className="ac-nav-viewport-anchor">
+            <div className="ac-nav-viewport-anchor" data-align={menuAlign}>
               <NavigationMenuPrimitive.Viewport className="ac-nav-viewport" />
             </div>
           </NavigationMenuPrimitive.Root>
