@@ -1,3 +1,4 @@
+import { frontOfficeProgram } from "@/lib/front-office-program";
 import {
   CERTIFICATE_EXPIRATION_FAQ_QUESTION,
   getCertificateExpirationAnswer,
@@ -402,7 +403,7 @@ export const resourceArticles: ResourceArticle[] = [
     category: "Career Guide",
     readMinutes: 6,
     datePublished: "2026-07-12",
-    dateModified: "2026-10-29",
+    dateModified: "2026-11-03",
     showCertificateExpiration: true,
     heroImage: {
       src: "/assets/live/courses/bls-hands-on.jpg",
@@ -478,7 +479,16 @@ export const resourceArticles: ResourceArticle[] = [
         answer: getCertificateExpirationAnswer(),
       },
     ],
-    relatedCourses: [CORONAL_POLISH_COURSE, SEALANTS_COURSE, RADIATION_SAFETY_COURSE],
+    relatedCourses: [
+      CORONAL_POLISH_COURSE,
+      SEALANTS_COURSE,
+      RADIATION_SAFETY_COURSE,
+      {
+        href: frontOfficeProgram.path,
+        label: frontOfficeProgram.name,
+        blurb: "Prefer administrative work? Compare front desk training in patient communication, scheduling and insurance with clinical dental assisting.",
+      },
+    ],
     relatedSlugs: [
       "course-certificates-vs-rda-license-renewal-california",
       "how-to-become-a-dental-assistant-in-california",

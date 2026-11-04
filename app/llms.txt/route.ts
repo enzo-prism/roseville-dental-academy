@@ -1,4 +1,5 @@
 import { getAvailableCourseDateList } from "@/lib/course-schedule";
+import { frontOfficeProgram } from "@/lib/front-office-program";
 import {
   LOCAL_HUB_DESCRIPTION,
   LOCAL_HUB_H1,
@@ -45,7 +46,7 @@ const LLMS_BODY = `# Roseville Dental Academy
 
 ## Programs
 
-- [Dental Front Desk / Receptionist Program](${SITE_URL}/dental-front-desk-program): Beginner dental office administration training covering phones, patient scheduling, insurance basics, privacy, dental terminology, and front office procedures. Upcoming starts: ${getAvailableCourseDateList("dental-front-desk-program")}. Ask admissions about tuition, the weekly schedule, and internship details. Separate from clinical dental assisting.
+- [${frontOfficeProgram.name}](${SITE_URL}${frontOfficeProgram.path}): Beginner dental office administration training. Duration: ${frontOfficeProgram.facts.duration}. Upcoming starts: ${getAvailableCourseDateList("dental-front-desk-program")}. Tuition: ${frontOfficeProgram.facts.tuition}. Format: ${frontOfficeProgram.facts.format}. Includes a one-day dental office externship. Request information to arrange a tour and sign up in person. Separate from clinical dental assisting.
 - [Dental Assisting Program](${SITE_URL}/dental-assisting-program): Nine-week, 210-hour training with online lectures, chairside instruction, resume and job assistance, and a 64-hour internship for students 16 and older. Monday, Friday, and Saturday class schedules are separate options (pick one). Upcoming starts: ${getAvailableCourseDateList("dental-assisting-program")}.
 - [DA to RDA Career Journey](${SITE_URL}/journey): Guided California DA to RDA roadmap covering training, work experience, required course certificates, application, exam, and license next steps.
 - [BLS/CPR Certification](${SITE_URL}/bls-cpr-1): Three-hour Basic Life Support and CPR training for healthcare providers, $85, upcoming dates: ${getAvailableCourseDateList("bls-cpr-1")}.
