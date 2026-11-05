@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+
+import { CLINICAL_ENROLL_HOME_NOTE } from "@/lib/academy-policies";
 import { suppressSitePromo } from "./support/qa-helpers";
 
 test.beforeEach(async ({ context }) => {
@@ -73,6 +75,14 @@ for (const route of clinicalEnrollPages) {
     expect(offsetTop).toBeLessThan(1600);
   });
 }
+
+test("home course cards for clinical courses include the enroll note", async ({ page }) => {
+  await page.goto("/");
+  const courseSystem = page.locator('[data-rda-home-course-system="true"]');
+  for (const href of ["/radiation-safety", "/coronal-polish", "/sealants"]) {
+    await expect(courseSystem.locator(`a.ac-course-card[href="${href}"]`)).toContainText(CLINICAL_ENROLL_HOME_NOTE);
+  }
+});
 
 test("FAQ visible answers and structured data include the approved cancellation and clinical rules", async ({ page }) => {
   await page.goto("/faqs-1");
