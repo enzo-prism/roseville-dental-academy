@@ -6,6 +6,7 @@ import {
   enrollmentDate,
 } from "@/lib/enrollment-contract";
 import { isCanonicalInfectionControlDate } from "@/lib/student-enrollment-offerings";
+import { isCourseScheduleOfferingSellable } from "@/lib/course-schedule";
 import { studentCheckoutAudience } from "@/lib/student-enrollment-access";
 
 export const STUDENT_COOKIE = "__Host-rda-student-checkout";
@@ -22,6 +23,7 @@ export type StudentConfig = {
 export type StudentOffering = {
   id: string;
   mode: "test" | "live";
+  course_id: string;
   course_date: string;
   amount: number;
   currency: string;
@@ -190,10 +192,30 @@ export async function studentOfferings(
       ...row,
       course_date: enrollmentDate(row.course_date),
     }))
-    .filter(
-      (row) =>
-        config.mode !== "live" || isCanonicalInfectionControlDate(row.course_date),
-    ) as StudentOffering[];
+    .filter((row) => {
+      const offering = row as StudentOffering;
+      return (
+        (config.mode !== "live" ||
+          isCanonicalInfectionControlDate(offering.course_date)) &&
+        isCourseScheduleOfferingSellable(offering.course_id, offering.course_date)
+      );
+    }) as StudentOffering[];
+}
+export async function studentOfferingById(
+  id: string,
+  config: StudentConfig,
+  database: typeof studentDatabase = studentDatabase,
+) {
+  const rows =
+    await database()`SELECT id, course_id, course_date FROM student_enrollment_offerings
+    WHERE id=${id}::uuid AND mode=${config.mode}`;
+  const row = rows[0];
+  if (!row) return undefined;
+  return {
+    id: String(row.id),
+    course_id: String(row.course_id),
+    course_date: enrollmentDate(row.course_date),
+  };
 }
 export async function releaseUnboundStudentHold(id: string) {
   const rows =

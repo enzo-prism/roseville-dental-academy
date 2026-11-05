@@ -1,8 +1,10 @@
 import { enrollmentBody, enrollmentResponse } from "@/lib/enrollment-http";
+import { isCourseScheduleOfferingSellable } from "@/lib/course-schedule";
 import {
   releaseUnboundStudentHold,
   studentInput,
   studentDatabase,
+  studentOfferingById,
   STUDENT_POLICY_HASH,
   type StudentEnrollment,
 } from "@/lib/student-enrollment";
@@ -10,6 +12,7 @@ import {
   studentCheckoutRequest,
   studentAllowance,
 } from "@/lib/student-enrollment-http";
+import { studentClassFullRefusal } from "@/lib/student-enrollment-offerings";
 import {
   isStudentIdempotencyConflict,
   recoverStudentSession,
@@ -48,6 +51,12 @@ export async function POST(request: Request) {
         },
         400,
       );
+    const offering = await studentOfferingById(input.offeringId, access.config);
+    if (
+      !offering ||
+      !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date)
+    )
+      return enrollmentResponse(studentClassFullRefusal(), 409);
     await verifyStudentMerchant(access.config);
     const rows =
       await studentDatabase()`SELECT * FROM reserve_student_enrollment(${input.id}::uuid,${input.offeringId}::uuid,${access.owner},${input.name},${input.email},${input.phone},${ENROLLMENT_POLICY_VERSION},${STUDENT_POLICY_HASH},${access.config.mode})`;

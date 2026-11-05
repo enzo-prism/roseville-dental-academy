@@ -13,11 +13,16 @@ import {
   INFECTION_CONTROL_CHECKOUT_POLICY,
 } from "@/lib/academy-policies";
 import {
+  courseScheduleOfferingAvailability,
+  isCourseScheduleOfferingSellable,
+} from "@/lib/course-schedule";
+import {
   INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT,
   INFECTION_CONTROL_OFFERING_AMOUNT,
   INFECTION_CONTROL_OFFERING_CAPACITY,
   INFECTION_CONTROL_OFFLINE_SEATS,
   INFECTION_CONTROL_SELLABLE_SESSIONS,
+  STUDENT_CLASS_FULL_MESSAGE,
   infectionControlFixtureCourseDates,
   isCanonicalInfectionControlDate,
 } from "@/lib/student-enrollment-offerings";
@@ -119,6 +124,57 @@ test("checkout inventory is only the confirmed November 14 and December 5 sessio
   );
   expect(afterClose[0] > "2027-01-15").toBe(true);
   expect(afterClose[1] > afterClose[0]).toBe(true);
+});
+test("published course schedule refuses full, elapsed, and missing checkout dates", () => {
+  const fixture = [
+    { courseId: "infection-control", isoDate: "2026-10-10", status: "open" },
+    { courseId: "infection-control", isoDate: "2026-11-14", status: "full" },
+    { courseId: "infection-control", isoDate: "2026-12-05", status: "open" },
+  ];
+  expect(
+    courseScheduleOfferingAvailability(
+      "infection-control",
+      "2026-11-14",
+      "2026-10-14",
+      fixture,
+    ),
+  ).toBe("full");
+  expect(
+    isCourseScheduleOfferingSellable(
+      "infection-control",
+      "2026-12-05",
+      "2026-10-14",
+      fixture,
+    ),
+  ).toBe(true);
+  expect(
+    courseScheduleOfferingAvailability(
+      "infection-control",
+      "2026-10-10",
+      "2026-10-14",
+      fixture,
+    ),
+  ).toBe("elapsed");
+  expect(
+    courseScheduleOfferingAvailability(
+      "infection-control",
+      "2026-11-07",
+      "2026-10-14",
+      fixture,
+    ),
+  ).toBe("missing");
+  expect(isCourseScheduleOfferingSellable("infection-control", "2026-11-14")).toBe(
+    true,
+  );
+  expect(isCourseScheduleOfferingSellable("infection-control", "2026-12-05")).toBe(
+    true,
+  );
+  expect(isCourseScheduleOfferingSellable("infection-control", "2026-11-07")).toBe(
+    false,
+  );
+  expect(STUDENT_CLASS_FULL_MESSAGE).toBe(
+    "This class is full, please contact admissions",
+  );
 });
 test("student configuration fails closed and never mixes live keys, wrong merchants or origins", () => {
   const before = { ...process.env };
@@ -826,6 +882,23 @@ test("student database enforces shared inventory, separate modes, replay, roster
     ).toContain(
       "if (!recovered && !isStudentIdempotencyConflict(error))",
     );
+    const checkout = await readFile(
+      "app/api/student-enrollment/checkout/route.ts",
+      "utf8",
+    );
+    expect(checkout).toContain("isCourseScheduleOfferingSellable");
+    expect(checkout.indexOf("isCourseScheduleOfferingSellable")).toBeLessThan(
+      checkout.indexOf("verifyStudentMerchant"),
+    );
+    expect(checkout.indexOf("isCourseScheduleOfferingSellable")).toBeLessThan(
+      checkout.indexOf("reserve_student_enrollment"),
+    );
+    expect(
+      await readFile("app/api/student-enrollment/session/route.ts", "utf8"),
+    ).toContain("isCourseScheduleOfferingSellable");
+    expect(
+      await readFile("lib/student-enrollment.ts", "utf8"),
+    ).toContain("isCourseScheduleOfferingSellable");
     expect(
       await readFile("app/api/student-enrollment/webhook/route.ts", "utf8"),
     ).toContain("!verifyEnrollmentSignature(");
@@ -1760,7 +1833,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(testHolds.some((row) => row.id === bound)).toBe(true);
     const remainingOffer = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-07-15',39500,11,$2,$3,$4,now(),'remaining drift',true)",
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-12-05',39500,11,$2,$3,$4,now(),'remaining drift',true)",
       [
         remainingOffer,
         policy,
@@ -1770,7 +1843,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     );
     const refundedId = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-07-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2026-12-05',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
       [
         refundedId,
         remainingOffer,
@@ -1831,7 +1904,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     );
     const releasedResolve = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2099-07-15',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2026-12-05',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
       [
         releasedResolve,
         remainingOffer,
@@ -1913,6 +1986,8 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     const enroll = await readFile("app/enroll/page.tsx", "utf8");
     expect(enroll).toContain("live?.remaining");
     expect(enroll).toContain("${Math.max(0, remaining)} seats available");
+    expect(enroll).toContain("infectionControlOfferingAvailability");
+    expect(enroll).toContain("STUDENT_CLASS_FULL_MESSAGE");
   } finally {
     await db.close();
   }

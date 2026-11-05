@@ -55,8 +55,8 @@ globalThis.fetch=async(input,init={})=>{
     if(method==='POST'&&body?.query?.replace(/\s+/g,' ').trim()===exactQuery
       &&Array.isArray(body.params)&&body.params.length===3&&body.params[0]==='live'&&body.params[1]==='2026-09-30'&&body.params[2]===hash){
       log({mocked:'offerings',mode:'live'});
-      const fields=[['id',2950],['mode',25],['course_date',1082],['amount',23],['currency',25],['policy_version',25],['policy_hash',25],['policy_text',25],['remaining',23]].map(([name,dataTypeID])=>({name,dataTypeID}));
-      const rows=[['11111111-1111-4111-8111-111111111111','live','2026-11-14','39500','usd','2026-09-30',hash,policy,'12'],['22222222-2222-4222-8222-222222222222','live','2026-12-05','39500','usd','2026-09-30',hash,policy,'12']];
+      const fields=[['id',2950],['mode',25],['course_id',25],['course_date',1082],['amount',23],['currency',25],['policy_version',25],['policy_hash',25],['policy_text',25],['remaining',23]].map(([name,dataTypeID])=>({name,dataTypeID}));
+      const rows=[['11111111-1111-4111-8111-111111111111','live','infection-control','2026-11-14','39500','usd','2026-09-30',hash,policy,'12'],['22222222-2222-4222-8222-222222222222','live','infection-control','2026-12-05','39500','usd','2026-09-30',hash,policy,'12']];
       return Response.json({fields,rows,rowCount:rows.length,command:'SELECT'});
     }
   }

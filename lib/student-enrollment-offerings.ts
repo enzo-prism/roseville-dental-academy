@@ -1,4 +1,5 @@
 import { INFECTION_CONTROL_SEAT_CAPACITY } from "@/lib/academy-policies";
+import { courseScheduleOfferingAvailability } from "@/lib/course-schedule";
 import {
   academyCalendarDate,
   addAcademyCalendarDays,
@@ -30,6 +31,18 @@ export const INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT = [
   "11111111-1111-4111-8111-111111111111",
   "22222222-2222-4222-8222-222222222222",
 ] as const;
+export const INFECTION_CONTROL_MISSING_SCHEDULE_FIXTURE_OFFERING_ID =
+  "33333333-3333-4333-8333-333333333333";
+export const STUDENT_CLASS_FULL_MESSAGE =
+  "This class is full, please contact admissions";
+
+export function studentClassFullRefusal() {
+  return { error: STUDENT_CLASS_FULL_MESSAGE, holdCreated: false as const };
+}
+
+export function infectionControlOfferingAvailability(isoDate: string) {
+  return courseScheduleOfferingAvailability(INFECTION_CONTROL_COURSE_ID, isoDate);
+}
 
 export function isCanonicalInfectionControlDate(courseDate: string) {
   return INFECTION_CONTROL_SELLABLE_SESSIONS.some(
