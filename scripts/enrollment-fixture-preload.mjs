@@ -9,6 +9,8 @@ if (process.env.RDA_ENROLLMENT_FIXTURE_MODE !== "local-only"
   throw new Error("Enrollment fixture requires isolated local-only configuration");
 }
 const db = await PGlite.create();
+const bundledSchedule = JSON.parse(await readFile(new URL("../data/course-schedule.json", import.meta.url), "utf8"));
+let seededDates = ["2026-11-14", "2026-12-05"];
 await db.exec(await readFile(new URL("../db/migrations/004_enrollment_test_pilot.sql", import.meta.url), "utf8"));
 await db.exec(await readFile(new URL("../db/migrations/005_student_enrollment.sql", import.meta.url), "utf8"));
 await db.exec(await readFile(new URL("../db/migrations/006_student_enrollment_review.sql", import.meta.url), "utf8"));
@@ -28,16 +30,50 @@ if (process.env.RDA_STUDENT_PAYMENTS_MODE) {
   const addDays=(iso,days)=>{const [year,month,day]=iso.split("-").map(Number);return new Date(Date.UTC(year,month-1,day+days)).toISOString().slice(0,10);};
   const remaining=["2026-11-14","2026-12-05"].filter((date)=>date>today);
   const dates=remaining.length>=2?remaining:remaining.length===1?[remaining[0],addDays(today,42)]:[addDays(today,21),addDays(today,42)];
+  seededDates = dates;
   for (const [id,date] of [["11111111-1111-4111-8111-111111111111",dates[0]],["22222222-2222-4222-8222-222222222222",dates[1]]]) {
     await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$2,39500,0,'2026-09-30',$3,$4,now(),'isolated synthetic fixture',true)",[id,date,hash,paragraphs.join("\n\n")]);
   }
 }
 const sessions = new Map(); const keys = new Map();
+const stripeCalls = [];
 const originalFetch = globalThis.fetch;
 let resetLimits;
-async function fixtureControls() {
-  try { return JSON.parse(await readFile(process.env.RDA_ENROLLMENT_FIXTURE_FILE, "utf8")); } catch { return {}; }
+function defaultFixtureSchedule() {
+  const entries = bundledSchedule.entries.filter((entry) =>
+    !(entry.courseId === "infection-control" && seededDates.includes(entry.isoDate)));
+  for (const isoDate of seededDates) {
+    entries.push({ courseId: "infection-control", isoDate, status: "open" });
+  }
+  return { reviewedOn: bundledSchedule.reviewedOn, entries };
 }
+function applyCourseSchedule(control) {
+  globalThis.__RDA_COURSE_SCHEDULE__ = control.courseSchedule?.entries
+    ? {
+        entries: control.courseSchedule.entries,
+        reviewedOn: control.courseSchedule.reviewedOn ?? bundledSchedule.reviewedOn,
+      }
+    : defaultFixtureSchedule();
+}
+async function writeEvidence() {
+  if (!process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE) return;
+  const evidence = { stripeCalls: stripeCalls.slice() };
+  for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_reviews","student_enrollment_roster","student_enrollment_roster_test"]) {
+    evidence[table] = (await db.query(`SELECT * FROM ${table}`)).rows;
+  }
+  await writeFile(process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE, JSON.stringify(evidence));
+}
+async function fixtureControls() {
+  try {
+    const control = JSON.parse(await readFile(process.env.RDA_ENROLLMENT_FIXTURE_FILE, "utf8"));
+    applyCourseSchedule(control);
+    return control;
+  } catch {
+    applyCourseSchedule({});
+    return {};
+  }
+}
+applyCourseSchedule({});
 globalThis.fetch = async (input, init = {}) => {
   const url = new URL(input instanceof Request ? input.url : String(input));
   const requestInit = input instanceof Request ? { method: input.method, headers: input.headers, body: input.method !== "GET" && input.method !== "HEAD" ? await input.clone().text() : undefined, ...init } : init;
@@ -48,6 +84,7 @@ globalThis.fetch = async (input, init = {}) => {
       if (control.resetLimits && control.resetLimits !== resetLimits) {
         await db.exec("TRUNCATE student_enrollment_attempts, student_enrollment_mail, student_enrollment_events, student_enrollment_reviews, student_enrollments RESTART IDENTITY CASCADE");
         await db.exec("UPDATE student_enrollment_offerings SET external_seats=0");
+        stripeCalls.length = 0;
         resetLimits=control.resetLimits;
       }
       if (control.externalSeats) {
@@ -92,16 +129,19 @@ globalThis.fetch = async (input, init = {}) => {
         const release=control.releaseRefundedSeat;
         await db.query("SELECT release_refunded_student_seat($1::uuid,$2)",[release.id,release.actor ?? "staff@example.test"]);
       }
+      if (control.plantOffering) {
+        const plant=control.plantOffering;
+        const policy=(await db.query("SELECT policy_text,policy_hash FROM student_enrollment_offerings LIMIT 1")).rows[0];
+        if (policy) {
+          await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test',$2,$3,39500,0,'2026-09-30',$4,$5,now(),'planted offering',true) ON CONFLICT (id) DO NOTHING",[plant.id,plant.courseId ?? "infection-control",plant.courseDate,policy.policy_hash,policy.policy_text]);
+        }
+      }
       const { query, params } = JSON.parse(init.body);
       if (control.expireOnBind && typeof query==="string" && query.includes("UPDATE student_enrollments SET stripe_session_id")) {
         await db.query("UPDATE student_enrollments SET status='expired',updated_at=now() WHERE id=$1",[control.expireOnBind]);
       }
       const result = await db.query(query, params);
-      if (process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE) {
-        const evidence={};
-        for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_reviews","student_enrollment_roster","student_enrollment_roster_test"]) evidence[table]=(await db.query(`SELECT * FROM ${table}`)).rows;
-        await writeFile(process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE,JSON.stringify(evidence));
-      }
+      await writeEvidence();
       return Response.json({ ...result, rows: result.rows.map((row) => result.fields.map(({ name, dataTypeID }) => {
         const value = row[name]; if (value === null) return null;
         if (dataTypeID === 16) return value ? "t" : "f";
@@ -112,6 +152,8 @@ globalThis.fetch = async (input, init = {}) => {
   }
   if (url.hostname === "api.stripe.com") {
     const control = await fixtureControls();
+    stripeCalls.push({ method: String(init.method ?? "GET"), path: url.pathname });
+    await writeEvidence();
       if (control.plantOrphanSession) {
       const plant=control.plantOrphanSession;
       const offer=(await db.query("SELECT course_date,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];

@@ -16,9 +16,12 @@ import {
 import { ENROLLMENT_POLICY_VERSION } from "@/lib/enrollment-contract";
 import {
   formatEnrollmentAmount,
+  INFECTION_CONTROL_COURSE_ID,
   INFECTION_CONTROL_OFFERING_AMOUNT,
   INFECTION_CONTROL_OFFERING_CAPACITY,
   INFECTION_CONTROL_SELLABLE_SESSIONS,
+  STUDENT_CLASS_FULL_MESSAGE,
+  infectionControlOfferingAvailability,
   infectionControlSessionLabel,
 } from "@/lib/student-enrollment-offerings";
 import {
@@ -69,18 +72,50 @@ export default async function EnrollmentPage({
         <CardContent>
           <ul data-rda-ic-sessions="" className="space-y-2">
             {INFECTION_CONTROL_SELLABLE_SESSIONS.map((session) => {
-              const live = offerings.find(
-                (offering) => offering.course_date === session.courseDate,
+              const availability = infectionControlOfferingAvailability(
+                session.courseDate,
               );
-              const remaining = live?.remaining;
-              return (
-                <li key={session.courseDate}>
-                  {session.label} · {formatEnrollmentAmount(live?.amount ?? INFECTION_CONTROL_OFFERING_AMOUNT)}
-                  {typeof remaining === "number"
-                    ? ` · ${Math.max(0, remaining)} seats available`
-                    : ` · Class capacity: ${INFECTION_CONTROL_OFFERING_CAPACITY}. Contact the academy for available seats.`}
-                </li>
-              );
+              switch (availability) {
+                case "full":
+                case "elapsed":
+                case "missing":
+                  return (
+                    <li
+                      key={session.courseDate}
+                      data-rda-ic-session={session.courseDate}
+                      data-rda-ic-session-status={availability}
+                    >
+                      {session.label} · {STUDENT_CLASS_FULL_MESSAGE}
+                    </li>
+                  );
+                case "open": {
+                  const live = offerings.find(
+                    (offering) =>
+                      offering.course_id === INFECTION_CONTROL_COURSE_ID &&
+                      offering.course_date === session.courseDate,
+                  );
+                  const remaining = live?.remaining;
+                  return (
+                    <li
+                      key={session.courseDate}
+                      data-rda-ic-session={session.courseDate}
+                      data-rda-ic-session-status={availability}
+                    >
+                      {session.label} ·{" "}
+                      {formatEnrollmentAmount(
+                        live?.amount ?? INFECTION_CONTROL_OFFERING_AMOUNT,
+                      )}
+                      {typeof remaining === "number"
+                        ? ` · ${Math.max(0, remaining)} seats available`
+                        : ` · Class capacity: ${INFECTION_CONTROL_OFFERING_CAPACITY}. Contact the academy for available seats.`}
+                    </li>
+                  );
+                }
+                default: {
+                  const _never: never = availability;
+                  throw new Error(`Unhandled schedule availability: ${_never}`);
+                }
+              }
             })}
           </ul>
         </CardContent>

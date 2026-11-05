@@ -105,10 +105,17 @@ const courseDisplayOrder: CourseScheduleId[] = [
   "dental-front-desk-program",
 ];
 
-type CourseScheduleDataEntry = {
+export type CourseScheduleDataEntry = {
   courseId: string;
   isoDate: string;
   status: string;
+};
+
+export type CourseScheduleOfferingAvailability = "open" | "full" | "elapsed" | "missing";
+
+type CourseScheduleSnapshot = {
+  entries: CourseScheduleDataEntry[];
+  reviewedOn: string;
 };
 
 function isCourseScheduleId(value: string): value is CourseScheduleId {
@@ -117,6 +124,62 @@ function isCourseScheduleId(value: string): value is CourseScheduleId {
 
 function isLiveCourseScheduleStatus(status: string): status is "open" | "full" {
   return status === "open" || status === "full";
+}
+
+function overrideScheduleSnapshot(): CourseScheduleSnapshot | undefined {
+  const value = (globalThis as { __RDA_COURSE_SCHEDULE__?: unknown }).__RDA_COURSE_SCHEDULE__;
+  if (!value || typeof value !== "object") return undefined;
+  const snapshot = value as { entries?: unknown; reviewedOn?: unknown };
+  if (!Array.isArray(snapshot.entries) || typeof snapshot.reviewedOn !== "string") {
+    return undefined;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(snapshot.reviewedOn)) return undefined;
+  return {
+    entries: snapshot.entries as CourseScheduleDataEntry[],
+    reviewedOn: snapshot.reviewedOn,
+  };
+}
+
+function activeScheduleSnapshot(): CourseScheduleSnapshot {
+  return (
+    overrideScheduleSnapshot() ?? {
+      entries: courseScheduleData.entries,
+      reviewedOn: COURSE_SCHEDULE_REVIEWED_ON,
+    }
+  );
+}
+
+/** Published (courseId, isoDate) availability from the bundled Class dates feed. */
+export function courseScheduleOfferingAvailability(
+  courseId: string,
+  isoDate: string,
+  asOf?: string,
+  entries?: readonly CourseScheduleDataEntry[],
+): CourseScheduleOfferingAvailability {
+  const snapshot = activeScheduleSnapshot();
+  const cutoff = asOf ?? snapshot.reviewedOn;
+  const rows = entries ?? snapshot.entries;
+  if (!isCourseScheduleId(courseId) || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+    return "missing";
+  }
+  if (isoDate < cutoff) return "elapsed";
+  const entry = rows.find(
+    (item) =>
+      item.courseId === courseId &&
+      item.isoDate === isoDate &&
+      isLiveCourseScheduleStatus(item.status),
+  );
+  if (!entry) return "missing";
+  return entry.status === "full" ? "full" : "open";
+}
+
+export function isCourseScheduleOfferingSellable(
+  courseId: string,
+  isoDate: string,
+  asOf?: string,
+  entries?: readonly CourseScheduleDataEntry[],
+) {
+  return courseScheduleOfferingAvailability(courseId, isoDate, asOf, entries) === "open";
 }
 
 function isoDateParts(isoDate: string) {

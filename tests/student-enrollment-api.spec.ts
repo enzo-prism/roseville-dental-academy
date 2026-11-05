@@ -8,13 +8,36 @@ import {
 } from "@/lib/enrollment-auth";
 import {
   INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT,
+  INFECTION_CONTROL_MISSING_SCHEDULE_FIXTURE_OFFERING_ID,
+  STUDENT_CLASS_FULL_MESSAGE,
   infectionControlFixtureCourseDates,
   infectionControlSessionLabel,
 } from "@/lib/student-enrollment-offerings";
 const origin = process.env.LOCAL_ORIGIN ?? "http://127.0.0.1:3117",
   offer = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[0],
   december = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[1],
+  missingOffer = INFECTION_CONTROL_MISSING_SCHEDULE_FIXTURE_OFFERING_ID,
   [fixtureFirstDate] = infectionControlFixtureCourseDates();
+function publishedIcSchedule(
+  novemberStatus: "open" | "full",
+  decemberStatus: "open" | "full" = "open",
+) {
+  return {
+    reviewedOn: "2026-10-14",
+    entries: [
+      {
+        courseId: "infection-control",
+        isoDate: "2026-11-14",
+        status: novemberStatus,
+      },
+      {
+        courseId: "infection-control",
+        isoDate: "2026-12-05",
+        status: decemberStatus,
+      },
+    ],
+  };
+}
 const cookie = `${STUDENT_COOKIE}=${"a".repeat(64)}`,
   headers = { Origin: origin, Cookie: cookie };
 const payload = () => ({
@@ -417,6 +440,112 @@ test.describe("student enrollment isolated full stack", () => {
       ).status(),
     ).toBe(409);
     await control({ externalSeats: { [december]: 0 } });
+  });
+  test("a published full date is hidden or disabled on /enroll and cannot start checkout", async ({
+    page,
+    request,
+  }) => {
+    await control({
+      resetLimits: randomUUID(),
+      courseSchedule: publishedIcSchedule("full"),
+    });
+    const html = await (await request.get("/enroll")).text();
+    expect(html).toContain(STUDENT_CLASS_FULL_MESSAGE);
+    expect(html).toContain('data-rda-ic-session-status="full"');
+    expect(html).toContain('data-rda-ic-session="2026-11-14"');
+    expect(html).toContain('data-rda-ic-session-status="open"');
+    expect(html).toContain('data-rda-ic-session="2026-12-05"');
+    expect(html).not.toContain(`value="${offer}"`);
+    expect(html).toContain(`value="${december}"`);
+    await page.goto("/enroll");
+    const dateOptions = page.getByLabel("Course date and full payment");
+    await expect(dateOptions).not.toContainText("November 14, 2026");
+    await expect(dateOptions).toContainText("December 5, 2026");
+    await expect(page.getByText(STUDENT_CLASS_FULL_MESSAGE)).toBeVisible();
+    const folder = "test-results/student-enrollment-schedule";
+    await mkdir(folder, { recursive: true });
+    for (const width of [1280, 375]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.screenshot({
+        path: `${folder}/enroll-${width}.png`,
+        fullPage: true,
+      });
+    }
+    const session = await request.post("/api/student-enrollment/session", {
+      data: { offeringId: offer },
+      headers,
+    });
+    expect(session.status()).toBe(409);
+    expect(await session.json()).toEqual({
+      error: STUDENT_CLASS_FULL_MESSAGE,
+      holdCreated: false,
+    });
+    const checkout = await request.post("/api/student-enrollment/checkout", {
+      data: { ...payload(), offeringId: offer },
+      headers,
+    });
+    expect(checkout.status()).toBe(409);
+    expect(await checkout.json()).toEqual({
+      error: STUDENT_CLASS_FULL_MESSAGE,
+      holdCreated: false,
+    });
+    const state = await evidence();
+    expect(state.student_enrollments).toHaveLength(0);
+    expect(state.stripeCalls).toEqual([]);
+  });
+  test("an open published date still starts checkout and a missing schedule date fails closed", async ({
+    request,
+  }) => {
+    await control({
+      resetLimits: randomUUID(),
+      courseSchedule: publishedIcSchedule("full"),
+      plantOffering: {
+        id: missingOffer,
+        courseDate: "2026-11-07",
+      },
+    });
+    const created = await request.post("/api/student-enrollment/checkout", {
+      data: { ...payload(), offeringId: december },
+      headers,
+    });
+    expect(created.status()).toBe(200);
+    expect((await created.json()).url).toContain("checkout.stripe.com");
+    const afterOpen = await evidence();
+    expect(
+      afterOpen.student_enrollments.filter(
+        (row: { offering_id: string; status: string }) =>
+          row.offering_id === december && row.status === "reserved",
+      ),
+    ).toHaveLength(1);
+    expect(afterOpen.stripeCalls.length).toBeGreaterThan(0);
+    await control({
+      resetLimits: randomUUID(),
+      courseSchedule: publishedIcSchedule("full"),
+      plantOffering: {
+        id: missingOffer,
+        courseDate: "2026-11-07",
+      },
+    });
+    expect(
+      (
+        await request.post("/api/student-enrollment/session", {
+          data: { offeringId: missingOffer },
+          headers,
+        })
+      ).status(),
+    ).toBe(409);
+    const missing = await request.post("/api/student-enrollment/checkout", {
+      data: { ...payload(), offeringId: missingOffer },
+      headers,
+    });
+    expect(missing.status()).toBe(409);
+    expect(await missing.json()).toEqual({
+      error: STUDENT_CLASS_FULL_MESSAGE,
+      holdCreated: false,
+    });
+    const afterMissing = await evidence();
+    expect(afterMissing.student_enrollments).toHaveLength(0);
+    expect(afterMissing.stripeCalls).toEqual([]);
   });
   test("actual checkout API permits exactly 12 concurrent seats and releases only a verified unpaid expiry", async ({
     request,
