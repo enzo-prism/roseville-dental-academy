@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Phone } from "lucide-react";
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
+import { ClinicalEnrollCallout } from "@/components/site/clinical-enroll-callout";
 import { LiveSignupSection } from "@/components/site/live-signup-section";
 import {
   RdaCourseCards,
@@ -14,7 +15,7 @@ import {
   SeoSection,
 } from "@/components/site/seo-landing-parts";
 import { Button } from "@/components/ui/button";
-import { CANCELLATION_POLICY_SUMMARY } from "@/lib/academy-policies";
+import { CANCELLATION_POLICY_SUMMARY, CLINICAL_ENROLL_CALLOUT } from "@/lib/academy-policies";
 import { courseScheduleNote } from "@/lib/course-schedule";
 import { PHONE_HREF } from "@/lib/da-program-facts";
 import {
@@ -66,6 +67,8 @@ export function RdaCoursePathPage() {
       </SeoHero>
 
       <SeoBody>
+        <ClinicalEnrollCallout href={`/radiation-safety${CLINICAL_ENROLL_CALLOUT.linkHref}`} />
+
         <SeoSection
           heading="Recommended order and prerequisites"
           id="rda-order"

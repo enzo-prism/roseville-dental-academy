@@ -24,6 +24,7 @@ import {
 import { courseIcons } from "@/components/academy/course-icons";
 import { LazyVideo } from "@/components/academy/lazy-video";
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
+import { ClinicalEnrollCallout } from "@/components/site/clinical-enroll-callout";
 import { ClinicalRequirements } from "@/components/site/clinical-requirements";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
 import { SiteLink } from "@/components/site/site-link";
@@ -431,6 +432,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
                 </div>
               )}
             </dl>
+            {hasStandaloneClinicalRequirements(course.id) ? <ClinicalEnrollCallout /> : null}
             <div className="ac-hero-actions">
               <a className="ac-btn ac-btn-primary ac-btn-lg" href="#quick-sign-up">
                 Ask about this course

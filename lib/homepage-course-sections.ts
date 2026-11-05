@@ -1,4 +1,6 @@
+import { CLINICAL_ENROLL_HOME_NOTE } from "@/lib/academy-policies";
 import { getAvailableCourseDateList } from "@/lib/course-schedule";
+
 export const homepageCourseSections = {
   bls: {
     ctaHref: "https://shopcpr.heart.org/heartcode-bls",
@@ -44,7 +46,7 @@ export const homepageCourseSections = {
         },
         {
           description:
-            "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant.",
+            `32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant. ${CLINICAL_ENROLL_HOME_NOTE}`,
           href: "/radiation-safety",
           icon: "radiation",
           image:
@@ -62,7 +64,7 @@ export const homepageCourseSections = {
       courses: [
         {
           description:
-            "12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements.",
+            `12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements. ${CLINICAL_ENROLL_HOME_NOTE}`,
           href: "/coronal-polish",
           icon: "sparkles",
           image:
@@ -73,7 +75,7 @@ export const homepageCourseSections = {
         },
         {
           description:
-            "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed.",
+            `16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed. ${CLINICAL_ENROLL_HOME_NOTE}`,
           href: "/sealants",
           icon: "badge",
           image:

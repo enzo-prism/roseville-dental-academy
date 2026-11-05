@@ -4,6 +4,7 @@
 // (lib/live-course-content.ts) and docs/course-approvals.md; BLS is an AHA
 // course and intentionally has no DBC provider number.
 
+import { CLINICAL_ENROLL_HOME_NOTE } from "@/lib/academy-policies";
 import {
   getNextAvailableCourseDate,
   getUpcomingCourseSchedule,
@@ -83,7 +84,7 @@ export const certificationCourses: AcademyCourse[] = [
   },
   {
     approval: "DBC X1036",
-    blurb: "32-hour Radiation Safety course so you can take dental x-rays with confidence.",
+    blurb: `32-hour Radiation Safety course so you can take dental x-rays with confidence. ${CLINICAL_ENROLL_HOME_NOTE}`,
     duration: "32 hours",
     href: "/radiation-safety",
     icon: "radiation",
@@ -99,7 +100,7 @@ export const certificationCourses: AcademyCourse[] = [
   },
   {
     approval: "DBC CP148",
-    blurb: "12-hour Coronal Polish course with lab, manikin, and clinical practice.",
+    blurb: `12-hour Coronal Polish course with lab, manikin, and clinical practice. ${CLINICAL_ENROLL_HOME_NOTE}`,
     duration: "12 hours",
     href: "/coronal-polish",
     icon: "sparkles",
@@ -115,7 +116,7 @@ export const certificationCourses: AcademyCourse[] = [
   },
   {
     approval: "DBC PF186",
-    blurb: "16-hour Pit and Fissure Sealant course for eligible assistants and RDAs.",
+    blurb: `16-hour Pit and Fissure Sealant course for eligible assistants and RDAs. ${CLINICAL_ENROLL_HOME_NOTE}`,
     duration: "16 hours",
     href: "/sealants",
     icon: "badge-check",

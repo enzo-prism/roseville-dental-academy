@@ -30,7 +30,7 @@ import type {
   TestimonialData,
 } from "@/lib/site-types";
 import { activeSitePromo } from "@/lib/site-promo";
-import { CANCELLATION_POLICY_PARAGRAPHS, CLINICAL_COMPLETION_REQUIREMENT, CLINICAL_OUTSIDE_SITE_REQUIREMENT, CLINICAL_SCHEDULING_REQUIREMENT, CLINICAL_SITE_REQUIREMENT, CLINICAL_SUPERVISION_REQUIREMENT, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
+import { CANCELLATION_POLICY_PARAGRAPHS, CLINICAL_COMPLETION_REQUIREMENT, CLINICAL_ENROLL_CALLOUT_LEAD, CLINICAL_OUTSIDE_SITE_REQUIREMENT, CLINICAL_SCHEDULING_REQUIREMENT, CLINICAL_SITE_REQUIREMENT, CLINICAL_SUPERVISION_REQUIREMENT, INFECTION_CONTROL_PAYMENT_NOTE } from "@/lib/academy-policies";
 
 export const announcement = activeSitePromo.bannerText;
 
@@ -998,7 +998,7 @@ export const studentFaqHighlights = [
   {
     question: "Do students need to provide patients?",
     answer:
-      `Yes for clinical course requirements. Roseville Dental Academy does not provide patients, so students should plan ahead and confirm the exact patient requirements for their course with the office. ${CLINICAL_SUPERVISION_REQUIREMENT}`,
+      `${CLINICAL_ENROLL_CALLOUT_LEAD} Roseville Dental Academy does not provide patients. ${CLINICAL_SUPERVISION_REQUIREMENT}`,
   },
   {
     question: "How old do students need to be?",
