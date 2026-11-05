@@ -71,6 +71,25 @@ export const CLINICAL_COMPLETION_REQUIREMENT =
 export const CLINICAL_SUPPORT_NOTE =
   "Our instructors and clinical team are available to guide students throughout the process and help ensure they are comfortable applying the skills learned during the classroom and laboratory portions of the course.";
 
+// Plain-English enroll callout. Keep Jessica's approved CLINICAL_* paragraphs
+// above unchanged; this is the short parent-facing summary only.
+export const CLINICAL_ENROLL_CALLOUT_LEAD =
+  "You bring your own patients. The academy confirms your exact patient count with you.";
+
+export const CLINICAL_ENROLL_CALLOUT = {
+  title: "Before you enroll: clinical requirements",
+  bullets: [
+    CLINICAL_ENROLL_CALLOUT_LEAD,
+    "After classroom and lab are done, you book your clinical appointments on our scheduler.",
+    "All clinicals happen at our Roseville clinical site, not at your own office, because Dental Board of California rules now require that.",
+  ],
+  linkHref: "#clinical-requirements-heading",
+  linkLabel: "See full clinical requirements",
+} as const;
+
+export const CLINICAL_ENROLL_HOME_NOTE =
+  "You bring your own patients; clinicals are at our Roseville site, not your office.";
+
 export function hasStandaloneClinicalRequirements(courseId: string) {
   return ["radiation-safety", "coronal-polish", "sealants"].includes(courseId);
 }

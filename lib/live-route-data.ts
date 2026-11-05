@@ -1,3 +1,4 @@
+import { CLINICAL_ENROLL_HOME_NOTE } from "@/lib/academy-policies";
 import { getAvailableCourseDateList, getNextAvailableCourseDate } from "@/lib/course-schedule";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -153,9 +154,9 @@ const HOMEPAGE_REFUND_POLICY_COPY_PATTERN =
 const HOMEPAGE_COURSE_COPY_REPLACEMENTS = [
   "Initial and renewal BLS/CPR training for healthcare providers. The course is 3 hours, costs $85, and includes live skills practice and certification support.",
   "Board-approved 8-hour Infection Control training for unlicensed dental assistants. Current BLS through AHA or ARC plus a 2-hour Dental Practice Act certification are required.",
-  "32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant.",
-  "12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements.",
-  "16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed.",
+  `32-hour Radiation Safety training for dental personnel and dentists who want staff x-ray certified. Students need current BLS, Infection Control, Dental Practice Act, and must not be pregnant. ${CLINICAL_ENROLL_HOME_NOTE}`,
+  `12-hour Coronal Polish training for eligible dental assistants, with didactic, lab, manikin, written exam, and human patient clinical requirements. ${CLINICAL_ENROLL_HOME_NOTE}`,
+  `16-hour Pit and Fissure Sealant training for eligible dental assistants and RDAs. Completion does not allow students to perform sealants until they are licensed. ${CLINICAL_ENROLL_HOME_NOTE}`,
   "Dental Assisting is a 9-week, 210-hour training course for students age 16 and older, with online lectures, homework, chairside experience, resume and job assistance, and a 64-hour internship component.",
 ] as const;
 

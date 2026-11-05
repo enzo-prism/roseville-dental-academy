@@ -24,6 +24,13 @@ test("the approved policy is complete and linked from course and footer notices"
   await expect(policy).not.toContainText("at its discretion");
 });
 
+const clinicalEnrollPages = [
+  { href: "#clinical-requirements-heading", path: "/radiation-safety" },
+  { href: "#clinical-requirements-heading", path: "/coronal-polish" },
+  { href: "#clinical-requirements-heading", path: "/sealants" },
+  { href: "/radiation-safety#clinical-requirements-heading", path: "/rda-certification-courses" },
+] as const;
+
 for (const course of ["radiation-safety", "coronal-polish", "sealants"]) {
   test(`${course} explains scheduling, patient responsibilities, designated location, and completion`, async ({ page }) => {
     await page.goto(`/${course}`);
@@ -42,6 +49,31 @@ for (const course of ["radiation-safety", "coronal-polish", "sealants"]) {
   });
 }
 
+for (const route of clinicalEnrollPages) {
+  test(`${route.path} shows the clinical enroll callout near the top`, async ({ page }) => {
+    await page.goto(route.path);
+    await expect(page.locator("body")).not.toContainText(/flagship/i);
+    const callout = page.locator("[data-rda-clinical-enroll-callout]");
+    await expect(callout).toBeVisible();
+    await expect(callout.getByRole("heading", { name: "Before you enroll: clinical requirements" })).toBeVisible();
+    await expect(callout).toContainText("You bring your own patients");
+    await expect(callout).toContainText("The academy confirms your exact patient count with you");
+    await expect(callout).toContainText("not at your own office");
+    await expect(callout).toContainText("Dental Board of California rules now require that");
+    await expect(callout).not.toContainText(/20\d{2}/);
+    await expect(callout).not.toContainText(/\b\d+\s+patients?\b/i);
+    await expect(callout.getByRole("link", { name: "See full clinical requirements" })).toHaveAttribute(
+      "href",
+      route.href,
+    );
+    const offsetTop = await callout.evaluate((element) => {
+      const top = element.getBoundingClientRect().top + window.scrollY;
+      return top;
+    });
+    expect(offsetTop).toBeLessThan(1600);
+  });
+}
+
 test("FAQ visible answers and structured data include the approved cancellation and clinical rules", async ({ page }) => {
   await page.goto("/faqs-1");
   const faqs = page.locator('[data-rda-stable-widget="faqs"]');
@@ -53,6 +85,9 @@ test("FAQ visible answers and structured data include the approved cancellation 
   await expect(clinicalLocation).toContainText("Clinical training must be completed at our designated clinical site and is not transferable to another location.");
   await expect(clinicalLocation).not.toContainText("prior written approval");
   await expect(faqs).toContainText("not before the didactic and laboratory portion has been completed");
+  const patients = faqs.locator(".rda-student-faq-card").filter({ hasText: "Do students need to provide patients?" });
+  await expect(patients).toContainText("You bring your own patients. The academy confirms your exact patient count with you.");
+  await expect(patients).toContainText("Roseville Dental Academy does not provide patients");
   const structured = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
     scripts.map((script) => JSON.parse(script.textContent || "{}")),
   );
@@ -63,4 +98,7 @@ test("FAQ visible answers and structured data include the approved cancellation 
   expect(schemaAnswer).toBe(((await cancellation.locator("p").textContent()) ?? "").trim());
   const clinicalSchemaAnswer = faqSchema.mainEntity.find((item: { name: string }) => item.name === "Where do I complete clinical training for X-ray, Coronal Polish, and Sealants?").acceptedAnswer.text;
   expect(clinicalSchemaAnswer).toBe(((await clinicalLocation.locator("p").textContent()) ?? "").trim());
+  const patientsSchemaAnswer = faqSchema.mainEntity.find((item: { name: string }) => item.name === "Do students need to provide patients?").acceptedAnswer.text;
+  expect(patientsSchemaAnswer).toBe(((await patients.locator("p").textContent()) ?? "").trim());
+  expect(patientsSchemaAnswer.startsWith("You bring your own patients. The academy confirms your exact patient count with you.")).toBe(true);
 });
