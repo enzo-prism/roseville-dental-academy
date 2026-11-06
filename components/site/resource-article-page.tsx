@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
+import { academyCourses } from "@/lib/academy-catalog";
+import { getNextAvailableCourseDate } from "@/lib/course-schedule";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -104,6 +106,14 @@ export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
             ))}
           </ul>
         </aside>
+        <nav aria-label="Training related to this guide" className="rounded-xl border border-border bg-card p-6">
+          <p className="font-semibold text-foreground">Explore your next step in Roseville</p>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-3">
+            {article.relatedCourses.slice(0, 3).map((course) => (
+              <Link className="text-sm font-semibold text-primary underline underline-offset-4" href={course.href} key={course.href}>{course.label}</Link>
+            ))}
+          </div>
+        </nav>
 
         {article.sections.map((section) => (
           <section aria-labelledby={`${section.id}-heading`} className="space-y-4" id={section.id} key={section.id}>
@@ -177,11 +187,16 @@ export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
             Courses and classes to get you started
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            {article.relatedCourses.map((course) => (
+            {article.relatedCourses.map((course) => {
+              const catalog = academyCourses.find((entry) => entry.href === course.href);
+              const nextDate = catalog ? getNextAvailableCourseDate(catalog.id) : undefined;
+              return (
               <Card className="flex flex-col border-border bg-card" key={course.href}>
                 <CardHeader>
                   <CardTitle className="font-heading text-lg">{course.label}</CardTitle>
                   <CardDescription className="leading-6">{course.blurb}</CardDescription>
+                  {catalog ? <p className="text-sm font-semibold text-foreground">{catalog.price} · {catalog.duration}</p> : null}
+                  {catalog ? <p className="text-sm text-muted-foreground">Next open start: {nextDate ?? "Ask admissions"}. Admissions confirms availability.</p> : null}
                 </CardHeader>
                 <CardContent className="mt-auto">
                   <Button asChild variant="outline">
@@ -192,7 +207,8 @@ export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
                   </Button>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         </section>
 

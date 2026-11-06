@@ -25,6 +25,7 @@ import { courseIcons } from "@/components/academy/course-icons";
 import { LazyVideo } from "@/components/academy/lazy-video";
 import { CertificateExpirationNotice } from "@/components/site/certificate-expiration-notice";
 import { ClinicalRequirements } from "@/components/site/clinical-requirements";
+import { CourseDecisionGuide } from "@/components/site/course-decision-guide";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
 import { SiteLink } from "@/components/site/site-link";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
@@ -372,7 +373,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
   const heroStarts = getHeroStartDates(course.id);
   const showHeroStarts = course.id === "dental-assisting-program" && heroStarts.length > 0;
   const phoneHref = `tel:${siteContact.phone.replace(/\D/g, "")}`;
-  const title = hero ? toDisplayTitle(hero.heading) : catalog?.name ?? "";
+  const title = course.id === "dental-assisting-program" ? "Dental Assisting Training in Roseville" : hero ? toDisplayTitle(hero.heading) : catalog?.name ?? "";
 
   return (
     <div className="ac-course" data-rda-live-course={course.id}>
@@ -504,6 +505,7 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
               );
             })}
             {hasStandaloneClinicalRequirements(course.id) ? <ClinicalRequirements /> : null}
+            <CourseDecisionGuide courseId={course.id} />
             {course.id === "infection-control" ? (
               <InfectionControlRequirementNotice headingLevel="h2" />
             ) : null}

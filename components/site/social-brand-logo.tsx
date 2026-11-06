@@ -1,9 +1,20 @@
 import type { SVGProps } from "react";
+import Image from "next/image";
 
 import type { SocialBrand } from "@/lib/site-types";
 import { cn } from "@/lib/utils";
 
 export type { SocialBrand };
+
+/** Repeated archive cards share one cacheable asset instead of serializing the
+ * full multigradient Instagram artwork into every card and its RSC payload.
+ * Artwork is the same InstagramBrandLogo rendered below.
+ */
+export function CachedSocialBrandLogo({ platform, className }: { platform: SocialBrand; className?: string }) {
+  return platform === "instagram"
+    ? <Image alt="" data-rda-social-brand-logo="instagram" className={cn("rda-social-brand-logo", className)} height={24} src="/assets/brand/instagram.svg" width={24} />
+    : <SocialBrandLogo className={className} platform={platform} />;
+}
 
 type SocialBrandLogoProps = SVGProps<SVGSVGElement> & {
   idPrefix?: string;

@@ -90,7 +90,7 @@ export const liveCourseContents: Record<LiveCourseId, LiveCourseContent> = {
       "What students get at the end Dental assisting training with chairside experience, completion of a 64-hour internship component, and help getting hired: the team helps with your resume and job applications, and graduates can use the academy's private job board, where local dental offices post openings.",
       "Price $2,500.00.",
       "Duration 9 weeks; 210 hours total; 1 class day (Monday, Friday, or Saturday — pick one) plus 1 assigned internship day.",
-      "Format Online lectures, homework, chairside experience, and assigned externship hours.",
+      "Format Lectures, homework, chairside experience, and assigned externship hours. Ask admissions to confirm lecture delivery for your selected class.",
       `${classDateSentence("dental-assisting-program", "Class start dates")}`,
       "Best next step Download the registration form and call the office at 916-888-9821 to enroll or schedule a tour.",
     ].join(" "),

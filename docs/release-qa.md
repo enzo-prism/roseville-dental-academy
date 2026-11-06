@@ -261,3 +261,9 @@ Release Gate also runs `pnpm test:attribution-db` and `pnpm test:attribution` af
 ## Published schedule versus content baselines
 
 Content parity compares stable copy, prices, approvals, navigation and assets. The narrowly scoped schedule fragments in `tests/support/content-parity-contract.json` are excluded by baseline capture and by comparison when `staticContentParity` is explicitly enabled. Other snapshot consumers, including smoke checks, keep the full date text. Course dates, full/open states, hero starts, form options and expired dates are instead checked against `/api/course-schedule-status` by `tests/course-dates.spec.ts` and the clock matrix. This prevents a legitimate dashboard publication or elapsed date from failing an old October text snapshot. Do not broaden these selectors to hide non-schedule content changes.
+
+November 6, 2026: browser test and baseline-capture jobs are pinned to Ubuntu 24.04 so Playwright dependency support and screenshot rendering do not change when `ubuntu-latest` advances. Baseline capture and comparison must use the same OS.
+
+November 6 SEO/AEO baseline acceptance: all 20 content cases pass after accepting the new footer links and program/Radiation Safety guidance. Ten desktop/mobile PNGs were captured on Linux in workflow run 42267352174 and visually reviewed, including program decision text, footer layout and homepage review stars. Existing calendar baselines, masks and tolerances are unchanged.
+
+The final copy refinement was recaptured in Linux run 42269015840 at 41eec46; only Home and Dental Assisting Program desktop/mobile changed. All ten captures were reviewed and the four changed references accepted. The refined local content suite passes all 20 cases; the restored cached-logo branding contract passes the official-social-channel smoke case.

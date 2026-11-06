@@ -26,7 +26,6 @@ import {
   Route,
   ShieldCheck,
   Sparkles,
-  Star,
   Stethoscope,
   Syringe,
   UserCheck,
@@ -160,7 +159,7 @@ function Stars({ className }: { className?: string }) {
   return (
     <span aria-hidden="true" className={`ac-stars ${className ?? ""}`}>
       {Array.from({ length: 5 }, (_, index) => (
-        <Star key={index} />
+        <svg key={index} viewBox="0 0 24 24" focusable="false"><use href="#rda-review-star" /></svg>
       ))}
     </span>
   );
@@ -485,8 +484,8 @@ function ProgramsSection() {
               add later.
             </p>
             <p className="ac-body">
-              In 9 weeks (210 hours) you train for an entry-level dental assisting job. All lectures and
-              hands-on learning happen in our office at Waikiki Dental, with small classes and a 64-hour
+              In 9 weeks (210 hours) you train for an entry-level dental assisting job. Hands-on
+              learning happens in our office at Waikiki Dental, with small classes and a 64-hour
               internship, and our team helps you through the hiring process when you finish.
             </p>
             <ul className="ac-check-list">
@@ -1051,6 +1050,9 @@ export function HomePage({ sourceLabel }: { sourceLabel: string }) {
 
   return (
     <div className="ac-home" data-rda-home="true">
+      <svg aria-hidden="true" className="absolute size-0 overflow-hidden" focusable="false">
+        <defs><path id="rda-review-star" d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z" /></defs>
+      </svg>
       <HomeHero
         instructorFaces={academyInstructors.map((instructor) => ({ name: instructor.name, src: instructor.image }))}
         nextClassLabel={nextClassLabel}

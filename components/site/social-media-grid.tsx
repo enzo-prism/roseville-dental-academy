@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { AlertCircle, ArrowUpRight, Heart, MessageCircle, Play } from "lucide-react";
 
-import { SocialBrandLogo, SocialBrandLogoTile } from "@/components/site/social-brand-logo";
+import { CachedSocialBrandLogo, SocialBrandLogo, SocialBrandLogoTile } from "@/components/site/social-brand-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -83,11 +83,9 @@ function SocialLocalMedia({ post }: { post: SocialChannelPost }) {
 }
 
 function SocialPostCard({
-  index,
   page,
   post,
 }: {
-  index: number;
   page: SocialChannelPageData;
   post: SocialChannelPost;
 }) {
@@ -104,11 +102,9 @@ function SocialPostCard({
       <CardHeader className="gap-3">
         <div className="flex min-w-0 items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <SocialBrandLogoTile
-              className="border-border/70 bg-background shadow-none"
-              idPrefix={`rda-${page.slug}-post-${index}`}
-              platform={page.icon}
-            />
+            <span aria-hidden="true" className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm border border-border bg-background shadow-sm">
+              <CachedSocialBrandLogo className="size-4" platform={page.icon} />
+            </span>
             <p className="truncate text-xs font-semibold uppercase text-primary">{post.label}</p>
           </div>
           <p className="shrink-0 text-xs text-muted-foreground">{formatDate(post.publishedAt)}</p>
@@ -135,9 +131,8 @@ function SocialPostCard({
           </div>
           <Button asChild className="w-full" variant="secondary">
             <a href={post.sourceUrl} rel="noreferrer" target="_blank">
-              <SocialBrandLogo
+              <CachedSocialBrandLogo
                 className="size-4"
-                idPrefix={`rda-${page.slug}-post-source-${index}`}
                 platform={page.icon}
               />
               <span>View original post</span>
@@ -216,8 +211,8 @@ export function SocialMediaGrid({ page }: { page: SocialChannelPageData }) {
 
   return hasEnoughPosts ? (
     <div className="grid min-w-0 gap-4" data-rda-social-local-grid={page.slug}>
-      {selectedPosts.map((post, index) => (
-        <SocialPostCard index={index} key={post.sourceUrl} page={page} post={post} />
+      {selectedPosts.map((post) => (
+        <SocialPostCard key={post.sourceUrl} page={page} post={post} />
       ))}
       {archivePosts.length ? (
         <details className="rounded-lg border border-border bg-card p-4" data-rda-social-archive={page.slug}>
@@ -229,9 +224,8 @@ export function SocialMediaGrid({ page }: { page: SocialChannelPageData }) {
             changed; contact admissions for current details.
           </p>
           <div className="grid min-w-0 gap-4">
-            {archivePosts.map((post, index) => (
+            {archivePosts.map((post) => (
               <SocialPostCard
-                index={selectedPosts.length + index}
                 key={post.sourceUrl}
                 page={page}
                 post={post}
@@ -249,9 +243,8 @@ export function SocialMediaGrid({ page }: { page: SocialChannelPageData }) {
             Publication dates could not be verified. Ask admissions for current class dates and seat availability.
           </p>
           <div className="grid min-w-0 gap-4">
-            {undatedPosts.map((post, index) => (
+            {undatedPosts.map((post) => (
               <SocialPostCard
-                index={selectedPosts.length + archivePosts.length + index}
                 key={post.sourceUrl}
                 page={page}
                 post={post}
