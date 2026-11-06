@@ -12,7 +12,7 @@ export type { SocialBrand };
  */
 export function CachedSocialBrandLogo({ platform, className }: { platform: SocialBrand; className?: string }) {
   return platform === "instagram"
-    ? <Image alt="" className={className} height={24} src="/assets/brand/instagram.svg" width={24} />
+    ? <Image alt="" data-rda-social-brand-logo="instagram" className={cn("rda-social-brand-logo", className)} height={24} src="/assets/brand/instagram.svg" width={24} />
     : <SocialBrandLogo className={className} platform={platform} />;
 }
 

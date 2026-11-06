@@ -484,8 +484,8 @@ function ProgramsSection() {
               add later.
             </p>
             <p className="ac-body">
-              In 9 weeks (210 hours) you train for an entry-level dental assisting job. All lectures and
-              hands-on learning happen in our office at Waikiki Dental, with small classes and a 64-hour
+              In 9 weeks (210 hours) you train for an entry-level dental assisting job. Hands-on
+              learning happens in our office at Waikiki Dental, with small classes and a 64-hour
               internship, and our team helps you through the hiring process when you finish.
             </p>
             <ul className="ac-check-list">

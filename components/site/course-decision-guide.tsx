@@ -15,7 +15,7 @@ export function CourseDecisionGuide({ courseId }: { courseId: LiveCourseId }) {
         <h2 className="ac-h3">{program ? "Choose the right training path" : "Before you register for Radiation Safety"}</h2>
         <p className="ac-body">
           {program
-            ? `This Roseville program runs for ${course.duration} and costs ${course.price}. It combines online lectures, homework and chairside training with a 64-hour internship, plus resume and job-application support.`
+            ? `This Roseville program costs ${course.price} for ${course.duration}. It combines coursework and chairside training with a 64-hour internship, plus resume and job-application support.`
             : `This is a ${course.duration}, ${course.price} training course for dental personnel. It is not an appointment for a patient dental X-ray. The Dental Board of California lists the academy under provider X1036.`}
         </p>
         <h3 className="ac-h3">{program ? "What does completing the program mean?" : "Which requirements should I confirm?"}</h3>
