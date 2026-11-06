@@ -44,7 +44,7 @@ Or run the whole gate at once with `pnpm test:release` (lint + build + all six s
 
 After Vercel marks the deployment ready, verify live production routes:
 
-The apex homepage should return `307` with `Location: https://www.rosevilledentalacademy.com/`; the `www` routes should return `200`. The apex redirect is a Vercel domain-level setting, not a `vercel.json` rule (that file only carries the encoded-path redirects).
+The apex homepage should return `308` with `Location: https://www.rosevilledentalacademy.com/`; the `www` routes should return `200`. The apex redirect is a Vercel domain-level setting, not a `vercel.json` rule (that file only carries the encoded-path redirects).
 
 ```bash
 curl -I https://rosevilledentalacademy.com/
@@ -150,3 +150,5 @@ Before jobs access is enabled, provision the dedicated rate-limit table and serv
 The staff pilot uses its own password and cookie. Apply migration004 only to the verified RDA database. No live Stripe keys or real payments are accepted. Without RDA Stripe test credentials and its signed test webhook, the pilot reports unavailable and creates no checkout. Actual test payment, signed webhook, durable paid-record readback, and capacity reconciliation must pass before calling the Stripe pilot operational; see `docs/enrollment-pilot.md`.
 
 Vercel sensitive schedule-feed variables are masked in local exports. For local QA, independently compare the public `/api/course-schedule-status` revision with the committed schedule revision before using the unconfigured development fixture. Production builds still require the actual dashboard feed and fail closed if unavailable. Never substitute the masked placeholder or bypass that production requirement.
+
+November 6, 2026: apex → www is explicitly configured as permanent 308 in Vercel. Verify the redirect and query preservation after domain changes.

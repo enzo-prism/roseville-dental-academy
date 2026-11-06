@@ -116,9 +116,7 @@ Explicit `app/` routes win, so these paths are not shadowed.
 
 Copy and measured drive times live in `lib/local-seo-pages.ts` and `lib/seo-landing-pages.ts`.
 Prices come from `programCards` / `academy-catalog`; class dates come from `lib/course-schedule`.
-They are in the website sitemap and `llms.txt`. They are **not** added to the header More menu or
-footer Academy column — those shared links would drift every content baseline. Discovery is via
-sitemap, `llms.txt`, and cross-links among the landers and existing program/resource pages.
+They are in the website sitemap and `llms.txt`. As of November 6, the shared header links to Spanish and dental-office training, and the footer links to those pages plus the school hub. Program and resource pages provide contextual links. Shared-shell content baselines are refreshed with deliberate navigation changes.
 
 ## Image performance (Core Web Vitals)
 
@@ -133,22 +131,25 @@ The frozen GoDaddy snapshots ship images without native loading hints. `promoteL
 These are invisible attribute-only changes, so they do not affect content or visual parity — the
 visual suite scrolls the full page before capturing, so lazy images still load for the comparison.
 
-## Known follow-up
+## Resource discovery
 
-A header/footer navigation link to `/resources` is **not** yet added. Because content parity
-compares full-page body text, a link in the shared shell would drift the committed baselines unless
-it is excluded via `additiveParitySelectors` in **both** `tests/support/qa-helpers.ts` and
-`scripts/refresh-live-baselines.mjs`, and the visual gate (home, dental-assisting-program,
-infection-control, photos, m-login) would still capture the layout change. Add it deliberately with
-a `pnpm snapshot:refresh` baseline update. Until then, the hub is discovered via the sitemap and
-`llms.txt` and is internally linked from every guide.
-
-### Academy policy and private routes
-
-`/cancellation-policy` is public, canonical, and included in the website sitemap. The approved policy also appears in visible FAQ answers and matching FAQPage schema. `/student-jobs`, `/enrollment-pilot`, and their APIs are excluded from sitemaps and disallowed in robots.txt; they additionally return noindex/nofollow/noarchive and no-store headers. Robots rules do not grant authorization; password/session checks protect private HTML and RSC responses. Private routes suppress advertising pixels, attribution, analytics, and floating contact widgets.
+The Resources hub is linked in the shared footer. Individual guides link to relevant approved courses, current dates, and program information. Follow `docs/release-qa.md` for accepting deliberate shared-shell changes; do not hide navigation from parity checks.
 
 ## October 29 local-page release review
 
 The city, office, course-path, and Spanish pages retain the current academy tuition and schedule sources. Unconfirmed CEREC/CT/Nomad equipment statements and new down-payment/weekly-payment prose are omitted; admissions confirms payment arrangements. The Spanish page labels and links the approved English cancellation summary rather than presenting an unapproved policy translation. It does not claim Spanish-language classes or staff. The sitemap keeps the already-live dental front desk inquiry page.
 
 The new office and course-path pages describe the academy’s approved 8-hour Infection Control offering without saying it is the only qualifying pathway. Employers are directed to verify current Dental Board requirements for the individual assistant; the September 2026 SB 1311 change makes the former blanket 8-hour claim inappropriate.
+
+
+## November 6, 2026 SEO/AEO release
+
+The header and footer now expose the existing Spanish program and dental-office training pages; the footer also exposes the school/location hub. Course pages include a decision guide for the entry-level DA program and Radiation Safety, with Board references and explicit distinctions between course completion, RDA licensure, and patient X-rays. The program title/H1 describes training in Roseville. No new approval, clinical eligibility, employment outcome, fee or schedule was invented. `CourseDecisionGuide` derives price/duration from the approved academy catalog. Resource articles link directly to relevant course cards with catalog facts and the approved next available date.
+
+Repeated Instagram logos now use one cacheable, same-origin SVG asset. Homepage review stars share one SVG definition. Compared with the same main-branch production build, decoded HTML fell from 728,009 to 582,036 bytes on Home (20.0%) and from 996,360 to 420,167 on Instagram (57.8%). This measures HTML payload, not a field Core Web Vitals improvement. Posts, captions and review text are preserved.
+
+The canonical apex redirect was changed through the Vercel domain API to permanent 308, read back, and tested with campaign parameters intact. Existing www canonicals and sitemap remain authoritative. Search Console owner access was verified for the native Google identity. October 7–November 3 data: 716 clicks and 31,130 impressions; this is a pre-release baseline, not an outcome.
+
+FAQ markup describes visible answers; it does not guarantee rich results or AI citations. Evaluate retrieval with a dated set of local school, DA/RDA, tuition, duration and Radiation Safety queries, recording engine, locale, prompt, cited URL and answer accuracy. Compare admissions leads and enrolled students separately from clicks and booking starts.
+
+Remaining externally dependent work: admissions confirmation of any unpublished cost inclusions, original clinician/instructor media with usage rights, Google Business Profile reconciliation through an authorized account, and downstream enrollment reporting. Do not start payment/email operations that are held in the operational runbook.

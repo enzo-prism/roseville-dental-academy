@@ -74,6 +74,8 @@ const primaryLinks: NavLinkItem[] = [
 ];
 
 const moreLinks: NavLinkItem[] = [
+  { description: "Courses and certification training for your team", href: "/for-dental-offices", Icon: BookOpenText, iconKey: "book-open-text", label: "For Dental Offices" },
+  { description: "Resumen del programa y contacto con admisiones", href: "/es/programa-de-asistente-dental", Icon: BookOpenText, iconKey: "book-open-text", label: "Información en Español" },
   {
     description: "Answers about classes, schedules, and requirements",
     href: "/faqs-1",

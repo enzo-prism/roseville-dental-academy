@@ -64,7 +64,7 @@ const ROUTE_TITLE_OVERRIDES: Record<string, string> = {
   "/":
     "Roseville Dental Academy | Dental Assisting & Certification Training in Roseville, CA",
   "/dental-assisting-program":
-    "Dental Assisting Program | Roseville Dental Academy",
+    "Dental Assistant School in Roseville, CA | 9-Week Program",
   "/meet-the-instructors":
     "Meet the Instructors | Roseville Dental Academy",
   "/photos": "Academy Photos & Student Moments | Roseville Dental Academy",
@@ -86,7 +86,7 @@ const ROUTE_DESCRIPTION_OVERRIDES: Record<string, string> = {
   "/":
     "Train as a dental assistant in 9 weeks at Roseville Dental Academy. Hands-on classes for dental assisting, BLS/CPR, infection control, radiation safety, coronal polish, and sealants in Roseville, California.",
   "/dental-assisting-program":
-    "Roseville Dental Academy's 9-week, 210-hour Dental Assisting Program combines online lectures, chairside training, a 64-hour internship, and resume and job assistance for students 16 and older.",
+    "Train in Roseville: a 9-week, 210-hour dental assisting program with a 64-hour internship and job support. Tuition $2,500. Ask about upcoming classes.",
   "/meet-the-instructors":
     "Meet the licensed instructors at Roseville Dental Academy - Jessica, Sajal, and Katelyn - who lead hands-on dental assisting and certification training in Roseville, California.",
   "/photos":

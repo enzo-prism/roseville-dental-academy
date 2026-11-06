@@ -29,8 +29,8 @@
       "livePath": "/dental-assisting-program",
       "localPath": "/dental-assisting-program",
       "expectedStatus": 200,
-      "expectedTitle": "Dental Assisting Program | Roseville Dental Academy",
-      "smokeText": "DENTAL ASSISTING TRAINING COURSE"
+      "expectedTitle": "Dental Assistant School in Roseville, CA | 9-Week Program",
+      "smokeText": "DENTAL ASSISTING TRAINING IN ROSEVILLE"
     },
     {
       "label": "journey",
