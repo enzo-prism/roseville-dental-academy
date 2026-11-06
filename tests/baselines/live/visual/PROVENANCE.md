@@ -49,3 +49,5 @@ that leads to a job" section after the front-desk intro, and the DA page's
 "Help getting hired" block. Everything else only moves down to make room.
 Dental Assisting Program mobile still passes against its existing reference
 and was not replaced. All other route images are unchanged.
+
+November 6, 2026 SEO/AEO changes (PR #88): all ten page PNGs were captured and reviewed in Linux run 42267352174 at eda0ffc for the new footer navigation and program decision guide. Home and Dental Assisting Program desktop/mobile were then recaptured and reviewed in run 42269015840 at 41eec46 for neutral lecture-format wording. All other PNGs were byte-identical in the second capture. Browser jobs now explicitly use Ubuntu 24.04; reduced-motion, seasonal/promo/widget isolation and visual tolerances are unchanged. Existing calendar baseline files were preserved.

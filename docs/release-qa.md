@@ -265,3 +265,5 @@ Content parity compares stable copy, prices, approvals, navigation and assets. T
 November 6, 2026: browser test and baseline-capture jobs are pinned to Ubuntu 24.04 so Playwright dependency support and screenshot rendering do not change when `ubuntu-latest` advances. Baseline capture and comparison must use the same OS.
 
 November 6 SEO/AEO baseline acceptance: all 20 content cases pass after accepting the new footer links and program/Radiation Safety guidance. Ten desktop/mobile PNGs were captured on Linux in workflow run 42267352174 and visually reviewed, including program decision text, footer layout and homepage review stars. Existing calendar baselines, masks and tolerances are unchanged.
+
+The final copy refinement was recaptured in Linux run 42269015840 at 41eec46; only Home and Dental Assisting Program desktop/mobile changed. All ten captures were reviewed and the four changed references accepted. The refined local content suite passes all 20 cases; the restored cached-logo branding contract passes the official-social-channel smoke case.
