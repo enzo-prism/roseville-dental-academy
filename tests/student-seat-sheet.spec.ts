@@ -270,7 +270,8 @@ test("the enroll page shows only dates the sheet lists, from one sheet read", as
   });
 });
 
-test("a slower, older sheet read cannot lower a newer offline count", async () => {
+for (const stored of [3, 11])
+  test(`a slower, older sheet read cannot lower a newer offline count (stored ${stored})`, async () => {
   await withOffering(async (db, offer) => {
     const offering = { id: offer, course_id: "infection-control", course_date: DATE };
     const database = pgliteDatabase(db);
@@ -293,8 +294,8 @@ test("a slower, older sheet read cannot lower a newer offline count", async () =
     release();
     expect(await older).toBe("synced");
     expect((await offlineSeats(db, offer)).external_seats).toBe(11);
-  }, 3);
-});
+  }, stored);
+  });
 
 test("the enroll page drops a date whose sheet count the database refused", async () => {
   await withOffering(async (db, offer) => {

@@ -226,16 +226,16 @@ async function applySeatCount(
     applied = await read.database()`UPDATE student_enrollment_offerings
       SET external_seats=${seats}, reviewed_at=${read.startedAt}::timestamptz,
         review_reference=${`Seats sheet ${read.sheet.sheetId} (${offering.course_date})`}
-      WHERE id=${offering.id}::uuid AND external_seats IS DISTINCT FROM ${seats}
-        AND reviewed_at <= ${read.startedAt}::timestamptz
+      WHERE id=${offering.id}::uuid AND reviewed_at <= ${read.startedAt}::timestamptz
       RETURNING id`;
   } catch (error) {
     return error instanceof Error && /Inventory exceeds capacity/.test(error.message)
       ? "rejected"
       : "unavailable";
   }
-  // Nothing written means the count already matched or a newer read already
-  // applied its count; either way the reservation checks the stored count.
+  // Every read stamps its start time, even when the count is unchanged, so an
+  // older read can never land after it. Nothing written means a newer read
+  // already applied its count, and the reservation checks the stored count.
   if (!applied.length) return "synced";
   return seats >= INFECTION_CONTROL_OFFERING_CAPACITY ? "full" : "synced";
 }
