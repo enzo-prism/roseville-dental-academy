@@ -1751,10 +1751,12 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     await expect(
       applyOfferingSeed(db, "db/seeds/infection-control-offerings.test.sql"),
     ).rejects.toThrow(/expected 2 rows/i);
+    // The mutants offering itself sits on Dec 5 once Nov 14 has passed.
     expect(
       (
         await db.query(
-          "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05'",
+          "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05' AND id<>$1",
+          [offer],
         )
       ).rows,
     ).toHaveLength(0);
@@ -1832,18 +1834,22 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(testHolds.some((row) => row.id === liveHold)).toBe(false);
     expect(testHolds.some((row) => row.id === bound)).toBe(true);
     const remainingOffer = randomUUID();
+    // A confirmed date that is not already taken by the mutants offering above.
+    const remainingDate =
+      fixtureFirstDate === "2026-12-05" ? "2026-11-14" : "2026-12-05";
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-12-05',39500,11,$2,$3,$4,now(),'remaining drift',true)",
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,11,$2,$3,$4,now(),'remaining drift',true)",
       [
         remainingOffer,
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        remainingDate,
       ],
     );
     const refundedId = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2026-12-05',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,$10,$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
       [
         refundedId,
         remainingOffer,
@@ -1854,6 +1860,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        remainingDate,
       ],
     );
     const listed = await studentOfferings(
@@ -1904,7 +1911,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     );
     const releasedResolve = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2026-12-05',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,$10,$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
       [
         releasedResolve,
         remainingOffer,
@@ -1915,6 +1922,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        remainingDate,
       ],
     );
     await db.query(

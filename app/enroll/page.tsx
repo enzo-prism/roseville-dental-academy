@@ -7,7 +7,10 @@ import {
 } from "@/lib/student-enrollment-access";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { StudentEnrollmentForm } from "@/components/site/student-enrollment-form";
+import {
+  StudentEnrollmentForm,
+  StudentSavedCheckoutRecovery,
+} from "@/components/site/student-enrollment-form";
 import {
   CANCELLATION_POLICY_PARAGRAPHS,
   CANCELLATION_POLICY_TITLE,
@@ -161,6 +164,9 @@ export default async function EnrollmentPage({
             <SiteLink href="/contact" className="text-primary underline">
               Contact Roseville Dental Academy
             </SiteLink>
+            {/* Every date can be full while a student still holds a checkout;
+                keep the verify-or-close action reachable. */}
+            {config && checkoutAllowed && <StudentSavedCheckoutRecovery />}
           </CardContent>
         </Card>
       ) : (
