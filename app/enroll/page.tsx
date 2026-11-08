@@ -28,6 +28,10 @@ import {
   infectionControlSessionLabel,
 } from "@/lib/student-enrollment-offerings";
 import {
+  refreshStudentOfflineSeats,
+  studentSeatSheetConfig,
+} from "@/lib/student-seat-sheet";
+import {
   studentConfig,
   studentOfferings,
   type StudentOffering,
@@ -50,6 +54,13 @@ export default async function EnrollmentPage({
   if (config && checkoutAllowed) {
     try {
       offerings = await studentOfferings(config);
+      if (studentSeatSheetConfig() !== null) {
+        // Apply the academy seats sheet so the page shows the seats checkout will use.
+        const shown = await refreshStudentOfflineSeats(offerings);
+        offerings = (await studentOfferings(config)).filter((o) =>
+          shown.has(o.id),
+        );
+      }
     } catch {
       /* Fail closed on unavailable inventory. */
     }

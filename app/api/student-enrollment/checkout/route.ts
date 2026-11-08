@@ -13,6 +13,7 @@ import {
   studentAllowance,
 } from "@/lib/student-enrollment-http";
 import { studentClassFullRefusal } from "@/lib/student-enrollment-offerings";
+import { syncStudentOfflineSeats } from "@/lib/student-seat-sheet";
 import {
   isStudentIdempotencyConflict,
   recoverStudentSession,
@@ -57,6 +58,18 @@ export async function POST(request: Request) {
       !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date)
     )
       return enrollmentResponse(studentClassFullRefusal(), 409);
+    // Offline seats from the academy seats sheet are applied before any hold.
+    const offlineSeats = await syncStudentOfflineSeats(offering);
+    if (offlineSeats === "full")
+      return enrollmentResponse(studentClassFullRefusal(), 409);
+    if (offlineSeats === "unavailable")
+      return enrollmentResponse(
+        {
+          error: "Checkout is unavailable. Please try again later.",
+          holdCreated: false,
+        },
+        503,
+      );
     await verifyStudentMerchant(access.config);
     const rows =
       await studentDatabase()`SELECT * FROM reserve_student_enrollment(${input.id}::uuid,${input.offeringId}::uuid,${access.owner},${input.name},${input.email},${input.phone},${ENROLLMENT_POLICY_VERSION},${STUDENT_POLICY_HASH},${access.config.mode})`;
