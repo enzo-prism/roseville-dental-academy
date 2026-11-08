@@ -264,7 +264,50 @@ test("the enroll page shows only dates the sheet lists, from one sheet read", as
       await refreshStudentOfflineSeats(offerings, {
         sheet,
         fetchImpl: googleStub(() => new Response("down", { status: 500 })).fetchImpl,
+        database: pgliteDatabase(db),
       }),
     ).toEqual(new Set());
+  });
+});
+
+test("a slower, older sheet read cannot lower a newer offline count", async () => {
+  await withOffering(async (db, offer) => {
+    const offering = { id: offer, course_id: "infection-control", course_date: DATE };
+    const database = pgliteDatabase(db);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow = googleStub([["Infection Control", DATE, "0"]]);
+    const slowFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).includes("sheets.googleapis")) await gate;
+      return slow.fetchImpl(input, init);
+    }) as typeof fetch;
+    const older = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(
+      await syncStudentOfflineSeats(offering, {
+        sheet,
+        fetchImpl: googleStub([["Infection Control", DATE, "11"]]).fetchImpl,
+        database,
+      }),
+    ).toBe("synced");
+    release();
+    expect(await older).toBe("synced");
+    expect((await offlineSeats(db, offer)).external_seats).toBe(11);
+  }, 3);
+});
+
+test("the enroll page drops a date whose sheet count the database refused", async () => {
+  await withOffering(async (db, offer) => {
+    await plantPaidSeats(db, offer, 10);
+    const shown = await refreshStudentOfflineSeats(
+      [{ id: offer, course_id: "infection-control", course_date: DATE }],
+      {
+        sheet,
+        fetchImpl: googleStub([["Infection Control", DATE, "3"]]).fetchImpl,
+        database: pgliteDatabase(db),
+      },
+    );
+    expect(shown).toEqual(new Set());
+    expect((await offlineSeats(db, offer)).external_seats).toBe(0);
   });
 });

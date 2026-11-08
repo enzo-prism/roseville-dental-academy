@@ -192,9 +192,14 @@ async function sheetCounts(options: SeatSyncOptions) {
   const sheet = options.sheet === undefined ? studentSeatSheetConfig() : options.sheet;
   if (sheet === null) return "off" as const;
   if (sheet === "invalid") return "unavailable" as const;
+  const database = options.database ?? studentDatabase;
   try {
+    // Database time taken before the read; a write only lands if no newer read already did.
+    const [clock] = await database()`SELECT clock_timestamp() AS started`;
     return {
       sheet,
+      database,
+      startedAt: new Date(clock.started as string | Date).toISOString(),
       counts: await readStudentSeatSheet(
         sheet,
         options.fetchImpl ?? fetch,
@@ -206,24 +211,32 @@ async function sheetCounts(options: SeatSyncOptions) {
   }
 }
 
+type SheetRead = Exclude<Awaited<ReturnType<typeof sheetCounts>>, string>;
+/** "rejected": the database refused the count because it would oversell. */
+type AppliedOutcome = Exclude<StudentSeatSheetOutcome, "off"> | "rejected";
+
 async function applySeatCount(
   offering: SeatOffering,
-  sheet: StudentSeatSheetConfig,
-  counts: Map<string, number>,
-  database: typeof studentDatabase,
-): Promise<StudentSeatSheetOutcome> {
-  const seats = counts.get(seatSheetKey(offering.course_id, offering.course_date));
+  read: SheetRead,
+): Promise<AppliedOutcome> {
+  const seats = read.counts.get(seatSheetKey(offering.course_id, offering.course_date));
   if (seats === undefined) return "unavailable";
+  let applied: unknown[];
   try {
-    await database()`UPDATE student_enrollment_offerings
-      SET external_seats=${seats}, reviewed_at=now(),
-        review_reference=${`Seats sheet ${sheet.sheetId} (${offering.course_date})`}
-      WHERE id=${offering.id}::uuid AND external_seats IS DISTINCT FROM ${seats}`;
+    applied = await read.database()`UPDATE student_enrollment_offerings
+      SET external_seats=${seats}, reviewed_at=${read.startedAt}::timestamptz,
+        review_reference=${`Seats sheet ${read.sheet.sheetId} (${offering.course_date})`}
+      WHERE id=${offering.id}::uuid AND external_seats IS DISTINCT FROM ${seats}
+        AND reviewed_at <= ${read.startedAt}::timestamptz
+      RETURNING id`;
   } catch (error) {
     return error instanceof Error && /Inventory exceeds capacity/.test(error.message)
-      ? "full"
+      ? "rejected"
       : "unavailable";
   }
+  // Nothing written means the count already matched or a newer read already
+  // applied its count; either way the reservation checks the stored count.
+  if (!applied.length) return "synced";
   return seats >= INFECTION_CONTROL_OFFERING_CAPACITY ? "full" : "synced";
 }
 
@@ -239,12 +252,8 @@ export async function syncStudentOfflineSeats(
 ): Promise<StudentSeatSheetOutcome> {
   const read = await sheetCounts(options);
   if (typeof read === "string") return read;
-  return applySeatCount(
-    offering,
-    read.sheet,
-    read.counts,
-    options.database ?? studentDatabase,
-  );
+  const outcome = await applySeatCount(offering, read);
+  return outcome === "rejected" ? "full" : outcome;
 }
 
 /**
@@ -259,10 +268,10 @@ export async function refreshStudentOfflineSeats(
   const read = await sheetCounts(options);
   if (read === "off") return new Set(offerings.map((offering) => offering.id));
   if (read === "unavailable") return new Set();
-  const database = options.database ?? studentDatabase;
   const keep = new Set<string>();
   for (const offering of offerings) {
-    const outcome = await applySeatCount(offering, read.sheet, read.counts, database);
+    // A rejected count would leave the old, too-high seat number on the page.
+    const outcome = await applySeatCount(offering, read);
     if (outcome === "synced" || outcome === "full") keep.add(offering.id);
   }
   return keep;
