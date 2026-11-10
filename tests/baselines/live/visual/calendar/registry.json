@@ -108,6 +108,95 @@
         ],
         "empty": false
       }
+    },
+    {
+      "source": "dashboard",
+      "upcomingRevision": "515a47b9133bb078e7bff0f7780efa402123e4cb74d7f1685a816d48d4a03700",
+      "platform": "linux",
+      "baselinePath": "tests/baselines/live/visual/calendar/515a47b9133bb078e7bff0f7780efa402123e4cb74d7f1685a816d48d4a03700/linux/home-mobile.png",
+      "imageSha256": "329675cddce3e4337a328781edd0c9a4c12d30534d3e2a26773bb1b07d58e29f",
+      "recordedReviewedOn": "2026-11-10",
+      "recordedBuiltOn": "2026-11-10",
+      "sourceRevision": "1c893ab77b485a5428d45d787f865435fd6d35b8a1e29d4c15567aeac2fe322d",
+      "sourceHead": "3e792578b713351707b63a31b90779c20b199430",
+      "sourceDeployment": "https://roseville-dental-academy-2lkx7jmaz-enzo-design-prisms-projects.vercel.app",
+      "sourceRun": "https://github.com/enzo-prism/roseville-dental-academy/actions/runs/42907744877",
+      "captureHead": "7ea6515b75c7b78dbc7ddc5753304a707a8d1b1f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "reviewEvidence": {
+        "imageWidth": 390,
+        "imageHeight": 24708,
+        "note": "Reviewed complete mobile homepage and detailed calendar crop. November 14 Infection Control and Sealants show Full; December 5 Infection Control stays open; elapsed November 7 rows are absent; existing January 9 Front Desk class remains. Full page has loaded photos, legible type, intact forms, and no horizontal overflow. Captured from the exact production deployment using the existing font readiness, motion, seasonal, and masking rules; no tolerances changed."
+      },
+      "publicationAtCapture": {
+        "version": 1,
+        "revision": "1c893ab77b485a5428d45d787f865435fd6d35b8a1e29d4c15567aeac2fe322d",
+        "upcomingRevision": "515a47b9133bb078e7bff0f7780efa402123e4cb74d7f1685a816d48d4a03700",
+        "reviewedOn": "2026-11-10",
+        "builtOn": "2026-11-10",
+        "source": "dashboard",
+        "upcoming": [
+          {
+            "courseId": "coronal-polish",
+            "isoDate": "2026-11-14",
+            "status": "open"
+          },
+          {
+            "courseId": "infection-control",
+            "isoDate": "2026-11-14",
+            "status": "full"
+          },
+          {
+            "courseId": "sealants",
+            "isoDate": "2026-11-14",
+            "status": "full"
+          },
+          {
+            "courseId": "dental-assisting-program",
+            "isoDate": "2026-11-20",
+            "status": "open"
+          },
+          {
+            "courseId": "bls-cpr-1",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "dental-assisting-program",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "infection-control",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "radiation-safety",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "coronal-polish",
+            "isoDate": "2026-12-12",
+            "status": "open"
+          },
+          {
+            "courseId": "sealants",
+            "isoDate": "2026-12-12",
+            "status": "open"
+          },
+          {
+            "courseId": "dental-front-desk-program",
+            "isoDate": "2027-01-09",
+            "status": "open"
+          }
+        ],
+        "empty": false
+      }
     }
   ]
 }
