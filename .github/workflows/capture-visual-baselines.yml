@@ -50,7 +50,7 @@ jobs:
         env:
           CI: "true"
           BASELINE_CAPTURE_ONLY: visual
-          BASELINE_CAPTURE_ORIGIN: http://127.0.0.1:3100
+          BASELINE_CAPTURE_ORIGIN: https://roseville-dental-academy-2lkx7jmaz-enzo-design-prisms-projects.vercel.app
         run: |
           pnpm start --hostname 127.0.0.1 --port 3100 &
           npx --yes wait-on@8.0.1 --timeout 120000 http://127.0.0.1:3100/manifest.webmanifest
