@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { mock } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
 import { enrollmentDate } from "@/lib/enrollment-contract";
@@ -58,7 +59,32 @@ import {
 import { applyStudentEnrollmentSchema } from "./support/student-enrollment-schema";
 const offer = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[0],
   policy = "2026-09-30",
-  [fixtureFirstDate, fixtureSecondDate] = infectionControlFixtureCourseDates();
+  fixtureNow = new Date("2026-11-10T18:00:00Z"),
+  [fixtureFirstDate, fixtureSecondDate] = infectionControlFixtureCourseDates(fixtureNow);
+const fixtureSchedule = {
+  reviewedOn: "2026-10-14",
+  entries: [fixtureFirstDate, fixtureSecondDate].map((isoDate) => ({
+    courseId: "infection-control",
+    isoDate,
+    status: "open",
+  })),
+};
+const scheduleGlobal = globalThis as typeof globalThis & {
+  __RDA_COURSE_SCHEDULE__?: typeof fixtureSchedule;
+};
+let previousSchedule: typeof fixtureSchedule | undefined;
+test.beforeEach(() => {
+  // The seeds have fixed dates. Pin both JS and PGlite's WASM clock, and keep
+  // inventory tests independent of edits to the published academy schedule.
+  mock.timers.enable({ apis: ["Date"], now: fixtureNow });
+  previousSchedule = scheduleGlobal.__RDA_COURSE_SCHEDULE__;
+  scheduleGlobal.__RDA_COURSE_SCHEDULE__ = structuredClone(fixtureSchedule);
+});
+test.afterEach(() => {
+  if (previousSchedule === undefined) delete scheduleGlobal.__RDA_COURSE_SCHEDULE__;
+  else scheduleGlobal.__RDA_COURSE_SCHEDULE__ = previousSchedule;
+  mock.timers.reset();
+});
 async function allowLiveOfferingSeed(db: PGlite) {
   await db.exec("SET application_name = 'rda-student-offering-seed'");
 }
@@ -172,6 +198,10 @@ test("published course schedule refuses full, elapsed, and missing checkout date
   expect(isCourseScheduleOfferingSellable("infection-control", "2026-11-07")).toBe(
     false,
   );
+  // Exercise the default active-schedule path as well as explicit arguments.
+  scheduleGlobal.__RDA_COURSE_SCHEDULE__ = { ...fixtureSchedule, entries: fixture };
+  expect(isCourseScheduleOfferingSellable("infection-control", "2026-11-14")).toBe(false);
+  expect(isCourseScheduleOfferingSellable("infection-control", "2026-12-05")).toBe(true);
   expect(STUDENT_CLASS_FULL_MESSAGE).toBe(
     "This class is full, please contact admissions",
   );
@@ -1095,7 +1125,7 @@ test("student database enforces shared inventory, separate modes, replay, roster
     await db.query(
       "UPDATE student_enrollment_offerings SET enabled=true WHERE mode='live'",
     );
-    const listed = await studentOfferings(
+    const listOfferings = () => studentOfferings(
       {
         mode: "test",
         key: "sk_test_fixture",
@@ -1105,8 +1135,25 @@ test("student database enforces shared inventory, separate modes, replay, roster
       },
       pgliteStudentDatabase(db),
     );
+    // Verify the SQL cutoff is pinned too, including after the seed dates pass.
+    expect((await db.query<{ today: string }>(
+      "SELECT to_char(now() AT TIME ZONE 'America/Los_Angeles', 'YYYY-MM-DD') AS today",
+    )).rows[0].today).toBe("2026-11-10");
+    const listed = await listOfferings();
     expect(listed).toHaveLength(2);
     expect(listed.map((row) => row.mode)).toEqual(["test", "test"]);
+    expect(listed.map((row) => row.course_date)).toEqual([fixtureFirstDate, fixtureSecondDate]);
+    for (const snapshot of [
+      { ...fixtureSchedule, entries: fixtureSchedule.entries.map((entry, index) => ({
+        ...entry, status: index === 0 ? "full" : "open",
+      })) },
+      { ...fixtureSchedule, reviewedOn: "2026-11-15" },
+      { ...fixtureSchedule, entries: fixtureSchedule.entries.slice(1) },
+    ]) {
+      scheduleGlobal.__RDA_COURSE_SCHEDULE__ = snapshot;
+      expect((await listOfferings()).map((row) => row.course_date)).toEqual([fixtureSecondDate]);
+    }
+    scheduleGlobal.__RDA_COURSE_SCHEDULE__ = structuredClone(fixtureSchedule);
     await db.query(
       "UPDATE student_enrollment_offerings SET enabled=false WHERE mode='live'",
     );
