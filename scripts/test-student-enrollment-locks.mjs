@@ -1,7 +1,10 @@
 // Real Postgres concurrency proof. PGlite is one connection and cannot detect
 // a missing FOR UPDATE lock. Prints `N passed` so CI/review can count cases.
+import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import pg from "pg";
 
 const url = process.env.STUDENT_LOCK_DATABASE_URL ?? "";
@@ -142,6 +145,12 @@ try {
   await admin.query(
     await readFile(
       new URL("../db/migrations/006_student_enrollment_review.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await admin.query(
+    await readFile(
+      new URL("../db/migrations/007_student_enrollment_sheet_seats.sql", import.meta.url),
       "utf8",
     ),
   );
@@ -1135,6 +1144,38 @@ try {
       await Promise.all([locker.end(), waiter.end()]);
     }
   });
+
+  await test(
+    "SF-A a lock-wait reservation cannot roll back a newer over-capacity recency stamp",
+    async () => {
+      const result = spawnSync(
+        "pnpm",
+        [
+          "exec",
+          "playwright",
+          "test",
+          "tests/student-seat-sheet.spec.ts",
+          "-g",
+          "lock-wait reservation cannot roll back",
+          "--workers=1",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), ".."),
+          stdio: "inherit",
+          env: {
+            ...process.env,
+            PLAYWRIGHT_NO_WEBSERVER: "1",
+            STUDENT_LOCK_DATABASE_URL: url,
+          },
+        },
+      );
+      if (result.status !== 0) {
+        throw new Error(
+          "SF-A PostgreSQL recency race test failed (sheet UPDATE vs reservation lock wait)",
+        );
+      }
+    },
+  );
 
   console.log(`student-enrollment-locks: ${passed} passed`);
 } finally {

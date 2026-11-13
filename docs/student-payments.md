@@ -219,8 +219,12 @@ date** (`2026-11-14` or `11/14/2026`) and **Offline seats taken** (0 to 12). The
 row is a header. When the sheet is configured:
 
 - Checkout reads the sheet fresh before holding a seat and copies that date's count
-  into `external_seats`, recording the review time and a `Seats sheet …` review
-  reference. The database still refuses any count that would oversell the class.
+  into `sheet_seats` (raw) and `external_seats` (clamped to remaining capacity),
+  stamping recency in the same write. If a reservation commits while that write
+  waits and the capacity trigger rejects it, checkout retries once on a fresh
+  snapshot; if that still fails, it stamps recency and the raw count without
+  changing `external_seats` and returns full. Losing older reads are compared
+  against `sheet_seats`, so an expired hold cannot let a stale lower count sell.
 - If the count fills the class, checkout returns the class-full message and holds nothing.
 - If the sheet cannot be read, has any unreadable row, lists a date twice, or does
   not list the requested date, checkout returns 503 and holds nothing.

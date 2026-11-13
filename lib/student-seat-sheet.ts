@@ -7,7 +7,8 @@ import { studentDatabase } from "@/lib/student-enrollment";
  * Academy seats sheet: a Google Sheet where staff record seats already taken
  * offline (phone, walk-in, invoice) for each class date. When configured,
  * checkout reads it before holding a seat and copies the count into
- * `external_seats`, so online checkout can never oversell a class.
+ * `sheet_seats` and a clamped `external_seats`, so online checkout can never
+ * oversell a class.
  *
  * Columns (first row is a header): Course | Class date | Offline seats taken.
  * The sheet never enables an offering or changes price, date or policy.
@@ -216,48 +217,120 @@ type SheetRead = Exclude<Awaited<ReturnType<typeof sheetCounts>>, string>;
 /** "rejected": the database refused the count because it would oversell. */
 type AppliedOutcome = Exclude<StudentSeatSheetOutcome, "off"> | "rejected";
 
+function seatSheetReviewReference(read: SheetRead, courseDate: string) {
+  return `Seats sheet ${read.sheet.sheetId} (${courseDate})`;
+}
+
+function isCapacityError(error: unknown) {
+  return error instanceof Error && /Inventory exceeds capacity/.test(error.message);
+}
+
+async function storedOfflineSeats(
+  read: SheetRead,
+  offeringId: string,
+  seats: number,
+): Promise<AppliedOutcome> {
+  let stored: { stored: number; remaining: number }[];
+  try {
+    stored = (await read.database()`SELECT COALESCE(sheet_seats, external_seats) AS stored,
+      capacity - COALESCE(sheet_seats, external_seats) - (SELECT count(*) FROM student_enrollments
+        WHERE offering_id=${offeringId}::uuid
+          AND student_enrollment_occupies_seat(status, inventory_released_at)) AS remaining
+      FROM student_enrollment_offerings WHERE id=${offeringId}::uuid`) as {
+      stored: number;
+      remaining: number;
+    }[];
+  } catch {
+    return "unavailable";
+  }
+  if (!stored.length) return "unavailable";
+  if (Number(stored[0].remaining) <= 0) return "full";
+  if (seats > Number(stored[0].stored)) return "unavailable";
+  return "synced";
+}
+
+async function writeClampedSeatCount(
+  offering: SeatOffering,
+  read: SheetRead,
+  seats: number,
+  reviewReference: string,
+) {
+  return (await read.database()`UPDATE student_enrollment_offerings
+      SET reviewed_at=${read.startedAt}::timestamptz, review_reference=${reviewReference},
+        sheet_seats=${seats}::int,
+        external_seats=LEAST(${seats}::int, GREATEST(0, capacity - (
+          SELECT count(*)::int FROM student_enrollments
+          WHERE offering_id=${offering.id}::uuid
+            AND student_enrollment_occupies_seat(status, inventory_released_at))))
+      WHERE id=${offering.id}::uuid AND reviewed_at < ${read.startedAt}::timestamptz
+      RETURNING external_seats,
+        capacity - external_seats - (SELECT count(*) FROM student_enrollments
+          WHERE offering_id=${offering.id}::uuid
+            AND student_enrollment_occupies_seat(status, inventory_released_at)) AS remaining`) as {
+    external_seats: number;
+    remaining: number;
+  }[];
+}
+
+async function stampSeatSheetRecency(
+  offering: SeatOffering,
+  read: SheetRead,
+  seats: number,
+  reviewReference: string,
+) {
+  return (await read.database()`UPDATE student_enrollment_offerings
+      SET reviewed_at=${read.startedAt}::timestamptz, review_reference=${reviewReference},
+        sheet_seats=${seats}::int
+      WHERE id=${offering.id}::uuid AND reviewed_at < ${read.startedAt}::timestamptz
+      RETURNING id`) as { id: string }[];
+}
+
 async function applySeatCount(
   offering: SeatOffering,
   read: SheetRead,
 ): Promise<AppliedOutcome> {
   const seats = read.counts.get(seatSheetKey(offering.course_id, offering.course_date));
   if (seats === undefined) return "unavailable";
-  let applied: unknown[];
+  const reviewReference = seatSheetReviewReference(read, offering.course_date);
+  // One write stamps recency, stores the raw sheet count, and stores
+  // min(sheet, remaining). If a reservation commits while that UPDATE waits
+  // and the capacity trigger rejects it, retry once on a fresh snapshot so
+  // the newer read's recency still lands; if that fails too, stamp recency
+  // and the raw count without changing external_seats, then return full.
+  let applied: { external_seats: number; remaining: number }[] | undefined;
   try {
-    applied = await read.database()`UPDATE student_enrollment_offerings
-      SET external_seats=${seats}, reviewed_at=${read.startedAt}::timestamptz,
-        review_reference=${`Seats sheet ${read.sheet.sheetId} (${offering.course_date})`}
-      WHERE id=${offering.id}::uuid AND reviewed_at < ${read.startedAt}::timestamptz
-      RETURNING id`;
+    applied = await writeClampedSeatCount(offering, read, seats, reviewReference);
   } catch (error) {
-    return error instanceof Error && /Inventory exceeds capacity/.test(error.message)
-      ? "rejected"
-      : "unavailable";
-  }
-  // Every read stamps its start time, even when the count is unchanged, so an
-  // older read can never land after it. Nothing written means a newer read
-  // already applied its count. That read may have fetched the sheet before
-  // this one did, so if this read saw more offline seats than are stored,
-  // stop rather than sell against the lower count.
-  if (!applied.length) {
-    let stored: { external_seats: number }[];
+    if (!isCapacityError(error)) return "unavailable";
     try {
-      stored = (await read.database()`SELECT external_seats FROM student_enrollment_offerings
-        WHERE id=${offering.id}::uuid`) as { external_seats: number }[];
-    } catch {
-      return "unavailable";
+      applied = await writeClampedSeatCount(offering, read, seats, reviewReference);
+    } catch (retryError) {
+      if (!isCapacityError(retryError)) return "unavailable";
+      try {
+        const stamped = await stampSeatSheetRecency(
+          offering,
+          read,
+          seats,
+          reviewReference,
+        );
+        if (!stamped.length) return storedOfflineSeats(read, offering.id, seats);
+      } catch (stampError) {
+        return isCapacityError(stampError) ? "rejected" : "unavailable";
+      }
+      return "rejected";
     }
-    if (!stored.length || seats > Number(stored[0].external_seats)) return "unavailable";
-    return "synced";
   }
-  return seats >= INFECTION_CONTROL_OFFERING_CAPACITY ? "full" : "synced";
+  if (!applied?.length) return storedOfflineSeats(read, offering.id, seats);
+  return Number(applied[0].remaining) <= 0 ? "rejected" : "synced";
 }
 
 /**
- * Copies the sheet's offline count for one offering into `external_seats`.
- * "off": no sheet configured. "full": the sheet's count plus online seats
- * leaves no room. "unavailable": the sheet is misconfigured, unreadable or
- * does not list this class date, so checkout must not start.
+ * Copies the sheet's offline count for one offering into `sheet_seats` and a
+ * capacity-clamped `external_seats`. "off": no sheet configured. "full": the
+ * sheet's count plus online seats leaves no room. "unavailable": the sheet is
+ * misconfigured, unreadable or does not list this class date, so checkout
+ * must not start. Public GET /enroll must not call this: it signs a Google
+ * service-account JWT and writes inventory.
  */
 export async function syncStudentOfflineSeats(
   offering: SeatOffering,
@@ -269,24 +342,3 @@ export async function syncStudentOfflineSeats(
   return outcome === "rejected" ? "full" : outcome;
 }
 
-/**
- * Applies one sheet read to every listed offering and returns the ids checkout
- * may sell. Public GET /enroll must not call this: it signs a Google
- * service-account JWT and writes `external_seats`. With no sheet configured all
- * ids are kept; an unreadable sheet keeps none, matching checkout.
- */
-export async function refreshStudentOfflineSeats(
-  offerings: readonly SeatOffering[],
-  options: SeatSyncOptions = {},
-): Promise<Set<string>> {
-  const read = await sheetCounts(options);
-  if (read === "off") return new Set(offerings.map((offering) => offering.id));
-  if (read === "unavailable") return new Set();
-  const keep = new Set<string>();
-  for (const offering of offerings) {
-    // A rejected count would leave the old, too-high seat number on the page.
-    const outcome = await applySeatCount(offering, read);
-    if (outcome === "synced" || outcome === "full") keep.add(offering.id);
-  }
-  return keep;
-}

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 export const STUDENT_ENROLLMENT_MIGRATION_PATHS = [
   "db/migrations/005_student_enrollment.sql",
   "db/migrations/006_student_enrollment_review.sql",
+  "db/migrations/007_student_enrollment_sheet_seats.sql",
 ] as const;
 
 export async function applyStudentEnrollmentSchema(
