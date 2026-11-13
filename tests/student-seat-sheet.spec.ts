@@ -1,6 +1,8 @@
 import { generateKeyPairSync, randomUUID, createVerify } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
+import pg, { type Client as PgClient } from "pg";
 import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
 import {
   STUDENT_POLICY_HASH,
@@ -26,12 +28,31 @@ const sheet: StudentSeatSheetConfig = {
   privateKey: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
 };
 const DATE = "2099-09-15";
+const LOCK_DATABASE_URL = process.env.STUDENT_LOCK_DATABASE_URL ?? "";
+const LOCK_DATABASE_OK =
+  /^postgres(?:ql)?:\/\/postgres:postgres@(?:localhost|127\.0\.0\.1)(?::\d+)?\/rda_locks(?:\?.*)?$/.test(
+    LOCK_DATABASE_URL,
+  );
+
+/** Wait so the slower read's clock_timestamp is recorded before the faster read starts. */
+function waitForOlderClock() {
+  return new Promise((resolve) => setTimeout(resolve, 50));
+}
 
 function pgliteDatabase(db: PGlite): typeof studentDatabase {
   const tagged = (strings: TemplateStringsArray, ...values: unknown[]) => {
     let text = strings[0];
     for (let i = 0; i < values.length; i++) text += `$${i + 1}${strings[i + 1]}`;
     return db.query(text, values).then((result) => result.rows);
+  };
+  return (() => tagged) as typeof studentDatabase;
+}
+
+function pgDatabase(client: PgClient): typeof studentDatabase {
+  const tagged = (strings: TemplateStringsArray, ...values: unknown[]) => {
+    let text = strings[0];
+    for (let i = 0; i < values.length; i++) text += `$${i + 1}${strings[i + 1]}`;
+    return client.query(text, values).then((result: { rows: unknown[] }) => result.rows);
   };
   return (() => tagged) as typeof studentDatabase;
 }
@@ -102,6 +123,39 @@ async function plantPaidSeats(db: PGlite, offer: string, count: number) {
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
       ],
     );
+}
+
+async function plantReservedSeats(db: PGlite, offer: string, count: number) {
+  const ids: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const id = randomUUID();
+    ids.push(id);
+    await db.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,$3,$4,$5,$6,$7,true,$8,$9,$10,39500,'usd','reserved')",
+      [
+        id,
+        offer,
+        DATE,
+        "e".repeat(64),
+        `Sheet Held ${i}`,
+        `sheet-held-${i}-${randomUUID()}@example.test`,
+        "916 555 0100",
+        "2026-09-30",
+        STUDENT_POLICY_HASH,
+        CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+      ],
+    );
+  }
+  return ids;
+}
+
+async function sheetCountsStored(db: PGlite, offer: string) {
+  return (
+    await db.query<{ external_seats: number; sheet_seats: number | null }>(
+      "SELECT external_seats, sheet_seats FROM student_enrollment_offerings WHERE id=$1",
+      [offer],
+    )
+  ).rows[0];
 }
 
 const listingConfig = {
@@ -314,7 +368,7 @@ for (const stored of [3, 11])
       return slow.fetchImpl(input, init);
     }) as typeof fetch;
     const older = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await waitForOlderClock();
     expect(
       await syncStudentOfflineSeats(offering, {
         sheet,
@@ -341,7 +395,7 @@ test("an earlier read that saw more offline seats than a later write stops check
       return slow.fetchImpl(input, init);
     }) as typeof fetch;
     const earlier = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await waitForOlderClock();
     expect(
       await syncStudentOfflineSeats(offering, {
         sheet,
@@ -368,7 +422,7 @@ test("a newer over-capacity sheet count still beats an older lower count", async
       return slow.fetchImpl(input, init);
     }) as typeof fetch;
     const older = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await waitForOlderClock();
     expect(
       await syncStudentOfflineSeats(offering, {
         sheet,
@@ -395,7 +449,7 @@ test("an older zero count cannot sell after a newer over-capacity read fills rem
       return slow.fetchImpl(input, init);
     }) as typeof fetch;
     const older = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await waitForOlderClock();
     expect(
       await syncStudentOfflineSeats(offering, {
         sheet,
@@ -407,6 +461,173 @@ test("an older zero count cannot sell after a newer over-capacity read fills rem
     expect(await older).toBe("full");
     expect((await offlineSeats(db, offer)).external_seats).toBe(7);
   });
+});
+
+test("an older lower sheet read cannot sell after a hold expires against a clamped over-capacity copy", async () => {
+  await withOffering(async (db, offer) => {
+    const held = await plantReservedSeats(db, offer, 5);
+    const offering = { id: offer, course_id: "infection-control", course_date: DATE };
+    const database = pgliteDatabase(db);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow = googleStub([["Infection Control", DATE, "3"]]);
+    const slowFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).includes("sheets.googleapis")) await gate;
+      return slow.fetchImpl(input, init);
+    }) as typeof fetch;
+    const older = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
+    await waitForOlderClock();
+    expect(
+      await syncStudentOfflineSeats(offering, {
+        sheet,
+        fetchImpl: googleStub([["Infection Control", DATE, "8"]]).fetchImpl,
+        database,
+      }),
+    ).toBe("full");
+    expect(await sheetCountsStored(db, offer)).toEqual({
+      external_seats: 7,
+      sheet_seats: 8,
+    });
+    await db.query(
+      "UPDATE student_enrollments SET status='expired', updated_at=now() WHERE id=$1",
+      [held[0]],
+    );
+    release();
+    expect(await older).toBe("full");
+    expect(await sheetCountsStored(db, offer)).toEqual({
+      external_seats: 7,
+      sheet_seats: 8,
+    });
+  });
+});
+
+test("a lock-wait reservation cannot roll back a newer over-capacity recency stamp", async () => {
+  test.skip(
+    !LOCK_DATABASE_OK,
+    "Requires STUDENT_LOCK_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/rda_locks",
+  );
+  const date = "2088-03-01";
+  const offer = randomUUID();
+  const policyText = CANCELLATION_POLICY_PARAGRAPHS.join("\n\n");
+  const admin = new pg.Client({ connectionString: LOCK_DATABASE_URL });
+  const locker = new pg.Client({ connectionString: LOCK_DATABASE_URL });
+  const newerDb = new pg.Client({ connectionString: LOCK_DATABASE_URL });
+  const olderDb = new pg.Client({ connectionString: LOCK_DATABASE_URL });
+  await Promise.all([admin.connect(), locker.connect(), newerDb.connect(), olderDb.connect()]);
+  try {
+    for (const path of [
+      "db/migrations/005_student_enrollment.sql",
+      "db/migrations/006_student_enrollment_review.sql",
+      "db/migrations/007_student_enrollment_sheet_seats.sql",
+    ])
+      await admin.query(await readFile(path, "utf8"));
+    await admin.query(
+      "DELETE FROM student_enrollments WHERE offering_id IN (SELECT id FROM student_enrollment_offerings WHERE review_reference='seat sheet lock-wait')",
+    );
+    await admin.query(
+      "DELETE FROM student_enrollment_offerings WHERE review_reference='seat sheet lock-wait' OR (mode='test' AND course_id='infection-control' AND course_date=$1)",
+      [date],
+    );
+    await admin.query(
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$2,39500,0,$3,$4,$5,now(),'seat sheet lock-wait',true)",
+      [offer, date, "2026-09-30", STUDENT_POLICY_HASH, policyText],
+    );
+    for (let i = 0; i < 5; i++)
+      await admin.query(
+        "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,$3,$4,$5,$6,$7,true,$8,$9,$10,39500,'usd','paid')",
+        [
+          randomUUID(),
+          offer,
+          date,
+          "e".repeat(64),
+          `Lock Paid ${i}`,
+          `lock-paid-${i}-${randomUUID()}@example.test`,
+          "916 555 0100",
+          "2026-09-30",
+          STUDENT_POLICY_HASH,
+          policyText,
+        ],
+      );
+    const offering = { id: offer, course_id: "infection-control", course_date: date };
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow = googleStub([["Infection Control", date, "3"]]);
+    const slowFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).includes("sheets.googleapis")) await gate;
+      return slow.fetchImpl(input, init);
+    }) as typeof fetch;
+    await locker.query("BEGIN");
+    await locker.query(
+      "SELECT id FROM student_enrollment_offerings WHERE id=$1 FOR UPDATE",
+      [offer],
+    );
+    const older = syncStudentOfflineSeats(offering, {
+      sheet,
+      fetchImpl: slowFetch,
+      database: pgDatabase(olderDb),
+    });
+    await waitForOlderClock();
+    const newer = syncStudentOfflineSeats(offering, {
+      sheet,
+      fetchImpl: googleStub([["Infection Control", date, "8"]]).fetchImpl,
+      database: pgDatabase(newerDb),
+    });
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const waiting = await admin.query<{ wait_event_type: string | null }>(
+        "SELECT wait_event_type FROM pg_stat_activity WHERE pid=$1",
+        [newerDb.processID],
+      );
+      if (waiting.rows[0]?.wait_event_type === "Lock") break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    const blocked = await admin.query<{ wait_event_type: string | null }>(
+      "SELECT wait_event_type FROM pg_stat_activity WHERE pid=$1",
+      [newerDb.processID],
+    );
+    expect(blocked.rows[0]?.wait_event_type).toBe("Lock");
+    await locker.query(
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,$3,$4,$5,$6,$7,true,$8,$9,$10,39500,'usd','paid')",
+      [
+        randomUUID(),
+        offer,
+        date,
+        "e".repeat(64),
+        "Lock Paid 5",
+        `lock-paid-5-${randomUUID()}@example.test`,
+        "916 555 0100",
+        "2026-09-30",
+        STUDENT_POLICY_HASH,
+        policyText,
+      ],
+    );
+    await locker.query("COMMIT");
+    expect(await newer).toBe("full");
+    release();
+    expect(await older).toBe("full");
+    const stored = await admin.query<{
+      external_seats: number;
+      sheet_seats: number | null;
+    }>(
+      "SELECT external_seats, sheet_seats FROM student_enrollment_offerings WHERE id=$1",
+      [offer],
+    );
+    expect(Number(stored.rows[0]?.external_seats)).not.toBe(3);
+    expect(Number(stored.rows[0]?.sheet_seats)).toBe(8);
+  } finally {
+    try {
+      await locker.query("ROLLBACK");
+    } catch {
+      /* committed or idle */
+    }
+    await admin
+      .query("DELETE FROM student_enrollments WHERE offering_id=$1", [offer])
+      .catch(() => {});
+    await admin
+      .query("DELETE FROM student_enrollment_offerings WHERE id=$1", [offer])
+      .catch(() => {});
+    await Promise.all([admin.end(), locker.end(), newerDb.end(), olderDb.end()]);
+  }
 });
 
 test("an unauthenticated enroll listing does not read the seats sheet or write seats", async () => {
