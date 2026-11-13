@@ -254,7 +254,7 @@ async function applySeatCount(
   // One write stamps recency and stores min(sheet, remaining). An over-capacity
   // read therefore fills the class instead of rolling back and leaving a stale
   // low count that an older read could sell against.
-  let applied: { external_seats: number }[];
+  let applied: { external_seats: number; remaining: number }[];
   try {
     applied = (await read.database()`UPDATE student_enrollment_offerings
       SET reviewed_at=${read.startedAt}::timestamptz, review_reference=${reviewReference},
@@ -263,17 +263,20 @@ async function applySeatCount(
           WHERE offering_id=${offering.id}::uuid
             AND student_enrollment_occupies_seat(status, inventory_released_at))))
       WHERE id=${offering.id}::uuid AND reviewed_at < ${read.startedAt}::timestamptz
-      RETURNING external_seats`) as { external_seats: number }[];
+      RETURNING external_seats,
+        capacity - external_seats - (SELECT count(*) FROM student_enrollments
+          WHERE offering_id=${offering.id}::uuid
+            AND student_enrollment_occupies_seat(status, inventory_released_at)) AS remaining`) as {
+      external_seats: number;
+      remaining: number;
+    }[];
   } catch (error) {
     return error instanceof Error && /Inventory exceeds capacity/.test(error.message)
       ? "rejected"
       : "unavailable";
   }
   if (!applied.length) return storedOfflineSeats(read, offering.id, seats);
-  const stored = Number(applied[0].external_seats);
-  return seats > stored || stored >= INFECTION_CONTROL_OFFERING_CAPACITY
-    ? "rejected"
-    : "synced";
+  return Number(applied[0].remaining) <= 0 ? "rejected" : "synced";
 }
 
 /**

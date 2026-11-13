@@ -215,6 +215,20 @@ test("a sheet count that fills the class refuses checkout", async () => {
     // Sheet 3 plus 10 occupying seats would oversell; remaining capacity (2) is stored.
     expect((await offlineSeats(db, offer)).external_seats).toBe(2);
   });
+  await withOffering(async (db, offer) => {
+    await plantPaidSeats(db, offer, 10);
+    expect(
+      await syncStudentOfflineSeats(
+        { id: offer, course_id: "infection-control", course_date: DATE },
+        {
+          sheet,
+          fetchImpl: googleStub([["Infection Control", DATE, "2"]]).fetchImpl,
+          database: pgliteDatabase(db),
+        },
+      ),
+    ).toBe("full");
+    expect((await offlineSeats(db, offer)).external_seats).toBe(2);
+  });
 });
 
 test("an unreadable sheet, a missing date or half config never starts checkout", async () => {
