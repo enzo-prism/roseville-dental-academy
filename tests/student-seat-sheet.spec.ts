@@ -297,6 +297,33 @@ for (const stored of [3, 11])
   }, stored);
   });
 
+test("an earlier read that saw more offline seats than a later write stops checkout", async () => {
+  await withOffering(async (db, offer) => {
+    const offering = { id: offer, course_id: "infection-control", course_date: DATE };
+    const database = pgliteDatabase(db);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    // Starts first, but its sheet fetch lands last and sees the newer, higher count.
+    const slow = googleStub([["Infection Control", DATE, "11"]]);
+    const slowFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).includes("sheets.googleapis")) await gate;
+      return slow.fetchImpl(input, init);
+    }) as typeof fetch;
+    const earlier = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(
+      await syncStudentOfflineSeats(offering, {
+        sheet,
+        fetchImpl: googleStub([["Infection Control", DATE, "3"]]).fetchImpl,
+        database,
+      }),
+    ).toBe("synced");
+    release();
+    expect(await earlier).toBe("unavailable");
+    expect((await offlineSeats(db, offer)).external_seats).toBe(3);
+  });
+});
+
 test("the enroll page drops a date whose sheet count the database refused", async () => {
   await withOffering(async (db, offer) => {
     await plantPaidSeats(db, offer, 10);

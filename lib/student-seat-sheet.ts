@@ -194,12 +194,13 @@ async function sheetCounts(options: SeatSyncOptions) {
   if (sheet === "invalid") return "unavailable" as const;
   const database = options.database ?? studentDatabase;
   try {
-    // Database time taken before the read; a write only lands if no newer read already did.
-    const [clock] = await database()`SELECT clock_timestamp() AS started`;
+    // Database time taken before the read, kept as text so its microseconds
+    // survive; a write only lands if no newer read already did.
+    const [clock] = await database()`SELECT clock_timestamp()::text AS started`;
     return {
       sheet,
       database,
-      startedAt: new Date(clock.started as string | Date).toISOString(),
+      startedAt: String(clock.started),
       counts: await readStudentSeatSheet(
         sheet,
         options.fetchImpl ?? fetch,
@@ -226,7 +227,7 @@ async function applySeatCount(
     applied = await read.database()`UPDATE student_enrollment_offerings
       SET external_seats=${seats}, reviewed_at=${read.startedAt}::timestamptz,
         review_reference=${`Seats sheet ${read.sheet.sheetId} (${offering.course_date})`}
-      WHERE id=${offering.id}::uuid AND reviewed_at <= ${read.startedAt}::timestamptz
+      WHERE id=${offering.id}::uuid AND reviewed_at < ${read.startedAt}::timestamptz
       RETURNING id`;
   } catch (error) {
     return error instanceof Error && /Inventory exceeds capacity/.test(error.message)
@@ -235,8 +236,20 @@ async function applySeatCount(
   }
   // Every read stamps its start time, even when the count is unchanged, so an
   // older read can never land after it. Nothing written means a newer read
-  // already applied its count, and the reservation checks the stored count.
-  if (!applied.length) return "synced";
+  // already applied its count. That read may have fetched the sheet before
+  // this one did, so if this read saw more offline seats than are stored,
+  // stop rather than sell against the lower count.
+  if (!applied.length) {
+    let stored: { external_seats: number }[];
+    try {
+      stored = (await read.database()`SELECT external_seats FROM student_enrollment_offerings
+        WHERE id=${offering.id}::uuid`) as { external_seats: number }[];
+    } catch {
+      return "unavailable";
+    }
+    if (!stored.length || seats > Number(stored[0].external_seats)) return "unavailable";
+    return "synced";
+  }
   return seats >= INFECTION_CONTROL_OFFERING_CAPACITY ? "full" : "synced";
 }
 

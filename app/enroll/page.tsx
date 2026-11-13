@@ -62,7 +62,8 @@ export default async function EnrollmentPage({
         );
       }
     } catch {
-      /* Fail closed on unavailable inventory. */
+      /* Fail closed on unavailable inventory, including a failed re-read. */
+      offerings = [];
     }
   }
   const checkoutOpen = Boolean(config && offerings.length);
