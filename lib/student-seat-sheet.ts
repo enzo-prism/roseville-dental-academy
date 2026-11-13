@@ -289,3 +289,33 @@ export async function refreshStudentOfflineSeats(
   }
   return keep;
 }
+
+/** How long one /enroll sheet refresh is reused before page views read the sheet again. */
+export const STUDENT_SEAT_SHEET_PAGE_REFRESH_MS = 30_000;
+let pageRefresh: { key: string; at: number; shown: Promise<Set<string>> } | undefined;
+
+export function resetStudentSeatSheetPageRefresh() {
+  pageRefresh = undefined;
+}
+
+/**
+ * /enroll is public, so page views share one sheet refresh per instance for a
+ * short window (concurrent views share the read in flight) instead of each
+ * spending the service account's Sheets quota. Checkout still reads the sheet
+ * fresh, under its own rate limit, before it holds a seat.
+ */
+export function refreshStudentOfflineSeatsForPage(
+  offerings: readonly SeatOffering[],
+  options: SeatSyncOptions = {},
+): Promise<Set<string>> {
+  const now = options.now ?? Date.now();
+  const key = offerings
+    .map((offering) => offering.id)
+    .sort()
+    .join(",");
+  if (pageRefresh && pageRefresh.key === key && now - pageRefresh.at < STUDENT_SEAT_SHEET_PAGE_REFRESH_MS)
+    return pageRefresh.shown;
+  const shown = refreshStudentOfflineSeats(offerings, options);
+  pageRefresh = { key, at: now, shown };
+  return shown;
+}

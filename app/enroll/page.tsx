@@ -28,7 +28,7 @@ import {
   infectionControlSessionLabel,
 } from "@/lib/student-enrollment-offerings";
 import {
-  refreshStudentOfflineSeats,
+  refreshStudentOfflineSeatsForPage,
   studentSeatSheetConfig,
 } from "@/lib/student-seat-sheet";
 import {
@@ -56,7 +56,7 @@ export default async function EnrollmentPage({
       offerings = await studentOfferings(config);
       if (studentSeatSheetConfig() !== null) {
         // Apply the academy seats sheet so the page shows the seats checkout will use.
-        const shown = await refreshStudentOfflineSeats(offerings);
+        const shown = await refreshStudentOfflineSeatsForPage(offerings);
         offerings = (await studentOfferings(config)).filter((o) =>
           shown.has(o.id),
         );

@@ -7,6 +7,9 @@ import {
   parseStudentSeatSheet,
   refreshStudentOfflineSeats,
   resetStudentSeatSheetTokenCache,
+  resetStudentSeatSheetPageRefresh,
+  refreshStudentOfflineSeatsForPage,
+  STUDENT_SEAT_SHEET_PAGE_REFRESH_MS,
   STUDENT_SEAT_SHEET_DEFAULT_RANGE,
   STUDENT_SEAT_SHEET_SCOPE,
   studentSeatSheetConfig,
@@ -101,7 +104,10 @@ async function plantPaidSeats(db: PGlite, offer: string, count: number) {
     );
 }
 
-test.beforeEach(() => resetStudentSeatSheetTokenCache());
+test.beforeEach(() => {
+  resetStudentSeatSheetTokenCache();
+  resetStudentSeatSheetPageRefresh();
+});
 
 test("seats sheet stays off until configured and fails closed when half configured", () => {
   expect(studentSeatSheetConfig({})).toBeNull();
@@ -321,6 +327,32 @@ test("an earlier read that saw more offline seats than a later write stops check
     release();
     expect(await earlier).toBe("unavailable");
     expect((await offlineSeats(db, offer)).external_seats).toBe(3);
+  });
+});
+
+test("enroll page views share one sheet read for a short window", async () => {
+  await withOffering(async (db, offer) => {
+    const offerings = [{ id: offer, course_id: "infection-control", course_date: DATE }];
+    const google = googleStub([["Infection Control", DATE, "4"]]);
+    const options = { sheet, fetchImpl: google.fetchImpl, database: pgliteDatabase(db), now: 1_000_000 };
+    const reads = () => google.calls.filter((call) => call.url.includes("sheets.googleapis")).length;
+    const [first, second] = await Promise.all([
+      refreshStudentOfflineSeatsForPage(offerings, options),
+      refreshStudentOfflineSeatsForPage(offerings, options),
+    ]);
+    expect([...first]).toEqual([offer]);
+    expect(second).toBe(first);
+    await refreshStudentOfflineSeatsForPage(offerings, {
+      ...options,
+      now: options.now + STUDENT_SEAT_SHEET_PAGE_REFRESH_MS - 1,
+    });
+    expect(reads()).toBe(1);
+    await refreshStudentOfflineSeatsForPage(offerings, {
+      ...options,
+      now: options.now + STUDENT_SEAT_SHEET_PAGE_REFRESH_MS,
+    });
+    expect(reads()).toBe(2);
+    expect((await offlineSeats(db, offer)).external_seats).toBe(4);
   });
 });
 
