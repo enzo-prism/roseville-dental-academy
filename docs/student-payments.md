@@ -220,9 +220,10 @@ row is a header. When the sheet is configured:
 
 - Checkout reads the sheet fresh before holding a seat and copies that date's count
   into `external_seats`, recording the review time and a `Seats sheet …` review
-  reference. Recency is recorded even when the database refuses an over-capacity
-  count, so an older lower count cannot be stored afterwards. The database still
-  refuses any count that would oversell the class.
+  reference. If the sheet count would oversell, checkout stores the remaining
+  capacity (filling the class) and still stamps recency, so an older lower count
+  cannot be stored afterwards. The database still refuses any count that would
+  oversell the class.
 - If the count fills the class, checkout returns the class-full message and holds nothing.
 - If the sheet cannot be read, has any unreadable row, lists a date twice, or does
   not list the requested date, checkout returns 503 and holds nothing.

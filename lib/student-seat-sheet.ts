@@ -225,14 +225,22 @@ async function storedOfflineSeats(
   offeringId: string,
   seats: number,
 ): Promise<AppliedOutcome> {
-  let stored: { external_seats: number }[];
+  let stored: { external_seats: number; remaining: number }[];
   try {
-    stored = (await read.database()`SELECT external_seats FROM student_enrollment_offerings
-      WHERE id=${offeringId}::uuid`) as { external_seats: number }[];
+    stored = (await read.database()`SELECT external_seats,
+      capacity - external_seats - (SELECT count(*) FROM student_enrollments
+        WHERE offering_id=${offeringId}::uuid
+          AND student_enrollment_occupies_seat(status, inventory_released_at)) AS remaining
+      FROM student_enrollment_offerings WHERE id=${offeringId}::uuid`) as {
+      external_seats: number;
+      remaining: number;
+    }[];
   } catch {
     return "unavailable";
   }
-  if (!stored.length || seats > Number(stored[0].external_seats)) return "unavailable";
+  if (!stored.length) return "unavailable";
+  if (Number(stored[0].remaining) <= 0) return "full";
+  if (seats > Number(stored[0].external_seats)) return "unavailable";
   return "synced";
 }
 
@@ -243,32 +251,29 @@ async function applySeatCount(
   const seats = read.counts.get(seatSheetKey(offering.course_id, offering.course_date));
   if (seats === undefined) return "unavailable";
   const reviewReference = seatSheetReviewReference(read, offering.course_date);
-  // Recency is stamped first, even if the count is later refused as
-  // over-capacity. An older, lower count then cannot land. The count write
-  // only applies while this read still owns reviewed_at.
-  let stamped: unknown[];
+  // One write stamps recency and stores min(sheet, remaining). An over-capacity
+  // read therefore fills the class instead of rolling back and leaving a stale
+  // low count that an older read could sell against.
+  let applied: { external_seats: number }[];
   try {
-    stamped = await read.database()`UPDATE student_enrollment_offerings
-      SET reviewed_at=${read.startedAt}::timestamptz, review_reference=${reviewReference}
+    applied = (await read.database()`UPDATE student_enrollment_offerings
+      SET reviewed_at=${read.startedAt}::timestamptz, review_reference=${reviewReference},
+        external_seats=LEAST(${seats}::int, GREATEST(0, capacity - (
+          SELECT count(*)::int FROM student_enrollments
+          WHERE offering_id=${offering.id}::uuid
+            AND student_enrollment_occupies_seat(status, inventory_released_at))))
       WHERE id=${offering.id}::uuid AND reviewed_at < ${read.startedAt}::timestamptz
-      RETURNING id`;
-  } catch {
-    return "unavailable";
-  }
-  if (!stamped.length) return storedOfflineSeats(read, offering.id, seats);
-  let applied: unknown[];
-  try {
-    applied = await read.database()`UPDATE student_enrollment_offerings
-      SET external_seats=${seats}
-      WHERE id=${offering.id}::uuid AND reviewed_at = ${read.startedAt}::timestamptz
-      RETURNING id`;
+      RETURNING external_seats`) as { external_seats: number }[];
   } catch (error) {
     return error instanceof Error && /Inventory exceeds capacity/.test(error.message)
       ? "rejected"
       : "unavailable";
   }
   if (!applied.length) return storedOfflineSeats(read, offering.id, seats);
-  return seats >= INFECTION_CONTROL_OFFERING_CAPACITY ? "full" : "synced";
+  const stored = Number(applied[0].external_seats);
+  return seats > stored || stored >= INFECTION_CONTROL_OFFERING_CAPACITY
+    ? "rejected"
+    : "synced";
 }
 
 /**

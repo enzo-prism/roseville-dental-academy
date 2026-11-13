@@ -212,8 +212,8 @@ test("a sheet count that fills the class refuses checkout", async () => {
         { sheet, fetchImpl: google.fetchImpl, database: pgliteDatabase(db) },
       ),
     ).toBe("full");
-    // The database refused to oversell, so the old count stays.
-    expect((await offlineSeats(db, offer)).external_seats).toBe(0);
+    // Sheet 3 plus 10 occupying seats would oversell; remaining capacity (2) is stored.
+    expect((await offlineSeats(db, offer)).external_seats).toBe(2);
   });
 });
 
@@ -363,8 +363,35 @@ test("a newer over-capacity sheet count still beats an older lower count", async
       }),
     ).toBe("full");
     release();
-    expect(await older).toBe("unavailable");
-    expect((await offlineSeats(db, offer)).external_seats).toBe(0);
+    expect(await older).toBe("full");
+    expect((await offlineSeats(db, offer)).external_seats).toBe(7);
+  });
+});
+
+test("an older zero count cannot sell after a newer over-capacity read fills remaining seats", async () => {
+  await withOffering(async (db, offer) => {
+    await plantPaidSeats(db, offer, 5);
+    const offering = { id: offer, course_id: "infection-control", course_date: DATE };
+    const database = pgliteDatabase(db);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow = googleStub([["Infection Control", DATE, "0"]]);
+    const slowFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).includes("sheets.googleapis")) await gate;
+      return slow.fetchImpl(input, init);
+    }) as typeof fetch;
+    const older = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(
+      await syncStudentOfflineSeats(offering, {
+        sheet,
+        fetchImpl: googleStub([["Infection Control", DATE, "8"]]).fetchImpl,
+        database,
+      }),
+    ).toBe("full");
+    release();
+    expect(await older).toBe("full");
+    expect((await offlineSeats(db, offer)).external_seats).toBe(7);
   });
 });
 
@@ -437,6 +464,6 @@ test("checkout refuses a sheet count the database will not store", async () => {
         },
       ),
     ).toBe("full");
-    expect((await offlineSeats(db, offer)).external_seats).toBe(0);
+    expect((await offlineSeats(db, offer)).external_seats).toBe(2);
   });
 });
