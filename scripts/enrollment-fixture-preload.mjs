@@ -1,6 +1,6 @@
 // Local integration harness only. This file is never imported by the application.
 import { readFile, writeFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
 if (process.env.RDA_ENROLLMENT_FIXTURE_MODE !== "local-only"
   || process.env.DATABASE_URL !== "postgres://fixture:fixture@db.fixture.neon.tech/test"
@@ -37,6 +37,14 @@ if (process.env.RDA_STUDENT_PAYMENTS_MODE) {
 }
 const sessions = new Map(); const keys = new Map();
 const stripeCalls = [];
+const googleCalls = [];
+const seatSheetPrivateKey = generateKeyPairSync("rsa", { modulusLength: 2048 })
+  .privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+const seatSheetEnv = {
+  RDA_STUDENT_SEATS_SHEET_ID: "1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789",
+  RDA_STUDENT_SEATS_SHEET_CLIENT_EMAIL: "rda-seats@rda-checkout.iam.gserviceaccount.com",
+  RDA_STUDENT_SEATS_SHEET_PRIVATE_KEY: seatSheetPrivateKey,
+};
 const originalFetch = globalThis.fetch;
 let resetLimits;
 function defaultFixtureSchedule() {
@@ -55,10 +63,18 @@ function applyCourseSchedule(control) {
       }
     : defaultFixtureSchedule();
 }
+function applySeatSheetEnv(control) {
+  if (control.seatSheet) {
+    Object.assign(process.env, seatSheetEnv);
+    return;
+  }
+  for (const name of Object.keys(seatSheetEnv)) delete process.env[name];
+}
 async function writeEvidence() {
   if (!process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE) return;
   const evidence = { stripeCalls: stripeCalls.slice() };
-  for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_reviews","student_enrollment_roster","student_enrollment_roster_test"]) {
+  evidence.googleCalls = googleCalls.slice();
+  for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_reviews","student_enrollment_roster","student_enrollment_roster_test","student_enrollment_offerings"]) {
     evidence[table] = (await db.query(`SELECT * FROM ${table}`)).rows;
   }
   await writeFile(process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE, JSON.stringify(evidence));
@@ -67,13 +83,16 @@ async function fixtureControls() {
   try {
     const control = JSON.parse(await readFile(process.env.RDA_ENROLLMENT_FIXTURE_FILE, "utf8"));
     applyCourseSchedule(control);
+    applySeatSheetEnv(control);
     return control;
   } catch {
     applyCourseSchedule({});
+    applySeatSheetEnv({});
     return {};
   }
 }
 applyCourseSchedule({});
+applySeatSheetEnv({});
 globalThis.fetch = async (input, init = {}) => {
   const url = new URL(input instanceof Request ? input.url : String(input));
   const requestInit = input instanceof Request ? { method: input.method, headers: input.headers, body: input.method !== "GET" && input.method !== "HEAD" ? await input.clone().text() : undefined, ...init } : init;
@@ -85,6 +104,7 @@ globalThis.fetch = async (input, init = {}) => {
         await db.exec("TRUNCATE student_enrollment_attempts, student_enrollment_mail, student_enrollment_events, student_enrollment_reviews, student_enrollments RESTART IDENTITY CASCADE");
         await db.exec("UPDATE student_enrollment_offerings SET external_seats=0");
         stripeCalls.length = 0;
+        googleCalls.length = 0;
         resetLimits=control.resetLimits;
       }
       if (control.externalSeats) {
@@ -210,6 +230,21 @@ globalThis.fetch = async (input, init = {}) => {
     }
     if (url.pathname === "/v1/checkout/sessions") return Response.json({ object: "list", data: [...sessions.values()].filter(s=>!url.searchParams.has("payment_intent") || s.payment_intent?.id === url.searchParams.get("payment_intent")), has_more: false });
     return Response.json({ error: "not found" }, { status: 404 });
+  }
+  if (url.hostname === "oauth2.googleapis.com" && url.pathname === "/token") {
+    googleCalls.push({ host: url.hostname, path: url.pathname });
+    await writeEvidence();
+    return Response.json({ access_token: "ya29.fixture", expires_in: 3600 });
+  }
+  if (url.hostname === "sheets.googleapis.com") {
+    googleCalls.push({ host: url.hostname, path: url.pathname });
+    const control = await fixtureControls();
+    await writeEvidence();
+    if (control.seatSheet?.status)
+      return new Response("denied", { status: Number(control.seatSheet.status) });
+    const values = control.seatSheet?.values
+      ?? seededDates.map((date) => ["Infection Control", date, "0"]);
+    return Response.json({ values });
   }
   if (["127.0.0.1","localhost","::1"].includes(url.hostname)) return originalFetch(input, init);
   throw new Error("Fixture blocked external network access");

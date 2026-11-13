@@ -1617,4 +1617,81 @@ test.describe("student enrollment isolated full stack", () => {
     const afterRelease = await (await request.get("/enroll")).text();
     expect(afterRelease).toMatch(/1(?:<!-- -->)? seats available/);
   });
+  test("checkout copies a synced seats sheet count before holding a seat", async ({
+    request,
+  }) => {
+    await control({
+      resetLimits: randomUUID(),
+      seatSheet: {
+        values: [
+          ["Infection Control", fixtureFirstDate, "2"],
+          ["Infection Control", fixtureSecondDate, "0"],
+        ],
+      },
+    });
+    const created = await request.post("/api/student-enrollment/checkout", {
+      data: payload(),
+      headers,
+    });
+    expect(created.status()).toBe(200);
+    expect((await created.json()).url).toContain("checkout.stripe.com");
+    const state = await evidence();
+    expect(
+      state.googleCalls.some((call: { host: string }) => call.host === "sheets.googleapis.com"),
+    ).toBe(true);
+    expect(
+      Number(
+        state.student_enrollment_offerings.find(
+          (row: { id: string }) => row.id === offer,
+        ).external_seats,
+      ),
+    ).toBe(2);
+    const enroll = await (await request.get("/enroll")).text();
+    expect(enroll).toMatch(/9(?:<!-- -->)? seats available/);
+  });
+  test("checkout refuses a full seats sheet class and holds nothing", async ({
+    request,
+  }) => {
+    await control({
+      resetLimits: randomUUID(),
+      seatSheet: {
+        values: [
+          ["Infection Control", fixtureFirstDate, "12"],
+          ["Infection Control", fixtureSecondDate, "0"],
+        ],
+      },
+    });
+    const checkout = await request.post("/api/student-enrollment/checkout", {
+      data: payload(),
+      headers,
+    });
+    expect(checkout.status()).toBe(409);
+    expect(await checkout.json()).toEqual({
+      error: STUDENT_CLASS_FULL_MESSAGE,
+      holdCreated: false,
+    });
+    const state = await evidence();
+    expect(state.student_enrollments).toHaveLength(0);
+    expect(state.stripeCalls).toEqual([]);
+  });
+  test("checkout fails closed when the seats sheet is unreadable", async ({
+    request,
+  }) => {
+    await control({
+      resetLimits: randomUUID(),
+      seatSheet: { status: 403 },
+    });
+    const checkout = await request.post("/api/student-enrollment/checkout", {
+      data: payload(),
+      headers,
+    });
+    expect(checkout.status()).toBe(503);
+    expect((await checkout.json()).holdCreated).toBe(false);
+    const state = await evidence();
+    expect(state.student_enrollments).toHaveLength(0);
+    expect(state.stripeCalls).toEqual([]);
+    expect(
+      state.googleCalls.some((call: { host: string }) => call.host === "sheets.googleapis.com"),
+    ).toBe(true);
+  });
 });

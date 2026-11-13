@@ -9,7 +9,6 @@ import {
 } from "@/lib/student-enrollment";
 import {
   parseStudentSeatSheet,
-  refreshStudentOfflineSeats,
   resetStudentSeatSheetTokenCache,
   STUDENT_SEAT_SHEET_DEFAULT_RANGE,
   STUDENT_SEAT_SHEET_SCOPE,
@@ -125,7 +124,7 @@ test("seats sheet stays off until configured and fails closed when half configur
   expect(
     studentSeatSheetConfig({
       RDA_STUDENT_SEATS_SHEET_ID: sheet.sheetId,
-      RDA_STUDENT_SEATS_SHEET_CLIENT_EMAIL: "person@gmail.com",
+      RDA_STUDENT_SEATS_SHEET_CLIENT_EMAIL: "person@example.com",
       RDA_STUDENT_SEATS_SHEET_PRIVATE_KEY: sheet.privateKey,
     }),
   ).toBe("invalid");
@@ -251,36 +250,40 @@ test("an unreadable sheet, a missing date or half config never starts checkout",
   }, 2);
 });
 
-test("a seats sheet refresh keeps only dates the sheet lists, from one sheet read", async () => {
+test("checkout syncs a listed date and refuses a date the sheet omits", async () => {
   await withOffering(async (db, offer) => {
     const other = randomUUID();
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-10-20',39500,0,$2,$3,$4,now(),'seat sheet other',true)",
       [other, "2026-09-30", STUDENT_POLICY_HASH, CANCELLATION_POLICY_PARAGRAPHS.join("\n\n")],
     );
-    const offerings = [
-      { id: offer, course_id: "infection-control", course_date: DATE },
-      { id: other, course_id: "infection-control", course_date: "2099-10-20" },
-    ];
+    const listed = { id: offer, course_id: "infection-control", course_date: DATE };
+    const omitted = { id: other, course_id: "infection-control", course_date: "2099-10-20" };
+    const database = pgliteDatabase(db);
     const google = googleStub([["Infection Control", DATE, "5"]]);
-    const shown = await refreshStudentOfflineSeats(offerings, {
-      sheet,
-      fetchImpl: google.fetchImpl,
-      database: pgliteDatabase(db),
-    });
-    expect([...shown]).toEqual([offer]);
+    expect(
+      await syncStudentOfflineSeats(listed, {
+        sheet,
+        fetchImpl: google.fetchImpl,
+        database,
+      }),
+    ).toBe("synced");
     expect((await offlineSeats(db, offer)).external_seats).toBe(5);
-    expect(google.calls.filter((call) => call.url.includes("sheets.googleapis"))).toHaveLength(1);
     expect(
-      await refreshStudentOfflineSeats(offerings, { sheet: null }),
-    ).toEqual(new Set([offer, other]));
+      await syncStudentOfflineSeats(omitted, {
+        sheet,
+        fetchImpl: googleStub([["Infection Control", DATE, "5"]]).fetchImpl,
+        database,
+      }),
+    ).toBe("unavailable");
+    expect(await syncStudentOfflineSeats(listed, { sheet: null, database })).toBe("off");
     expect(
-      await refreshStudentOfflineSeats(offerings, {
+      await syncStudentOfflineSeats(listed, {
         sheet,
         fetchImpl: googleStub(() => new Response("down", { status: 500 })).fetchImpl,
-        database: pgliteDatabase(db),
+        database,
       }),
-    ).toEqual(new Set());
+    ).toBe("unavailable");
   });
 });
 
@@ -338,9 +341,46 @@ test("an earlier read that saw more offline seats than a later write stops check
   });
 });
 
+test("a newer over-capacity sheet count still beats an older lower count", async () => {
+  await withOffering(async (db, offer) => {
+    await plantPaidSeats(db, offer, 5);
+    const offering = { id: offer, course_id: "infection-control", course_date: DATE };
+    const database = pgliteDatabase(db);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow = googleStub([["Infection Control", DATE, "3"]]);
+    const slowFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).includes("sheets.googleapis")) await gate;
+      return slow.fetchImpl(input, init);
+    }) as typeof fetch;
+    const older = syncStudentOfflineSeats(offering, { sheet, fetchImpl: slowFetch, database });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(
+      await syncStudentOfflineSeats(offering, {
+        sheet,
+        fetchImpl: googleStub([["Infection Control", DATE, "8"]]).fetchImpl,
+        database,
+      }),
+    ).toBe("full");
+    release();
+    expect(await older).toBe("unavailable");
+    expect((await offlineSeats(db, offer)).external_seats).toBe(0);
+  });
+});
+
 test("an unauthenticated enroll listing does not read the seats sheet or write seats", async () => {
   await withOffering(async (db, offer) => {
     const google = googleStub([["Infection Control", DATE, "7"]]);
+    const previous = {
+      fetch: globalThis.fetch,
+      sheetId: process.env.RDA_STUDENT_SEATS_SHEET_ID,
+      email: process.env.RDA_STUDENT_SEATS_SHEET_CLIENT_EMAIL,
+      key: process.env.RDA_STUDENT_SEATS_SHEET_PRIVATE_KEY,
+    };
+    process.env.RDA_STUDENT_SEATS_SHEET_ID = sheet.sheetId;
+    process.env.RDA_STUDENT_SEATS_SHEET_CLIENT_EMAIL = sheet.clientEmail;
+    process.env.RDA_STUDENT_SEATS_SHEET_PRIVATE_KEY = sheet.privateKey;
+    globalThis.fetch = google.fetchImpl;
     let writes = 0;
     const inner = pgliteDatabase(db);
     const database = (() => {
@@ -351,17 +391,27 @@ test("an unauthenticated enroll listing does not read the seats sheet or write s
         return tagged(strings, ...values);
       };
     }) as typeof studentDatabase;
-    await studentEnrollPageOfferings(listingConfig, database);
-    expect(google.calls).toHaveLength(0);
-    expect(writes).toBe(0);
-    expect((await offlineSeats(db, offer)).external_seats).toBe(0);
-    expect(
-      await refreshStudentOfflineSeats(
-        [{ id: offer, course_id: "infection-control", course_date: DATE }],
-        { sheet, fetchImpl: google.fetchImpl, database: inner },
-      ),
-    ).toEqual(new Set([offer]));
-    expect((await offlineSeats(db, offer)).external_seats).toBe(7);
+    try {
+      await studentEnrollPageOfferings(listingConfig, database);
+      expect(google.calls).toHaveLength(0);
+      expect(writes).toBe(0);
+      expect((await offlineSeats(db, offer)).external_seats).toBe(0);
+      expect(
+        await syncStudentOfflineSeats(
+          { id: offer, course_id: "infection-control", course_date: DATE },
+          { sheet, fetchImpl: google.fetchImpl, database: inner },
+        ),
+      ).toBe("synced");
+      expect((await offlineSeats(db, offer)).external_seats).toBe(7);
+    } finally {
+      globalThis.fetch = previous.fetch;
+      if (previous.sheetId === undefined) delete process.env.RDA_STUDENT_SEATS_SHEET_ID;
+      else process.env.RDA_STUDENT_SEATS_SHEET_ID = previous.sheetId;
+      if (previous.email === undefined) delete process.env.RDA_STUDENT_SEATS_SHEET_CLIENT_EMAIL;
+      else process.env.RDA_STUDENT_SEATS_SHEET_CLIENT_EMAIL = previous.email;
+      if (previous.key === undefined) delete process.env.RDA_STUDENT_SEATS_SHEET_PRIVATE_KEY;
+      else process.env.RDA_STUDENT_SEATS_SHEET_PRIVATE_KEY = previous.key;
+    }
   });
 });
 
@@ -374,18 +424,19 @@ test("enroll page offerings fail closed to no dates when the listing query throw
   );
 });
 
-test("a seats sheet refresh drops a date whose count the database refused", async () => {
+test("checkout refuses a sheet count the database will not store", async () => {
   await withOffering(async (db, offer) => {
     await plantPaidSeats(db, offer, 10);
-    const shown = await refreshStudentOfflineSeats(
-      [{ id: offer, course_id: "infection-control", course_date: DATE }],
-      {
-        sheet,
-        fetchImpl: googleStub([["Infection Control", DATE, "3"]]).fetchImpl,
-        database: pgliteDatabase(db),
-      },
-    );
-    expect(shown).toEqual(new Set());
+    expect(
+      await syncStudentOfflineSeats(
+        { id: offer, course_id: "infection-control", course_date: DATE },
+        {
+          sheet,
+          fetchImpl: googleStub([["Infection Control", DATE, "3"]]).fetchImpl,
+          database: pgliteDatabase(db),
+        },
+      ),
+    ).toBe("full");
     expect((await offlineSeats(db, offer)).external_seats).toBe(0);
   });
 });
