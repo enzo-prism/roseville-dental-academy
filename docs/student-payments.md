@@ -206,6 +206,32 @@ are preferred, with only account-read and Checkout create/read/list/expire permi
   explicitly `public`. This presentation flag alone does not authorize checkout.
 - `RDA_STUDENT_EMAIL_LIVE_ENABLED`: separate default-off outbound-email flag.
 - `RDA_STUDENT_EMAIL_API_KEY`, `RDA_STUDENT_EMAIL_FROM`: Resend credential and verified academy sender, only after separate approval.
+- `RDA_STUDENT_SEATS_SHEET_ID`, `RDA_STUDENT_SEATS_SHEET_CLIENT_EMAIL`,
+  `RDA_STUDENT_SEATS_SHEET_PRIVATE_KEY`, optional `RDA_STUDENT_SEATS_SHEET_RANGE`
+  (default `Seats!A2:C`): the academy seats sheet, described below. All three
+  required values unset leaves the sheet off. Setting only some of them fails closed.
+
+## Academy seats sheet
+
+Staff record seats already taken offline (phone, walk-in, invoice) in a Google Sheet
+with one row per class date: **Course** (for example `Infection Control`), **Class
+date** (`2026-11-14` or `11/14/2026`) and **Offline seats taken** (0 to 12). The first
+row is a header. When the sheet is configured:
+
+- Checkout reads the sheet fresh before holding a seat and copies that date's count
+  into `external_seats`, recording the review time and a `Seats sheet …` review
+  reference. The database still refuses any count that would oversell the class.
+- If the count fills the class, checkout returns the class-full message and holds nothing.
+- If the sheet cannot be read, has any unreadable row, lists a date twice, or does
+  not list the requested date, checkout returns 503 and holds nothing.
+- `/enroll` is a public GET. It lists stored remaining seats and does not sign in
+  to Google or write `external_seats`. Checkout is the only path that reads the
+  sheet and copies a date's count, under `studentAllowance`.
+- The sheet never enables an offering, and never changes its price, date or policy.
+
+Access uses a Google Cloud service account with read-only Sheets scope. Share the
+sheet with the service account's email as a **Viewer**. Store its private key only in
+the deployment's sensitive configuration (`\n` line breaks are accepted).
 
 Stripe account-read verification runs before issuing sessions and accepting payment events.
 The Mac mini Chrome dashboard was observed signed in as Roseville Dental Academy at the

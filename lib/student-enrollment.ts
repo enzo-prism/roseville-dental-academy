@@ -201,6 +201,24 @@ export async function studentOfferings(
       );
     }) as StudentOffering[];
 }
+
+/**
+ * Public GET /enroll listing. Read-only: do not refresh the academy seats
+ * sheet here. That path signs a Google service-account JWT and writes
+ * `external_seats`. Checkout applies the sheet under `studentAllowance`.
+ * Fail closed to an empty list so a thrown re-read cannot keep unfiltered dates.
+ */
+export async function studentEnrollPageOfferings(
+  config: StudentConfig,
+  database: typeof studentDatabase = studentDatabase,
+): Promise<StudentOffering[]> {
+  try {
+    return await studentOfferings(config, database);
+  } catch {
+    return [];
+  }
+}
+
 export async function studentOfferingById(
   id: string,
   config: StudentConfig,

@@ -91,6 +91,7 @@ try {
         "tests/student-enrollment-webhook-off.spec.ts",
         "tests/student-enrollment-retry.spec.ts",
         "tests/student-enrollment-confirmation-drain.spec.ts",
+        "tests/student-seat-sheet.spec.ts",
       ],
       { cwd: root, env, stdio: "inherit" },
     );

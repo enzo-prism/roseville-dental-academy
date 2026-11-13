@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { mock } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
-import { enrollmentDate } from "@/lib/enrollment-contract";
+import { academyCalendarDate, enrollmentDate } from "@/lib/enrollment-contract";
 import { createEnrollmentSession } from "@/lib/enrollment-auth";
 import {
   studentCanStartCheckout,
@@ -61,6 +61,13 @@ const offer = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[0],
   policy = "2026-09-30",
   fixtureNow = new Date("2026-11-10T18:00:00Z"),
   [fixtureFirstDate, fixtureSecondDate] = infectionControlFixtureCourseDates(fixtureNow);
+
+/** Remaining-drift date: the unused fixture slot, which stays in the future. */
+function remainingSeatFixtureDate(firstDate: string, secondDate: string) {
+  if (secondDate === firstDate)
+    throw new Error("remaining-seat fixture needs a second date");
+  return secondDate;
+}
 const fixtureSchedule = {
   reviewedOn: "2026-10-14",
   entries: [fixtureFirstDate, fixtureSecondDate].map((isoDate) => ({
@@ -367,7 +374,9 @@ test("live flags without the public CTA flag render 0 Infection Control Enroll C
     expect(page).not.toContain('studentConfig()?.mode === "live"');
     const enroll = await readFile("app/enroll/page.tsx", "utf8");
     expect(enroll).toContain("studentConfig()");
-    expect(enroll).toContain("studentOfferings(config)");
+    expect(enroll).toContain("studentEnrollPageOfferings(config)");
+    expect(enroll).not.toContain("student-seat-sheet");
+    expect(enroll).not.toContain("refreshStudentOfflineSeats");
     expect(enroll).not.toContain("RDA_STUDENT_PAYMENTS_PUBLIC_CTA");
     expect(enroll).not.toContain("studentPublicEnrollCta");
   } finally {
@@ -1690,6 +1699,18 @@ test("each confirmed date has a 12-seat cap, blocks the 13th, and a sold-out dat
     await db.close();
   }
 });
+test("remaining-seat fixture keeps a future class date after canonical dates elapse", () => {
+  for (const now of [
+    new Date("2026-11-20T20:00:00.000Z"),
+    new Date("2026-12-10T20:00:00.000Z"),
+  ]) {
+    const today = academyCalendarDate(now);
+    const [firstDate, secondDate] = infectionControlFixtureCourseDates(now);
+    const remainingDate = remainingSeatFixtureDate(firstDate, secondDate);
+    expect(remainingDate > today).toBe(true);
+    expect(remainingDate).not.toBe(firstDate);
+  }
+});
 test("claimed enrollment mutants fail when applied at their source lines", async () => {
   const db = await PGlite.create();
   try {
@@ -1798,10 +1819,12 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     await expect(
       applyOfferingSeed(db, "db/seeds/infection-control-offerings.test.sql"),
     ).rejects.toThrow(/expected 2 rows/i);
+    // The mutants offering itself sits on Dec 5 once Nov 14 has passed.
     expect(
       (
         await db.query(
-          "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05'",
+          "SELECT 1 FROM student_enrollment_offerings WHERE mode='test' AND course_date='2026-12-05' AND id<>$1",
+          [offer],
         )
       ).rows,
     ).toHaveLength(0);
@@ -1879,18 +1902,25 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(testHolds.some((row) => row.id === liveHold)).toBe(false);
     expect(testHolds.some((row) => row.id === bound)).toBe(true);
     const remainingOffer = randomUUID();
+    // A future fixture date that is not already taken by the mutants offering.
+    const remainingDate = remainingSeatFixtureDate(
+      fixtureFirstDate,
+      fixtureSecondDate,
+    );
+    expect(remainingDate > academyCalendarDate(fixtureNow)).toBe(true);
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2026-12-05',39500,11,$2,$3,$4,now(),'remaining drift',true)",
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,11,$2,$3,$4,now(),'remaining drift',true)",
       [
         remainingOffer,
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        remainingDate,
       ],
     );
     const refundedId = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2026-12-05',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,$10,$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','refunded')",
       [
         refundedId,
         remainingOffer,
@@ -1901,6 +1931,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        remainingDate,
       ],
     );
     const listed = await studentOfferings(
@@ -1951,7 +1982,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     );
     const releasedResolve = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,'2026-12-05',$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
+      "INSERT INTO student_enrollments(id,offering_id,course_date,owner_hash,student_name,email,phone,adult_attested,policy_version,policy_hash,policy_text,amount,currency,status) VALUES($1,$2,$10,$3,$4,$5,$6,true,$7,$8,$9,39500,'usd','expired')",
       [
         releasedResolve,
         remainingOffer,
@@ -1962,6 +1993,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
         policy,
         STUDENT_POLICY_HASH,
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
+        remainingDate,
       ],
     );
     await db.query(
@@ -2035,6 +2067,8 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(enroll).toContain("${Math.max(0, remaining)} seats available");
     expect(enroll).toContain("infectionControlOfferingAvailability");
     expect(enroll).toContain("STUDENT_CLASS_FULL_MESSAGE");
+    expect(enroll).toContain("studentEnrollPageOfferings(config)");
+    expect(enroll).not.toContain("student-seat-sheet");
   } finally {
     await db.close();
   }

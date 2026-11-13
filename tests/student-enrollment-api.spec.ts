@@ -11,13 +11,15 @@ import {
   INFECTION_CONTROL_MISSING_SCHEDULE_FIXTURE_OFFERING_ID,
   STUDENT_CLASS_FULL_MESSAGE,
   infectionControlFixtureCourseDates,
+  isCanonicalInfectionControlDate,
   infectionControlSessionLabel,
 } from "@/lib/student-enrollment-offerings";
 const origin = process.env.LOCAL_ORIGIN ?? "http://127.0.0.1:3117",
   offer = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[0],
   december = INFECTION_CONTROL_FIXTURE_OFFERING_ID_BY_SLOT[1],
   missingOffer = INFECTION_CONTROL_MISSING_SCHEDULE_FIXTURE_OFFERING_ID,
-  [fixtureFirstDate] = infectionControlFixtureCourseDates();
+  [fixtureFirstDate, fixtureSecondDate] = infectionControlFixtureCourseDates();
+/** Uses the seeded fixture dates so these tests keep passing after each class date passes. */
 function publishedIcSchedule(
   novemberStatus: "open" | "full",
   decemberStatus: "open" | "full" = "open",
@@ -27,12 +29,12 @@ function publishedIcSchedule(
     entries: [
       {
         courseId: "infection-control",
-        isoDate: "2026-11-14",
+        isoDate: fixtureFirstDate,
         status: novemberStatus,
       },
       {
         courseId: "infection-control",
-        isoDate: "2026-12-05",
+        isoDate: fixtureSecondDate,
         status: decemberStatus,
       },
     ],
@@ -451,16 +453,27 @@ test.describe("student enrollment isolated full stack", () => {
     });
     const html = await (await request.get("/enroll")).text();
     expect(html).toContain(STUDENT_CLASS_FULL_MESSAGE);
-    expect(html).toContain('data-rda-ic-session-status="full"');
-    expect(html).toContain('data-rda-ic-session="2026-11-14"');
-    expect(html).toContain('data-rda-ic-session-status="open"');
-    expect(html).toContain('data-rda-ic-session="2026-12-05"');
+    // The public date list names only the confirmed dates; once a fixture date
+    // falls back to a synthetic future date it is checked through the form instead.
+    for (const [date, status] of [
+      [fixtureFirstDate, "full"],
+      [fixtureSecondDate, "open"],
+    ] as const) {
+      if (isCanonicalInfectionControlDate(date))
+        expect(html).toContain(
+          `data-rda-ic-session="${date}" data-rda-ic-session-status="${status}"`,
+        );
+    }
     expect(html).not.toContain(`value="${offer}"`);
     expect(html).toContain(`value="${december}"`);
     await page.goto("/enroll");
     const dateOptions = page.getByLabel("Course date and full payment");
-    await expect(dateOptions).not.toContainText("November 14, 2026");
-    await expect(dateOptions).toContainText("December 5, 2026");
+    await expect(dateOptions).not.toContainText(
+      infectionControlSessionLabel(fixtureFirstDate)!,
+    );
+    await expect(dateOptions).toContainText(
+      infectionControlSessionLabel(fixtureSecondDate)!,
+    );
     await expect(page.getByText(STUDENT_CLASS_FULL_MESSAGE)).toBeVisible();
     const folder = "test-results/student-enrollment-schedule";
     await mkdir(folder, { recursive: true });
@@ -492,6 +505,60 @@ test.describe("student enrollment isolated full stack", () => {
     const state = await evidence();
     expect(state.student_enrollments).toHaveLength(0);
     expect(state.stripeCalls).toEqual([]);
+  });
+  test("a saved checkout can still be checked or closed after every date fills", async ({
+    page,
+  }) => {
+    await control({ resetLimits: randomUUID() });
+    await page.goto("/enroll");
+    await page.getByLabel("Course date and full payment").selectOption(offer);
+    await page.getByLabel("Student full name").fill("Synthetic Adult");
+    await page
+      .getByLabel("Email for enrollment confirmation")
+      .fill(`full-${randomUUID()}@example.test`);
+    await page.getByLabel("Phone number").fill("916 555 0100");
+    await page.getByLabel("I confirm that I am at least 18").check();
+    await page.getByLabel("I have read, understood, and accepted").check();
+    await page.route("https://checkout.stripe.com/**", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<!doctype html><title>Stripe fixture</title>",
+      }),
+    );
+    const checkoutResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/student-enrollment/checkout") &&
+        response.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", { name: "Continue to Stripe test checkout" })
+      .click();
+    expect((await checkoutResponse).status()).toBe(200);
+    await page.waitForURL("https://checkout.stripe.com/**");
+    await control({ courseSchedule: publishedIcSchedule("full", "full") });
+    await page.goto("/enroll");
+    await expect(page.getByText("Online enrollment is currently unavailable")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Continue to Stripe test checkout" }),
+    ).toHaveCount(0);
+    const recovery = page.locator("[data-rda-saved-checkout-recovery]");
+    await expect(
+      recovery.getByRole("button", { name: "Check or close saved checkout" }),
+    ).toBeEnabled();
+    await expect(
+      recovery.getByRole("link", { name: "View payment status" }),
+    ).toBeVisible();
+    await recovery
+      .getByRole("button", { name: "Check or close saved checkout" })
+      .click();
+    await expect(recovery.getByRole("status")).toContainText(
+      "unpaid checkout has closed",
+    );
+    expect(
+      await page.evaluate(() => sessionStorage.getItem("rda-student-checkout")),
+    ).toBeNull();
+    await control({ resetLimits: randomUUID() });
   });
   test("an open published date still starts checkout and a missing schedule date fails closed", async ({
     request,
@@ -1532,7 +1599,7 @@ test.describe("student enrollment isolated full stack", () => {
       },
     });
     const enroll = await (await request.get("/enroll")).text();
-    expect(enroll).toMatch(/0 seats available/);
+    expect(enroll).toMatch(/0(?:<!-- -->)? seats available/);
     expect(
       (
         await request.post("/api/student-enrollment/checkout", {
@@ -1548,6 +1615,6 @@ test.describe("student enrollment isolated full stack", () => {
       },
     });
     const afterRelease = await (await request.get("/enroll")).text();
-    expect(afterRelease).toMatch(/1 seats available/);
+    expect(afterRelease).toMatch(/1(?:<!-- -->)? seats available/);
   });
 });

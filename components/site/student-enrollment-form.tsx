@@ -29,6 +29,108 @@ function changeHold(id?: string) {
   else sessionStorage.removeItem(STORAGE);
   window.dispatchEvent(new Event("rda-student-checkout"));
 }
+/** Saved-checkout state shared by the enrollment form and the all-dates-full recovery block. */
+function useStudentCheckout() {
+  const router = useRouter();
+  const held = useSyncExternalStore(subscribe, snapshot, () => null);
+  const [busy, setBusy] = useState(false),
+    [message, setMessage] = useState("");
+  const inFlightRef = useRef(false);
+  async function reconcile() {
+    if (!held || inFlightRef.current) return;
+    inFlightRef.current = true;
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/student-enrollment/reconcile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: held }),
+      });
+      const result = await response.json();
+      if (response.status === 404) {
+        changeHold();
+        setMessage(
+          "No checkout was found for this browser. Contact the academy if you paid using another browser.",
+        );
+        return;
+      }
+      if (!response.ok)
+        throw new Error(result.error ?? "Verification unavailable.");
+      if (result.status === "paid" || result.status === "refunded") {
+        router.push(`/enroll/confirmation?enrollment=${held}`);
+        return;
+      }
+      if (result.status === "expired") {
+        changeHold();
+        setMessage(
+          "Stripe verified that the unpaid checkout has closed. You can choose a date again.",
+        );
+      } else
+        setMessage("Payment is still being verified. Your seat remains held.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Verification unavailable.",
+      );
+    } finally {
+      inFlightRef.current = false;
+      setBusy(false);
+    }
+  }
+  return { held, busy, setBusy, message, setMessage, inFlightRef, reconcile };
+}
+function SavedCheckoutActions({
+  held,
+  busy,
+  reconcile,
+}: {
+  held: string;
+  busy: boolean;
+  reconcile: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm">Saved checkout reference: {held}</p>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={reconcile}
+        disabled={busy}
+      >
+        Check or close saved checkout
+      </Button>
+      <a
+        href={`/enroll/confirmation?enrollment=${held}`}
+        className="block text-primary underline"
+      >
+        View payment status
+      </a>
+    </div>
+  );
+}
+function CheckoutStatus({ message }: { message: string }) {
+  return (
+    <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+      {message}
+    </p>
+  );
+}
+/**
+ * Shown when no date can be sold (for example every class is full), so a
+ * student with a saved checkout can still verify or close it.
+ */
+export function StudentSavedCheckoutRecovery() {
+  const { held, busy, message, reconcile } = useStudentCheckout();
+  if (!held && !message) return null;
+  return (
+    <div className="space-y-3" data-rda-saved-checkout-recovery="">
+      {held && (
+        <SavedCheckoutActions held={held} busy={busy} reconcile={reconcile} />
+      )}
+      <CheckoutStatus message={message} />
+    </div>
+  );
+}
 export function StudentEnrollmentForm({
   offerings,
   policyVersion,
@@ -38,20 +140,17 @@ export function StudentEnrollmentForm({
   policyVersion: string;
   testOnly: boolean;
 }) {
-  const router = useRouter();
-  const held = useSyncExternalStore(subscribe, snapshot, () => null);
+  const { held, busy, setBusy, message, setMessage, inFlightRef, reconcile } =
+    useStudentCheckout();
   const ready = useSyncExternalStore(
     subscribe,
     () => true,
     () => false,
   );
-  const [busy, setBusy] = useState(false),
-    [message, setMessage] = useState("");
-  const inFlight = useRef(false);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (inFlight.current || held) return;
-    inFlight.current = true;
+    if (inFlightRef.current || held) return;
+    inFlightRef.current = true;
     setBusy(true);
     setMessage("");
     const data = new FormData(event.currentTarget),
@@ -90,48 +189,7 @@ export function StudentEnrollmentForm({
         error instanceof Error ? error.message : "Checkout unavailable.",
       );
     } finally {
-      inFlight.current = false;
-      setBusy(false);
-    }
-  }
-  async function reconcile() {
-    if (!held || inFlight.current) return;
-    inFlight.current = true;
-    setBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch("/api/student-enrollment/reconcile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: held }),
-      });
-      const result = await response.json();
-      if (response.status === 404) {
-        changeHold();
-        setMessage(
-          "No checkout was found for this browser. Contact the academy if you paid using another browser.",
-        );
-        return;
-      }
-      if (!response.ok)
-        throw new Error(result.error ?? "Verification unavailable.");
-      if (result.status === "paid" || result.status === "refunded") {
-        router.push(`/enroll/confirmation?enrollment=${held}`);
-        return;
-      }
-      if (result.status === "expired") {
-        changeHold();
-        setMessage(
-          "Stripe verified that the unpaid checkout has closed. You can choose a date again.",
-        );
-      } else
-        setMessage("Payment is still being verified. Your seat remains held.");
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Verification unavailable.",
-      );
-    } finally {
-      inFlight.current = false;
+      inFlightRef.current = false;
       setBusy(false);
     }
   }
@@ -244,31 +302,9 @@ export function StudentEnrollmentForm({
             : "Continue to secure payment"}
       </Button>
       {held && (
-        <div className="space-y-3">
-          <p className="text-sm">Saved checkout reference: {held}</p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={reconcile}
-            disabled={busy}
-          >
-            Check or close saved checkout
-          </Button>
-          <a
-            href={`/enroll/confirmation?enrollment=${held}`}
-            className="block text-primary underline"
-          >
-            View payment status
-          </a>
-        </div>
+        <SavedCheckoutActions held={held} busy={busy} reconcile={reconcile} />
       )}
-      <p
-        role="status"
-        aria-live="polite"
-        className="text-sm text-muted-foreground"
-      >
-        {message}
-      </p>
+      <CheckoutStatus message={message} />
     </form>
   );
 }
