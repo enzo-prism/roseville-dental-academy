@@ -224,8 +224,9 @@ row is a header. When the sheet is configured:
 - If the count fills the class, checkout returns the class-full message and holds nothing.
 - If the sheet cannot be read, has any unreadable row, lists a date twice, or does
   not list the requested date, checkout returns 503 and holds nothing.
-- `/enroll` applies the same sheet with one read and lists only dates the sheet lists,
-  so the page shows the seats checkout will use.
+- `/enroll` is a public GET. It lists stored remaining seats and does not sign in
+  to Google or write `external_seats`. Checkout is the only path that reads the
+  sheet and copies a date's count, under `studentAllowance`.
 - The sheet never enables an offering, and never changes its price, date or policy.
 
 Access uses a Google Cloud service account with read-only Sheets scope. Share the

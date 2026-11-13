@@ -2,14 +2,15 @@ import { generateKeyPairSync, randomUUID, createVerify } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
 import { test, expect } from "@playwright/test";
 import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
-import { STUDENT_POLICY_HASH, studentDatabase } from "@/lib/student-enrollment";
+import {
+  STUDENT_POLICY_HASH,
+  studentDatabase,
+  studentEnrollPageOfferings,
+} from "@/lib/student-enrollment";
 import {
   parseStudentSeatSheet,
   refreshStudentOfflineSeats,
   resetStudentSeatSheetTokenCache,
-  resetStudentSeatSheetPageRefresh,
-  refreshStudentOfflineSeatsForPage,
-  STUDENT_SEAT_SHEET_PAGE_REFRESH_MS,
   STUDENT_SEAT_SHEET_DEFAULT_RANGE,
   STUDENT_SEAT_SHEET_SCOPE,
   studentSeatSheetConfig,
@@ -104,9 +105,16 @@ async function plantPaidSeats(db: PGlite, offer: string, count: number) {
     );
 }
 
+const listingConfig = {
+  mode: "test" as const,
+  key: "sk_test_fixture",
+  webhookSecret: "whsec_fixture",
+  origin: "http://127.0.0.1:3117",
+  account: "acct_fixture",
+};
+
 test.beforeEach(() => {
   resetStudentSeatSheetTokenCache();
-  resetStudentSeatSheetPageRefresh();
 });
 
 test("seats sheet stays off until configured and fails closed when half configured", () => {
@@ -243,7 +251,7 @@ test("an unreadable sheet, a missing date or half config never starts checkout",
   }, 2);
 });
 
-test("the enroll page shows only dates the sheet lists, from one sheet read", async () => {
+test("a seats sheet refresh keeps only dates the sheet lists, from one sheet read", async () => {
   await withOffering(async (db, offer) => {
     const other = randomUUID();
     await db.query(
@@ -330,33 +338,43 @@ test("an earlier read that saw more offline seats than a later write stops check
   });
 });
 
-test("enroll page views share one sheet read for a short window", async () => {
+test("an unauthenticated enroll listing does not read the seats sheet or write seats", async () => {
   await withOffering(async (db, offer) => {
-    const offerings = [{ id: offer, course_id: "infection-control", course_date: DATE }];
-    const google = googleStub([["Infection Control", DATE, "4"]]);
-    const options = { sheet, fetchImpl: google.fetchImpl, database: pgliteDatabase(db), now: 1_000_000 };
-    const reads = () => google.calls.filter((call) => call.url.includes("sheets.googleapis")).length;
-    const [first, second] = await Promise.all([
-      refreshStudentOfflineSeatsForPage(offerings, options),
-      refreshStudentOfflineSeatsForPage(offerings, options),
-    ]);
-    expect([...first]).toEqual([offer]);
-    expect(second).toBe(first);
-    await refreshStudentOfflineSeatsForPage(offerings, {
-      ...options,
-      now: options.now + STUDENT_SEAT_SHEET_PAGE_REFRESH_MS - 1,
-    });
-    expect(reads()).toBe(1);
-    await refreshStudentOfflineSeatsForPage(offerings, {
-      ...options,
-      now: options.now + STUDENT_SEAT_SHEET_PAGE_REFRESH_MS,
-    });
-    expect(reads()).toBe(2);
-    expect((await offlineSeats(db, offer)).external_seats).toBe(4);
+    const google = googleStub([["Infection Control", DATE, "7"]]);
+    let writes = 0;
+    const inner = pgliteDatabase(db);
+    const database = (() => {
+      const tagged = inner();
+      return (strings: TemplateStringsArray, ...values: unknown[]) => {
+        if (/UPDATE\s+student_enrollment_offerings/i.test(strings.join(" ")))
+          writes += 1;
+        return tagged(strings, ...values);
+      };
+    }) as typeof studentDatabase;
+    await studentEnrollPageOfferings(listingConfig, database);
+    expect(google.calls).toHaveLength(0);
+    expect(writes).toBe(0);
+    expect((await offlineSeats(db, offer)).external_seats).toBe(0);
+    expect(
+      await refreshStudentOfflineSeats(
+        [{ id: offer, course_id: "infection-control", course_date: DATE }],
+        { sheet, fetchImpl: google.fetchImpl, database: inner },
+      ),
+    ).toEqual(new Set([offer]));
+    expect((await offlineSeats(db, offer)).external_seats).toBe(7);
   });
 });
 
-test("the enroll page drops a date whose sheet count the database refused", async () => {
+test("enroll page offerings fail closed to no dates when the listing query throws", async () => {
+  const database = (() => {
+    throw new Error("offerings unavailable");
+  }) as typeof studentDatabase;
+  await expect(studentEnrollPageOfferings(listingConfig, database)).resolves.toEqual(
+    [],
+  );
+});
+
+test("a seats sheet refresh drops a date whose count the database refused", async () => {
   await withOffering(async (db, offer) => {
     await plantPaidSeats(db, offer, 10);
     const shown = await refreshStudentOfflineSeats(

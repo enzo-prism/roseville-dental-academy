@@ -28,12 +28,8 @@ import {
   infectionControlSessionLabel,
 } from "@/lib/student-enrollment-offerings";
 import {
-  refreshStudentOfflineSeatsForPage,
-  studentSeatSheetConfig,
-} from "@/lib/student-seat-sheet";
-import {
   studentConfig,
-  studentOfferings,
+  studentEnrollPageOfferings,
   type StudentOffering,
 } from "@/lib/student-enrollment";
 
@@ -52,19 +48,7 @@ export default async function EnrollmentPage({
     !checkoutAllowed;
   let offerings: StudentOffering[] = [];
   if (config && checkoutAllowed) {
-    try {
-      offerings = await studentOfferings(config);
-      if (studentSeatSheetConfig() !== null) {
-        // Apply the academy seats sheet so the page shows the seats checkout will use.
-        const shown = await refreshStudentOfflineSeatsForPage(offerings);
-        offerings = (await studentOfferings(config)).filter((o) =>
-          shown.has(o.id),
-        );
-      }
-    } catch {
-      /* Fail closed on unavailable inventory, including a failed re-read. */
-      offerings = [];
-    }
+    offerings = await studentEnrollPageOfferings(config);
   }
   const checkoutOpen = Boolean(config && offerings.length);
   return (

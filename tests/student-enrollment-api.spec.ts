@@ -520,7 +520,11 @@ test.describe("student enrollment isolated full stack", () => {
     await page.getByLabel("I confirm that I am at least 18").check();
     await page.getByLabel("I have read, understood, and accepted").check();
     await page.route("https://checkout.stripe.com/**", (route) =>
-      route.abort(),
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<!doctype html><title>Stripe fixture</title>",
+      }),
     );
     const checkoutResponse = page.waitForResponse(
       (response) =>
@@ -531,6 +535,7 @@ test.describe("student enrollment isolated full stack", () => {
       .getByRole("button", { name: "Continue to Stripe test checkout" })
       .click();
     expect((await checkoutResponse).status()).toBe(200);
+    await page.waitForURL("https://checkout.stripe.com/**");
     await control({ courseSchedule: publishedIcSchedule("full", "full") });
     await page.goto("/enroll");
     await expect(page.getByText("Online enrollment is currently unavailable")).toBeVisible();
