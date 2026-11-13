@@ -99,3 +99,8 @@ Formspree is blocked in this suite; it never submits production leads.
 Validation: `pnpm test:course-dates` includes feed failure and revision checks,
 public status verification, and an isolated empty-schedule Next app that checks
 the homepage and all six course pages without changing the checkout data.
+
+November 10 update: Enzo requested marking the Saturday November 14, 2026
+Infection Control class full. The dashboard entry and committed development
+fixture use `full`. November 14 stays visible with a Full badge; next-open copy,
+request choices, FAQs, paid pages, and CourseInstance schema use December 5.

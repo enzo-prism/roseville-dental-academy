@@ -364,7 +364,7 @@ for (const width of [390, 1280]) {
     await expect(page.getByText("Next open date: October 17, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: November 7, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: October 24, 2026", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("Next open date: November 14, 2026", { exact: true })).toHaveCount(2);
+    await expect(page.getByText("Next open date: November 14, 2026", { exact: true })).toHaveCount(1);
     await expect(page.getByText("Next open date: November 20, 2026", { exact: true })).toHaveCount(1);
     const octoberSeventeen = schedule.locator(".rda-home-schedule-date-row").filter({
       has: page.locator('time[datetime="2026-10-17"]'),
@@ -472,14 +472,13 @@ test("course JSON-LD omits sold-out instances", async ({ page, request }) => {
   expect(sealantsDates).toEqual(["2026-12-12"]);
   expect(sealantsDates).not.toContain("2026-10-24");
 
-  // The full October Infection Control class remains visible with a badge,
-  // but its structured data advertises only the later open dates.
+  // Full October and November Infection Control classes remain visible with
+  // badges, but structured data advertises only the open December class.
   await page.goto("/infection-control");
   const infectionSchema = JSON.parse(
     (await page.locator("#rda-ld-course-infection-control").textContent()) ?? "{}",
   ) as { hasCourseInstance?: Array<{ startDate?: string }> };
   expect((infectionSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).toEqual([
-    "2026-11-14",
     "2026-12-05",
   ]);
   expect((infectionSchema.hasCourseInstance ?? []).map((entry) => entry.startDate)).not.toContain("2026-11-07");
@@ -494,7 +493,7 @@ test("course JSON-LD omits sold-out instances", async ({ page, request }) => {
   ]);
 });
 
-test("infection-control page and FAQs omit November 7 while keeping later dates", async ({ page, request }) => {
+test("infection-control marks November 14 full and directs requests to December 5", async ({ page, request }) => {
   test.skip(await servesDashboardSchedule(request), FIXTURE_PIN);
   await page.goto("/infection-control");
   const upcomingDates = page.locator('[data-rda-live-course="infection-control"] .rda-course-date');
@@ -503,12 +502,17 @@ test("infection-control page and FAQs omit November 7 while keeping later dates"
   await expect(upcomingDates.filter({ hasText: "October 17, 2026" }).getByText("Full", { exact: true })).toBeVisible();
   await expect(upcomingDates.getByText("November 7, 2026")).toHaveCount(0);
   await expect(upcomingDates.getByText("November 14, 2026")).toHaveCount(1);
+  const novemberClass = upcomingDates.filter({ hasText: "November 14, 2026" });
+  await expect(novemberClass).toHaveAttribute("data-status", "full");
+  await expect(novemberClass.getByText("Full", { exact: true })).toBeVisible();
+  await expect(page.locator(".ac-course-facts")).toContainText("December 5, 2026");
   await expect(upcomingDates.getByText("December 5, 2026")).toHaveCount(1);
 
   await page.goto("/faqs-1");
   // FAQ answers sit in collapsed <details>; read their text, not just what is expanded.
   const faqBody = await page.locator("body").textContent() ?? "";
-  expect(faqBody).toContain("Infection Control: November 14, 2026; December 5, 2026");
+  expect(faqBody).toContain("Infection Control: December 5, 2026");
+  expect(faqBody).not.toContain("Infection Control: November 14, 2026");
   expect(faqBody).not.toContain("Infection Control: October 17, 2026; November 7, 2026");
 });
 

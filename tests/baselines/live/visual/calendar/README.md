@@ -9,3 +9,11 @@ The registry records the capture deployment, source/run SHAs/URLs, cutoff, full/
 The earlier failure40969782666 used the same dashboard publication. Its passing same-SHA deployment40975817486 instead used the committed October14 publication. The older failed screenshot also had unloaded gallery tiles; the selected newer capture has those images loaded. A rerun’s pass therefore did not establish that the two deployments had identical inputs.
 
 No fonts, masks, image preprocessing or tolerances are relaxed. Actual calendar contracts still validate dates and availability. Review source/publication and all visible content before registering another revision; never auto-capture or auto-accept an unreviewed publication.
+
+November 10, 2026: reviewed the Linux mobile homepage for publication
+`515a47b9133bb078e7bff0f7780efa402123e4cb74d7f1685a816d48d4a03700`. It marks November 14 Infection Control Full,
+keeps December 5 open, omits elapsed November 7 rows, and includes the existing
+January 9 Front Desk class. Captured from the exact production deployment
+`3e79257` by workflow run `42907744877`; the capture branch only points the
+existing capture workflow at that immutable deployment. The complete image and
+calendar detail were visually reviewed. Fonts, masks, and tolerances are unchanged.
