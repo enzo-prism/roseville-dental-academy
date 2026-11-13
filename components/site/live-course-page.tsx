@@ -37,6 +37,7 @@ import {
   courseScheduleNote,
   formatCourseDateLabel,
   getHeroStartDates,
+  getLastOfYearOpenStart,
   getNextAvailableCourseDate,
   getUpcomingCourseSchedule,
   type CourseScheduleId,
@@ -191,6 +192,8 @@ function CourseHeroStartDates({
   courseId: CourseScheduleId;
   dates: UpcomingStartDate[];
 }) {
+  const lastOfYear = getLastOfYearOpenStart(courseId);
+
   return (
     <div className="ac-hero-starts" data-rda-hero-starts={courseId}>
       <p className="ac-hero-starts-label">
@@ -207,6 +210,9 @@ function CourseHeroStartDates({
           >
             <time dateTime={entry.isoDate}>{entry.weekdayShort}</time>
             {entry.status === "full" ? <span className="ac-full-flag">Full</span> : null}
+            {entry.isoDate === lastOfYear?.isoDate ? (
+              <span className="ac-last-flag">Last of {lastOfYear.year}</span>
+            ) : null}
           </span>
         ))}
       </div>
@@ -216,6 +222,8 @@ function CourseHeroStartDates({
 
 function CourseSchedule({ course }: { course: LiveCourseContent }) {
   const scheduleEntries = getUpcomingCourseSchedule(course.id);
+  // "Last class of the year" is only called out for the Dental Assisting program.
+  const lastOfYear = course.id === "dental-assisting-program" ? getLastOfYearOpenStart(course.id) : undefined;
 
   if (!scheduleEntries.length) {
     return <p className="ac-body">Call the office for upcoming class dates.</p>;
@@ -244,6 +252,7 @@ function CourseSchedule({ course }: { course: LiveCourseContent }) {
               <time dateTime={entry.isoDate}>{formatCourseDateLabel(course.id, entry.date)}</time>
               <small>
                 {new Date(`${entry.isoDate}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long" })}
+                {entry.isoDate === lastOfYear?.isoDate ? ` · Last class of ${lastOfYear.year}` : null}
               </small>
             </span>
             {entry.status === "full" ? (

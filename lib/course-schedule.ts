@@ -261,6 +261,28 @@ export function getCourseSchedule(courseId: CourseScheduleId) {
     });
 }
 
+/**
+ * True when `isoDate` is a scheduled start in `schedule` and no later start (open or full)
+ * is scheduled in the same calendar year. Backs "last class of 2026" copy with schedule data,
+ * so the claim switches off on its own if the dashboard adds a later date that year.
+ */
+export function isLastScheduledStartOfYear(isoDate: string, schedule: readonly { isoDate: string }[]) {
+  const year = isoDate.slice(0, 4);
+  return (
+    schedule.some((entry) => entry.isoDate === isoDate) &&
+    !schedule.some((entry) => entry.isoDate.slice(0, 4) === year && entry.isoDate > isoDate)
+  );
+}
+
+/** The next open start when it is also the last scheduled start of its year, else undefined. */
+export function getLastOfYearOpenStart(courseId: CourseScheduleId, asOf = COURSE_SCHEDULE_REVIEWED_ON) {
+  const next = getUpcomingCourseSchedule(courseId, asOf).find((entry) => entry.status !== "full");
+  if (!next || !isLastScheduledStartOfYear(next.isoDate, getCourseSchedule(courseId))) {
+    return undefined;
+  }
+  return { isoDate: next.isoDate, year: next.isoDate.slice(0, 4) };
+}
+
 export const SATURDAY_ACADEMY_START_DATE = "September 12, 2026";
 
 export function formatCourseDateLabel(courseId: CourseScheduleId, date: string) {

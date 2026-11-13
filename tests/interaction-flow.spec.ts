@@ -2662,15 +2662,14 @@ test.describe("live-style interaction flows", () => {
   });
 
   test.describe("Dental Assisting promo", () => {
-    test("banner promotes the next upcoming DA start", async ({ page }) => {
+    test("banner promotes the last DA start of 2026", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
       const banner = page.locator("[data-rda-promo-banner='true']");
 
       await expect(banner).toBeVisible();
-      await expect(banner).toContainText("Next Dental Assisting class starts Friday, Nov 20.");
-      await expect(banner).toContainText("Saturday class starts Dec 5.");
+      await expect(banner).toContainText("Last Dental Assisting class of 2026 starts Saturday, Dec 5.");
       await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
       expect(activeSitePromo.ctaHref).toBe("/lp/dental-assisting-enroll");
     });
@@ -2682,20 +2681,20 @@ test.describe("live-style interaction flows", () => {
       const dialog = page.locator("[data-rda-promo-dialog='true']");
 
       await expect(dialog).toBeVisible({ timeout: 8_000 });
-      await expect(dialog.getByText("Dental Assisting class", { exact: true })).toBeVisible();
+      await expect(dialog.getByText("Last class of 2026", { exact: true })).toBeVisible();
       await expect(
         dialog.getByRole("heading", {
-          name: "Next class starts Friday, Nov 20. Saturday class starts Dec 5.",
+          name: "The last Dental Assisting class of 2026 starts Saturday, Dec 5.",
         }),
       ).toBeVisible();
       await expect(
-        dialog.getByText("Ask admissions which schedule fits your week.", { exact: false }),
+        dialog.getByText("Ask admissions to save your seat.", { exact: false }),
       ).toBeVisible();
 
       const cta = dialog.locator("[data-rda-promo-cta='true']");
 
       await expect(cta).toHaveAttribute("href", "/lp/dental-assisting-enroll");
-      await expect(cta).toHaveText("Ask about Nov 20");
+      await expect(cta).toHaveText("Ask about Dec 5");
 
       await dialog.getByRole("button", { name: "Dismiss class announcement" }).click();
       await expect(dialog).toHaveCount(0);

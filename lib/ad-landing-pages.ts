@@ -2,6 +2,8 @@ import {
   courseScheduleCourseDetails,
   formatCourseDateLabel,
   formatNextStartsSummary,
+  formatWeekdayShortDate,
+  getLastOfYearOpenStart,
   getUpcomingCourseSchedule,
   getAvailableCourseDateList,
   getNextAvailableCourseDate,
@@ -143,7 +145,15 @@ function firstAvailableDate(courseId: CourseScheduleId) {
   return getNextAvailableCourseDate(courseId) ?? "Ask admissions";
 }
 
+/** "Last class of 2026 starts Sat, Dec 5" while the next open start is the year's last, else undefined. */
+function lastOfYearBadge(courseId: CourseScheduleId) {
+  const last = getLastOfYearOpenStart(courseId);
+  return last ? `Last class of ${last.year} starts ${formatWeekdayShortDate(last.isoDate)}` : undefined;
+}
+
 function nextStartsBadge(courseId: CourseScheduleId) {
+  const lastOfYear = lastOfYearBadge(courseId);
+  if (lastOfYear) return lastOfYear;
   const summary = formatNextStartsSummary(courseId);
   return summary ? `Next starts: ${summary}` : `Next start: ${firstAvailableDate(courseId)}`;
 }
@@ -229,7 +239,7 @@ export const adLandingPages: AdLandingPage[] = [
       { label: "Tuition", value: "$2,500" },
     ],
     hero: {
-      badge: `Next start: ${firstAvailableDate("dental-assisting-program")}`,
+      badge: lastOfYearBadge("dental-assisting-program") ?? `Next start: ${firstAvailableDate("dental-assisting-program")}`,
       imageAlt:
         "Roseville Dental Academy students practicing hands-on dental assisting skills.",
       imageSrc: siteImages.programHero,
@@ -787,7 +797,7 @@ export const adLandingPages: AdLandingPage[] = [
       },
     ],
     hero: {
-      badge: `Next start: ${firstAvailableDate("dental-assisting-program")}`,
+      badge: lastOfYearBadge("dental-assisting-program") ?? `Next start: ${firstAvailableDate("dental-assisting-program")}`,
       imageAlt:
         "Roseville Dental Academy students practicing hands-on dental assisting skills.",
       imageSrc: siteImages.programHero,

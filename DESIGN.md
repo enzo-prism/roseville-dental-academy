@@ -202,7 +202,7 @@ Three things carry the brand, in this order: **real photos of students in action
 
 ## Tokens
 
-Use the semantic tokens in CSS (`var(--primary)`, `var(--card)`, `var(--muted-foreground)`, `var(--border)`, `var(--ink)`…) and the matching Tailwind utilities (`bg-card`, `text-muted-foreground`, …) in JSX. `primary` is the Roseville logo blue; in dark mode it lifts to `dark-primary` for contrast. `star` is reserved for rating stars; `success` for validation checks and "Open" schedule flags; `destructive` for errors and "Full" flags.
+Use the semantic tokens in CSS (`var(--primary)`, `var(--card)`, `var(--muted-foreground)`, `var(--border)`, `var(--ink)`…) and the matching Tailwind utilities (`bg-card`, `text-muted-foreground`, …) in JSX. `primary` is the Roseville logo blue; in dark mode it lifts to `dark-primary` for contrast. `star` is reserved for rating stars; `success` for validation checks and "Open" schedule flags; `destructive` for errors and "Full" flags; `primary` for the "Last of <year>" flag (`.ac-last-flag`) on the final open Dental Assisting start of a year, shown only while the schedule confirms no later start that year.
 
 `whatsapp` (`#25D366`) with white is reserved for WhatsApp controls (FAB, footer, contact, course sidebar) and keeps the official glyph from `components/site/whatsapp-icon.tsx`.
 

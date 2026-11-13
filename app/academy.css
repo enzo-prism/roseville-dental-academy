@@ -6422,6 +6422,20 @@ html.rda-motion .ac-course-float {
   text-transform: uppercase;
 }
 
+/* "Last of 2026" flag on the final open start of a year (primary, not success/destructive). */
+.ac-last-flag {
+  background: var(--primary);
+  border-radius: 99px;
+  color: var(--primary-foreground);
+  font-family: var(--font-body);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .ac-enroll-note {
   color: var(--muted-foreground);
   font-size: 0.78rem;

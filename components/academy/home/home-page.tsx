@@ -51,6 +51,7 @@ import {
   courseScheduleCourseDetails,
   courseScheduleNote,
   getAvailableCourseDates,
+  getLastOfYearOpenStart,
   getUpcomingScheduleMonths,
 } from "@/lib/course-schedule";
 import { frontOfficeProgram } from "@/lib/front-office-program";
@@ -1042,7 +1043,10 @@ function SocialFollow() {
 
 export function HomePage({ sourceLabel }: { sourceLabel: string }) {
   const daNext = getNextOpenShortDate(dentalAssistingProgram.id);
-  const nextClassLabel = activeSitePromo.courseId === "dental-assisting-program" && daNext
+  const daLastOfYear = getLastOfYearOpenStart(dentalAssistingProgram.id);
+  const nextClassLabel = daLastOfYear && daNext
+    ? `Last class of ${daLastOfYear.year} · Starts ${daNext}`
+    : activeSitePromo.courseId === "dental-assisting-program" && daNext
     ? `Now enrolling · Next class ${daNext}`
     : daNext
       ? `Next Dental Assisting class ${daNext}`
