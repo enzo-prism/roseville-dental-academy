@@ -1,4 +1,5 @@
 "use client";
+import { ArrowRight, LockKeyhole } from "lucide-react";
 import { useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ type Offering = {
   id: string;
   course_date: string;
   label?: string;
-  amount: number;
+  price: string;
   remaining: number;
 };
 const STORAGE = "rda-student-checkout";
@@ -90,10 +91,11 @@ function SavedCheckoutActions({
 }) {
   return (
     <div className="space-y-3">
-      <p className="text-sm">Saved checkout reference: {held}</p>
+      <p className="break-all text-sm">Saved checkout reference: {held}</p>
       <Button
         type="button"
         variant="outline"
+        className="min-h-11"
         onClick={reconcile}
         disabled={busy}
       >
@@ -110,7 +112,11 @@ function SavedCheckoutActions({
 }
 function CheckoutStatus({ message }: { message: string }) {
   return (
-    <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+    <p
+      role="status"
+      aria-live="polite"
+      className="text-sm text-muted-foreground"
+    >
       {message}
     </p>
   );
@@ -134,10 +140,14 @@ export function StudentSavedCheckoutRecovery() {
 export function StudentEnrollmentForm({
   offerings,
   policyVersion,
+  policy,
+  unavailableDates,
   testOnly,
 }: {
   offerings: Offering[];
   policyVersion: string;
+  policy: React.ReactNode;
+  unavailableDates: React.ReactNode;
   testOnly: boolean;
 }) {
   const { held, busy, setBusy, message, setMessage, inFlightRef, reconcile } =
@@ -194,117 +204,160 @@ export function StudentEnrollmentForm({
     }
   }
   return (
-    <form onSubmit={submit} className="space-y-6">
+    <form onSubmit={submit} className="space-y-8">
       {testOnly && (
-        <p className="font-semibold">
+        <p className="text-sm font-semibold">
           TEST ONLY. Use fictional adult details and Stripe test cards. No real
           enrollment or money.
         </p>
       )}
-      <div className="space-y-2">
-        <Label htmlFor="student-course-date">
-          Course date and full payment
-        </Label>
-        <select
-          id="student-course-date"
-          name="offeringId"
-          required
-          disabled={busy || Boolean(held)}
-          className="w-full rounded-md border border-input bg-card px-3 py-2"
-        >
-          <option value="">Choose an available date</option>
-          {offerings.map((o) => (
-            <option key={o.id} value={o.id} disabled={o.remaining <= 0}>
-              {o.label ?? o.course_date} · ${(o.amount / 100).toFixed(2)} USD ·{" "}
-              {Math.max(0, o.remaining)} seats available
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="student-name">Student full name</Label>
-        <Input
-          id="student-name"
-          name="name"
-          autoComplete="name"
-          required
-          minLength={2}
-          maxLength={100}
-          disabled={busy || Boolean(held)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="student-email">Email for enrollment confirmation</Label>
-        <Input
-          id="student-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          maxLength={254}
-          disabled={busy || Boolean(held)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="student-phone">Phone number</Label>
-        <Input
-          id="student-phone"
-          name="phone"
-          type="tel"
-          autoComplete="tel"
-          required
-          minLength={7}
-          maxLength={30}
-          disabled={busy || Boolean(held)}
-        />
-      </div>
-      <Label className="flex items-start gap-3">
-        <input
-          name="adult"
-          type="checkbox"
-          required
-          disabled={busy || Boolean(held)}
-          className="mt-1 size-4 shrink-0"
-        />
-        <span>I confirm that I am at least 18 years old.</span>
-      </Label>
-      <Label className="flex items-start gap-3">
-        <input
-          name="policy"
-          type="checkbox"
-          required
-          disabled={busy || Boolean(held)}
-          className="mt-1 size-4 shrink-0"
-        />
-        <span>
-          I have read, understood, and accepted the Cancellation and Refund
-          Policy above. Full payment is required.
-        </span>
-      </Label>
-      <p className="text-sm text-muted-foreground">
-        Your name, email, and phone are used to manage your enrollment and
-        payment confirmation. Payment details are entered securely at Stripe.
-        Contact the academy for record corrections.
-      </p>
-      <Button
-        type="submit"
-        disabled={
-          !ready ||
-          busy ||
-          Boolean(held) ||
-          !offerings.some((o) => o.remaining > 0)
-        }
-      >
-        {busy
-          ? "Verifying checkout…"
-          : testOnly
-            ? "Continue to Stripe test checkout"
-            : "Continue to secure payment"}
-      </Button>
       {held && (
-        <SavedCheckoutActions held={held} busy={busy} reconcile={reconcile} />
+        <div className="space-y-3">
+          <SavedCheckoutActions held={held} busy={busy} reconcile={reconcile} />
+          <CheckoutStatus message={message} />
+        </div>
       )}
-      <CheckoutStatus message={message} />
+      <fieldset
+        className="min-w-0 space-y-3"
+        data-rda-ic-sessions=""
+        disabled={busy || Boolean(held)}
+      >
+        <legend className="mb-4 font-heading text-2xl">Class date</legend>
+        {offerings.map((offering) => (
+          <label
+            key={offering.id}
+            data-rda-ic-session={offering.course_date}
+            data-rda-ic-session-status="open"
+            className="flex cursor-pointer items-center gap-3 rounded-xl border border-input px-4 py-4 has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-2 has-focus-visible:ring-ring"
+          >
+            <input
+              type="radio"
+              name="offeringId"
+              value={offering.id}
+              required
+              defaultChecked={offerings.length === 1}
+              className="size-5 shrink-0 accent-primary"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">
+                {offering.label ?? offering.course_date}
+              </span>
+              <span className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                <span className="font-semibold">{offering.price}</span>
+                <span className="text-muted-foreground">
+                  {offering.remaining}{" "}
+                  {offering.remaining === 1 ? "seat" : "seats"} available
+                </span>
+              </span>
+            </span>
+          </label>
+        ))}
+        {unavailableDates}
+      </fieldset>
+      <div className="border-t border-border pt-7">
+        <fieldset
+          disabled={busy || Boolean(held)}
+          className="min-w-0 space-y-5"
+        >
+          <legend className="mb-4 font-heading text-2xl">
+            Student details
+          </legend>
+          <div className="space-y-2">
+            <Label htmlFor="student-name">Student full name</Label>
+            <Input
+              id="student-name"
+              name="name"
+              autoComplete="name"
+              required
+              minLength={2}
+              maxLength={100}
+              className="h-12 px-3 md:text-base"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="student-email">
+              Email for enrollment confirmation
+            </Label>
+            <Input
+              id="student-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              maxLength={254}
+              className="h-12 px-3 md:text-base"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="student-phone">Phone number</Label>
+            <Input
+              id="student-phone"
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              required
+              minLength={7}
+              maxLength={30}
+              className="h-12 px-3 md:text-base"
+            />
+          </div>
+        </fieldset>
+      </div>
+      <section
+        aria-labelledby="review-heading"
+        className="space-y-4 border-t border-border pt-7"
+      >
+        <h2 id="review-heading" className="font-heading text-2xl">
+          Review and pay
+        </h2>
+        {policy}
+        <div className="divide-y divide-border">
+          <Label className="flex min-h-12 cursor-pointer items-start gap-3 py-3 text-sm leading-relaxed">
+            <input
+              name="adult"
+              type="checkbox"
+              required
+              disabled={busy || Boolean(held)}
+              className="mt-0.5 size-5 shrink-0 accent-primary"
+            />
+            <span>I confirm that I am at least 18 years old.</span>
+          </Label>
+          <Label className="flex min-h-12 cursor-pointer items-start gap-3 py-3 text-sm leading-relaxed">
+            <input
+              name="policy"
+              type="checkbox"
+              required
+              disabled={busy || Boolean(held)}
+              className="mt-0.5 size-5 shrink-0 accent-primary"
+            />
+            <span>
+              I have read, understood, and accepted the Cancellation and Refund
+              Policy above. Full payment is required.
+            </span>
+          </Label>
+        </div>
+        <Button
+          type="submit"
+          className="h-auto min-h-12 w-full gap-2 whitespace-normal rounded-xl px-3 py-3 text-base"
+          disabled={!ready || busy || Boolean(held) || !offerings.length}
+        >
+          {busy
+            ? "Verifying checkout…"
+            : testOnly
+              ? "Continue to Stripe test checkout"
+              : "Continue to secure payment"}
+          <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
+        </Button>
+        <p className="flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
+          <LockKeyhole aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{" "}
+          Payment details are entered securely at Stripe.
+        </p>
+        {!held && <CheckoutStatus message={message} />}
+      </section>
+      <p className="border-t border-border pt-5 text-sm leading-relaxed text-muted-foreground">
+        Your name, email, and phone are used to manage your enrollment and
+        payment confirmation. Contact the academy for record corrections.
+      </p>
     </form>
   );
 }

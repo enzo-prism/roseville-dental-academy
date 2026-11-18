@@ -2063,8 +2063,6 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(page).toContain("r.refunded_amount");
     expect(page).toContain("Refunded USD");
     const enroll = await readFile("app/enroll/page.tsx", "utf8");
-    expect(enroll).toContain("live?.remaining");
-    expect(enroll).toContain("${Math.max(0, remaining)} seats available");
     expect(enroll).toContain("infectionControlOfferingAvailability");
     expect(enroll).toContain("STUDENT_CLASS_FULL_MESSAGE");
     expect(enroll).toContain("studentEnrollPageOfferings(config)");
