@@ -2032,8 +2032,8 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(docs).not.toContain(
       "when reserved + paid + refunded already fill the offering",
     );
-    expect(docs.indexOf("Refund any verification charge")).toBeGreaterThan(-1);
-    expect(docs.indexOf("Refund any verification charge")).toBeLessThan(
+    expect(docs.indexOf("For an authorized refund")).toBeGreaterThan(-1);
+    expect(docs.indexOf("For an authorized refund")).toBeLessThan(
       docs.indexOf("Set `RDA_STUDENT_PAYMENTS_LIVE_ENABLED` back"),
     );
     expect(docs).toContain('{ "drain": true }');

@@ -55,11 +55,12 @@ export async function POST(request: Request) {
     const offering = await studentOfferingById(input.offeringId, access.config);
     if (
       !offering ||
-      !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date)
+      (offering.dashboardState ? offering.dashboardState !== "counted" :
+          !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date))
     )
       return enrollmentResponse(studentClassFullRefusal(), 409);
     // Offline seats from the academy seats sheet are applied before any hold.
-    const offlineSeats = await syncStudentOfflineSeats(offering);
+    const offlineSeats = offering.dashboardState ? "off" : await syncStudentOfflineSeats(offering);
     if (offlineSeats === "full")
       return enrollmentResponse(studentClassFullRefusal(), 409);
     if (offlineSeats === "unavailable")

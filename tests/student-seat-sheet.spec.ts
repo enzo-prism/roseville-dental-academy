@@ -61,7 +61,7 @@ async function withOffering(
     await applyStudentEnrollmentSchema((sql) => db.exec(sql));
     const offer = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,$6,$2,$3,$4,now(),'seat sheet',true)",
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control',$5,39500,$6,$2,$3,$4,now()-interval '1 second','seat sheet',true)",
       [
         offer,
         "2026-09-30",
@@ -255,7 +255,7 @@ test("a seats sheet refresh keeps only dates the sheet lists, from one sheet rea
   await withOffering(async (db, offer) => {
     const other = randomUUID();
     await db.query(
-      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-10-20',39500,0,$2,$3,$4,now(),'seat sheet other',true)",
+      "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test','infection-control','2099-10-20',39500,0,$2,$3,$4,now()-interval '1 second','seat sheet other',true)",
       [other, "2026-09-30", STUDENT_POLICY_HASH, CANCELLATION_POLICY_PARAGRAPHS.join("\n\n")],
     );
     const offerings = [

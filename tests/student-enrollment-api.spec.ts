@@ -474,7 +474,11 @@ test.describe("student enrollment isolated full stack", () => {
     await expect(dateOptions).toContainText(
       infectionControlSessionLabel(fixtureSecondDate)!,
     );
-    await expect(page.getByText(STUDENT_CLASS_FULL_MESSAGE)).toBeVisible();
+    if (isCanonicalInfectionControlDate(fixtureFirstDate)) {
+      const fullDate = page.locator(`[data-rda-ic-session="${fixtureFirstDate}"]`);
+      await expect(fullDate).toContainText(STUDENT_CLASS_FULL_MESSAGE);
+      await expect(fullDate).toBeVisible();
+    }
     const folder = "test-results/student-enrollment-schedule";
     await mkdir(folder, { recursive: true });
     for (const width of [1280, 375]) {

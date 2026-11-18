@@ -227,7 +227,7 @@ async function applySeatCount(
     applied = await read.database()`UPDATE student_enrollment_offerings
       SET external_seats=${seats}, reviewed_at=${read.startedAt}::timestamptz,
         review_reference=${`Seats sheet ${read.sheet.sheetId} (${offering.course_date})`}
-      WHERE id=${offering.id}::uuid AND reviewed_at < ${read.startedAt}::timestamptz
+      WHERE id=${offering.id}::uuid AND dashboard_state IS NULL AND reviewed_at < ${read.startedAt}::timestamptz
       RETURNING id`;
   } catch (error) {
     return error instanceof Error && /Inventory exceeds capacity/.test(error.message)

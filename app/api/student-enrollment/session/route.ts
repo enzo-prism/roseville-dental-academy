@@ -31,7 +31,8 @@ export async function POST(request: Request) {
         const offering = await studentOfferingById(offeringId, config);
         if (
           !offering ||
-          !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date)
+          (offering.dashboardState ? offering.dashboardState !== "counted" :
+          !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date))
         )
           return enrollmentResponse(studentClassFullRefusal(), 409);
       }

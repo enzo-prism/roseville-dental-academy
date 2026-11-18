@@ -8,12 +8,24 @@ and the separate public CTA flag are all present. `/enroll` itself is reachable 
 whenever Checkout is configured; the CTA flag does not hide that route. Existing inquiry
 forms remain available.
 
-## Course dates prepared for review
+## December 5 dashboard inventory
+
+The RDA Dashboard Class Dates editor owns the Infection Control count. Apply migration
+008 before deploying the website and dashboard. Install the same production-only
+`RDA_DASHBOARD_INVENTORY_SECRET` on both projects. With the offering disabled,
+read the December 5 Class Dates cell and confirm it has a numeric count. Lock the
+live offering and import the count, allowing for any occupied online seats.
+Switch that Redis cell to `inventorySource: "enrollment"` only if its version
+still matches the imported value. On a mismatch, repeat from the latest office edit.
+Verify the staff dashboard reads the same remaining count before enabling the class.
+New reservations, expirations, and audited releases then change the count staff see.
+The Google Sheets bridge is unnecessary for this class.
+
+## Historical course dates prepared for review
 
 The dates, price, and class capacity below were checked October 21, 2026 against
 the live `/infection-control` page. They do not establish current seat availability.
-The owner reported the offline enrollment counts as unknown on October 28; keep
-both live offerings disabled until the academy confirms each date's current count.
+The owner reported the offline enrollment counts as unknown on October 28; the December 5 dashboard cutover above supersedes that earlier inventory review.
 
 | Course date | ISO date | Price | Capacity | Offline seats already taken |
 | --- | --- | --- | --- | --- |
@@ -392,12 +404,9 @@ Complete these steps in order. Live payments and live email stay off until their
 are set after the test-mode purchase. Do not put keys in chat, tickets, screenshots, or
 the repository.
 
-This is a future execution checklist, not permission to perform its charges, refunds or
-email sends. The October 29 preparation task prohibits all charges, emails and texts,
-including test messages. Sender/DNS verification, secure credential configuration and
-isolated capture-only checks can be prepared while all live gates stay off. Obtain the
-owner's separate authorization for the actual live payment and email test before the
-activation steps below.
+Use the isolated Stripe sandbox for simulated purchases and refunds. Before launch,
+verify delivery with a labeled message to an approved staff inbox. The first live
+transaction should be a genuine student enrollment.
 
 1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
    secure form. Configure them only on the isolated test deployment and test database.
@@ -435,14 +444,14 @@ activation steps below.
    the count, review timestamp and evidence reference. Account for every seat-occupying
    online row before enabling a date; `external_seats=0` in the disabled seed is not
    evidence of zero offline enrollment.
-9. **Only for a separately authorized live payment/email test**, confirm the verified
+9. **Before opening paid enrollment**, confirm the verified
    sender and restricted email key are configured and audit the current outbox first,
    including any paid `pending` / `sending` rows that the cron could send. Resolve any
    delivery requiring review from provider evidence before enabling email; never reset
    or rewrite an old payload blindly. Then set live mode and
    `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment so `/enroll` can
    take a charge. Enable only an offering whose offline count and total inventory were
-   just verified. **Before the authorized live purchase**, enable
+   just verified. **Before opening public checkout**, enable
    `RDA_STUDENT_EMAIL_LIVE_ENABLED=true`. A paid live webhook
    still records the seat if mail is off or the provider fails; confirmation stays
    queued. Drain those rows with staff POST `{ "drain": true }` to
@@ -460,32 +469,21 @@ activation steps below.
    restore the existing staff session and saved-checkout controls; sign in again
    first if the staff session expired. The return flag never grants access, clears
    a saved hold, or contacts Stripe automatically.
-   This access gate does not authorize any payment or email by itself: the owner's
-   separate test permission, reviewed inventory and email-queue review still apply.
-10. Make one **$395** verification purchase on `/enroll` using a **staff-owned**
-    email address (not a student). Confirm the paid roster row and confirmation
-    email, then refund that charge from the verified merchant dashboard. Refunded
-    rows still occupy a seat. Reconcile inventory only with:
-
-    ```sql
-    SELECT release_refunded_student_seat(
-      '<verification enrollment uuid>'::uuid,
-      'staff@rosevilledentalacademy.com'
-    );
-    ```
-
-    Confirm the sellable count equals that date's reviewed capacity minus confirmed
-    offline seats and all remaining seat-occupying online enrollments. Do not assume
-    12 seats remain. Confirm the verification enrollment no longer occupies a seat.
-    Keep access restricted to staff throughout this test. Expired or invalid staff
-    sessions cannot start a new checkout. Existing signed webhook reconciliation
-    and the student's browser-owned confirmation remain separate from this gate.
-11. Only after that verification purchase is refunded and
-    `release_refunded_student_seat` has recorded the actor and `released` event,
-    set `RDA_STUDENT_PAYMENTS_ACCESS=public` and
-    `RDA_STUDENT_PAYMENTS_PUBLIC_CTA=true`, then redeploy so public checkout and
-    the Enroll CTA on `/infection-control` open together. Read back the live
-    deployment and its inventory; neither setting alone replaces launch approval.
+   Verify staff access and the outbox before opening enrollment to students.
+10. Rehearse the $395 payment, signed webhook, roster, confirmation capture,
+    refund and audited seat release in the isolated Stripe sandbox. Deliver a
+    labeled email to the authorized staff inbox as a separate sender check.
+    [Stripe testing guidance](https://docs.stripe.com/testing) requires test
+    payment methods and test keys for simulation.
+11. For the December 5 pilot, the RDA Dashboard **Class Dates** cell controls
+    available inventory. A managed offering shares its database row lock with
+    checkout. Count changes, holds and releases invalidate stale edits. A missing
+    count, closed date or removed date blocks new reservations. The dashboard
+    secret grants only read/edit access to the pilot cell. Set the domain-restricted
+    Resend key as a Production Secret and verify the approved RDA payout destination.
+    After sign-off, enable only this offering and set
+    `RDA_STUDENT_PAYMENTS_ACCESS=public` and `RDA_STUDENT_PAYMENTS_PUBLIC_CTA=true`.
+    Reconcile the first genuine student payment, roster, inbox and eventual payout.
 12. If an orphan `paid_after_release` review needs to become a paid seat, use
     `resolve_student_enrollment_review(..., 'enrolled', '<staff actor>')`. Do not
     raw-`UPDATE` the enrollment to `paid`. The function refuses when the class is
@@ -493,14 +491,13 @@ activation steps below.
 
 ## Rollback
 
-If live Checkout must be taken down after step 9 and before or after the
-verification purchase:
+If live Checkout must be taken down:
 
 1. Set `RDA_STUDENT_PAYMENTS_ACCESS=staff` and unset
    `RDA_STUDENT_PAYMENTS_PUBLIC_CTA` so anonymous session/checkout requests stop
    and the public CTA stays hidden, then redeploy. This does not cancel an already
    issued Stripe session; reconcile existing sessions and payments normally.
-2. Refund any verification charge from the merchant dashboard first, then run
+2. For an authorized refund, confirm the refund in the merchant dashboard, then run
    `release_refunded_student_seat` so the seat is sellable again. Never
    `DELETE` from `student_enrollments` to free capacity. Do this before the
    live-payments kill switch so the refund webhook can land while Checkout is

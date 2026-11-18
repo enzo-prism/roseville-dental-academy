@@ -3,6 +3,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import pg from "pg";
+import assert from "node:assert/strict";
 
 const url = process.env.STUDENT_LOCK_DATABASE_URL ?? "";
 if (
@@ -145,6 +146,7 @@ try {
       "utf8",
     ),
   );
+  await admin.query(await readFile(new URL("../db/migrations/008_dashboard_inventory.sql", import.meta.url), "utf8"));
   await admin.query(`
     TRUNCATE student_enrollment_attempts,
       student_enrollment_mail,
@@ -176,6 +178,46 @@ try {
       policyText,
     ],
   );
+
+  await test("Dashboard edits and checkout serialize the last seat and invalidate stale versions", async () => {
+    const version = randomUUID(), id = randomUUID(), holdId = randomUUID();
+    await admin.query(`INSERT INTO student_enrollment_offerings
+      (id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,
+       reviewed_at,review_reference,enabled,dashboard_state,dashboard_version,dashboard_changed_at)
+      VALUES ($1,'test','infection-control','2099-10-01',39500,11,$2,$3,$4,now(),'dashboard test',true,'counted',$5,now())`,
+      [id,policyVersion,policyHash,policyText,version]);
+    const other = new pg.Client({connectionString:url});
+    await other.connect();
+    try {
+      await admin.query("BEGIN");
+      assert.equal((await admin.query(reserveSql,reserveParams(holdId,id,702,"test"))).rowCount,1);
+      const officeEdit = other.query("SELECT edit_student_dashboard_inventory($1,$2,'counted',0) AS edit",[id,version]);
+      await admin.query("COMMIT");
+      assert.equal((await officeEdit).rows[0].edit,null);
+      const cell = async () => (await other.query("SELECT cell FROM student_dashboard_inventory WHERE id=$1",[id])).rows[0].cell;
+      assert.equal((await cell()).seatsLeft,0);
+      assert.equal((await other.query(reserveSql,reserveParams(randomUUID(),id,703,"test"))).rowCount,0);
+      // A same-email retry can hold the offering while the previous checkout
+      // releases its unique email. Releasing must not wait for that offering.
+      await admin.query("BEGIN");
+      await admin.query("SELECT id FROM student_enrollment_offerings WHERE id=$1 FOR UPDATE",[id]);
+      await other.query("SET lock_timeout='2s'");
+      await other.query("SELECT * FROM release_sessionless_student_enrollment($1)",[holdId]);
+      const retryId = randomUUID();
+      assert.equal((await admin.query(reserveSql,reserveParams(retryId,id,702,"test"))).rowCount,1);
+      await admin.query("COMMIT");
+      await other.query("SELECT * FROM release_sessionless_student_enrollment($1)",[retryId]);
+      const reopened = await cell();
+      assert.equal(reopened.seatsLeft,1);
+      await other.query("SELECT edit_student_dashboard_inventory($1,$2,'closed',NULL)",[id,reopened.version.slice(11)]);
+      assert.equal((await cell()).status,"full");
+      await assert.rejects(admin.query(reserveSql,reserveParams(randomUUID(),id,704,"test")),/availability/);
+      assert.equal((await admin.query("SELECT count(*)::int AS n FROM student_enrollments WHERE offering_id=$1",[id])).rows[0].n,2);
+    } finally {
+      await admin.query("ROLLBACK");
+      await other.end();
+    }
+  });
 
   await test("M49 / M05 last-seat FOR UPDATE admits exactly one winner", async () => {
     for (let index = 0; index < 11; index++) {
@@ -255,13 +297,10 @@ try {
     } catch (error) {
       if (!String(error.message).includes("Unknown offering")) throw error;
     }
-    const liveHeld = await admin.query(
-      reserveSql,
-      reserveParams(randomUUID(), liveOffer, 302, "live"),
-    );
-    if (!liveHeld.rows.length) {
-      throw new Error("Live offering should reserve when mode=live");
-    }
+    const validDate = (await admin.query("SELECT course_date > (now() AT TIME ZONE 'America/Los_Angeles')::date AS future FROM student_enrollment_offerings WHERE id=$1",[liveOffer])).rows[0].future;
+    const liveHold = admin.query(reserveSql, reserveParams(randomUUID(), liveOffer, 302, "live"));
+    if (validDate) assert.equal((await liveHold).rowCount,1);
+    else await assert.rejects(liveHold,/Offering unavailable/);
   });
 
   // Eggbot M22b is the TypeScript studentOfferings mode filter, not this SQL count.

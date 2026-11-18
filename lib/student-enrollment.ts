@@ -21,6 +21,7 @@ export type StudentConfig = {
   account: string;
 };
 export type StudentOffering = {
+  dashboard_state?: "counted" | "closed" | "unknown" | "removed" | null;
   id: string;
   mode: "test" | "live";
   course_id: string;
@@ -197,7 +198,8 @@ export async function studentOfferings(
       return (
         (config.mode !== "live" ||
           isCanonicalInfectionControlDate(offering.course_date)) &&
-        isCourseScheduleOfferingSellable(offering.course_id, offering.course_date)
+        (offering.dashboard_state != null ||
+          isCourseScheduleOfferingSellable(offering.course_id, offering.course_date))
       );
     }) as StudentOffering[];
 }
@@ -225,11 +227,12 @@ export async function studentOfferingById(
   database: typeof studentDatabase = studentDatabase,
 ) {
   const rows =
-    await database()`SELECT id, course_id, course_date FROM student_enrollment_offerings
+    await database()`SELECT id, course_id, course_date, dashboard_state FROM student_enrollment_offerings
     WHERE id=${id}::uuid AND mode=${config.mode}`;
   const row = rows[0];
   if (!row) return undefined;
   return {
+    dashboardState: row.dashboard_state as string | null,
     id: String(row.id),
     course_id: String(row.course_id),
     course_date: enrollmentDate(row.course_date),
