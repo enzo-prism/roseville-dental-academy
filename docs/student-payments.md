@@ -404,12 +404,9 @@ Complete these steps in order. Live payments and live email stay off until their
 are set after the test-mode purchase. Do not put keys in chat, tickets, screenshots, or
 the repository.
 
-This is a future execution checklist, not permission to perform its charges, refunds or
-email sends. The October 29 preparation task prohibits all charges, emails and texts,
-including test messages. Sender/DNS verification, secure credential configuration and
-isolated capture-only checks can be prepared while all live gates stay off. Obtain the
-owner's separate authorization for the actual live payment and email test before the
-activation steps below.
+Use the isolated Stripe sandbox for simulated purchases and refunds. Before launch,
+verify delivery with a labeled message to an approved staff inbox. The first live
+transaction should be a genuine student enrollment.
 
 1. Collect test-mode Stripe keys and the webhook signing secret through the academy's
    secure form. Configure them only on the isolated test deployment and test database.
@@ -447,14 +444,14 @@ activation steps below.
    the count, review timestamp and evidence reference. Account for every seat-occupying
    online row before enabling a date; `external_seats=0` in the disabled seed is not
    evidence of zero offline enrollment.
-9. **Only for a separately authorized live payment/email test**, confirm the verified
+9. **Before opening paid enrollment**, confirm the verified
    sender and restricted email key are configured and audit the current outbox first,
    including any paid `pending` / `sending` rows that the cron could send. Resolve any
    delivery requiring review from provider evidence before enabling email; never reset
    or rewrite an old payload blindly. Then set live mode and
    `RDA_STUDENT_PAYMENTS_LIVE_ENABLED=true` on the live environment so `/enroll` can
    take a charge. Enable only an offering whose offline count and total inventory were
-   just verified. **Before the authorized live purchase**, enable
+   just verified. **Before opening public checkout**, enable
    `RDA_STUDENT_EMAIL_LIVE_ENABLED=true`. A paid live webhook
    still records the seat if mail is off or the provider fails; confirmation stays
    queued. Drain those rows with staff POST `{ "drain": true }` to
@@ -472,8 +469,7 @@ activation steps below.
    restore the existing staff session and saved-checkout controls; sign in again
    first if the staff session expired. The return flag never grants access, clears
    a saved hold, or contacts Stripe automatically.
-   This access gate does not authorize any payment or email by itself: the owner's
-   separate test permission, reviewed inventory and email-queue review still apply.
+   Verify staff access and the outbox before opening enrollment to students.
 10. Rehearse the $395 payment, signed webhook, roster, confirmation capture,
     refund and audited seat release in the isolated Stripe sandbox. Deliver a
     labeled email to the authorized staff inbox as a separate sender check.
