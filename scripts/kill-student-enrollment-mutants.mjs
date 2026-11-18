@@ -78,9 +78,9 @@ const mutants = [
   },
   {
     id: "M52",
-    file: "app/enroll/page.tsx",
-    find: "              const remaining = live?.remaining;",
-    replace: "              const remaining = INFECTION_CONTROL_OFFERING_CAPACITY;",
+    file: "components/site/student-enrollment-form.tsx",
+    find: "{offering.remaining}",
+    replace: "{12}",
   },
   {
     id: "M52b",

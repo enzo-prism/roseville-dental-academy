@@ -330,6 +330,7 @@ test.describe("student enrollment isolated full stack", () => {
   test("student browser validates consent, suppresses tracking, survives reload and captures responsive previews", async ({
     page,
   }) => {
+    await control({ resetLimits: randomUUID(), externalSeats: { [offer]: 4 } });
     const external: string[] = [];
     await page.route("**/*", async (route) => {
       const u = new URL(route.request().url());
@@ -340,18 +341,21 @@ test.describe("student enrollment isolated full stack", () => {
     });
     await page.goto("/enroll");
     const sessions = page.locator("[data-rda-ic-sessions]");
-    await expect(sessions).toContainText("November 14, 2026");
-    await expect(sessions).toContainText("December 5, 2026");
+    await expect(sessions).toContainText(infectionControlSessionLabel(fixtureFirstDate)!);
+    await expect(sessions).toContainText(infectionControlSessionLabel(fixtureSecondDate)!);
     await expect(sessions).toContainText("$395.00 USD");
     await expect(sessions).not.toContainText("November 7");
     await expect(page.locator("[data-rda-checkout-policy]")).toContainText(
       "Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
     );
-    const dateOptions = page.getByLabel("Course date and full payment");
-    await expect(dateOptions).toContainText(
-      `${infectionControlSessionLabel(fixtureFirstDate)} · $395.00 USD`,
-    );
-    await expect(dateOptions).toContainText("$395.00 USD");
+    const firstDate = sessions.getByRole("radio", { name: new RegExp(infectionControlSessionLabel(fixtureFirstDate)!) });
+    await expect(firstDate).toHaveAccessibleName(/\$395\.00 USD.*8 seats available/);
+    await expect(firstDate).not.toBeChecked();
+    const policy = page.locator("details").filter({ hasText: "Cancellation and Refund Policy" });
+    await policy.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(policy.getByText(/All course fees are non-refundable once payment has been made/)).toBeVisible();
+    await page.keyboard.press("Enter");
     await expect(
       page.getByRole("button", { name: "Continue to Stripe test checkout" }),
     ).toBeEnabled();
@@ -375,7 +379,7 @@ test.describe("student enrollment isolated full stack", () => {
         fullPage: true,
       });
     }
-    await page.getByLabel("Course date and full payment").selectOption(offer);
+    await page.locator(`input[name="offeringId"][value="${offer}"]`).check();
     await page.getByLabel("Student full name").fill("Synthetic Adult");
     await page
       .getByLabel("Email for enrollment confirmation")
@@ -422,8 +426,8 @@ test.describe("student enrollment isolated full stack", () => {
     const pageResponse = await request.get("/enroll");
     expect(pageResponse.status()).toBe(200);
     const body = await pageResponse.text();
-    expect(body).toContain("November 14, 2026");
-    expect(body).toContain("December 5, 2026");
+    expect(body).toContain(infectionControlSessionLabel(fixtureFirstDate));
+    expect(body).toContain(infectionControlSessionLabel(fixtureSecondDate));
     expect(body).toContain("$395.00 USD");
     expect(body).not.toContain("November 7, 2026");
     expect(body).toContain(
@@ -452,7 +456,6 @@ test.describe("student enrollment isolated full stack", () => {
       courseSchedule: publishedIcSchedule("full"),
     });
     const html = await (await request.get("/enroll")).text();
-    expect(html).toContain(STUDENT_CLASS_FULL_MESSAGE);
     // The public date list names only the confirmed dates; once a fixture date
     // falls back to a synthetic future date it is checked through the form instead.
     for (const [date, status] of [
@@ -467,13 +470,8 @@ test.describe("student enrollment isolated full stack", () => {
     expect(html).not.toContain(`value="${offer}"`);
     expect(html).toContain(`value="${december}"`);
     await page.goto("/enroll");
-    const dateOptions = page.getByLabel("Course date and full payment");
-    await expect(dateOptions).not.toContainText(
-      infectionControlSessionLabel(fixtureFirstDate)!,
-    );
-    await expect(dateOptions).toContainText(
-      infectionControlSessionLabel(fixtureSecondDate)!,
-    );
+    await expect(page.getByRole("radio", { name: new RegExp(infectionControlSessionLabel(fixtureFirstDate)!) })).toHaveCount(0);
+    await expect(page.getByRole("radio", { name: new RegExp(infectionControlSessionLabel(fixtureSecondDate)!) })).toBeChecked();
     if (isCanonicalInfectionControlDate(fixtureFirstDate)) {
       const fullDate = page.locator(`[data-rda-ic-session="${fixtureFirstDate}"]`);
       await expect(fullDate).toContainText(STUDENT_CLASS_FULL_MESSAGE);
@@ -515,7 +513,7 @@ test.describe("student enrollment isolated full stack", () => {
   }) => {
     await control({ resetLimits: randomUUID() });
     await page.goto("/enroll");
-    await page.getByLabel("Course date and full payment").selectOption(offer);
+    await page.locator(`input[name="offeringId"][value="${offer}"]`).check();
     await page.getByLabel("Student full name").fill("Synthetic Adult");
     await page
       .getByLabel("Email for enrollment confirmation")
@@ -1585,7 +1583,7 @@ test.describe("student enrollment isolated full stack", () => {
     expect(paidRoster).toContain("TEST ONLY · paid");
   });
   test("/enroll remaining matches checkout when a refunded seat still occupies", async ({
-    request,
+    request, page,
   }) => {
     const planted = randomUUID();
     await control({
@@ -1602,8 +1600,10 @@ test.describe("student enrollment isolated full stack", () => {
         status: "refunded",
       },
     });
-    const enroll = await (await request.get("/enroll")).text();
-    expect(enroll).toMatch(/0(?:<!-- -->)? seats available/);
+    await page.goto("/enroll");
+    const session = page.locator(`[data-rda-ic-session="${fixtureSecondDate}"]`);
+    await expect(session).toContainText(STUDENT_CLASS_FULL_MESSAGE);
+    await expect(session.getByRole("radio")).toHaveCount(0);
     expect(
       (
         await request.post("/api/student-enrollment/checkout", {
@@ -1618,7 +1618,7 @@ test.describe("student enrollment isolated full stack", () => {
         actor: "staff@example.test",
       },
     });
-    const afterRelease = await (await request.get("/enroll")).text();
-    expect(afterRelease).toMatch(/1(?:<!-- -->)? seats available/);
+    await page.reload();
+    await expect(session.getByRole("radio")).toHaveAccessibleName(/1 seat available/);
   });
 });

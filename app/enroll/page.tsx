@@ -5,7 +5,8 @@ import {
   studentCanStartCheckout,
   studentCheckoutAudience,
 } from "@/lib/student-enrollment-access";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import Image, { getImageProps } from "next/image";
+import { ArrowLeft, ChevronDown, Clock3, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   StudentEnrollmentForm,
@@ -16,13 +17,15 @@ import {
   CANCELLATION_POLICY_TITLE,
   INFECTION_CONTROL_CHECKOUT_POLICY,
 } from "@/lib/academy-policies";
-import { ENROLLMENT_POLICY_VERSION } from "@/lib/enrollment-contract";
+import {
+  academyCalendarDate,
+  ENROLLMENT_POLICY_VERSION,
+} from "@/lib/enrollment-contract";
 import {
   formatEnrollmentAmount,
   INFECTION_CONTROL_COURSE_ID,
-  INFECTION_CONTROL_OFFERING_AMOUNT,
-  INFECTION_CONTROL_OFFERING_CAPACITY,
   INFECTION_CONTROL_SELLABLE_SESSIONS,
+  INFECTION_CONTROL_OFFERING_CAPACITY,
   STUDENT_CLASS_FULL_MESSAGE,
   infectionControlOfferingAvailability,
   infectionControlSessionLabel,
@@ -50,150 +53,216 @@ export default async function EnrollmentPage({
   if (config && checkoutAllowed) {
     offerings = await studentEnrollPageOfferings(config);
   }
-  const selectable = offerings.filter((offering) =>
-    !offering.dashboard_state || (offering.dashboard_state === "counted" && offering.remaining > 0)
+  const selectable = offerings.filter(
+    (offering) =>
+      offering.remaining > 0 &&
+      (!offering.dashboard_state || offering.dashboard_state === "counted"),
   );
-  const checkoutOpen = Boolean(config && selectable.length);
-  return (
-    <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
-      {config?.mode === "test" && (
-        <Badge variant="outline">TEST ONLY · NO REAL ENROLLMENT</Badge>
-      )}
-      {checkoutAllowed && config?.mode === "live" && studentCheckoutAudience() === "staff" && (
-        <Badge variant="outline">STAFF VERIFICATION · REAL PAYMENT</Badge>
-      )}
-      <h1 className="font-heading text-3xl">Infection Control enrollment</h1>
-      <p data-rda-checkout-policy="">
-        {INFECTION_CONTROL_CHECKOUT_POLICY} Each class has a maximum of{" "}
-        {INFECTION_CONTROL_OFFERING_CAPACITY} students.
+  const today = academyCalendarDate();
+  const dates = new Set<string>([
+    ...INFECTION_CONTROL_SELLABLE_SESSIONS.map((session) => session.courseDate),
+    ...offerings.map((offering) => offering.course_date),
+  ]);
+  const unavailableDates = [...dates].sort().flatMap((date) => {
+    if (date <= today || selectable.some((row) => row.course_date === date))
+      return [];
+    const live = offerings.find(
+      (row) =>
+        row.course_id === INFECTION_CONTROL_COURSE_ID &&
+        row.course_date === date,
+    );
+    if (live?.dashboard_state === "removed") return [];
+    const full = live
+      ? live.dashboard_state !== "unknown"
+      : infectionControlOfferingAvailability(date) === "full";
+    return [
+      <p
+        key={date}
+        data-rda-ic-session={date}
+        data-rda-ic-session-status={full ? "full" : "unknown"}
+        className="text-sm leading-relaxed text-muted-foreground"
+      >
+        {infectionControlSessionLabel(date)} ·{" "}
+        {full
+          ? STUDENT_CLASS_FULL_MESSAGE
+          : "Contact the academy to confirm availability."}
+      </p>,
+    ];
+  });
+  const policy = (
+    <div className="space-y-3">
+      <p data-rda-checkout-policy="" className="text-sm leading-relaxed">
+        {INFECTION_CONTROL_CHECKOUT_POLICY}
       </p>
-      <Card>
-        <CardHeader>
-          <CardTitle>Upcoming Infection Control dates</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul data-rda-ic-sessions="" className="space-y-2">
-            {INFECTION_CONTROL_SELLABLE_SESSIONS.map((session) => {
-              const live = offerings.find((offering) =>
-                offering.course_id === INFECTION_CONTROL_COURSE_ID && offering.course_date === session.courseDate
-              );
-              if (live?.dashboard_state === "removed") return null;
-              if (live?.dashboard_state === "unknown") {
-                return <li key={session.courseDate} data-rda-ic-session={session.courseDate}>
-                  {session.label} · Contact the academy to confirm availability.
-                </li>;
-              }
-              const availability = live?.dashboard_state
-                ? (live.dashboard_state === "counted" && live.remaining > 0 ? "open" : "full")
-                : infectionControlOfferingAvailability(session.courseDate);
-              switch (availability) {
-                case "full":
-                case "elapsed":
-                case "missing":
-                  return (
-                    <li
-                      key={session.courseDate}
-                      data-rda-ic-session={session.courseDate}
-                      data-rda-ic-session-status={availability}
-                    >
-                      {session.label} · {STUDENT_CLASS_FULL_MESSAGE}
-                    </li>
-                  );
-                case "open": {
-                  const remaining = live?.remaining;
-                  return (
-                    <li
-                      key={session.courseDate}
-                      data-rda-ic-session={session.courseDate}
-                      data-rda-ic-session-status={availability}
-                    >
-                      {session.label} ·{" "}
-                      {formatEnrollmentAmount(
-                        live?.amount ?? INFECTION_CONTROL_OFFERING_AMOUNT,
-                      )}
-                      {typeof remaining === "number"
-                        ? ` · ${Math.max(0, remaining)} seats available`
-                        : ` · Class capacity: ${INFECTION_CONTROL_OFFERING_CAPACITY}. Contact the academy for available seats.`}
-                    </li>
-                  );
-                }
-                default: {
-                  const _never: never = availability;
-                  throw new Error(`Unhandled schedule availability: ${_never}`);
-                }
-              }
-            })}
-          </ul>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{CANCELLATION_POLICY_TITLE}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <details className="group rounded-xl border border-border bg-background px-4">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-semibold text-primary [&::-webkit-details-marker]:hidden">
+          {CANCELLATION_POLICY_TITLE}
+          <ChevronDown
+            aria-hidden="true"
+            className="size-4 shrink-0 group-open:rotate-180"
+          />
+        </summary>
+        <div className="space-y-3 border-t border-border py-4 text-sm leading-relaxed">
           {CANCELLATION_POLICY_PARAGRAPHS.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
-        </CardContent>
-      </Card>
-      {!checkoutOpen ? (
-        <Card>
-          <CardContent className="space-y-4 pt-6">
-            {returningStaff && (
-              <div className="space-y-2" data-rda-staff-checkout-return="">
-                <p>
-                  Returning from payment? Continue to staff enrollment to view
-                  your saved checkout. If your staff session has expired, sign in
-                  again first.
-                </p>
-                {/* SiteLink uses a plain document navigation on private routes,
-                    restoring the Strict cookie after Stripe's cross-site return. */}
-                <SiteLink
-                  href="/enroll"
-                  className="block text-primary underline"
-                  data-rda-staff-checkout-resume=""
-                >
-                  Continue staff enrollment
-                </SiteLink>
-                <SiteLink href="/enrollment-pilot" className="block text-primary underline">
-                  Staff sign-in
-                </SiteLink>
-              </div>
+        </div>
+      </details>
+    </div>
+  );
+  const { props: mobileImage } = getImageProps({
+    src: "/assets/enrollment/course-mobile-v1.webp",
+    width: 900,
+    height: 300,
+    sizes: "(max-width: 640px) 100vw, 640px",
+    alt: "",
+  });
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-5 sm:px-8">
+          <SiteLink
+            href="/"
+            className="flex min-h-11 items-center gap-2 font-heading text-base leading-tight sm:text-xl"
+          >
+            <Image
+              src="/assets/live/home/logo-academy.png"
+              alt=""
+              width={32}
+              height={32}
+              sizes="32px"
+            />
+            Roseville Dental Academy
+          </SiteLink>
+          <SiteLink
+            href="/contact"
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline"
+          >
+            Contact
+          </SiteLink>
+        </div>
+      </header>
+      <div className="mx-auto grid max-w-2xl items-start gap-7 px-5 pb-16 pt-6 sm:px-8 lg:max-w-6xl lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-16 lg:py-14">
+        <section aria-labelledby="course-title" className="min-w-0">
+          <SiteLink
+            href="/infection-control"
+            className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-primary hover:underline lg:mb-6"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" /> Course details
+          </SiteLink>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.15em] text-primary">
+            Course enrollment
+          </p>
+          <h1
+            id="course-title"
+            aria-label="Infection Control enrollment"
+            className="font-heading text-4xl leading-none tracking-tight sm:text-5xl lg:text-6xl"
+          >
+            Infection Control
+          </h1>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-2">
+              <Clock3 aria-hidden="true" className="size-4" />8 hours
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <MapPin aria-hidden="true" className="size-4" />
+              Roseville, CA
+            </span>
+          </div>
+          <picture className="mt-5 block overflow-hidden rounded-2xl lg:mt-8">
+            <source
+              media="(max-width: 1023px)"
+              srcSet={mobileImage.srcSet}
+              sizes={mobileImage.sizes}
+              width={900}
+              height={300}
+            />
+            <Image
+              src="/assets/enrollment/course-v1.webp"
+              alt=""
+              width={1000}
+              height={667}
+              sizes="(min-width: 1024px) 420px, 100vw"
+              loading="eager"
+              className="block aspect-[4/1] w-full object-cover lg:aspect-[4/3]"
+            />
+          </picture>
+        </section>
+        <div className="min-w-0 rounded-2xl bg-card p-5 shadow-xs ring-1 ring-border sm:p-8 lg:p-10">
+          {config?.mode === "test" && (
+            <Badge className="mb-4" variant="outline">
+              TEST ONLY · NO REAL ENROLLMENT
+            </Badge>
+          )}
+          {checkoutAllowed &&
+            config?.mode === "live" &&
+            studentCheckoutAudience() === "staff" && (
+              <Badge className="mb-4" variant="outline">
+                STAFF VERIFICATION · REAL PAYMENT
+              </Badge>
             )}
-            <p>
-              Online enrollment is currently unavailable. Please contact the
-              academy to confirm course dates and availability.
-            </p>
-            <SiteLink href="/contact" className="text-primary underline">
-              Contact Roseville Dental Academy
-            </SiteLink>
-            {/* Every date can be full while a student still holds a checkout;
-                keep the verify-or-close action reachable. */}
-            {config && checkoutAllowed && <StudentSavedCheckoutRecovery />}
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Student details and payment</CardTitle>
-          </CardHeader>
-          <CardContent>
+          {selectable.length ? (
             <StudentEnrollmentForm
               offerings={selectable.map(
                 ({ id, course_date, amount, remaining }) => ({
                   id,
                   course_date,
-                  label: infectionControlSessionLabel(course_date) ?? course_date,
-                  amount,
+                  label:
+                    infectionControlSessionLabel(course_date) ?? course_date,
+                  price: formatEnrollmentAmount(amount),
                   remaining,
                 }),
               )}
+              policy={policy}
+              unavailableDates={unavailableDates}
               policyVersion={ENROLLMENT_POLICY_VERSION}
               testOnly={config?.mode === "test"}
             />
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <section className="space-y-5">
+              <h2 className="font-heading text-3xl">Class availability</h2>
+              {returningStaff && (
+                <div className="space-y-2" data-rda-staff-checkout-return="">
+                  <p>
+                    Returning from payment? Continue to staff enrollment to view
+                    your saved checkout. If your staff session has expired, sign
+                    in again first.
+                  </p>
+                  <SiteLink
+                    href="/enroll"
+                    className="block text-primary underline"
+                    data-rda-staff-checkout-resume=""
+                  >
+                    Continue staff enrollment
+                  </SiteLink>
+                  <SiteLink
+                    href="/enrollment-pilot"
+                    className="block text-primary underline"
+                  >
+                    Staff sign-in
+                  </SiteLink>
+                </div>
+              )}
+              <p>
+                Online enrollment is currently unavailable. Please contact the
+                academy to confirm course dates and availability.
+              </p>
+              {!offerings.length && (
+                <p className="text-sm text-muted-foreground">{`Class capacity: ${INFECTION_CONTROL_OFFERING_CAPACITY}. Contact the academy for available seats.`}</p>
+              )}
+              {config && checkoutAllowed && <StudentSavedCheckoutRecovery />}
+              {unavailableDates}
+              <SiteLink
+                href="/contact"
+                className="inline-flex min-h-11 items-center font-semibold text-primary underline"
+              >
+                Contact Roseville Dental Academy
+              </SiteLink>
+              {policy}
+            </section>
+          )}
+        </div>
+      </div>
     </main>
   );
 }
