@@ -50,7 +50,10 @@ export default async function EnrollmentPage({
   if (config && checkoutAllowed) {
     offerings = await studentEnrollPageOfferings(config);
   }
-  const checkoutOpen = Boolean(config && offerings.length);
+  const selectable = offerings.filter((offering) =>
+    !offering.dashboard_state || (offering.dashboard_state === "counted" && offering.remaining > 0)
+  );
+  const checkoutOpen = Boolean(config && selectable.length);
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
       {config?.mode === "test" && (
@@ -71,9 +74,18 @@ export default async function EnrollmentPage({
         <CardContent>
           <ul data-rda-ic-sessions="" className="space-y-2">
             {INFECTION_CONTROL_SELLABLE_SESSIONS.map((session) => {
-              const availability = infectionControlOfferingAvailability(
-                session.courseDate,
+              const live = offerings.find((offering) =>
+                offering.course_id === INFECTION_CONTROL_COURSE_ID && offering.course_date === session.courseDate
               );
+              if (live?.dashboard_state === "removed") return null;
+              if (live?.dashboard_state === "unknown") {
+                return <li key={session.courseDate} data-rda-ic-session={session.courseDate}>
+                  {session.label} · Contact the academy to confirm availability.
+                </li>;
+              }
+              const availability = live?.dashboard_state
+                ? (live.dashboard_state === "counted" && live.remaining > 0 ? "open" : "full")
+                : infectionControlOfferingAvailability(session.courseDate);
               switch (availability) {
                 case "full":
                 case "elapsed":
@@ -88,11 +100,6 @@ export default async function EnrollmentPage({
                     </li>
                   );
                 case "open": {
-                  const live = offerings.find(
-                    (offering) =>
-                      offering.course_id === INFECTION_CONTROL_COURSE_ID &&
-                      offering.course_date === session.courseDate,
-                  );
                   const remaining = live?.remaining;
                   return (
                     <li
@@ -172,7 +179,7 @@ export default async function EnrollmentPage({
           </CardHeader>
           <CardContent>
             <StudentEnrollmentForm
-              offerings={offerings.map(
+              offerings={selectable.map(
                 ({ id, course_date, amount, remaining }) => ({
                   id,
                   course_date,
