@@ -197,13 +197,22 @@ try {
       const cell = async () => (await other.query("SELECT cell FROM student_dashboard_inventory WHERE id=$1",[id])).rows[0].cell;
       assert.equal((await cell()).seatsLeft,0);
       assert.equal((await other.query(reserveSql,reserveParams(randomUUID(),id,703,"test"))).rowCount,0);
-      await admin.query("SELECT * FROM release_sessionless_student_enrollment($1)",[holdId]);
+      // A same-email retry can hold the offering while the previous checkout
+      // releases its unique email. Releasing must not wait for that offering.
+      await admin.query("BEGIN");
+      await admin.query("SELECT id FROM student_enrollment_offerings WHERE id=$1 FOR UPDATE",[id]);
+      await other.query("SET lock_timeout='2s'");
+      await other.query("SELECT * FROM release_sessionless_student_enrollment($1)",[holdId]);
+      const retryId = randomUUID();
+      assert.equal((await admin.query(reserveSql,reserveParams(retryId,id,702,"test"))).rowCount,1);
+      await admin.query("COMMIT");
+      await other.query("SELECT * FROM release_sessionless_student_enrollment($1)",[retryId]);
       const reopened = await cell();
       assert.equal(reopened.seatsLeft,1);
       await other.query("SELECT edit_student_dashboard_inventory($1,$2,'closed',NULL)",[id,reopened.version.slice(11)]);
       assert.equal((await cell()).status,"full");
       await assert.rejects(admin.query(reserveSql,reserveParams(randomUUID(),id,704,"test")),/availability/);
-      assert.equal((await admin.query("SELECT count(*)::int AS n FROM student_enrollments WHERE offering_id=$1",[id])).rows[0].n,1);
+      assert.equal((await admin.query("SELECT count(*)::int AS n FROM student_enrollments WHERE offering_id=$1",[id])).rows[0].n,2);
     } finally {
       await admin.query("ROLLBACK");
       await other.end();

@@ -14,11 +14,36 @@ CREATE TABLE IF NOT EXISTS student_dashboard_seat_edits (
   after_cell jsonb NOT NULL
 );
 
+-- A checkout holds the offering lock while inserting (and may wait for an
+-- expiring duplicate email). Expiry already holds the enrollment row. It
+-- advances this separate version without having to lock the offering.
+CREATE TABLE IF NOT EXISTS student_dashboard_inventory_versions (
+  offering_id uuid PRIMARY KEY REFERENCES student_enrollment_offerings(id),
+  version uuid NOT NULL,
+  changed_at timestamptz NOT NULL
+);
+
+CREATE OR REPLACE FUNCTION record_student_dashboard_version() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO student_dashboard_inventory_versions(offering_id,version,changed_at)
+    VALUES (NEW.id,NEW.dashboard_version,NEW.dashboard_changed_at)
+    ON CONFLICT (offering_id) DO UPDATE SET version=EXCLUDED.version,changed_at=EXCLUDED.changed_at;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS student_dashboard_office_version ON student_enrollment_offerings;
+CREATE TRIGGER student_dashboard_office_version AFTER INSERT OR UPDATE OF dashboard_version ON student_enrollment_offerings
+  FOR EACH ROW WHEN (NEW.dashboard_state IS NOT NULL) EXECUTE FUNCTION record_student_dashboard_version();
+
+INSERT INTO student_dashboard_inventory_versions(offering_id,version,changed_at)
+  SELECT id,dashboard_version,dashboard_changed_at FROM student_enrollment_offerings
+  WHERE dashboard_state IS NOT NULL ON CONFLICT (offering_id) DO NOTHING;
+
 CREATE OR REPLACE VIEW student_dashboard_inventory AS
-SELECT inventory.id, mode, course_id, course_date, dashboard_version,
+SELECT inventory.id, mode, course_id, course_date, clock.version AS dashboard_version,
   jsonb_strip_nulls(jsonb_build_object(
-    'version','enrollment:' || dashboard_version::text,
-    'updatedAt',dashboard_changed_at,
+    'version','enrollment:' || clock.version::text,
+    'updatedAt',clock.changed_at,
     'seatsLeft',CASE dashboard_state WHEN 'counted' THEN remaining WHEN 'closed' THEN 0 END,
     'status',CASE WHEN dashboard_state='removed' THEN NULL
                   WHEN dashboard_state='closed' OR (dashboard_state='counted' AND remaining=0) THEN 'full'
@@ -27,14 +52,18 @@ FROM (
   SELECT o.*, o.capacity-o.external_seats-(SELECT count(*) FROM student_enrollments e WHERE e.offering_id=o.id
     AND student_enrollment_occupies_seat(e.status,e.inventory_released_at)) AS remaining
   FROM student_enrollment_offerings o WHERE o.dashboard_state IS NOT NULL
-) inventory;
+) inventory JOIN student_dashboard_inventory_versions clock ON clock.offering_id=inventory.id;
 
 CREATE OR REPLACE FUNCTION edit_student_dashboard_inventory(p_id uuid,p_version uuid,p_state text,p_left integer)
 RETURNS jsonb LANGUAGE plpgsql AS $$
 DECLARE offer student_enrollment_offerings; occupied integer; before_cell jsonb; after_cell jsonb;
 BEGIN
   SELECT * INTO STRICT offer FROM student_enrollment_offerings WHERE id=p_id FOR UPDATE;
-  IF offer.dashboard_state IS NULL OR offer.dashboard_version IS DISTINCT FROM p_version THEN RETURN NULL; END IF;
+  IF offer.dashboard_state IS NULL THEN RETURN NULL; END IF;
+  -- Once both locks are held, an occupancy transition cannot commit between
+  -- comparing the editor version and computing its new absolute seat count.
+  PERFORM 1 FROM student_dashboard_inventory_versions WHERE offering_id=p_id AND version=p_version FOR UPDATE;
+  IF NOT FOUND THEN RETURN NULL; END IF;
   IF p_state IS NULL OR p_state NOT IN ('counted','closed','unknown','removed')
      OR (p_state='counted') IS DISTINCT FROM (p_left IS NOT NULL) THEN RAISE EXCEPTION 'Invalid inventory edit'; END IF;
   SELECT cell INTO before_cell FROM student_dashboard_inventory WHERE id=p_id;
@@ -63,11 +92,12 @@ BEGIN
   now_occupied:=student_enrollment_occupies_seat(NEW.status,NEW.inventory_released_at);
   IF was_occupied=now_occupied THEN RETURN NEW; END IF;
   SELECT dashboard_state INTO state FROM student_enrollment_offerings
-    WHERE id=NEW.offering_id AND dashboard_state IS NOT NULL FOR UPDATE;
+    WHERE id=NEW.offering_id AND dashboard_state IS NOT NULL;
   IF NOT FOUND THEN RETURN NEW; END IF;
   IF now_occupied AND state<>'counted' THEN RAISE EXCEPTION 'Class availability unconfirmed or closed'; END IF;
-  UPDATE student_enrollment_offerings SET dashboard_version=gen_random_uuid(),dashboard_changed_at=clock_timestamp()
-    WHERE id=NEW.offering_id;
+  UPDATE student_dashboard_inventory_versions SET version=gen_random_uuid(),changed_at=clock_timestamp()
+    WHERE offering_id=NEW.offering_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Class inventory version unavailable'; END IF;
   RETURN NEW;
 END;
 $$;
