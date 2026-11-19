@@ -1625,6 +1625,14 @@ test.describe("student enrollment isolated full stack", () => {
 
 test.describe("BLS checkout and private analytics", () => {
   test.skip(process.env.ENROLLMENT_FIXTURE_TESTS !== "1", "Requires the isolated fixture");
+  const previousAllowlist = process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES;
+  test.beforeAll(() => {
+    process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES = "infection-control,bls-cpr-1";
+  });
+  test.afterAll(() => {
+    if (previousAllowlist === undefined) delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES;
+    else process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES = previousAllowlist;
+  });
   const courseId = "bls-cpr-1";
   const isoDate = "2099-10-03";
   const entry = { courseId, isoDate, status: "open" };
@@ -1645,7 +1653,7 @@ test.describe("BLS checkout and private analytics", () => {
     expect((await request.get("/enroll")).status()).toBe(200);
     for (const [feed, status] of [
       [{ entries: [{ ...entry, status: "full" }] }, 409],
-      [{ entries: [] }, 409],
+      [{ entries: [] }, 503],
       [{ seatsLeft: { [`${courseId}|${isoDate}`]: 0 } }, 409],
       [{ error: true }, 503],
     ] as const) {

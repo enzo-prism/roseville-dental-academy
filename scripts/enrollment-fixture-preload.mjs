@@ -174,7 +174,7 @@ globalThis.fetch = async (input, init = {}) => {
     await writeEvidence();
       if (control.plantOrphanSession) {
       const plant=control.plantOrphanSession;
-      const offer=(await db.query("SELECT course_date,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
+      const offer=(await db.query("SELECT course_id,course_date,amount,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
       const heldExpires=plant.enrollmentId
         ? (await db.query("SELECT stripe_expires_at FROM student_enrollments WHERE id=$1",[plant.enrollmentId])).rows[0]?.stripe_expires_at
         : undefined;
@@ -182,12 +182,12 @@ globalThis.fetch = async (input, init = {}) => {
         const courseDate=offer.course_date instanceof Date && offer.course_date.toISOString().endsWith("T00:00:00.000Z")
           ? offer.course_date.toISOString().slice(0,10) : String(offer.course_date).slice(0,10);
         sessions.set(plant.id,{
-          id:plant.id,object:"checkout.session",livemode:false,mode:"payment",amount_total:39500,currency:"usd",
+          id:plant.id,object:"checkout.session",livemode:false,mode:"payment",amount_total:offer.amount,currency:"usd",
           status:plant.status ?? "open",payment_status:plant.paymentStatus ?? "unpaid",
           expires_at:plant.expiresAt ?? (Number(heldExpires) || Math.floor(Date.now()/1000)+3600),
           url:`https://checkout.stripe.com/c/pay/${plant.id}`,client_reference_id:plant.enrollmentId,payment_intent:null,
           metadata:{enrollment_id:plant.enrollmentId,offering_id:plant.offeringId,policy_version:"2026-09-30",
-            policy_hash:offer.policy_hash,integration:"rda-student-v1",environment:"test",course_date:courseDate},
+            policy_hash:offer.policy_hash,integration:"rda-student-v1",environment:"test",course_date:courseDate,course_id:offer.course_id},
         });
         if (plant.idempotencyKey) keys.set(plant.idempotencyKey,{id:plant.id,raw:plant.raw ?? "orphan"});
       }

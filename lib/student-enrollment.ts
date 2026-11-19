@@ -165,9 +165,17 @@ export function studentEnrollmentOccupiesSeat(
     (status === "refunded" && releasedAt == null)
   );
 }
+export function studentPublicCoursesAllowlist() {
+  return (process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES ?? "infection-control")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+export function isStudentPublicCourse(courseId: string) {
+  return studentPublicCoursesAllowlist().includes(courseId);
+}
 export function studentPublicEnrollCtas(courseId = "infection-control") {
-  const allowlist = (process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES ?? "infection-control").split(",").map((id) => id.trim());
-  return studentPublicEnrollCtaEnabled() && studentCheckoutCourse(courseId) && allowlist.includes(courseId)
+  return studentPublicEnrollCtaEnabled() && studentCheckoutCourse(courseId) && isStudentPublicCourse(courseId)
     ? [{ href: `/enroll?course=${courseId}`, label: "Enroll and pay in full" }]
     : [];
 }
@@ -198,6 +206,7 @@ export async function studentOfferings(
     .filter((row) => {
       const offering = row as StudentOffering;
       return (
+        isStudentPublicCourse(offering.course_id) &&
         isStudentCoursePrice(offering.course_id, offering.amount) &&
         (offering.dashboard_state != null ||
           isCourseScheduleOfferingSellable(offering.course_id, offering.course_date))

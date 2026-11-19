@@ -625,6 +625,7 @@ test("student consent and immutable checkout contract reject tampering", () => {
   const held = {
     id: input.id,
     offering_id: offer,
+    course_id: "infection-control",
     course_date: "2026-11-14",
     email: "synthetic@example.test",
     amount: 39500,
@@ -641,6 +642,8 @@ test("student consent and immutable checkout contract reject tampering", () => {
     origin: "http://127.0.0.1:3117",
     account: "acct_fixture",
   };
+  for (const course_id of [undefined, ""])
+    expect(() => studentSessionParameters({ ...held, course_id }, config)).toThrow("Unknown checkout course");
   const params = studentSessionParameters(held, config);
   expect(params.get("line_items[0][price_data][unit_amount]")).toBe("39500");
   expect(params.get("custom_text[submit][message]")).toBe(
@@ -672,6 +675,8 @@ test("student consent and immutable checkout contract reject tampering", () => {
     { currency: "eur" },
     { expires_at: 1 },
     { id: "cs_test_other", expires_at: 1 },
+    { metadata: { ...session.metadata, course_id: "bls-cpr-1" } },
+    { metadata: Object.fromEntries(Object.entries(session.metadata).filter(([key]) => key !== "course_id")) },
     { metadata: { ...session.metadata, course_date: "2026-11-15" } },
     { metadata: { ...session.metadata, environment: "live" } },
     { metadata: { ...session.metadata, integration: "other" } },

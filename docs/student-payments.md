@@ -27,7 +27,7 @@ For offerings outside dashboard-managed inventory, checkout verifies the date ag
 1. Apply migration 009 through the filename-order migrator with live payments off.
 2. Generate SQL with `node scripts/print-student-offering-seed.mjs --mode test` or `--mode live`. Add `--schedule PATH` to use a reviewed schedule file. The command only prints SQL for open dates after today in the academy time zone.
 3. Review the generated SQL, connect to the intended database, set its documented `application_name`, then apply it. Test rows start enabled and live rows start disabled. The seed defaults to 12 seats and zero offline seats. Verify counts and record a fresh review before enabling each live row.
-4. To show public checkout CTAs, enable the existing public-access and public CTA flags and set `RDA_STUDENT_PAYMENTS_PUBLIC_COURSES` to a comma-separated list of reviewed course IDs. The default is `infection-control`. This list controls the course-page links. Offering inventory controls which courses can be purchased at `/enroll`.
+4. To show public checkout CTAs, enable the existing public-access and public CTA flags and set `RDA_STUDENT_PAYMENTS_PUBLIC_COURSES` to a comma-separated list of reviewed course IDs. The default is `infection-control`. This list gates course-page checkout links, offering listings at `/enroll`, and the checkout and session endpoints. Purchases also require an eligible offering with available inventory.
 
 ## December 5 dashboard inventory
 

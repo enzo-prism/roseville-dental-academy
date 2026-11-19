@@ -38,7 +38,8 @@ export async function checkStudentDashboardSeats(
     );
     if (entries.length > 1) return "unavailable";
     const [entry] = entries;
-    if (!entry || entry.status === "full" || entry.seatsLeft === 0) return "full";
+    if (!entry) return "unavailable";
+    if (entry.status === "full" || entry.seatsLeft === 0) return "full";
     if (entry.status !== "open") return "unavailable";
     const seats = entry.seatsLeft;
     // A count above capacity simply means no offline seats are taken.

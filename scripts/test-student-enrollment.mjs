@@ -25,6 +25,7 @@ Object.assign(env, {
   RDA_STRIPE_TEST_SECRET_KEY: "sk_test_fixture",
   RDA_STRIPE_TEST_WEBHOOK_SECRET: "whsec_fixture",
   RDA_STUDENT_PAYMENTS_MODE: "test",
+  RDA_STUDENT_PAYMENTS_PUBLIC_COURSES: "infection-control,bls-cpr-1",
   RDA_STUDENT_PAYMENTS_ORIGIN: `http://127.0.0.1:${port}`,
   RDA_STUDENT_STRIPE_TEST_KEY: "sk_test_fixture",
   RDA_STUDENT_STRIPE_TEST_WEBHOOK_SECRET: "whsec_fixture",

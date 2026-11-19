@@ -6,6 +6,7 @@ import { enrollmentBody, enrollmentResponse } from "@/lib/enrollment-http";
 import { ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
 import { studentCanStartCheckout } from "@/lib/student-enrollment-access";
 import {
+  isStudentPublicCourse,
   studentConfig,
   studentOfferingById,
   studentOwner,
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
       const offeringId = (await enrollmentBody(request)).offeringId;
       if (typeof offeringId === "string") {
         const offering = await studentOfferingById(offeringId, config);
+        if (offering && !isStudentPublicCourse(offering.course_id))
+          return enrollmentResponse(
+            { error: "Enrollment unavailable.", holdCreated: false },
+            503,
+          );
         if (
           !offering ||
           !isStudentCoursePrice(offering.course_id, offering.amount) ||

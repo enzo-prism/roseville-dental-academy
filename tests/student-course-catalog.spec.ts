@@ -1,12 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { mock } from "node:test";
+import nextHeaders from "next/headers";
+import { RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
 import { PGlite } from "@electric-sql/pglite";
 import { expect, test } from "@playwright/test";
+import { POST as checkout } from "@/app/api/student-enrollment/checkout/route";
+import { POST as session } from "@/app/api/student-enrollment/session/route";
 import { academyCourses } from "@/lib/academy-catalog";
 import { frontOfficeProgram } from "@/lib/front-office-program";
 import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
 import { STUDENT_CHECKOUT_COURSES, isStudentCoursePrice, publicPriceCents } from "@/lib/student-course-catalog";
-import { STUDENT_POLICY_HASH, studentOfferings, type studentDatabase } from "@/lib/student-enrollment";
+import { STUDENT_COOKIE, STUDENT_POLICY_HASH, studentOfferings, type studentDatabase } from "@/lib/student-enrollment";
 import { studentDashboardFeedConfig } from "@/lib/student-dashboard-seats";
 import { enrollFunnelParams, enrollOrderItems, enrollOrderParams } from "@/lib/enroll-funnel-events";
 import { applyStudentEnrollmentSchema } from "./support/student-enrollment-schema";
@@ -87,13 +92,83 @@ test("funnel parameters whitelist bounded values and build course-only order ite
 
 test("the listing excludes wrong-price and unknown rows even when schedule checks are bypassed by dashboard inventory", async () => {
   const database = (() => async () => [
+    { course_id: "infection-control", amount: 39500, dashboard_state: "counted", course_date: "2099-10-02" },
     { course_id: "bls-cpr-1", amount: 8500, dashboard_state: "counted", course_date: "2099-10-03" },
     { course_id: "bls-cpr-1", amount: 39500, dashboard_state: "counted", course_date: "2099-10-04" },
     { course_id: "unknown", amount: 8500, dashboard_state: "counted", course_date: "2099-10-05" },
   ]) as unknown as typeof studentDatabase;
-  for (const mode of ["test", "live"] as const) {
-    const listed = await studentOfferings({ mode, key: "", webhookSecret: "", origin: "", account: "" }, database);
-    expect(listed.map(({ course_date }) => course_date)).toEqual(["2099-10-03"]);
+  const previousAllowlist = process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES;
+  try {
+    for (const mode of ["test", "live"] as const) {
+      const config = { mode, key: "", webhookSecret: "", origin: "", account: "" };
+      delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES;
+      expect((await studentOfferings(config, database)).map(({ course_id }) => course_id)).toEqual(["infection-control"]);
+      process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES = " , ";
+      expect(await studentOfferings(config, database)).toEqual([]);
+      process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES = "infection-control, bls-cpr-1, unknown, ";
+      const listed = await studentOfferings(config, database);
+      expect(listed.map(({ course_date }) => course_date)).toEqual(["2099-10-02", "2099-10-03"]);
+    }
+  } finally {
+    if (previousAllowlist === undefined) delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES;
+    else process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES = previousAllowlist;
+  }
+});
+
+test("default public courses refuse a BLS offering in checkout and session before creating a hold", async () => {
+  const beforeEnv = { ...process.env };
+  const origin = "http://127.0.0.1:3117";
+  const offeringId = randomUUID();
+  const cookies = new RequestCookies(new Headers({ cookie: `${STUDENT_COOKIE}=${"a".repeat(64)}` }));
+  const cookieMock = mock.method(nextHeaders, "cookies", async () => cookies);
+  const queries: string[] = [];
+  const fetchMock = mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    expect(new URL(input).hostname).toBe("api.fixture.neon.tech");
+    const { query } = JSON.parse(String(init.body));
+    queries.push(query);
+    const allowance = query.includes("student_enrollment_allowance");
+    const fields = allowance
+      ? [{ name: "allowed", dataTypeID: 16 }]
+      : ["id", "course_id", "course_date", "dashboard_state", "amount"].map((name) => ({ name, dataTypeID: 25 }));
+    const rows = allowance
+      ? [["t"]]
+      : [[offeringId, "bls-cpr-1", "2099-10-03", "counted", "8500"]];
+    return Response.json({ fields, rows });
+  });
+  try {
+    Object.assign(process.env, {
+      DATABASE_URL: "postgres://fixture:fixture@db.fixture.neon.tech/test",
+      RDA_STUDENT_PAYMENTS_MODE: "test",
+      RDA_STUDENT_PAYMENTS_ORIGIN: origin,
+      RDA_STUDENT_STRIPE_TEST_KEY: "rk_test_fixture",
+      RDA_STUDENT_STRIPE_TEST_WEBHOOK_SECRET: "whsec_fixture",
+      RDA_STUDENT_STRIPE_ACCOUNT_ID: "acct_fixture",
+    });
+    delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES;
+    for (const [name, handler, error] of [
+      ["checkout", checkout, "Checkout is unavailable. Please try again later."],
+      ["session", session, "Enrollment unavailable."],
+    ] as const) {
+      const response = await handler(new Request(`${origin}/api/student-enrollment/${name}`, {
+        method: "POST",
+        headers: { origin, "content-type": "application/json" },
+        body: JSON.stringify({
+          id: randomUUID(), offeringId, name: "Synthetic Adult", email: "example@example.test",
+          phone: "9165550100", adultAccepted: true, policyAccepted: true, policyVersion: "2026-09-30",
+        }),
+      }));
+      expect(response.status, name).toBe(503);
+      expect(await response.json()).toEqual({ error, holdCreated: false });
+    }
+    expect(queries).toEqual([
+      expect.stringContaining("student_enrollment_allowance"),
+      expect.stringContaining("FROM student_enrollment_offerings"),
+      expect.stringContaining("FROM student_enrollment_offerings"),
+    ]);
+  } finally {
+    cookieMock.mock.restore();
+    fetchMock.mock.restore();
+    process.env = beforeEnv;
   }
 });
 
@@ -133,7 +208,7 @@ test("Class Dates applies one available seat to the database and refuses closed 
     for (const [stub, expected] of [
       [Response.json({}, { status: 503 }), "unavailable"],
       [Response.json({ version: 2, entries: [entry] }), "unavailable"],
-      [Response.json({ version: 1, entries: [] }), "full"],
+      [Response.json({ version: 1, entries: [] }), "unavailable"],
       [Response.json({ version: 1, entries: [{ ...entry, status: "full" }] }), "full"],
       [Response.json({ version: 1, entries: [{ ...entry, seatsLeft: 0 }] }), "full"],
       [Response.json({ version: 1, entries: [{ ...entry, seatsLeft: 1 }] }), "open"],

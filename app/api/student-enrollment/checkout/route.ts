@@ -3,6 +3,7 @@ import { checkStudentDashboardSeats } from "@/lib/student-dashboard-seats";
 import { enrollmentBody, enrollmentResponse } from "@/lib/enrollment-http";
 import { isCourseScheduleOfferingSellable } from "@/lib/course-schedule";
 import {
+  isStudentPublicCourse,
   releaseUnboundStudentHold,
   studentInput,
   studentDatabase,
@@ -55,6 +56,11 @@ export async function POST(request: Request) {
         400,
       );
     const offering = await studentOfferingById(input.offeringId, access.config);
+    if (offering && !isStudentPublicCourse(offering.course_id))
+      return enrollmentResponse(
+        { error: "Checkout is unavailable. Please try again later.", holdCreated: false },
+        503,
+      );
     if (
       !offering ||
       !isStudentCoursePrice(offering.course_id, offering.amount) ||
@@ -109,8 +115,8 @@ export async function POST(request: Request) {
     } catch (error) {
       if (!held.stripe_session_id) {
         try {
-          const recovered = await recoverStudentSession(held, access.config);
-          if (!isStudentIdempotencyConflict(error))
+          const recovered = await recoverStudentSession({ ...held, course_id: offering.course_id }, access.config);
+          if (!recovered && !isStudentIdempotencyConflict(error))
             await releaseUnboundStudentHold(held.id);
         } catch {
           /* Recover/network uncertainty keeps the seat for operator review. */

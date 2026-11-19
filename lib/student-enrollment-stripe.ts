@@ -104,7 +104,7 @@ export function studentSessionParameters(
   held: StudentEnrollment,
   config: StudentConfig,
 ) {
-  const course = studentCheckoutCourse(held.course_id ?? "infection-control");
+  const course = studentCheckoutCourse(held.course_id);
   if (!course) throw new Error("Unknown checkout course");
   return new URLSearchParams({
     mode: "payment",
@@ -160,6 +160,7 @@ export function assertStudentSession(
     session.metadata?.integration !== "rda-student-v1" ||
     session.metadata?.environment !== config.mode ||
     session.metadata?.course_date !== held.course_date ||
+    (held.course_id != null && session.metadata?.course_id !== held.course_id) ||
     (!orphan &&
       !mismatch &&
       held.status !== "paid" &&

@@ -157,6 +157,7 @@ async function liveOffFixture() {
           integration: "rda-student-v1",
           environment: "live",
           course_date: spec.courseDate,
+          course_id: "infection-control",
         },
       };
       sessions.set(spec.id, session);
