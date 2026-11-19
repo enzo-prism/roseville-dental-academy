@@ -1,4 +1,4 @@
-# Infection Control student payments — development release
+# Student enrollment and payments
 
 Live payments are **disabled by default**. This release adds a separate student enrollment
 path at `/enroll`; it does not turn the staff-only pilot into a live ledger. No Stripe
@@ -7,6 +7,27 @@ page adds an enrollment link only when valid live configuration, the explicit li
 and the separate public CTA flag are all present. `/enroll` itself is reachable by URL
 whenever Checkout is configured; the CTA flag does not hide that route. Existing inquiry
 forms remain available.
+
+## All courses
+
+Migration `009_student_enrollment_all_courses.sql` adds the course-specific price checks and lets an enabled, reviewed offering use any future date. Checkout uses inline Stripe `price_data` and requires no Stripe Product or Price setup.
+
+| Course ID | Price (USD) | Amount (cents) |
+| --- | ---: | ---: |
+| `infection-control` | $395 | 39500 |
+| `bls-cpr-1` | $85 | 8500 |
+| `radiation-safety` | $695 | 69500 |
+| `coronal-polish` | $500 | 50000 |
+| `sealants` | $550 | 55000 |
+| `dental-assisting-program` | $2,500 | 250000 |
+| `dental-front-desk-program` | $2,495 | 249500 |
+
+For offerings outside dashboard-managed inventory, checkout verifies the date against both the bundled schedule and the authenticated Class Dates feed. Set `RDA_SCHEDULE_FEED_URL` and `RDA_SCHEDULE_FEED_TOKEN` at build and runtime. Missing or full dates are refused before a hold. Unavailable or partly configured feeds fail closed. An entirely unconfigured feed is allowed only outside `VERCEL_ENV=production`. When the seats sheet is configured, it remains the source for offline counts. Use the course IDs above in the sheet. Otherwise a positive Class Dates `seatsLeft` becomes the maximum remaining capacity before online holds. This can conservatively under-sell when staff counts already account for online holds. The dashboard-managed December 5 cell still uses its own database inventory.
+
+1. Apply migration 009 through the filename-order migrator with live payments off.
+2. Generate SQL with `node scripts/print-student-offering-seed.mjs --mode test` or `--mode live`. Add `--schedule PATH` to use a reviewed schedule file. The command only prints SQL for open dates after today in the academy time zone.
+3. Review the generated SQL, connect to the intended database, set its documented `application_name`, then apply it. Test rows start enabled and live rows start disabled. The seed defaults to 12 seats and zero offline seats. Verify counts and record a fresh review before enabling each live row.
+4. To show public checkout CTAs, enable the existing public-access and public CTA flags and set `RDA_STUDENT_PAYMENTS_PUBLIC_COURSES` to a comma-separated list of reviewed course IDs. The default is `infection-control`. This list gates course-page checkout links, offering listings at `/enroll`, and the checkout and session endpoints. Purchases also require an eligible offering with available inventory.
 
 ## December 5 dashboard inventory
 
@@ -463,7 +484,7 @@ transaction should be a genuine student enrollment.
    configured staff origin matches the live origin. Anonymous browsers must see
    closed enrollment, and both session creation and checkout must reject them.
    The authorized staff browser shows `STAFF VERIFICATION · REAL PAYMENT`.
-   Cancelling at Stripe returns to `/enroll?cancelled=1`. The Strict staff cookie
+   Cancelling at Stripe returns to `/enroll?cancelled=1&course=<id>`. The Strict staff cookie
    is intentionally absent on that cross-site return, so the closed page offers
    **Continue staff enrollment** as a same-site document navigation. Follow it to
    restore the existing staff session and saved-checkout controls; sign in again

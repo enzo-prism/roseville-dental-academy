@@ -1,10 +1,6 @@
 import { getMetaPixelBootstrapCode, getMetaPixelId } from "@/lib/meta-pixel-config";
 
-const DEFAULT_GA_MEASUREMENT_ID = "G-LKJFEYVM1Q";
-
-function getMeasurementId() {
-  return process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || DEFAULT_GA_MEASUREMENT_ID;
-}
+import { getMeasurementId } from "@/lib/ga-config";
 
 export function AnalyticsBootstrap() {
   const measurementId = getMeasurementId();

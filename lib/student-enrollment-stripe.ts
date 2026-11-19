@@ -1,3 +1,4 @@
+import { studentCheckoutCourse } from "@/lib/student-course-catalog";
 import type {
   StudentConfig,
   StudentEnrollment,
@@ -103,6 +104,8 @@ export function studentSessionParameters(
   held: StudentEnrollment,
   config: StudentConfig,
 ) {
+  const course = studentCheckoutCourse(held.course_id);
+  if (!course) throw new Error("Unknown checkout course");
   return new URLSearchParams({
     mode: "payment",
     customer_email: held.email,
@@ -113,7 +116,7 @@ export function studentSessionParameters(
       .replace(/[0-9]/g, (c) => String.fromCharCode(97 + Number(c)))}`,
     "line_items[0][price_data][currency]": held.currency,
     "line_items[0][price_data][unit_amount]": String(held.amount),
-    "line_items[0][price_data][product_data][name]": `${config.mode === "test" ? "TEST ONLY: " : ""}Infection Control - ${held.course_date}`,
+    "line_items[0][price_data][product_data][name]": `${config.mode === "test" ? "TEST ONLY: " : ""}${course.name} - ${held.course_date}`,
     "line_items[0][quantity]": "1",
     client_reference_id: held.id,
     "metadata[enrollment_id]": held.id,
@@ -123,9 +126,10 @@ export function studentSessionParameters(
     "metadata[integration]": "rda-student-v1",
     "metadata[environment]": config.mode,
     "metadata[course_date]": held.course_date,
+    "metadata[course_id]": course.id,
     expires_at: String(held.stripe_expires_at),
     success_url: `${config.origin}/enroll/confirmation?enrollment=${held.id}`,
-    cancel_url: `${config.origin}/enroll?cancelled=1`,
+    cancel_url: `${config.origin}/enroll?cancelled=1&course=${course.id}`,
     "custom_text[submit][message]": INFECTION_CONTROL_CHECKOUT_POLICY,
   });
 }
@@ -156,6 +160,7 @@ export function assertStudentSession(
     session.metadata?.integration !== "rda-student-v1" ||
     session.metadata?.environment !== config.mode ||
     session.metadata?.course_date !== held.course_date ||
+    (held.course_id != null && session.metadata?.course_id !== held.course_id) ||
     (!orphan &&
       !mismatch &&
       held.status !== "paid" &&

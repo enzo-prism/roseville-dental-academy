@@ -339,6 +339,7 @@ test("live flags without the public CTA flag render 0 Infection Control Enroll C
       DATABASE_URL: "fixture",
     });
     delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA;
+    delete process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES;
     expect(studentConfig()?.mode).toBe("live");
     expect(studentPublicEnrollCtaEnabled()).toBe(false);
     expect(studentPublicEnrollCtas()).toHaveLength(0);
@@ -347,8 +348,14 @@ test("live flags without the public CTA flag render 0 Infection Control Enroll C
     process.env.RDA_STUDENT_PAYMENTS_PUBLIC_CTA = "true";
     expect(studentPublicEnrollCtaEnabled()).toBe(true);
     expect(studentPublicEnrollCtas()).toEqual([
-      { href: "/enroll", label: "Enroll and pay in full" },
+      { href: "/enroll?course=infection-control", label: "Enroll and pay in full" },
     ]);
+    expect(studentPublicEnrollCtas("bls-cpr-1")).toEqual([]);
+    process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES = "infection-control, bls-cpr-1, unknown";
+    expect(studentPublicEnrollCtas("bls-cpr-1")).toEqual([
+      { href: "/enroll?course=bls-cpr-1", label: "Enroll and pay in full" },
+    ]);
+    expect(studentPublicEnrollCtas("unknown")).toEqual([]);
     process.env.RDA_STUDENT_PAYMENTS_MODE = "test";
     process.env.RDA_STUDENT_STRIPE_TEST_KEY = "sk_test_fixture";
     process.env.RDA_STUDENT_STRIPE_TEST_WEBHOOK_SECRET = "whsec_fixture";
@@ -369,8 +376,8 @@ test("live flags without the public CTA flag render 0 Infection Control Enroll C
     expect(studentPublicEnrollCtaEnabled()).toBe(false);
     expect(studentPublicEnrollCtas()).toHaveLength(0);
     const page = await readFile("components/site/live-course-page.tsx", "utf8");
-    expect(page).toContain("studentPublicEnrollCtas()");
-    expect(page).toContain("data-rda-student-enroll-cta");
+    expect(page).toContain("studentPublicEnrollCtas(course.id)");
+    expect(await readFile("components/site/student-enroll-cta.tsx", "utf8")).toContain("data-rda-student-enroll-cta");
     expect(page).not.toContain('studentConfig()?.mode === "live"');
     const enroll = await readFile("app/enroll/page.tsx", "utf8");
     expect(enroll).toContain("studentConfig()");
@@ -618,6 +625,7 @@ test("student consent and immutable checkout contract reject tampering", () => {
   const held = {
     id: input.id,
     offering_id: offer,
+    course_id: "infection-control",
     course_date: "2026-11-14",
     email: "synthetic@example.test",
     amount: 39500,
@@ -634,6 +642,8 @@ test("student consent and immutable checkout contract reject tampering", () => {
     origin: "http://127.0.0.1:3117",
     account: "acct_fixture",
   };
+  for (const course_id of [undefined, ""])
+    expect(() => studentSessionParameters({ ...held, course_id }, config)).toThrow("Unknown checkout course");
   const params = studentSessionParameters(held, config);
   expect(params.get("line_items[0][price_data][unit_amount]")).toBe("39500");
   expect(params.get("custom_text[submit][message]")).toBe(
@@ -665,6 +675,8 @@ test("student consent and immutable checkout contract reject tampering", () => {
     { currency: "eur" },
     { expires_at: 1 },
     { id: "cs_test_other", expires_at: 1 },
+    { metadata: { ...session.metadata, course_id: "bls-cpr-1" } },
+    { metadata: Object.fromEntries(Object.entries(session.metadata).filter(([key]) => key !== "course_id")) },
     { metadata: { ...session.metadata, course_date: "2026-11-15" } },
     { metadata: { ...session.metadata, environment: "live" } },
     { metadata: { ...session.metadata, integration: "other" } },
@@ -1314,6 +1326,7 @@ test("student database enforces shared inventory, separate modes, replay, roster
       [ids[1]],
     );
     expect((await reserve(randomUUID(), 102)).rows).toHaveLength(1);
+    await db.exec(await readFile("db/migrations/009_student_enrollment_all_courses.sql", "utf8"));
     const stray = randomUUID();
     await db.query(
       "INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'live','infection-control','2099-01-15',39500,0,$2,$3,$4,now(),'noncanonical',true)",
@@ -1324,8 +1337,7 @@ test("student database enforces shared inventory, separate modes, replay, roster
         CANCELLATION_POLICY_PARAGRAPHS.join("\n\n"),
       ],
     );
-    await expect(
-      db.query(
+    expect((await db.query(
         "SELECT * FROM reserve_student_enrollment($1,$2,$3,$4,$5,$6,$7,$8,$9)",
         [
           randomUUID(),
@@ -1338,8 +1350,7 @@ test("student database enforces shared inventory, separate modes, replay, roster
           STUDENT_POLICY_HASH,
           "live",
         ],
-      ),
-    ).rejects.toThrow("Offering unavailable");
+      )).rows).toHaveLength(1);
     const unbound = ids[3];
     expect(
       (
@@ -2063,7 +2074,7 @@ test("claimed enrollment mutants fail when applied at their source lines", async
     expect(page).toContain("r.refunded_amount");
     expect(page).toContain("Refunded USD");
     const enroll = await readFile("app/enroll/page.tsx", "utf8");
-    expect(enroll).toContain("infectionControlOfferingAvailability");
+    expect(enroll).toContain("courseScheduleOfferingAvailability");
     expect(enroll).toContain("STUDENT_CLASS_FULL_MESSAGE");
     expect(enroll).toContain("studentEnrollPageOfferings(config)");
     expect(enroll).not.toContain("student-seat-sheet");

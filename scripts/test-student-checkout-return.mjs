@@ -37,7 +37,7 @@ try{
     const hostname=(req.headers.host??'').split(':')[0];
     if(hostname==='localhost'&&req.url==='/stripe-return-fixture'){
       res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
-      res.end(`<h1>Synthetic external checkout return</h1><a href="${targetOrigin}/enroll?cancelled=1">Return to academy</a>`);return;
+      res.end(`<h1>Synthetic external checkout return</h1><a href="${targetOrigin}/enroll?cancelled=1&course=infection-control">Return to academy</a>`);return;
     }
     if(hostname!=='127.0.0.1'){res.writeHead(404);res.end();return;}
     if(req.url?.startsWith('/enroll'))observations.push({path:req.url,method:req.method,staffCookiePresent:(req.headers.cookie??'').includes(cookieName+'='),fetchSite:req.headers['sec-fetch-site']??null,fetchMode:req.headers['sec-fetch-mode']??null,fetchDest:req.headers['sec-fetch-dest']??null,rsc:req.headers.rsc??null});
@@ -71,9 +71,9 @@ try{
       await page.getByText('Online enrollment is currently unavailable. Please contact the academy to confirm course dates and availability.',{exact:true}).waitFor({state:'visible'});
       assert.equal(await page.locator('#student-name').count(),0,'Cross-site denied return must not render enrollment form');
       const resume=page.locator('a[data-rda-staff-checkout-resume]');await resume.waitFor({state:'visible'});
-      assert.equal(await resume.getAttribute('href'),'/enroll');
+      assert.equal(await resume.getAttribute('href'),'/enroll?course=infection-control');
       assert.equal(await page.getByRole('link',{name:'Staff sign-in',exact:true}).getAttribute('href'),'/enrollment-pilot');
-      const first=observations.slice(beforeObservations).filter(o=>o.path==='/enroll?cancelled=1');
+      const first=observations.slice(beforeObservations).filter(o=>o.path==='/enroll?cancelled=1&course=infection-control');
       assert.equal(first.length,1,'Return must perform one document navigation');
       assert.equal(first[0].staffCookiePresent,false,'Browser must omit Secure Strict cookie on genuine cross-site return');
       assert.equal(first[0].fetchSite,'cross-site');assert.equal(first[0].fetchDest,'document');assert.equal(first[0].rsc,null);
@@ -82,12 +82,12 @@ try{
       if(spec.allowed)for(const width of [1280,390]){await page.setViewportSize({width,height:900});await page.screenshot({path:join(out,`return-${width}.png`)});}
       await page.setViewportSize({width:1280,height:900});
       await Promise.all([page.waitForNavigation({waitUntil:'load'}),resume.click()]);
-      const second=observations.slice(beforeObservations).filter(o=>o.path==='/enroll');
+      const second=observations.slice(beforeObservations).filter(o=>o.path==='/enroll?course=infection-control');
       assert.equal(second.length,1,'Recovery must be a document navigation, not an RSC prefetch');
       assert.equal(second[0].fetchSite,'same-origin');assert.equal(second[0].fetchMode,'navigate');assert.equal(second[0].fetchDest,'document');assert.equal(second[0].rsc,null);
       assert.equal(second[0].staffCookiePresent,Boolean(spec.value));
       if(spec.allowed){
-        await page.getByLabel('Student full name',{exact:true}).waitFor({state:'visible'});
+        await page.getByLabel('Full name',{exact:true}).waitFor({state:'visible'});
         await page.getByRole('button',{name:'Check or close saved checkout',exact:true}).waitFor({state:'visible'});
         assert((await page.locator('main').innerText()).includes(`Saved checkout reference: ${held}`),'Saved hold must survive return and same-tab recovery');
         assert.equal((await network()).length,beforeNetwork+1,'Valid recovery must call only the exact mocked offering SELECT');

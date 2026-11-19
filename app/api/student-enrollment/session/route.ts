@@ -1,10 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
+import { isStudentCoursePrice } from "@/lib/student-course-catalog";
 import { isCourseScheduleOfferingSellable } from "@/lib/course-schedule";
 import { enrollmentBody, enrollmentResponse } from "@/lib/enrollment-http";
 import { ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
 import { studentCanStartCheckout } from "@/lib/student-enrollment-access";
 import {
+  isStudentPublicCourse,
   studentConfig,
   studentOfferingById,
   studentOwner,
@@ -29,8 +31,14 @@ export async function POST(request: Request) {
       const offeringId = (await enrollmentBody(request)).offeringId;
       if (typeof offeringId === "string") {
         const offering = await studentOfferingById(offeringId, config);
+        if (offering && !isStudentPublicCourse(offering.course_id))
+          return enrollmentResponse(
+            { error: "Enrollment unavailable.", holdCreated: false },
+            503,
+          );
         if (
           !offering ||
+          !isStudentCoursePrice(offering.course_id, offering.amount) ||
           (offering.dashboardState ? offering.dashboardState !== "counted" :
           !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date))
         )

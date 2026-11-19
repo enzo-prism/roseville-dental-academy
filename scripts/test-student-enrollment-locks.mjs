@@ -147,6 +147,7 @@ try {
     ),
   );
   await admin.query(await readFile(new URL("../db/migrations/008_dashboard_inventory.sql", import.meta.url), "utf8"));
+  await admin.query(await readFile(new URL("../db/migrations/009_student_enrollment_all_courses.sql", import.meta.url), "utf8"));
   await admin.query(`
     TRUNCATE student_enrollment_attempts,
       student_enrollment_mail,

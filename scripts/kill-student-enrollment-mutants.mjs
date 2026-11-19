@@ -42,8 +42,8 @@ const mutants = [
   {
     id: "M30",
     file: "lib/student-enrollment.ts",
-    find: "        config.mode !== \"live\" || isCanonicalInfectionControlDate(row.course_date),",
-    replace: "        true,",
+    find: "isStudentCoursePrice(offering.course_id, offering.amount) &&",
+    replace: "true &&",
   },
   {
     id: "M32",

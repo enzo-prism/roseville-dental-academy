@@ -12,7 +12,7 @@ type FbqCommand =
   | ["trackSingle", string, string, Record<string, unknown>?, MetaPixelEventOptions?]
   | ["trackCustom", string, Record<string, unknown>?];
 
-type MetaPixelEventName = "Contact" | "Lead" | "PageView" | "ViewContent";
+type MetaPixelEventName = "InitiateCheckout" | "Contact" | "Lead" | "PageView" | "ViewContent";
 type MetaPixelProperties = Record<string, boolean | number | string | null | undefined>;
 type MetaPixelEventOptions = { eventID?: string };
 

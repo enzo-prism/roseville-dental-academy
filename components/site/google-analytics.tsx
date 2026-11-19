@@ -5,11 +5,7 @@ import { Suspense, useEffect, useRef } from "react";
 
 import { getAnalyticsPageLocation, getAnalyticsPagePath } from "@/lib/analytics-page-url";
 
-const DEFAULT_GA_MEASUREMENT_ID = "G-LKJFEYVM1Q";
-
-function getMeasurementId() {
-  return process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || DEFAULT_GA_MEASUREMENT_ID;
-}
+import { getMeasurementId } from "@/lib/ga-config";
 
 type GtagCommand =
   | ["config", string, Record<string, unknown>?]

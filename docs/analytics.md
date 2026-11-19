@@ -161,6 +161,21 @@ GA4 receives a mix of recommended events and named custom events. Recommended ev
 
 For GA4 reporting beyond event counts, register useful event-scoped custom dimensions for `form_id`, `lead_source`, `lead_type`, `source_page`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `renewal_focus`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_id`, `utm_source_platform`, `utm_content`, `cta_id`, `cta_location`, `contact_method`, `link_location`, `nav_label`, `portal`, and `social_platform`.
 
+## Enrollment funnel
+
+The private `/enroll` layout loads GA4 under the same GPC, DNT, and denied-cookie gate as Meta on public pages. Meta, Hotjar, and the public analytics scripts stay off enrollment routes. GA4 receives only the origin, pathname, and a validated `course` query parameter as the page location. The private funnel omits names, emails, phones, enrollment references, and Stripe identifiers.
+
+| GA4 event | When it fires | Parameters |
+| --- | --- | --- |
+| `enroll_view` | Enrollment landing page loads | `course_id` when a course is selected |
+| `enroll_date_select` | Student chooses a date | `course_id`, `course_date`, `value`, `currency`, `seats_left_bucket` |
+| `enroll_start` | Student activates the payment button | Date selection fields when a date is selected, otherwise `course_id` |
+| `seat_check` | Checkout responds with 200, 409 or 503 | Same as date selection plus `result` (`open`, `full`, `unavailable`) |
+| `begin_checkout` | Immediately before Stripe redirect | Same as date selection plus GA4 `items` |
+| `checkout_cancelled` | Student returns through the cancellation URL | `course_id` when known |
+| `purchase` | The owner opens a verified paid confirmation | `course_id`, `course_date`, `value`, `currency`, and GA4 `items` |
+| `select_content` | Public course checkout CTA clicked | `content_type=enroll_cta_click`, `item_id` (course ID), `value`, `currency` |
+
 ## Meta Pixel
 
 The Meta Pixel base code uses the shared `lib/meta-pixel-config.ts` default pixel ID `356932321507746` (public override retained). GPC, DNT, or any explicit denied RDA consent cookie blocks/revokes JavaScript Meta measurement. Unknown consent preserves the existing browser behavior without writing a consent grant. It sends the initial `PageView` during page load, then `components/site/meta-pixel.tsx` sends additional `PageView` events on client-side route changes.
@@ -173,6 +188,7 @@ Safe Meta standard events:
 
 | Event | When it fires | Safe parameters |
 | --- | --- | --- |
+| `InitiateCheckout` | Public course checkout CTA clicked | `content_name` (course ID), `content_category=course_enrollment`, `value`, `currency` |
 | `ViewContent` | `/lp/*` landing page view | `content_name`, `content_category`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Lead` | Formspree accepts a valid lead request | `content_name`, `content_category`, `source_page`, `lead_event_id`, `selected_count`, `selected_items`, `landing_page`, `campaign_intent`, `course_interest`, `page_path`, UTM fields |
 | `Contact` | Phone, email, or WhatsApp click-to-chat click | `content_name` (`call`, `email`, or `whatsapp`), `content_category`, `link_location`, `page_path` (query-free); phone/WhatsApp also send `how_heard` and `lead_source` (`phone` or `whatsapp`) and never send stored `utm_content` or `ad_id` |

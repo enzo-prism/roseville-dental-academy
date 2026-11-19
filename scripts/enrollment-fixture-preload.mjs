@@ -1,3 +1,4 @@
+import { seedCourses } from "./print-student-offering-seed.mjs";
 // Local integration harness only. This file is never imported by the application.
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -15,6 +16,7 @@ await db.exec(await readFile(new URL("../db/migrations/004_enrollment_test_pilot
 await db.exec(await readFile(new URL("../db/migrations/005_student_enrollment.sql", import.meta.url), "utf8"));
 await db.exec(await readFile(new URL("../db/migrations/006_student_enrollment_review.sql", import.meta.url), "utf8"));
 await db.exec(await readFile(new URL("../db/migrations/008_dashboard_inventory.sql", import.meta.url), "utf8"));
+await db.exec(await readFile(new URL("../db/migrations/009_student_enrollment_all_courses.sql", import.meta.url), "utf8"));
 if (process.env.RDA_STUDENT_PAYMENTS_MODE) {
   if (process.env.RDA_STUDENT_PAYMENTS_MODE !== "test" || process.env.RDA_STUDENT_STRIPE_TEST_KEY !== "sk_test_fixture"
     || process.env.RDA_STUDENT_STRIPE_TEST_WEBHOOK_SECRET !== "whsec_fixture"
@@ -59,6 +61,10 @@ function applyCourseSchedule(control) {
 async function writeEvidence() {
   if (!process.env.RDA_ENROLLMENT_FIXTURE_EVIDENCE) return;
   const evidence = { stripeCalls: stripeCalls.slice() };
+  evidence.checkoutProducts = [...keys.values()].map(({ raw }) => {
+    const params = new URLSearchParams(raw);
+    return { name: params.get("line_items[0][price_data][product_data][name]"), amount: params.get("line_items[0][price_data][unit_amount]"), cancelUrl: params.get("cancel_url") };
+  });
   for (const table of ["student_enrollments","student_enrollment_events","student_enrollment_mail","student_enrollment_reviews","student_enrollment_roster","student_enrollment_roster_test"]) {
     evidence[table] = (await db.query(`SELECT * FROM ${table}`)).rows;
   }
@@ -134,7 +140,7 @@ globalThis.fetch = async (input, init = {}) => {
         const plant=control.plantOffering;
         const policy=(await db.query("SELECT policy_text,policy_hash FROM student_enrollment_offerings LIMIT 1")).rows[0];
         if (policy) {
-          await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test',$2,$3,39500,0,'2026-09-30',$4,$5,now(),'planted offering',true) ON CONFLICT (id) DO NOTHING",[plant.id,plant.courseId ?? "infection-control",plant.courseDate,policy.policy_hash,policy.policy_text]);
+          await db.query("INSERT INTO student_enrollment_offerings(id,mode,course_id,course_date,amount,external_seats,policy_version,policy_hash,policy_text,reviewed_at,review_reference,enabled) VALUES($1,'test',$2,$3,$6,0,'2026-09-30',$4,$5,now(),'planted offering',true) ON CONFLICT (id) DO NOTHING",[plant.id,plant.courseId ?? "infection-control",plant.courseDate,policy.policy_hash,policy.policy_text,plant.amount ?? seedCourses[plant.courseId ?? "infection-control"].amount]);
         }
       }
       const { query, params } = JSON.parse(init.body);
@@ -151,13 +157,24 @@ globalThis.fetch = async (input, init = {}) => {
       })) });
     } catch (error) { return Response.json({ message: error.message }, { status: 400 }); }
   }
+  if (url.origin === "https://dashboard.fixture.test" && url.pathname === "/api/course-schedule-feed") {
+    if (new Headers(init.headers ?? (input instanceof Request ? input.headers : undefined)).get("authorization") !== "Bearer fixture-feed-token")
+      return Response.json({}, { status: 401 });
+    const control = (await fixtureControls()).dashboardFeed;
+    if (control?.error) return Response.json({}, { status: 503 });
+    const entries = (control?.entries ?? globalThis.__RDA_COURSE_SCHEDULE__.entries).map((entry) => {
+      const seatsLeft = control?.seatsLeft?.[`${entry.courseId}|${entry.isoDate}`];
+      return seatsLeft === undefined ? entry : { ...entry, seatsLeft };
+    });
+    return Response.json({ version: 1, entries });
+  }
   if (url.hostname === "api.stripe.com") {
     const control = await fixtureControls();
     stripeCalls.push({ method: String(init.method ?? "GET"), path: url.pathname });
     await writeEvidence();
       if (control.plantOrphanSession) {
       const plant=control.plantOrphanSession;
-      const offer=(await db.query("SELECT course_date,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
+      const offer=(await db.query("SELECT course_id,course_date,amount,policy_hash FROM student_enrollment_offerings WHERE id=$1",[plant.offeringId])).rows[0];
       const heldExpires=plant.enrollmentId
         ? (await db.query("SELECT stripe_expires_at FROM student_enrollments WHERE id=$1",[plant.enrollmentId])).rows[0]?.stripe_expires_at
         : undefined;
@@ -165,12 +182,12 @@ globalThis.fetch = async (input, init = {}) => {
         const courseDate=offer.course_date instanceof Date && offer.course_date.toISOString().endsWith("T00:00:00.000Z")
           ? offer.course_date.toISOString().slice(0,10) : String(offer.course_date).slice(0,10);
         sessions.set(plant.id,{
-          id:plant.id,object:"checkout.session",livemode:false,mode:"payment",amount_total:39500,currency:"usd",
+          id:plant.id,object:"checkout.session",livemode:false,mode:"payment",amount_total:offer.amount,currency:"usd",
           status:plant.status ?? "open",payment_status:plant.paymentStatus ?? "unpaid",
           expires_at:plant.expiresAt ?? (Number(heldExpires) || Math.floor(Date.now()/1000)+3600),
           url:`https://checkout.stripe.com/c/pay/${plant.id}`,client_reference_id:plant.enrollmentId,payment_intent:null,
           metadata:{enrollment_id:plant.enrollmentId,offering_id:plant.offeringId,policy_version:"2026-09-30",
-            policy_hash:offer.policy_hash,integration:"rda-student-v1",environment:"test",course_date:courseDate},
+            policy_hash:offer.policy_hash,integration:"rda-student-v1",environment:"test",course_date:courseDate,course_id:offer.course_id},
         });
         if (plant.idempotencyKey) keys.set(plant.idempotencyKey,{id:plant.id,raw:plant.raw ?? "orphan"});
       }
