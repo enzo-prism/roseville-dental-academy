@@ -14,6 +14,8 @@ for (const name of Object.keys(env))
 const port = process.env.STUDENT_FIXTURE_PORT ?? "3117";
 if (!/^\d{4,5}$/.test(port)) throw new Error("Invalid local fixture port");
 Object.assign(env, {
+  RDA_SCHEDULE_FEED_URL: "https://dashboard.fixture.test/api/course-schedule-feed",
+  RDA_SCHEDULE_FEED_TOKEN: "fixture-feed-token",
   DATABASE_URL: "postgres://fixture:fixture@db.fixture.neon.tech/test",
   RDA_ENROLLMENT_FIXTURE_MODE: "local-only",
   RDA_ENROLLMENT_PILOT_PASSWORD: "fixture-staff-password-long",
@@ -86,6 +88,7 @@ try {
         "tests/enrollment-ledger.spec.ts",
         "tests/enrollment-api.spec.ts",
         "tests/student-enrollment.spec.ts",
+        "tests/student-course-catalog.spec.ts",
         "tests/student-enrollment-api.spec.ts",
         "tests/student-enrollment-mail.spec.ts",
         "tests/student-enrollment-webhook-off.spec.ts",

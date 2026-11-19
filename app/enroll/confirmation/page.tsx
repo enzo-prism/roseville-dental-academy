@@ -1,5 +1,8 @@
+import { EnrollFunnelPage } from "@/components/site/enroll-funnel-analytics";
+import { enrollOrderParams } from "@/lib/enroll-funnel-events";
+import { studentCheckoutCourse } from "@/lib/student-course-catalog";
+import { SiteLink } from "@/components/site/site-link";
 import { cookies } from "next/headers";
-import Link from "next/link";
 import { validHoldId } from "@/lib/enrollment-http";
 import {
   STUDENT_COOKIE,
@@ -30,8 +33,10 @@ export default async function StudentConfirmation({
       /* Redirects and lookup errors never imply a paid enrollment. */
     }
   }
+  const course = studentCheckoutCourse(held?.course_id ?? "infection-control");
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+      <EnrollFunnelPage courseId={held ? course?.id : undefined} purchase={held?.status === "paid" && course ? enrollOrderParams(course.id, held.course_date, held.amount) : undefined} />
       {config?.mode === "test" && (
         <p className="font-semibold">
           TEST ONLY. No real charge or enrollment.
@@ -47,8 +52,7 @@ export default async function StudentConfirmation({
       {held?.status === "paid" ? (
         <>
           <p>
-            Your full payment of ${(held.amount / 100).toFixed(2)} USD for
-            Infection Control on {held.course_date} is verified.
+            Your full payment of ${(held.amount / 100).toFixed(2)} USD for {course?.name ?? held.course_id} on {held.course_date} is verified.
           </p>
           <p>Enrollment reference: {held.id}</p>
           <p>
@@ -72,9 +76,9 @@ export default async function StudentConfirmation({
           Retry verification
         </a>
       )}
-      <Link href="/enroll" className="text-primary underline">
+      <SiteLink href={held && course ? `/enroll?course=${course.id}` : "/enroll"} className="text-primary underline">
         Return to enrollment
-      </Link>
+      </SiteLink>
     </main>
   );
 }

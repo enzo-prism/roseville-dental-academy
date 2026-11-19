@@ -1,7 +1,8 @@
 "use client";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { useRef, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { trackEnrollFunnel } from "@/components/site/enroll-funnel-analytics";
+import { enrollOrderParams } from "@/lib/enroll-funnel-events";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ type Offering = {
   course_date: string;
   label?: string;
   price: string;
+  amount: number;
   remaining: number;
 };
 const STORAGE = "rda-student-checkout";
@@ -32,7 +34,6 @@ function changeHold(id?: string) {
 }
 /** Saved-checkout state shared by the enrollment form and the all-dates-full recovery block. */
 function useStudentCheckout() {
-  const router = useRouter();
   const held = useSyncExternalStore(subscribe, snapshot, () => null);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -59,7 +60,9 @@ function useStudentCheckout() {
       if (!response.ok)
         throw new Error(result.error ?? "Verification unavailable.");
       if (result.status === "paid" || result.status === "refunded") {
-        router.push(`/enroll/confirmation?enrollment=${held}`);
+        // A document navigation keeps this private URL out of analytics history listeners.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        window.location.assign(`/enroll/confirmation?enrollment=${held}`);
         return;
       }
       if (result.status === "expired") {
@@ -138,12 +141,17 @@ export function StudentSavedCheckoutRecovery() {
   );
 }
 export function StudentEnrollmentForm({
+  courseId, courseName, hero, notice,
   offerings,
   policyVersion,
   policy,
   unavailableDates,
   testOnly,
 }: {
+  courseId: string;
+  courseName: string;
+  hero: React.ReactNode;
+  notice: React.ReactNode;
   offerings: Offering[];
   policyVersion: string;
   policy: React.ReactNode;
@@ -157,9 +165,17 @@ export function StudentEnrollmentForm({
     () => true,
     () => false,
   );
+  const [selected, setSelected] = useState(offerings.length === 1 ? offerings[0] : undefined);
+  const price = (selected ?? offerings[0]).price.replace(" USD", "");
+  function order(offering: Offering) {
+    return {
+      ...enrollOrderParams(courseId, offering.course_date, offering.amount),
+      seats_left_bucket: offering.remaining <= 3 ? "1-3" : "4+",
+    };
+  }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (inFlightRef.current || held) return;
+    if (inFlightRef.current || held || !selected) return;
     inFlightRef.current = true;
     setBusy(true);
     setMessage("");
@@ -186,6 +202,8 @@ export function StudentEnrollmentForm({
           policyVersion,
         }),
       });
+      const seatResult = { 200: "open", 409: "full", 503: "unavailable" }[response.status];
+      if (seatResult) trackEnrollFunnel("seat_check", { ...order(selected), result: seatResult });
       const result = await response.json();
       if (result.holdCreated === false) changeHold();
       if (!response.ok || typeof result.url !== "string")
@@ -193,6 +211,7 @@ export function StudentEnrollmentForm({
       const url = new URL(result.url);
       if (url.protocol !== "https:" || url.hostname !== "checkout.stripe.com")
         throw new Error("Invalid provider redirect.");
+      trackEnrollFunnel("begin_checkout", order(selected));
       window.location.assign(url.toString());
     } catch (error) {
       setMessage(
@@ -204,160 +223,178 @@ export function StudentEnrollmentForm({
     }
   }
   return (
-    <form onSubmit={submit} className="space-y-8">
-      {testOnly && (
-        <p className="text-sm font-semibold">
-          TEST ONLY. Use fictional adult details and Stripe test cards. No real
-          enrollment or money.
-        </p>
-      )}
-      {held && (
-        <div className="space-y-3">
-          <SavedCheckoutActions held={held} busy={busy} reconcile={reconcile} />
-          <CheckoutStatus message={message} />
-        </div>
-      )}
-      <fieldset
-        className="min-w-0 space-y-3"
-        data-rda-ic-sessions=""
-        disabled={busy || Boolean(held)}
-      >
-        <legend className="mb-4 font-heading text-2xl">Class date</legend>
-        {offerings.map((offering) => (
-          <label
-            key={offering.id}
-            data-rda-ic-session={offering.course_date}
-            data-rda-ic-session-status="open"
-            className="flex cursor-pointer items-center gap-3 rounded-xl border border-input px-4 py-4 has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-2 has-focus-visible:ring-ring"
-          >
-            <input
-              type="radio"
-              name="offeringId"
-              value={offering.id}
-              required
-              defaultChecked={offerings.length === 1}
-              className="size-5 shrink-0 accent-primary"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold">
-                {offering.label ?? offering.course_date}
-              </span>
-              <span className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-                <span className="font-semibold">{offering.price}</span>
-                <span className="text-muted-foreground">
-                  {offering.remaining}{" "}
-                  {offering.remaining === 1 ? "seat" : "seats"} available
+    <form onSubmit={submit} data-rda-course={courseId} className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-12">
+      <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-6">
+        <section aria-label="Order summary" aria-live="polite" data-rda-course={courseId} className="space-y-1 rounded-2xl border border-border bg-card p-5 lg:order-2">
+          <h2 className="font-heading text-2xl">{courseName}</h2>
+          <p className="text-sm text-muted-foreground">
+            {selected ? `${selected.label ?? selected.course_date} · ${selected.remaining} ${selected.remaining === 1 ? "seat" : "seats"} left` : "Choose a class date"}
+          </p>
+          <p className="flex justify-between gap-3 font-semibold"><span>Total due today</span><span>{price}</span></p>
+        </section>
+        {hero}
+      </div>
+      <div className="min-w-0 space-y-5 rounded-2xl bg-card p-5 ring-1 ring-border sm:p-8">
+        {notice}
+        {testOnly && (
+          <p className="text-sm font-semibold">
+            TEST ONLY. Use fictional adult details and Stripe test cards. No real
+            enrollment or money.
+          </p>
+        )}
+        {held && (
+          <div className="space-y-3">
+            <SavedCheckoutActions held={held} busy={busy} reconcile={reconcile} />
+            <CheckoutStatus message={message} />
+          </div>
+        )}
+        <fieldset
+          className="min-w-0 space-y-3"
+          data-rda-ic-sessions=""
+          disabled={busy || Boolean(held)}
+        >
+          <legend className="mb-4 font-heading text-2xl">Class date</legend>
+          {offerings.map((offering) => (
+            <label
+              key={offering.id}
+              data-rda-ic-session={offering.course_date}
+              data-rda-ic-session-status="open"
+              className="flex cursor-pointer items-center gap-3 rounded-xl border border-input px-4 py-4 has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-2 has-focus-visible:ring-ring"
+            >
+              <input
+                type="radio"
+                name="offeringId"
+                value={offering.id}
+                required
+                checked={selected?.id === offering.id}
+                onChange={() => {
+                  setSelected(offering);
+                  trackEnrollFunnel("enroll_date_select", order(offering));
+                }}
+                className="size-5 shrink-0 accent-primary"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">
+                  {offering.label ?? offering.course_date}
+                </span>
+                <span className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                  <span className="font-semibold">{offering.price}</span>
+                  <span className={`${offering.remaining <= 3 ? "font-semibold text-destructive" : "text-muted-foreground"}`}>
+                    {offering.remaining}{" "}
+                    {offering.remaining === 1 ? "seat" : "seats"} left
+                  </span>
                 </span>
               </span>
-            </span>
-          </label>
-        ))}
-        {unavailableDates}
-      </fieldset>
-      <div className="border-t border-border pt-7">
-        <fieldset
-          disabled={busy || Boolean(held)}
-          className="min-w-0 space-y-5"
-        >
-          <legend className="mb-4 font-heading text-2xl">
-            Student details
-          </legend>
-          <div className="space-y-2">
-            <Label htmlFor="student-name">Student full name</Label>
-            <Input
-              id="student-name"
-              name="name"
-              autoComplete="name"
-              required
-              minLength={2}
-              maxLength={100}
-              className="h-12 px-3 md:text-base"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="student-email">
-              Email for enrollment confirmation
-            </Label>
-            <Input
-              id="student-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              maxLength={254}
-              className="h-12 px-3 md:text-base"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="student-phone">Phone number</Label>
-            <Input
-              id="student-phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              required
-              minLength={7}
-              maxLength={30}
-              className="h-12 px-3 md:text-base"
-            />
-          </div>
+            </label>
+          ))}
+          {unavailableDates}
         </fieldset>
-      </div>
-      <section
-        aria-labelledby="review-heading"
-        className="space-y-4 border-t border-border pt-7"
-      >
-        <h2 id="review-heading" className="font-heading text-2xl">
-          Review and pay
-        </h2>
-        {policy}
-        <div className="divide-y divide-border">
-          <Label className="flex min-h-12 cursor-pointer items-start gap-3 py-3 text-sm leading-relaxed">
-            <input
-              name="adult"
-              type="checkbox"
-              required
-              disabled={busy || Boolean(held)}
-              className="mt-0.5 size-5 shrink-0 accent-primary"
-            />
-            <span>I confirm that I am at least 18 years old.</span>
-          </Label>
-          <Label className="flex min-h-12 cursor-pointer items-start gap-3 py-3 text-sm leading-relaxed">
-            <input
-              name="policy"
-              type="checkbox"
-              required
-              disabled={busy || Boolean(held)}
-              className="mt-0.5 size-5 shrink-0 accent-primary"
-            />
-            <span>
-              I have read, understood, and accepted the Cancellation and Refund
-              Policy above. Full payment is required.
-            </span>
-          </Label>
+        <div className="border-t border-border pt-7">
+          <fieldset
+            disabled={busy || Boolean(held)}
+            className="min-w-0 space-y-5"
+          >
+            <legend className="mb-4 font-heading text-2xl">
+              Student details
+            </legend>
+            <div className="space-y-2">
+              <Label htmlFor="student-name">Full name</Label>
+              <Input
+                id="student-name"
+                name="name"
+                autoComplete="name"
+                required
+                minLength={2}
+                maxLength={100}
+                className="h-12 px-3 md:text-base"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="student-email">
+                Email
+              </Label>
+              <Input
+                id="student-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+                className="h-12 px-3 md:text-base"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="student-phone">Phone</Label>
+              <Input
+                id="student-phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                required
+                minLength={7}
+                maxLength={30}
+                className="h-12 px-3 md:text-base"
+              />
+            </div>
+          </fieldset>
         </div>
-        <Button
-          type="submit"
-          className="h-auto min-h-12 w-full gap-2 whitespace-normal rounded-xl px-3 py-3 text-base"
-          disabled={!ready || busy || Boolean(held) || !offerings.length}
+        <section
+          aria-labelledby="review-heading"
+          className="space-y-4 border-t border-border pt-7"
         >
-          {busy
-            ? "Verifying checkout…"
-            : testOnly
-              ? "Continue to Stripe test checkout"
-              : "Continue to secure payment"}
-          <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
-        </Button>
-        <p className="flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
-          <LockKeyhole aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{" "}
-          Payment details are entered securely at Stripe.
+          <h2 id="review-heading" className="font-heading text-2xl">
+            Review and pay
+          </h2>
+          {policy}
+          <fieldset className="divide-y divide-border rounded-xl border border-border px-4">
+            <legend className="px-2 font-semibold">Confirm</legend>
+            <Label className="flex min-h-12 cursor-pointer items-start gap-3 py-3 text-sm leading-relaxed">
+              <input
+                name="adult"
+                type="checkbox"
+                required
+                disabled={busy || Boolean(held)}
+                className="mt-0.5 size-5 shrink-0 accent-primary"
+              />
+              <span>I confirm that I am at least 18 years old.</span>
+            </Label>
+            <Label className="flex min-h-12 cursor-pointer items-start gap-3 py-3 text-sm leading-relaxed">
+              <input
+                name="policy"
+                type="checkbox"
+                required
+                disabled={busy || Boolean(held)}
+                className="mt-0.5 size-5 shrink-0 accent-primary"
+              />
+              <span>
+                I have read, understood, and accepted the Cancellation and Refund
+                Policy above. Full payment is required.
+              </span>
+            </Label>
+          </fieldset>
+          <Button
+            type="submit"
+            onClick={() => trackEnrollFunnel("enroll_start", selected ? order(selected) : { course_id: courseId })}
+            className="h-auto min-h-12 w-full gap-2 whitespace-normal rounded-xl px-3 py-3 text-base"
+            disabled={!ready || busy || Boolean(held) || !offerings.length}
+          >
+            {busy
+              ? "Verifying checkout…"
+              : testOnly
+                ? "Continue to Stripe test checkout"
+                : `Pay ${price} securely`}
+            <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
+          </Button>
+          <p className="flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
+            <LockKeyhole aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{" "}
+            Payment details are entered securely at Stripe.
+          </p>
+          {!held && <CheckoutStatus message={message} />}
+        </section>
+        <p className="border-t border-border pt-5 text-sm leading-relaxed text-muted-foreground">
+          We use your contact details to manage and confirm your enrollment.
         </p>
-        {!held && <CheckoutStatus message={message} />}
-      </section>
-      <p className="border-t border-border pt-5 text-sm leading-relaxed text-muted-foreground">
-        Your name, email, and phone are used to manage your enrollment and
-        payment confirmation. Contact the academy for record corrections.
-      </p>
+      </div>
     </form>
   );
 }

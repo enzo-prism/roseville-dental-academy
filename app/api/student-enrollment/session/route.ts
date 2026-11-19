@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
+import { isStudentCoursePrice } from "@/lib/student-course-catalog";
 import { isCourseScheduleOfferingSellable } from "@/lib/course-schedule";
 import { enrollmentBody, enrollmentResponse } from "@/lib/enrollment-http";
 import { ENROLLMENT_PILOT_COOKIE } from "@/lib/enrollment-auth";
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
         const offering = await studentOfferingById(offeringId, config);
         if (
           !offering ||
+          !isStudentCoursePrice(offering.course_id, offering.amount) ||
           (offering.dashboardState ? offering.dashboardState !== "counted" :
           !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date))
         )

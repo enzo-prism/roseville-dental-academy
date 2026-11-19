@@ -17,7 +17,7 @@ export type InfectionControlSellableSession = {
   label: "November 14, 2026" | "December 5, 2026";
 };
 
-/** Confirmed Infection Control checkout inventory. No other IC dates are sellable. */
+/** Originally confirmed Infection Control sessions retained for fixture and display compatibility. */
 export const INFECTION_CONTROL_SELLABLE_SESSIONS = [
   { courseDate: "2026-11-14", label: "November 14, 2026" },
   { courseDate: "2026-12-05", label: "December 5, 2026" },
@@ -64,7 +64,7 @@ export function infectionControlFixtureCourseDates(
   return [addAcademyCalendarDays(today, 21), addAcademyCalendarDays(today, 42)];
 }
 
-export function infectionControlSessionLabel(courseDate: string) {
+export function studentSessionLabel(courseDate: string) {
   const session = INFECTION_CONTROL_SELLABLE_SESSIONS.find(
     (entry) => entry.courseDate === courseDate,
   );
@@ -78,6 +78,8 @@ export function infectionControlSessionLabel(courseDate: string) {
     year: "numeric",
   });
 }
+
+export const infectionControlSessionLabel = studentSessionLabel;
 
 export function formatEnrollmentAmount(amount = INFECTION_CONTROL_OFFERING_AMOUNT) {
   return `$${(amount / 100).toFixed(2)} USD`;

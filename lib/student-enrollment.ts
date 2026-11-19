@@ -5,7 +5,7 @@ import {
   ENROLLMENT_POLICY_VERSION,
   enrollmentDate,
 } from "@/lib/enrollment-contract";
-import { isCanonicalInfectionControlDate } from "@/lib/student-enrollment-offerings";
+import { isStudentCoursePrice, studentCheckoutCourse } from "@/lib/student-course-catalog";
 import { isCourseScheduleOfferingSellable } from "@/lib/course-schedule";
 import { studentCheckoutAudience } from "@/lib/student-enrollment-access";
 
@@ -36,6 +36,7 @@ export type StudentOffering = {
 export type StudentEnrollment = {
   id: string;
   offering_id: string;
+  course_id?: string;
   course_date: string;
   owner_hash: string;
   student_name: string;
@@ -164,9 +165,10 @@ export function studentEnrollmentOccupiesSeat(
     (status === "refunded" && releasedAt == null)
   );
 }
-export function studentPublicEnrollCtas() {
-  return studentPublicEnrollCtaEnabled()
-    ? ([{ href: "/enroll" as const, label: "Enroll and pay in full" as const }])
+export function studentPublicEnrollCtas(courseId = "infection-control") {
+  const allowlist = (process.env.RDA_STUDENT_PAYMENTS_PUBLIC_COURSES ?? "infection-control").split(",").map((id) => id.trim());
+  return studentPublicEnrollCtaEnabled() && studentCheckoutCourse(courseId) && allowlist.includes(courseId)
+    ? [{ href: `/enroll?course=${courseId}`, label: "Enroll and pay in full" }]
     : [];
 }
 export function studentDatabase() {
@@ -196,8 +198,7 @@ export async function studentOfferings(
     .filter((row) => {
       const offering = row as StudentOffering;
       return (
-        (config.mode !== "live" ||
-          isCanonicalInfectionControlDate(offering.course_date)) &&
+        isStudentCoursePrice(offering.course_id, offering.amount) &&
         (offering.dashboard_state != null ||
           isCourseScheduleOfferingSellable(offering.course_id, offering.course_date))
       );
@@ -227,7 +228,7 @@ export async function studentOfferingById(
   database: typeof studentDatabase = studentDatabase,
 ) {
   const rows =
-    await database()`SELECT id, course_id, course_date, dashboard_state FROM student_enrollment_offerings
+    await database()`SELECT id, course_id, course_date, dashboard_state, amount FROM student_enrollment_offerings
     WHERE id=${id}::uuid AND mode=${config.mode}`;
   const row = rows[0];
   if (!row) return undefined;
@@ -235,6 +236,7 @@ export async function studentOfferingById(
     dashboardState: row.dashboard_state as string | null,
     id: String(row.id),
     course_id: String(row.course_id),
+    amount: Number(row.amount),
     course_date: enrollmentDate(row.course_date),
   };
 }
@@ -250,7 +252,7 @@ export async function releaseUnboundStudentHold(id: string) {
 }
 export async function getStudentEnrollment(id: string) {
   const rows =
-    await studentDatabase()`SELECT * FROM student_enrollments WHERE id=${id}::uuid`;
+    await studentDatabase()`SELECT e.*, o.course_id FROM student_enrollments e JOIN student_enrollment_offerings o ON o.id=e.offering_id WHERE e.id=${id}::uuid`;
   return rows[0]
     ? ({
         ...rows[0],

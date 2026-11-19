@@ -1,3 +1,5 @@
+import { StudentEnrollCta } from "@/components/site/student-enroll-cta";
+import { studentPublicEnrollCtas } from "@/lib/student-enrollment";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, CalendarDays, Phone, Users } from "lucide-react";
@@ -15,7 +17,7 @@ export function FrontOfficePage() {
         eyebrow="Dental front desk training"
         title={<>Your dental career starts at the <em>front desk.</em></>}
         intro="Learn the people skills and office essentials that keep a dental practice moving. A beginner-friendly program for people with little to no dental experience."
-        actions={<><a className="ac-btn ac-btn-primary" href="#quick-sign-up">Request program details <ArrowRight aria-hidden="true" /></a><a className="ac-btn ac-btn-secondary" data-rda-lead-source="phone" href={`tel:${siteContact.phone.replace(/\D/g, "")}`}><Phone aria-hidden="true" />{siteContact.phone}</a></>}
+        actions={<><a className="ac-btn ac-btn-primary" href="#quick-sign-up">Request program details <ArrowRight aria-hidden="true" /></a><a className="ac-btn ac-btn-secondary" data-rda-lead-source="phone" href={`tel:${siteContact.phone.replace(/\D/g, "")}`}><Phone aria-hidden="true" />{siteContact.phone}</a>{studentPublicEnrollCtas("dental-front-desk-program").map((cta) => <StudentEnrollCta key={cta.href} {...cta} courseId="dental-front-desk-program" />)}</>}
         aside={<figure className="ac-front-photo"><Image alt="Roseville Dental Academy students celebrating graduation outside the academy." height={800} priority sizes="(max-width: 900px) 100vw, 45vw" src="/assets/live/drive/certificate-celebration.jpg" width={1100} /><figcaption>Meet your next chapter at Roseville Dental Academy.</figcaption></figure>}
       />
       <section className="ac-section ac-section-tight" aria-labelledby="front-office-topics">

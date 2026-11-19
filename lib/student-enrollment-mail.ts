@@ -1,3 +1,4 @@
+import { studentCheckoutCourse } from "@/lib/student-course-catalog";
 import { createHash } from "node:crypto";
 import { enrollmentDate } from "@/lib/enrollment-contract";
 import { siteContact } from "@/lib/site-data";
@@ -6,6 +7,11 @@ import {
   type StudentConfig,
   type StudentEnrollment,
 } from "@/lib/student-enrollment";
+
+function confirmationCourseName(held: StudentEnrollment) {
+  const id = held.course_id ?? "infection-control";
+  return studentCheckoutCourse(id)?.name ?? id;
+}
 
 export function studentConfirmationText(
   held: StudentEnrollment,
@@ -17,7 +23,7 @@ export function studentConfirmationText(
       held.policy_hash
   )
     throw new Error("Accepted policy snapshot unavailable");
-  return `${mode === "test" ? "TEST ONLY — no real enrollment or charge.\n\n" : ""}Hello ${held.student_name},\n\nYour full payment for Infection Control on ${held.course_date} is confirmed.\nAmount: ${(held.amount / 100).toFixed(2)} USD\nEnrollment reference: ${held.id}\n\n${held.policy_text}\n\nRoseville Dental Academy`;
+  return `${mode === "test" ? "TEST ONLY — no real enrollment or charge.\n\n" : ""}Hello ${held.student_name},\n\nYour full payment for ${confirmationCourseName(held)} on ${held.course_date} is confirmed.\nAmount: ${(held.amount / 100).toFixed(2)} USD\nEnrollment reference: ${held.id}\n\n${held.policy_text}\n\nRoseville Dental Academy`;
 }
 type ConfirmationPayload = {
   from: string;
@@ -53,7 +59,7 @@ export async function deliverStudentConfirmation(
           ? "RDA test capture <no-reply@example.test>"
           : process.env.RDA_STUDENT_EMAIL_FROM!,
       to: [held.email],
-      subject: "Infection Control enrollment confirmation",
+      subject: `${confirmationCourseName(held)} enrollment confirmation`,
       text: studentConfirmationText(held, config.mode),
       ...(config.mode === "live" ? { reply_to: siteContact.email } : {}),
     };
@@ -112,7 +118,7 @@ export function studentEmailLiveDisabled(config: StudentConfig) {
 export async function listStudentPendingConfirmations(
   mode: StudentConfig["mode"],
 ) {
-  return studentDatabase()`SELECT e.id,e.offering_id,e.course_date,e.owner_hash,e.student_name,e.email,e.phone,e.amount,e.currency,e.policy_version,e.policy_hash,e.policy_text,e.status,e.stripe_session_id,e.stripe_payment_intent,e.stripe_expires_at,e.created_at
+  return studentDatabase()`SELECT e.id,e.offering_id,o.course_id,e.course_date,e.owner_hash,e.student_name,e.email,e.phone,e.amount,e.currency,e.policy_version,e.policy_hash,e.policy_text,e.status,e.stripe_session_id,e.stripe_payment_intent,e.stripe_expires_at,e.created_at
     FROM student_enrollments e
     JOIN student_enrollment_mail m ON m.enrollment_id=e.id
     JOIN student_enrollment_offerings o ON o.id=e.offering_id

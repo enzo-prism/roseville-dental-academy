@@ -327,7 +327,7 @@ test.describe("student enrollment isolated full stack", () => {
       headers,
     });
   });
-  test("student browser validates consent, suppresses tracking, survives reload and captures responsive previews", async ({
+  test("student browser validates required fields, keeps marketing scripts off, survives reload and captures responsive previews", async ({
     page,
   }) => {
     await control({ resetLimits: randomUUID(), externalSeats: { [offer]: 4 } });
@@ -349,7 +349,7 @@ test.describe("student enrollment isolated full stack", () => {
       "Payment in full required. Course fees are non-refundable and student enrollment cannot be moved to another date. If Roseville Dental Academy cancels, students may choose another available course date or a refund.",
     );
     const firstDate = sessions.getByRole("radio", { name: new RegExp(infectionControlSessionLabel(fixtureFirstDate)!) });
-    await expect(firstDate).toHaveAccessibleName(/\$395\.00 USD.*8 seats available/);
+    await expect(firstDate).toHaveAccessibleName(/\$395\.00 USD.*8 seats left/);
     await expect(firstDate).not.toBeChecked();
     const policy = page.locator("details").filter({ hasText: "Cancellation and Refund Policy" });
     await policy.locator("summary").focus();
@@ -367,7 +367,7 @@ test.describe("student enrollment isolated full stack", () => {
     ).toBeNull();
     const folder = "test-results/student-enrollment-preview";
     await mkdir(folder, { recursive: true });
-    for (const width of [375, 768, 1280]) {
+    for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       expect(
         await page.evaluate(
@@ -380,11 +380,11 @@ test.describe("student enrollment isolated full stack", () => {
       });
     }
     await page.locator(`input[name="offeringId"][value="${offer}"]`).check();
-    await page.getByLabel("Student full name").fill("Synthetic Adult");
+    await page.getByLabel("Full name").fill("Synthetic Adult");
     await page
-      .getByLabel("Email for enrollment confirmation")
+      .getByLabel("Email")
       .fill(`browser-${randomUUID()}@example.test`);
-    await page.getByLabel("Phone number").fill("916 555 0100");
+    await page.getByLabel("Phone").fill("916 555 0100");
     await page.getByLabel("I confirm that I am at least 18").check();
     await page.getByLabel("I have read, understood, and accepted").check();
     // Stop at the external redirect; the provider remains a local deterministic HTTP fixture.
@@ -514,11 +514,11 @@ test.describe("student enrollment isolated full stack", () => {
     await control({ resetLimits: randomUUID() });
     await page.goto("/enroll");
     await page.locator(`input[name="offeringId"][value="${offer}"]`).check();
-    await page.getByLabel("Student full name").fill("Synthetic Adult");
+    await page.getByLabel("Full name").fill("Synthetic Adult");
     await page
-      .getByLabel("Email for enrollment confirmation")
+      .getByLabel("Email")
       .fill(`full-${randomUUID()}@example.test`);
-    await page.getByLabel("Phone number").fill("916 555 0100");
+    await page.getByLabel("Phone").fill("916 555 0100");
     await page.getByLabel("I confirm that I am at least 18").check();
     await page.getByLabel("I have read, understood, and accepted").check();
     await page.route("https://checkout.stripe.com/**", (route) =>
@@ -1619,6 +1619,118 @@ test.describe("student enrollment isolated full stack", () => {
       },
     });
     await page.reload();
-    await expect(session.getByRole("radio")).toHaveAccessibleName(/1 seat available/);
+    await expect(session.getByRole("radio")).toHaveAccessibleName(/1 seat left/);
+  });
+});
+
+test.describe("BLS checkout and private analytics", () => {
+  test.skip(process.env.ENROLLMENT_FIXTURE_TESTS !== "1", "Requires the isolated fixture");
+  const courseId = "bls-cpr-1";
+  const isoDate = "2099-10-03";
+  const entry = { courseId, isoDate, status: "open" };
+
+  function fixture(offeringId: string, dashboardFeed = {}) {
+    return {
+      resetLimits: randomUUID(),
+      plantOffering: { id: offeringId, courseId, courseDate: isoDate },
+      courseSchedule: { entries: [...publishedIcSchedule("open").entries, entry] },
+      dashboardFeed,
+    };
+  }
+
+  test("live Class Dates blocks full, removed, zero-seat and unavailable dates before Stripe", async ({ request }) => {
+    const offeringId = randomUUID();
+    const base = fixture(offeringId);
+    await control(base);
+    expect((await request.get("/enroll")).status()).toBe(200);
+    for (const [feed, status] of [
+      [{ entries: [{ ...entry, status: "full" }] }, 409],
+      [{ entries: [] }, 409],
+      [{ seatsLeft: { [`${courseId}|${isoDate}`]: 0 } }, 409],
+      [{ error: true }, 503],
+    ] as const) {
+      const before = await evidence();
+      await control({ ...base, dashboardFeed: feed });
+      const data = { ...payload(), offeringId };
+      const response = await request.post("/api/student-enrollment/checkout", { headers, data });
+      expect(response.status()).toBe(status);
+      expect(await response.json()).toEqual({
+        holdCreated: false,
+        error: status === 409 ? STUDENT_CLASS_FULL_MESSAGE : "Checkout is unavailable. Please try again later.",
+      });
+      const after = await evidence();
+      expect(after.stripeCalls).toEqual(before.stripeCalls);
+      expect(after.student_enrollments).toEqual(before.student_enrollments);
+    }
+  });
+
+  test("BLS checkout prices the first seat and refuses a second owner", async ({ request }) => {
+    // Use a separate date so the picker test and API holds never share capacity.
+    const date = "2099-10-04";
+    const base = fixture(randomUUID(), { seatsLeft: { [`${courseId}|${date}`]: 1 } });
+    base.plantOffering.courseDate = date;
+    base.courseSchedule.entries = [{ ...entry, isoDate: date }];
+    await control(base);
+    const offeringId = base.plantOffering.id;
+    const purchase = { ...payload(), offeringId };
+    const first = await request.post("/api/student-enrollment/checkout", { headers, data: purchase });
+    expect(first.status()).toBe(200);
+    const { url } = await first.json();
+    expect(url).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+    const after = await evidence();
+    expect(after.checkoutProducts.at(-1)).toEqual({
+      name: `TEST ONLY: BLS / CPR - ${date}`, amount: "8500",
+      cancelUrl: `${origin}/enroll?cancelled=1&course=bls-cpr-1`,
+    });
+    const second = await request.post("/api/student-enrollment/checkout", {
+      headers: { Origin: origin, Cookie: `${STUDENT_COOKIE}=${"d".repeat(64)}` },
+      data: { ...payload(), offeringId },
+    });
+    expect(second.status()).toBe(409);
+    expect((await evidence()).student_enrollments.filter((row: { offering_id: string }) => row.offering_id === offeringId)).toHaveLength(1);
+    await control({ ...base, status: "complete" });
+    expect((await webhook(request, url.split("/").at(-1))).status()).toBe(200);
+    const confirmation = await request.get(`/enroll/confirmation?enrollment=${purchase.id}`, { headers });
+    expect((await confirmation.text()).replaceAll("<!-- -->", "")).toContain(`BLS / CPR on ${date}`);
+    const [{ payload: mail }] = (await evidence()).student_enrollment_mail;
+    expect(mail.subject).toBe("BLS / CPR enrollment confirmation");
+    expect(mail.text).toContain(`BLS / CPR on ${date}`);
+
+  });
+
+  test("picker shows both courses and BLS checkout only emits safe funnel data", async ({ page }) => {
+    const offeringId = randomUUID();
+    const base = fixture(offeringId);
+    const date = "2099-10-05";
+    base.plantOffering.courseDate = date;
+    base.courseSchedule.entries = [...publishedIcSchedule("open").entries, { ...entry, isoDate: date }];
+    await control(base);
+    await page.route("https://www.googletagmanager.com/**", (route) => route.abort());
+    await page.route("https://checkout.stripe.com/**", (route) => route.fulfill({ body: "Synthetic Stripe checkout" }));
+    await page.goto("/enroll?course=unknown");
+    await expect(page.getByRole("heading", { name: "Choose a course" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Infection Control/ })).toBeVisible();
+    await page.getByRole("link", { name: /BLS \/ CPR/ }).click();
+    await expect(page.locator("form[data-rda-course='bls-cpr-1']")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Order summary" })).toContainText("$85.00");
+    await page.goto(`/enroll?course=bls-cpr-1&enrollment=${offeringId}&email=example@example.test`);
+    await page.getByLabel("Full name").fill("Synthetic Browser Adult");
+    await page.getByLabel("Email").fill("example@example.test");
+    await page.getByLabel("Phone").fill("9165550100");
+    await page.locator('input[name="adult"]').check();
+    await page.locator('input[name="policy"]').check();
+    await expect.poll(() => page.evaluate(() => window.dataLayer?.some((row) => Array.from(row as ArrayLike<unknown>)[1] === "enroll_view"))).toBe(true);
+    await page.evaluate(() => window.addEventListener("pagehide", () => {
+      localStorage.setItem("enroll-test-events", JSON.stringify(window.dataLayer));
+    }));
+    expect(await page.evaluate(() => "fbq" in window)).toBe(false);
+    await page.getByRole("button", { name: "Continue to Stripe test checkout" }).click();
+    await page.waitForURL("https://checkout.stripe.com/**");
+    await page.goto("/enroll?course=bls-cpr-1");
+    const raw = (await page.evaluate(() => localStorage.getItem("enroll-test-events"))) ?? "";
+    expect(raw).toBeTruthy();
+    for (const event of ["enroll_view", "enroll_start", "seat_check", "begin_checkout"])
+      expect(raw).toContain(event);
+    expect(raw).not.toMatch(/example@example\.test|Synthetic Browser Adult|9165550100|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i);
   });
 });

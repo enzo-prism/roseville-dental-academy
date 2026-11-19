@@ -1,3 +1,4 @@
+import { StudentEnrollCta } from "@/components/site/student-enroll-cta";
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,7 +28,6 @@ import { CertificateExpirationNotice } from "@/components/site/certificate-expir
 import { ClinicalRequirements } from "@/components/site/clinical-requirements";
 import { CourseDecisionGuide } from "@/components/site/course-decision-guide";
 import { InfectionControlRequirementNotice } from "@/components/site/infection-control-requirement-notice";
-import { SiteLink } from "@/components/site/site-link";
 import { WhatsAppIcon } from "@/components/site/whatsapp-icon";
 import { showsCertificateExpiration } from "@/lib/certificate-expiration";
 import { studentPublicEnrollCtas } from "@/lib/student-enrollment";
@@ -546,19 +546,9 @@ export function LiveCoursePage({ course }: { course: LiveCourseContent }) {
                 Request course info
                 <ArrowRight aria-hidden="true" data-ac-arrow="" />
               </a>
-              {course.id === "infection-control"
-                ? studentPublicEnrollCtas().map((cta) => (
-                    <SiteLink
-                      key={cta.href}
-                      className="ac-btn ac-btn-primary ac-enroll-cta"
-                      href={cta.href}
-                      data-rda-student-enroll-cta=""
-                    >
-                      {cta.label}
-                      <ArrowRight aria-hidden="true" data-ac-arrow="" />
-                    </SiteLink>
-                  ))
-                : null}
+              {studentPublicEnrollCtas(course.id).map((cta) => (
+                <StudentEnrollCta key={cta.href} {...cta} courseId={course.id} />
+              ))}
               <div className="ac-enroll-alt">
                 <a data-rda-lead-source="phone" href={phoneHref}>
                   <Phone aria-hidden="true" />

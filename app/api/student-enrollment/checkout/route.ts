@@ -1,3 +1,5 @@
+import { isStudentCoursePrice } from "@/lib/student-course-catalog";
+import { checkStudentDashboardSeats } from "@/lib/student-dashboard-seats";
 import { enrollmentBody, enrollmentResponse } from "@/lib/enrollment-http";
 import { isCourseScheduleOfferingSellable } from "@/lib/course-schedule";
 import {
@@ -55,12 +57,15 @@ export async function POST(request: Request) {
     const offering = await studentOfferingById(input.offeringId, access.config);
     if (
       !offering ||
+      !isStudentCoursePrice(offering.course_id, offering.amount) ||
       (offering.dashboardState ? offering.dashboardState !== "counted" :
           !isCourseScheduleOfferingSellable(offering.course_id, offering.course_date))
     )
       return enrollmentResponse(studentClassFullRefusal(), 409);
-    // Offline seats from the academy seats sheet are applied before any hold.
-    const offlineSeats = offering.dashboardState ? "off" : await syncStudentOfflineSeats(offering);
+    const dashboard = offering.dashboardState ? "off" : await checkStudentDashboardSeats(offering);
+    const offlineSeats = offering.dashboardState || dashboard === "full" || dashboard === "unavailable"
+      ? dashboard
+      : await syncStudentOfflineSeats(offering);
     if (offlineSeats === "full")
       return enrollmentResponse(studentClassFullRefusal(), 409);
     if (offlineSeats === "unavailable")
@@ -95,7 +100,7 @@ export async function POST(request: Request) {
         409,
       );
     try {
-      const url = await startStudentSession(held, access.config);
+      const url = await startStudentSession({ ...held, course_id: offering.course_id }, access.config);
       return enrollmentResponse({
         url,
         id: held.id,
@@ -105,7 +110,7 @@ export async function POST(request: Request) {
       if (!held.stripe_session_id) {
         try {
           const recovered = await recoverStudentSession(held, access.config);
-          if (!recovered && !isStudentIdempotencyConflict(error))
+          if (!isStudentIdempotencyConflict(error))
             await releaseUnboundStudentHold(held.id);
         } catch {
           /* Recover/network uncertainty keeps the seat for operator review. */

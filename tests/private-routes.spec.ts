@@ -19,7 +19,8 @@ test.beforeEach(async ({ page, context }) => {
 });
 
 for (const path of ["/student-jobs", "/enroll", "/enroll/confirmation?enrollment=00000000-0000-4000-8000-000000000000", "/enrollment-pilot/roster", "/enrollment-pilot", "/enrollment-pilot/confirmation?hold=00000000-0000-4000-8000-000000000000"]) {
-  test(`${path} initial document has no tracking scripts, globals or network requests`, async ({ page }) => {
+  const enrollment = path === "/enroll" || path.startsWith("/enroll/");
+  test(`${path} initial document isolates private measurement`, async ({ page }) => {
     const requests: string[] = [];
     page.on("request", (request) => { if (measurementUrl(request.url())) requests.push(request.url()); });
     const response = await page.goto(path);
@@ -28,14 +29,22 @@ for (const path of ["/student-jobs", "/enroll", "/enroll/confirmation?enrollment
     expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
     await expect(page.locator("h1")).toBeVisible();
     await page.waitForTimeout(1000);
-    expect(await page.locator("script[src]").evaluateAll((scripts) => scripts.map((script) => script.getAttribute("src")))).not.toEqual(expect.arrayContaining([expect.stringMatching(/googletagmanager|hotjar|facebook|insights|openai/)]));
+    expect(await page.locator("script[src]").evaluateAll((scripts) => scripts.map((script) => script.getAttribute("src")))).not.toEqual(expect.arrayContaining([expect.stringMatching(enrollment ? /hotjar|facebook|insights|openai/ : /googletagmanager|hotjar|facebook|insights|openai/)]));
     expect(await page.locator("#rda-google-analytics, #rda-meta-pixel, #rda-hotjar-analytics").count()).toBe(0);
     const globals = await page.evaluate(() => {
       const values = window as unknown as Record<string, unknown>;
       return ["gtag", "fbq", "hj", "_hjSettings", "dataLayer"].filter((name) => values[name] !== undefined);
     });
-    expect(globals).toEqual([]);
-    expect(requests).toEqual([]);
+    expect(globals).toEqual(enrollment ? ["gtag", "dataLayer"] : []);
+    if (enrollment) {
+      expect(requests.map((request) => new URL(request).origin + new URL(request).pathname))
+        .toEqual(["https://www.googletagmanager.com/gtag/js"]);
+      const data = await page.evaluate(() => JSON.stringify(window.dataLayer));
+      expect(data).not.toContain("enrollment=");
+      expect(data).not.toContain("00000000-0000-4000-8000-000000000000");
+    } else {
+      expect(requests).toEqual([]);
+    }
   });
 }
 
@@ -76,7 +85,27 @@ test("unavailable enrollment exits with a fresh document and Back restores track
   await expect(page.locator("#rda-google-analytics")).toHaveCount(1);
   await page.goBack(); await expect(page).toHaveURL(/\/enroll$/);
   await expect(page.locator("#rda-google-analytics, #rda-meta-pixel, #rda-hotjar-analytics")).toHaveCount(0);
-  expect(await page.evaluate(() => ["gtag","fbq","hj","_hjSettings","dataLayer"].filter(k => (window as unknown as Record<string,unknown>)[k] !== undefined))).toEqual([]);
+  expect(await page.evaluate(() => ["fbq", "hj", "_hjSettings"].filter((key) => (window as unknown as Record<string, unknown>)[key] !== undefined))).toEqual([]);
+});
+
+test("enrollment analytics respects denied consent and privacy signals", async ({ page, context, baseURL }) => {
+  const requests: string[] = [];
+  page.on("request", (request) => {
+    if (measurementUrl(request.url())) requests.push(request.url());
+  });
+  await context.addCookies([{ name: "rda_analytics_consent", value: "denied", url: baseURL! }]);
+  await page.goto("/enroll");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  expect(await page.evaluate(() => window.dataLayer)).toBeUndefined();
+  await context.clearCookies({ name: "rda_analytics_consent" });
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "globalPrivacyControl", { value: true });
+  });
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  expect(await page.evaluate(() => window.dataLayer)).toBeUndefined();
+  expect(requests).toEqual([]);
 });
 
 test("Stripe cross-site return can retry verification with the original Strict private cookie", async ({ page, context, baseURL }) => {
