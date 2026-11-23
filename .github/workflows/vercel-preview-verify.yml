@@ -57,6 +57,7 @@ jobs:
 
       - name: Run preview verification
         env:
+          QA_DEPLOYMENT_ENVIRONMENT: ${{ github.event.deployment_status.environment }}
           BASELINE_DIR: tests/baselines/live
           CI: "true"
           PREVIEW_URL: ${{ github.event.deployment_status.environment_url }}
