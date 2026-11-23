@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
 
+import { activeSitePromo, fallbackAnnouncement } from "@/lib/site-promo";
+import { publishedPromoActive } from "./support/published-promo";
+
 import {
   buildTextDiff,
   captureSnapshot,
@@ -17,6 +20,11 @@ const contentParitySummary: Array<Record<string, unknown>> = [];
 
 test.describe.configure({ mode: "serial" });
 
+let promoActive: boolean;
+test.beforeAll(async ({ request }) => {
+  promoActive = await publishedPromoActive(request);
+});
+
 test.beforeEach(async ({ context }) => {
   await suppressSitePromo(context);
 });
@@ -24,6 +32,22 @@ test.beforeEach(async ({ context }) => {
 for (const route of routeMappings) {
   test(`content parity ${route.label}`, async ({ page }, testInfo) => {
     const baseline = getContentBaseline(route.localPath);
+    // The frozen reference includes the dated announcement. When its class fills,
+    // the header renders the ordinary announcement without a link to recruitment.
+    if (!promoActive) {
+      const promoText = activeSitePromo.bannerText.replace(/\s*→\s*$/u, "");
+      baseline.snapshot.bodyText = baseline.snapshot.bodyText.replace(promoText, fallbackAnnouncement);
+      baseline.snapshot.links = baseline.snapshot.links.filter((link) => link.href !== activeSitePromo.ctaHref || link.text !== promoText);
+    }
+    // The reviewed live pilot adds one checkout link after the ordinary inquiry CTA.
+    // The preview and frozen clone keep their original exact content and links.
+    if (process.env.QA_DEPLOYMENT_ENVIRONMENT?.toLowerCase() === "production" && route.localPath === "/infection-control") {
+      const inquiry = baseline.snapshot.links.findIndex((link) => link.href === "#quick-sign-up" && link.text === "Request course info");
+      expect(inquiry).toBeGreaterThanOrEqual(0);
+      const checkout = { href: "/enroll?course=infection-control", text: "Enroll and pay in full" };
+      baseline.snapshot.links.splice(inquiry + 1, 0, checkout);
+      baseline.snapshot.bodyText = baseline.snapshot.bodyText.replace("Request course info Call WhatsApp", `Request course info ${checkout.text} Call WhatsApp`);
+    }
     const localSnapshot = await captureSnapshot(
       page,
       `${localOrigin}${route.localPath}`,

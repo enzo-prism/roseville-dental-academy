@@ -6,7 +6,8 @@ import type { PublishedCourseScheduleStatus } from "@/lib/published-course-sched
 import { expectedNextStartsBadge, formatOpenDateLabel } from "./support/course-schedule-contract";
 import { primaryMetaTracks } from "./support/meta-events";
 import { HOW_HEARD_OPTIONS } from "@/lib/how-heard";
-import { activeSitePromo } from "@/lib/site-promo";
+import { publishedPromoActive } from "./support/published-promo";
+import { activeSitePromo, fallbackAnnouncement } from "@/lib/site-promo";
 import {
   blockOpenAIAdsPixelNetwork,
   localOrigin,
@@ -2664,12 +2665,22 @@ test.describe("live-style interaction flows", () => {
   });
 
   test.describe("Dental Assisting promo", () => {
-    test("banner promotes the last DA start of 2026", async ({ page }) => {
+    let promoActive: boolean;
+    test.beforeAll(async ({ request }) => {
+      promoActive = await publishedPromoActive(request);
+    });
+
+    test("banner matches the published availability of the last DA start", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/");
 
       const banner = page.locator("[data-rda-promo-banner='true']");
 
+      if (!promoActive) {
+        await expect(banner).toHaveCount(0);
+        await expect(page.locator(".rda-promo-banner")).toHaveText(fallbackAnnouncement);
+        return;
+      }
       await expect(banner).toBeVisible();
       await expect(banner).toContainText("Last Dental Assisting class of 2026 starts Saturday, Dec 5.");
       await expect(banner).toHaveAttribute("href", activeSitePromo.ctaHref);
@@ -2682,6 +2693,10 @@ test.describe("live-style interaction flows", () => {
 
       const dialog = page.locator("[data-rda-promo-dialog='true']");
 
+      if (!promoActive) {
+        await expect(dialog).toHaveCount(0);
+        return;
+      }
       await expect(dialog).toBeVisible({ timeout: 8_000 });
       await expect(dialog.getByText("Last class of 2026", { exact: true })).toBeVisible();
       await expect(
@@ -2722,6 +2737,10 @@ test.describe("live-style interaction flows", () => {
       await expect(dialog).toHaveCount(0);
 
       await page.evaluate(() => window.scrollTo({ behavior: "instant", top: window.innerHeight * 2 }));
+      if (!promoActive) {
+        await expect(dialog).toHaveCount(0);
+        return;
+      }
       await expect(dialog).toBeVisible({ timeout: 8_000 });
       await expect(dialog.locator("img")).toHaveAttribute("src", /\/_next\/image\?url=/);
     });
