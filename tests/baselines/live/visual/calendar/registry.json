@@ -197,6 +197,77 @@
         ],
         "empty": false
       }
+    },
+    {
+      "source": "dashboard",
+      "upcomingRevision": "f27d51b1b50258922f458107f708e5c0b33324629634abed11dd60ae4866f19d",
+      "platform": "linux",
+      "recordedReviewedOn": "2026-11-22",
+      "recordedBuiltOn": "2026-11-22",
+      "sourceRevision": "ebb5be4fe0ced16534ea65a693bb566b1cea54a5ab35efb7b8c86ff90e9ed1a2",
+      "sourceHead": "45427db3dedf94657e0566008c84811200525e2c",
+      "sourceDeployment": "https://roseville-dental-academy-i7d47yllr-enzo-design-prisms-projects.vercel.app",
+      "sourceRun": "https://github.com/enzo-prism/roseville-dental-academy/actions/runs/45099534875",
+      "publicationAtCapture": {
+        "version": 1,
+        "revision": "ebb5be4fe0ced16534ea65a693bb566b1cea54a5ab35efb7b8c86ff90e9ed1a2",
+        "upcomingRevision": "f27d51b1b50258922f458107f708e5c0b33324629634abed11dd60ae4866f19d",
+        "reviewedOn": "2026-11-22",
+        "builtOn": "2026-11-22",
+        "source": "dashboard",
+        "upcoming": [
+          {
+            "courseId": "bls-cpr-1",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "dental-assisting-program",
+            "isoDate": "2026-12-05",
+            "status": "full"
+          },
+          {
+            "courseId": "infection-control",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "radiation-safety",
+            "isoDate": "2026-12-05",
+            "status": "open"
+          },
+          {
+            "courseId": "coronal-polish",
+            "isoDate": "2026-12-12",
+            "status": "open"
+          },
+          {
+            "courseId": "sealants",
+            "isoDate": "2026-12-12",
+            "status": "full"
+          },
+          {
+            "courseId": "dental-front-desk-program",
+            "isoDate": "2027-01-09",
+            "status": "open"
+          }
+        ],
+        "empty": false
+      },
+      "baselinePath": "tests/baselines/live/visual/calendar/f27d51b1b50258922f458107f708e5c0b33324629634abed11dd60ae4866f19d/linux/home-mobile.png",
+      "imageSha256": "55d00b145ebb317fb513293bc560a6ed6fe6aed35008a58093612db38457e910",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "desktop": {
+        "baselinePath": "tests/baselines/live/visual/calendar/f27d51b1b50258922f458107f708e5c0b33324629634abed11dd60ae4866f19d/linux/home-desktop.png",
+        "imageSha256": "87dcc676f5bad4f2ae3a36137a313e0ad75509ac15025f5e8461bd8a53f8d6bb",
+        "viewport": {
+          "width": 1440,
+          "height": 2200
+        }
+      }
     }
   ]
 }

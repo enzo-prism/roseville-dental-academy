@@ -36,9 +36,9 @@ for (const route of visualMappings) {
   for (const [viewportLabel, viewport] of Object.entries(visualViewports)) {
     test(`visual parity ${route.label} on ${viewportLabel}`, async ({ page }, testInfo) => {
       let publication: unknown;
-      if (process.env.PREVIEW_URL?.trim() && route.localPath === "/" && viewportLabel === "mobile") {
+      if (process.env.PREVIEW_URL?.trim() && route.localPath === "/") {
         const response = await page.request.get(`${localOrigin}/api/course-schedule-status`, { timeout: 10_000 });
-        expect(response.ok(), "Read the bundled schedule publication before choosing a reviewed mobile homepage reference").toBe(true);
+        expect(response.ok(), "Read the bundled schedule publication before choosing a reviewed homepage reference").toBe(true);
         publication = await response.json();
       }
       const baseline = getVisualBaseline(route.localPath, viewportLabel, publication);
