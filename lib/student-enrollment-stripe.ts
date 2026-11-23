@@ -160,7 +160,11 @@ export function assertStudentSession(
     session.metadata?.integration !== "rda-student-v1" ||
     session.metadata?.environment !== config.mode ||
     session.metadata?.course_date !== held.course_date ||
-    (held.course_id != null && session.metadata?.course_id !== held.course_id) ||
+    (held.course_id != null &&
+      session.metadata?.course_id !== held.course_id &&
+      // Infection Control sessions created before the all-courses release carry no
+      // course tag; every other binding above still has to match.
+      !(held.course_id === "infection-control" && session.metadata?.course_id === undefined)) ||
     (!orphan &&
       !mismatch &&
       held.status !== "paid" &&

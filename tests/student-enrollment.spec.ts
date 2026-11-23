@@ -676,7 +676,7 @@ test("student consent and immutable checkout contract reject tampering", () => {
     { expires_at: 1 },
     { id: "cs_test_other", expires_at: 1 },
     { metadata: { ...session.metadata, course_id: "bls-cpr-1" } },
-    { metadata: Object.fromEntries(Object.entries(session.metadata).filter(([key]) => key !== "course_id")) },
+    { metadata: { ...session.metadata, course_id: "" } },
     { metadata: { ...session.metadata, course_date: "2026-11-15" } },
     { metadata: { ...session.metadata, environment: "live" } },
     { metadata: { ...session.metadata, integration: "other" } },
@@ -684,6 +684,21 @@ test("student consent and immutable checkout contract reject tampering", () => {
     expect(() =>
       assertStudentSession({ ...session, ...extra }, held, config),
     ).toThrow();
+  const untagged = Object.fromEntries(
+    Object.entries(session.metadata).filter(([key]) => key !== "course_id"),
+  );
+  // Infection Control sessions from before the course tag still verify.
+  expect(() =>
+    assertStudentSession({ ...session, metadata: untagged }, held, config),
+  ).not.toThrow();
+  // Any other course must carry its tag.
+  expect(() =>
+    assertStudentSession(
+      { ...session, metadata: untagged },
+      { ...held, course_id: "bls-cpr-1" } as StudentEnrollment,
+      config,
+    ),
+  ).toThrow();
   expect(() =>
     assertStudentSession(
       { ...session, expires_at: 1 },
