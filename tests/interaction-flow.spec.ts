@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { adLandingPages, PAID_TRAFFIC_LANDER_SLUGS } from "@/lib/ad-landing-pages";
 import { signupInterestOptions } from "@/lib/site-data";
 import type { PublishedCourseScheduleStatus } from "@/lib/published-course-schedule";
-import { formatOpenDateLabel } from "./support/course-schedule-contract";
+import { expectedNextStartsBadge, formatOpenDateLabel } from "./support/course-schedule-contract";
 import { primaryMetaTracks } from "./support/meta-events";
 import { HOW_HEARD_OPTIONS } from "@/lib/how-heard";
 import { activeSitePromo } from "@/lib/site-promo";
@@ -662,8 +662,10 @@ test.describe("live-style interaction flows", () => {
       await expect(
         courseSystem.getByText("Pick one class day — Monday, Friday, or Saturday — plus one internship day"),
       ).toBeVisible();
-      await expect(courseSystem.locator(".ac-next-dates")).toContainText("November 20, 2026");
-      await expect(courseSystem.locator(".ac-next-dates")).toContainText("December 5, 2026");
+      const openStarts = published.upcoming
+        .filter((entry) => entry.courseId === "dental-assisting-program" && entry.status === "open")
+        .map((entry) => formatOpenDateLabel("dental-assisting-program", entry.isoDate));
+      await expect(courseSystem.locator(".ac-next-dates .ac-chip")).toHaveText(openStarts.slice(0, 3));
       await expect(courseSystem.getByRole("link", { name: "Explore the program" })).toHaveAttribute(
         "href",
         "/dental-assisting-program",
@@ -2854,17 +2856,18 @@ test.describe("live-style interaction flows", () => {
       await expect(page.locator('form[data-rda-landing-form="true"]')).toBeVisible();
     });
 
-    test("DA enroll LP lists November 20 as the next start after October 12 filled", async ({ page }) => {
+    test("DA enroll LP offers only published open starts and a flexible inquiry", async ({ page }) => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await gotoSettled(page, "/lp/dental-assisting-enroll");
 
-      const dates = page.locator(".rda-ad-date-list");
-
-      await expect(page.getByText("Next starts: Fri, Nov 20 · Sat, Dec 5")).toBeVisible();
-      await expect(dates.getByText("September 12, 2026 (Saturday Academy)")).toHaveCount(0);
-      await expect(dates.getByText("October 12, 2026")).toHaveCount(0);
-      await expect(dates.getByText("November 20, 2026")).toBeVisible();
-      await expect(dates.getByText("December 5, 2026")).toBeVisible();
+      const response = await page.request.get(`${localOrigin}/api/course-schedule-status`);
+      expect(response.ok()).toBe(true);
+      const published = await response.json() as PublishedCourseScheduleStatus;
+      const starts = published.upcoming.filter((entry) => entry.courseId === "dental-assisting-program");
+      const openDates = starts.filter((entry) => entry.status === "open")
+        .map((entry) => formatOpenDateLabel("dental-assisting-program", entry.isoDate));
+      await expect(page.locator("[data-rda-lander-badge]")).toHaveText(expectedNextStartsBadge(starts, published.reviewedOn));
+      await expect(page.locator(".rda-ad-date-list > span")).toHaveText(openDates);
       await expect(
         page.getByText("Monday, Friday, and Saturday class schedules are separate options; students attend one, not all three."),
       ).toBeVisible();
@@ -2872,9 +2875,7 @@ test.describe("live-style interaction flows", () => {
       const startSelect = page.locator('select[name="Preferred start date"]');
 
       await expect(startSelect).toBeVisible();
-      await expect(startSelect.locator("option", { hasText: "September 12, 2026 (Saturday Academy)" })).toHaveCount(0);
-      await expect(startSelect.locator("option", { hasText: "October 12, 2026" })).toHaveCount(0);
-      await expect(startSelect.locator("option", { hasText: "November 20, 2026" })).toHaveCount(1);
+      await expect(startSelect.locator('option:not([value=""])')).toHaveText(["I'm flexible", ...openDates]);
     });
   });
 

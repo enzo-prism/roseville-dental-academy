@@ -1369,7 +1369,6 @@ test("homepage course cards use unique descriptive copy", async ({ page }, testI
   const requiredCourseCopy = [
     "Upcoming Class Schedule",
     "Dates are penciled in and may change; admissions will confirm current availability.",
-    "November 20, 2026",
     "Initial or renewal BLS/CPR for healthcare providers",
     "Board-approved 8-hour Infection Control course for dental assistants",
     "32-hour Radiation Safety course",
@@ -1884,8 +1883,6 @@ test("Drive-derived FAQ and instructor material render on public pages", async (
     "Does this request reserve a seat?",
     "Do students need to provide patients?",
     "Roseville Dental Academy does not provide patients",
-    "November 20, 2026",
-    "December 12, 2026",
   ]) {
     if (!faqSnapshot.bodyText.includes(phrase)) {
       mismatches.push(`FAQ page missing Drive-derived phrase: ${phrase}`);

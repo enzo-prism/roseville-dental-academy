@@ -56,6 +56,7 @@ export async function withIsolatedSchedule(
       server.kill("SIGTERM");
       await stopped;
     }
-    await rm(fixture, { recursive: true, force: true });
+    // Next can finish writing its development cache just after the CLI exits.
+    await rm(fixture, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
 }
