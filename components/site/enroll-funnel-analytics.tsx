@@ -21,11 +21,25 @@ function enrollPageContext(courseId: unknown) {
 export function trackEnrollFunnel(event: EnrollFunnelEvent, input: Record<string, unknown>) {
   if (!metaMeasurementAllowed() || !window.gtag) return;
   const params = enrollFunnelParams(input);
+  const id = input.transaction_id;
+  const purchaseId = event === "purchase" && typeof id === "string" && /^[a-f0-9]{64}$/.test(id) ? id : undefined;
+  if (event === "purchase" && !purchaseId) return;
+  if (purchaseId) {
+    try {
+      if (window.sessionStorage.getItem(`rda:purchase:${purchaseId}`)) return;
+    } catch { /* GA4 can still deduplicate by transaction_id when storage is unavailable. */ }
+  }
   window.gtag("event", event, {
     ...params,
+    ...(purchaseId ? { transaction_id: purchaseId } : {}),
     ...enrollPageContext(params.course_id),
     ...((event === "begin_checkout" || event === "purchase") ? { items: enrollOrderItems(params) } : {}),
   });
+  if (purchaseId) {
+    try {
+      window.sessionStorage.setItem(`rda:purchase:${purchaseId}`, "1");
+    } catch { /* The event still carries its stable GA4 transaction_id. */ }
+  }
 }
 
 export function EnrollFunnelPage({

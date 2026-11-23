@@ -164,8 +164,18 @@ test("mixed DA fixtures keep chips and lead the LP badge with the first open dat
     const openLabel = expectedHeroChipLabel(firstOpen.isoDate, snapshot.status.reviewedOn);
     const badge = expectedNextStartsBadge(da, snapshot.status.reviewedOn);
     assert.equal(snapshot.landerBadge, badge);
-    assert.ok(badge.startsWith(`Next starts: ${openLabel}`));
+    assert.ok(badge.includes(openLabel));
   }
+});
+
+test("a later full class prevents the last-of-year claim, while a later year does not", () => {
+  const upcoming = [
+    { courseId: "dental-assisting-program", isoDate: "2026-12-05", status: "open" },
+    { courseId: "dental-assisting-program", isoDate: "2027-01-09", status: "open" },
+  ] as const;
+  assert.equal(expectedNextStartsBadge([...upcoming], "2026-11-22"), "Last class of 2026 starts Sat, Dec 5");
+  const laterFull = { ...upcoming[0], isoDate: "2026-12-12", status: "full" } as const;
+  assert.equal(expectedNextStartsBadge([upcoming[0], laterFull], "2026-11-22"), "Next starts: Sat, Dec 5 · Sat, Dec 12 (Full)");
 });
 
 test("dashboard build whose stored dates are all in the past is an explicit empty schedule", () => {

@@ -45,19 +45,23 @@ function publication(value: unknown) {
   return { source: input.source, upcomingRevision: input.upcomingRevision };
 }
 
-/** Only the remote mobile homepage varies with the bundled calendar publication. */
+/** Remote homepage captures can vary with the bundled calendar publication. */
 export function selectVisualCalendarBaseline(options: Options): Selection {
   const { baselinePath, localPath, viewportLabel, platform } = options;
-  if (!options.remote || localPath !== "/" || viewportLabel !== "mobile") return { baselinePath };
+  if (!options.remote || localPath !== "/" || (viewportLabel !== "mobile" && viewportLabel !== "desktop")) return { baselinePath };
   const status = publication(options.publication);
   if (status.source === "committed") return { baselinePath };
   const registry = object(options.registry);
   if (registry.schemaVersion !== 1 || !Array.isArray(registry.baselines)) throw new Error("Invalid reviewed visual calendar registry.");
   const matching = registry.baselines.map(object).filter((entry) => entry.source === "dashboard"
     && entry.upcomingRevision === status.upcomingRevision && entry.platform === platform);
-  if (matching.length !== 1) throw new Error(`No unique reviewed ${platform} mobile homepage baseline for published upcoming revision ${status.upcomingRevision}. Review the calendar and capture a platform reference; do not increase tolerances.`);
-  const entry = matching[0];
-  const expectedPath = `tests/baselines/live/visual/calendar/${status.upcomingRevision}/${platform}/home-mobile.png`;
+  // Older publications use the original desktop reference.
+  if (viewportLabel === "desktop" && (matching.length === 0 || (matching.length === 1 && !("desktop" in matching[0])))) {
+    return { baselinePath };
+  }
+  if (matching.length !== 1) throw new Error(`No unique reviewed ${platform} ${viewportLabel} homepage baseline for published upcoming revision ${status.upcomingRevision}. Review the calendar and capture a platform reference; do not increase tolerances.`);
+  const entry = viewportLabel === "desktop" ? object(matching[0].desktop) : matching[0];
+  const expectedPath = `tests/baselines/live/visual/calendar/${status.upcomingRevision}/${platform}/home-${viewportLabel}.png`;
   if (entry.baselinePath !== expectedPath || typeof entry.imageSha256 !== "string" || !HASH.test(entry.imageSha256)) throw new Error("Invalid reviewed visual calendar baseline registration.");
   return { baselinePath: expectedPath, imageSha256: entry.imageSha256 };
 }

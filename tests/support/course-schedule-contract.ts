@@ -399,6 +399,11 @@ export function expectedNextStartsBadge(
 ) {
   const open = published.filter((entry) => entry.status !== "full");
   if (!open.length) return "Next start: Ask admissions";
+  const first = open[0].isoDate;
+  const year = first.slice(0, 4);
+  if (!published.some(({ isoDate }) => isoDate.startsWith(year) && isoDate > first)) {
+    return `Last class of ${year} starts ${expectedHeroChipLabel(first, reviewedOn)}`;
+  }
   const full = published.filter((entry) => entry.status === "full");
   const summary = [...open, ...full]
     .slice(0, HERO_START_DATE_LIMIT)

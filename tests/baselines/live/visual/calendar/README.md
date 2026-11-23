@@ -17,3 +17,12 @@ January 9 Front Desk class. Captured from the exact production deployment
 `3e79257` by workflow run `42907744877`; the capture branch only points the
 existing capture workflow at that immutable deployment. The complete image and
 calendar detail were visually reviewed. Fonts, masks, and tolerances are unchanged.
+
+
+On November 22 the December 5 Dental Assisting and December 12 Sealants classes
+are full, Infection Control remains open, and elapsed November rows have dropped
+from the homepage. The corresponding Linux desktop and mobile references were
+reviewed at their published widths. Run 45099534875 captured both from the
+immutable production deployment of 45427db. Older desktop publications retain
+the existing desktop reference. This registration does not change the local
+frozen references or the pixel comparison.

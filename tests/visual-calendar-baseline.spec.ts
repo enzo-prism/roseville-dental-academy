@@ -15,8 +15,8 @@ function select(publication: unknown = published, overrides: Record<string, unkn
 test("committed-data remote page keeps the existing platform reference", () => {
   expect(select({ ...published, source: "committed" })).toEqual({ baselinePath: fallback });
 });
-test("local and non-home/mobile checks retain the existing platform reference without a publication read", () => {
-  for (const overrides of [{ remote: false }, { localPath: "/photos" }, { viewportLabel: "desktop" }]) {
+test("local and non-home checks retain the existing platform reference without a publication read", () => {
+  for (const overrides of [{ remote: false }, { localPath: "/photos" }]) {
     expect(select(undefined, overrides)).toEqual({ baselinePath: fallback });
   }
 });
@@ -61,4 +61,13 @@ for (const [name, mutate] of [
 test("ambiguous registrations and unsafe image paths fail closed", () => {
   expect(() => select(published, { registry: { ...registry, baselines: [reference, reference] } })).toThrow(/No unique reviewed/);
   expect(() => select(published, { registry: { ...registry, baselines: [{ ...reference, baselinePath: "../other.png" }] } })).toThrow(/Invalid reviewed/);
+});
+
+test("desktop uses the matching reviewed image only for a registered desktop publication", () => {
+  expect(select(published, { viewportLabel: "desktop" })).toEqual({ baselinePath: fallback });
+  const recent = registry.baselines.find((entry) => "desktop" in entry);
+  if (!recent?.desktop) throw new Error("Missing reviewed desktop calendar fixture");
+  const { baselinePath, imageSha256 } = recent.desktop;
+  expect(select(recent.publicationAtCapture, { viewportLabel: "desktop" })).toEqual({ baselinePath, imageSha256 });
+  expect(createHash("sha256").update(readFileSync(baselinePath)).digest("hex")).toBe(imageSha256);
 });
