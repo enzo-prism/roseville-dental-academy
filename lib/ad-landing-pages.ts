@@ -537,7 +537,7 @@ export const adLandingPages: AdLandingPage[] = [
       imageSrc: "/assets/live/courses/rda-june-2026/infection-control-operatory.jpg",
       intro:
         "Review each assistant's role, training records, and current Dental Board requirements before duties involving potential exposure to infectious materials. Roseville Dental Academy offers a Board-approved 8-hour Infection Control course (IC189) and can help with its prerequisites and upcoming dates.",
-      title: "Check your office's Infection Control training records",
+      title: "Eight-hour Infection Control training in Roseville",
     },
     leadSelects: [
       {
@@ -553,35 +553,16 @@ export const adLandingPages: AdLandingPage[] = [
         ],
         required: true,
       },
-      {
-        icon: "check",
-        label: "What prompted this check?",
-        name: "Compliance check reason",
-        options: [
-          "Personnel record review",
-          "New hire onboarding",
-          "Upcoming certification deadline",
-          "Need date and prerequisite help",
-          "Not sure - help me confirm",
-        ],
-        required: true,
-      },
-      {
-        icon: "calendar",
-        label: "Preferred class date",
-        name: "Preferred class date",
-        options: ["I'm flexible", ...infectionControlDates],
-      },
     ],
     metaDescription:
       "Ask Roseville Dental Academy about its Board-approved 8-hour IC189 Infection Control course, prerequisites, and dates. Confirm current training requirements for each role with the Dental Board.",
     metaTitle: "Infection Control Office Compliance | Roseville Dental Academy",
     path: "/lp/infection-control-office-compliance",
-    primaryCtaLabel: "Check office requirements",
+    primaryCtaLabel: "Request an admissions callback",
     proofPoints: [
-      "The page is built for dentists and office managers reviewing unlicensed dental assistant personnel records.",
-      "It presents the IC189 eight-hour course option and directs offices to verify role-specific requirements.",
-      "The form captures office role, compliance-check reason, class interest, UTM fields, and this campaign's unique form key.",
+      "Have each assistant’s current BLS and Dental Practice Act training records ready.",
+      "For multiple assistants, include your group size and preferred date in the notes.",
+      "Admissions can confirm prerequisites and help your office register each assistant.",
     ],
     reviews: [
       {
@@ -689,7 +670,7 @@ export const adLandingPages: AdLandingPage[] = [
       imageSrc: siteImages.programHero,
       intro:
         "Start a hands-on dental assisting career in just 9 weeks. Monday, Friday, and Saturday are separate schedule options — you pick one. Tell us where to send class dates, tuition details, and enrollment next steps for the Roseville Dental Academy Dental Assisting Training Program.",
-      title: "Enroll in hands-on dental assistant training in Roseville",
+      title: dentalAssistingDates.length ? "Enroll in hands-on dental assistant training in Roseville" : "Ask about the next Dental Assisting start in Roseville",
     },
     leadSelects: [
       {
@@ -703,7 +684,7 @@ export const adLandingPages: AdLandingPage[] = [
       "Enroll in Roseville Dental Academy's 9-week Dental Assisting Training Program with chairside training, a 64-hour internship, and resume and job support.",
     metaTitle: "Dental Assisting Training Enrollment | Roseville Dental Academy",
     path: "/lp/dental-assisting-enroll",
-    primaryCtaLabel: "Get enrollment info",
+    primaryCtaLabel: dentalAssistingDates.length ? "Get enrollment info" : "Ask about the next start",
     proofPoints: [
       "Accelerated 9-week, 210-hour program taught inside a working dental office.",
       "Monday, Friday, and Saturday are separate schedule options. Ask admissions which start dates are available for your preferred class day.",

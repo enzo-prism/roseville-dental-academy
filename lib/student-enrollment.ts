@@ -148,6 +148,10 @@ export function studentWebhookForeignPaidCompletion(
     existing.stripe_session_id !== sessionId
   );
 }
+export function studentOfferingIsSelectable(offering: StudentOffering) {
+  return offering.remaining > 0 && (!offering.dashboard_state || offering.dashboard_state === "counted");
+}
+
 export function studentPublicEnrollCtaEnabled() {
   return (
     studentConfig()?.mode === "live" &&

@@ -2923,6 +2923,25 @@ test.describe("live-style interaction flows", () => {
       });
     }
 
+    test("office registration preserves the campaign and keeps callback available", async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoSettled(page, "/lp/infection-control-office-compliance?utm_source=facebook&utm_content=office_records&unrelated=drop");
+      await expect(page.getByRole("button", { name: "Request an admissions callback" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Ask about prerequisites or registering a team" })).toHaveAttribute("href", "#ad-lead-form");
+      await expect(page.getByText(/this campaign's unique form key/i)).toHaveCount(0);
+
+      const checkout = page.getByRole("link", { name: /^Enroll one assistant/ });
+      if (await checkout.count()) {
+        const href = new URL((await checkout.getAttribute("href"))!, "https://www.rosevilledentalacademy.com");
+        expect(href.pathname).toBe("/enroll");
+        expect(Object.fromEntries(href.searchParams)).toEqual({ course: "infection-control", utm_source: "facebook", utm_content: "office_records" });
+        await expect(checkout).toBeInViewport();
+        await expect(page.getByText(/per assistant · \d+ seats? left/)).toBeVisible();
+      } else {
+        await expect(page.getByText(/The listed classes are full|Ask admissions for the next available class/)).toBeVisible();
+      }
+    });
+
     test("GA4 config keeps the query string on paid landers", async ({ page }) => {
       await gotoSettled(
         page,

@@ -39,7 +39,12 @@ import {
 } from "@/lib/ad-landing-pages";
 import { siteContact, whatsAppUrl } from "@/lib/site-data";
 
+export type OfficeOffer =
+  | { status: "full" | "unavailable" }
+  | { status: "open"; date: string; price: string; seats: number; href: string };
+
 type AdLandingPageProps = {
+  officeOffer?: OfficeOffer;
   page: AdLandingPageData;
 };
 
@@ -317,7 +322,7 @@ function AdLandingLeadForm({
   );
 }
 
-export function AdLandingPage({ page }: AdLandingPageProps) {
+export function AdLandingPage({ page, officeOffer }: AdLandingPageProps) {
   const formId = useId();
   const attribution = useLeadAttribution();
   const { status, submitLeadForm } = useLeadFormSubmit();
@@ -365,6 +370,19 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
           <div className="rda-ad-hero-heading">
             <p className="rda-ad-eyebrow">{page.eyebrow}</p>
             <h1 id={`${formId}-hero-title`}>{page.hero.title}</h1>
+            {officeOffer && (
+              <div className="mt-3 grid justify-items-start gap-3">
+                {officeOffer.status === "open" ? (
+                  <>
+                    <p>{officeOffer.date} · {officeOffer.price} per assistant · {officeOffer.seats} {officeOffer.seats === 1 ? "seat" : "seats"} left</p>
+                    <Button asChild><a href={officeOffer.href}>Enroll one assistant — {officeOffer.price}</a></Button>
+                  </>
+                ) : (
+                  <p>{officeOffer.status === "full" ? "The listed classes are full. Ask admissions about the next opening." : "Ask admissions for the next available class."}</p>
+                )}
+                <a className="font-semibold text-primary underline" href="#ad-lead-form">Ask about prerequisites or registering a team</a>
+              </div>
+            )}
           </div>
         ) : null}
         <div className="rda-ad-hero-copy">
@@ -409,7 +427,7 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
             )}
           </div>
           <div className="rda-ad-hero-signals" aria-label="Landing page highlights">
-            <IconLabel icon="calendar">{page.hero.badge}</IconLabel>
+            {!officeOffer && <IconLabel icon="calendar">{page.hero.badge}</IconLabel>}
             <IconLabel icon="check">Roseville, CA hands-on training</IconLabel>
           </div>
         </div>
@@ -548,7 +566,7 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
             </section>
           ))}
           <section className="rda-ad-detail-block">
-            <h2>Upcoming dates</h2>
+            <h2>{officeOffer ? "Published course dates" : "Upcoming dates"}</h2>
             {page.dateGroups?.length ? (
               <div className="rda-ad-date-groups">
                 {page.dateGroups.map((group) => (
@@ -583,7 +601,7 @@ export function AdLandingPage({ page }: AdLandingPageProps) {
               </div>
             )}
             <p className="rda-ad-muted">
-              Dates are penciled in and admissions will confirm current availability.
+              {officeOffer ? "For group availability or future dates, contact admissions." : "Dates are penciled in and admissions will confirm current availability."}
             </p>
           </section>
         </div>
