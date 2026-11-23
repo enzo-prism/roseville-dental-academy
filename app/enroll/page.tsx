@@ -34,13 +34,9 @@ import {
 } from "@/lib/student-enrollment-offerings";
 import {
   studentConfig,
+  studentOfferingIsSelectable,
   studentEnrollPageOfferings,
-  type StudentOffering,
 } from "@/lib/student-enrollment";
-
-function isSelectable(offering: StudentOffering) {
-  return offering.remaining > 0 && (!offering.dashboard_state || offering.dashboard_state === "counted");
-}
 
 export default async function EnrollmentPage({
   searchParams,
@@ -69,7 +65,7 @@ export default async function EnrollmentPage({
   const picker = !requested && listedCourses.length > 1;
   const course = requested ?? listedCourses[0] ?? STUDENT_CHECKOUT_COURSES[INFECTION_CONTROL_COURSE_ID];
   const offerings = allOfferings.filter((row) => row.course_id === course.id);
-  const selectable = offerings.filter(isSelectable);
+  const selectable = offerings.filter(studentOfferingIsSelectable);
   const today = academyCalendarDate();
   const dates = new Set<string>([
     ...(course.id === INFECTION_CONTROL_COURSE_ID ? INFECTION_CONTROL_SELLABLE_SESSIONS.map((session) => session.courseDate) : []),
@@ -229,7 +225,7 @@ export default async function EnrollmentPage({
             {notice}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {listedCourses.map((option) => {
-                const next = allOfferings.find((row) => row.course_id === option.id && isSelectable(row));
+                const next = allOfferings.find((row) => row.course_id === option.id && studentOfferingIsSelectable(row));
                 return (
                   <SiteLink
                     key={option.id}
