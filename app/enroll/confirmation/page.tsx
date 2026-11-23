@@ -7,6 +7,7 @@ import { validHoldId } from "@/lib/enrollment-http";
 import {
   STUDENT_COOKIE,
   studentOwner,
+  studentPurchaseAnalyticsId,
   studentConfig,
   getStudentEnrollment,
   type StudentEnrollment,
@@ -34,9 +35,13 @@ export default async function StudentConfirmation({
     }
   }
   const course = studentCheckoutCourse(held?.course_id ?? "infection-control");
+  const purchase = held?.status === "paid" && course ? {
+    ...enrollOrderParams(course.id, held.course_date, held.amount),
+    transaction_id: studentPurchaseAnalyticsId(held),
+  } : undefined;
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
-      <EnrollFunnelPage courseId={held ? course?.id : undefined} purchase={held?.status === "paid" && course ? enrollOrderParams(course.id, held.course_date, held.amount) : undefined} />
+      <EnrollFunnelPage courseId={held ? course?.id : undefined} purchase={purchase} />
       {config?.mode === "test" && (
         <p className="font-semibold">
           TEST ONLY. No real charge or enrollment.

@@ -7,11 +7,12 @@ import { PGlite } from "@electric-sql/pglite";
 import { expect, test } from "@playwright/test";
 import { POST as checkout } from "@/app/api/student-enrollment/checkout/route";
 import { POST as session } from "@/app/api/student-enrollment/session/route";
+import { trackEnrollFunnel } from "@/components/site/enroll-funnel-analytics";
 import { academyCourses } from "@/lib/academy-catalog";
 import { frontOfficeProgram } from "@/lib/front-office-program";
 import { CANCELLATION_POLICY_PARAGRAPHS } from "@/lib/academy-policies";
 import { STUDENT_CHECKOUT_COURSES, isStudentCoursePrice, publicPriceCents } from "@/lib/student-course-catalog";
-import { STUDENT_COOKIE, STUDENT_POLICY_HASH, studentOfferings, type studentDatabase } from "@/lib/student-enrollment";
+import { STUDENT_COOKIE, STUDENT_POLICY_HASH, studentOfferings, studentPurchaseAnalyticsId, type studentDatabase } from "@/lib/student-enrollment";
 import { studentDashboardFeedConfig } from "@/lib/student-dashboard-seats";
 import { enrollFunnelParams, enrollOrderItems, enrollOrderParams } from "@/lib/enroll-funnel-events";
 import { applyStudentEnrollmentSchema } from "./support/student-enrollment-schema";
@@ -73,6 +74,46 @@ test("Class Dates configuration fails closed in production and when partly confi
   expect(studentDashboardFeedConfig({})).toBe("off");
   expect(studentDashboardFeedConfig({ VERCEL_ENV: "production" })).toBe("unavailable");
   expect(studentDashboardFeedConfig({ RDA_SCHEDULE_FEED_TOKEN: "fixture" })).toBe("unavailable");
+});
+
+test("paid confirmations retain an opaque transaction ID across page loads", () => {
+  const held = { id: randomUUID(), owner_hash: "a".repeat(64) };
+  const id = studentPurchaseAnalyticsId(held);
+  expect(id).toMatch(/^[a-f0-9]{64}$/);
+  expect(studentPurchaseAnalyticsId({ ...held })).toBe(id);
+  expect(studentPurchaseAnalyticsId({ ...held, id: randomUUID() })).not.toBe(id);
+  expect(id).not.toContain(held.id);
+  expect(id).not.toBe(held.owner_hash);
+});
+
+test("a retried paid confirmation emits one purchase and preserves the ID without tab storage", () => {
+  const sent = mock.fn();
+  const markers = new Map<string, string>();
+  const tab = {
+    location: { origin: "https://example.test", pathname: "/enroll/confirmation" },
+    gtag: sent,
+    sessionStorage: {
+      getItem: (key: string) => markers.get(key),
+      setItem: (key: string, value: string) => markers.set(key, value),
+    },
+  };
+  const purchase = { transaction_id: "a".repeat(64), course_id: "infection-control" };
+  Object.defineProperty(globalThis, "window", { configurable: true, value: tab });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { cookie: "" } });
+  try {
+    trackEnrollFunnel("purchase", purchase);
+    trackEnrollFunnel("purchase", purchase);
+    expect(sent.mock.callCount()).toBe(1);
+    tab.sessionStorage.getItem = () => { throw new Error("storage disabled"); };
+    trackEnrollFunnel("purchase", purchase);
+    expect(sent.mock.callCount()).toBe(2);
+    for (const call of sent.mock.calls) {
+      expect(call.arguments[2]).toMatchObject({ transaction_id: purchase.transaction_id });
+    }
+  } finally {
+    Reflect.deleteProperty(globalThis, "window");
+    Reflect.deleteProperty(globalThis, "document");
+  }
 });
 
 test("funnel parameters whitelist bounded values and build course-only order items", () => {

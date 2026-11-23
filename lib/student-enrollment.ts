@@ -183,6 +183,11 @@ export function studentDatabase() {
   if (!process.env.DATABASE_URL) throw new Error("Enrollment unavailable");
   return neon(process.env.DATABASE_URL);
 }
+export function studentPurchaseAnalyticsId(enrollment: Pick<StudentEnrollment, "id" | "owner_hash">) {
+  return createHash("sha256")
+    .update(`rda:purchase:v1:${enrollment.id}:${enrollment.owner_hash}`)
+    .digest("hex");
+}
 export function studentOwner(token: string | undefined) {
   return token && /^[a-f0-9]{64}$/.test(token)
     ? createHash("sha256").update(token).digest("hex")

@@ -173,7 +173,7 @@ The private `/enroll` layout loads GA4 under the same GPC, DNT, and denied-cooki
 | `seat_check` | Checkout responds with 200, 409 or 503 | Same as date selection plus `result` (`open`, `full`, `unavailable`) |
 | `begin_checkout` | Immediately before Stripe redirect | Same as date selection plus GA4 `items` |
 | `checkout_cancelled` | Student returns through the cancellation URL | `course_id` when known |
-| `purchase` | The owner opens a verified paid confirmation | `course_id`, `course_date`, `value`, `currency`, and GA4 `items` |
+| `purchase` | The owner opens a verified paid confirmation (reloads are suppressed in the same tab; GA4 can deduplicate by a stable, one-way transaction ID across tabs) | `course_id`, `course_date`, `value`, `currency`, and GA4 `items` |
 | `select_content` | Public course checkout CTA clicked | `content_type=enroll_cta_click`, `item_id` (course ID), `value`, `currency` |
 
 ## Meta Pixel
