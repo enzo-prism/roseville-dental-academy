@@ -2938,7 +2938,7 @@ test.describe("live-style interaction flows", () => {
         await expect(checkout).toBeInViewport();
         await expect(page.getByText(/per assistant · \d+ seats? left/)).toBeVisible();
       } else {
-        await expect(page.getByText(/Current online classes are full|Ask admissions for the next available class/)).toBeVisible();
+        await expect(page.getByText(/The listed classes are full|Ask admissions for the next available class/)).toBeVisible();
       }
     });
 

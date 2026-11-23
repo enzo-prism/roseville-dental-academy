@@ -378,7 +378,7 @@ export function AdLandingPage({ page, officeOffer }: AdLandingPageProps) {
                     <Button asChild><a href={officeOffer.href}>Enroll one assistant — {officeOffer.price}</a></Button>
                   </>
                 ) : (
-                  <p>{officeOffer.status === "full" ? "Current online classes are full. Ask admissions about the next opening." : "Ask admissions for the next available class."}</p>
+                  <p>{officeOffer.status === "full" ? "The listed classes are full. Ask admissions about the next opening." : "Ask admissions for the next available class."}</p>
                 )}
                 <a className="font-semibold text-primary underline" href="#ad-lead-form">Ask about prerequisites or registering a team</a>
               </div>
