@@ -18,6 +18,12 @@ test.beforeEach(async ({ page, context }) => {
   });
 });
 
+test.afterEach(async ({ page }) => {
+  // In-flight route.fetch callbacks (Next static chunks after a cross-origin
+  // navigation) must not fail the test when Playwright closes the page.
+  await page.unrouteAll({ behavior: "ignoreErrors" }).catch(() => {});
+});
+
 for (const path of ["/student-jobs", "/enroll", "/enroll/confirmation?enrollment=00000000-0000-4000-8000-000000000000", "/enrollment-pilot/roster", "/enrollment-pilot", "/enrollment-pilot/confirmation?hold=00000000-0000-4000-8000-000000000000"]) {
   const enrollment = path === "/enroll" || path.startsWith("/enroll/");
   test(`${path} initial document isolates private measurement`, async ({ page }) => {
@@ -113,8 +119,13 @@ test("Stripe cross-site return can retry verification with the original Strict p
   const secureOrigin = "https://rda-private-review.test";
   await page.route(`${secureOrigin}/**`, async (route) => {
     const url = new URL(route.request().url());
-    const response = await route.fetch({ url: `${origin}${url.pathname}${url.search}` });
-    await route.fulfill({ response });
+    try {
+      const response = await route.fetch({ url: `${origin}${url.pathname}${url.search}` });
+      await route.fulfill({ response });
+    } catch (error) {
+      if (page.isClosed() || /has been closed|Test ended/i.test(error instanceof Error ? error.message : String(error))) return;
+      throw error;
+    }
   });
   const confirmation = `${secureOrigin}/enrollment-pilot/confirmation?hold=00000000-0000-4000-8000-000000000000`;
   const token = "fixture-only-original-session";
