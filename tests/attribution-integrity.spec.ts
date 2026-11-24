@@ -8,10 +8,12 @@ import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 import { expect, test } from "@playwright/test";
 import ts from "typescript";
 
+import { retryWorkerCrashesOnly } from "./support/retry-on-worker-crash";
 import type { PendingPostback, PostbackOutcome } from "../lib/server/attribution-db";
-
 import { parseAttributionReceipt } from "../lib/server/attribution-validation";
 import type { AttributionReceipt, CanonicalConversionInput, CanonicalLeadInput } from "../lib/attribution-contract";
+
+retryWorkerCrashesOnly();
 
 type Statement = { query: string; values: unknown[] };
 function statement(strings: TemplateStringsArray, ...values: unknown[]): Statement {
