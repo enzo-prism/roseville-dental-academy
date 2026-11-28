@@ -104,7 +104,7 @@ export function SocialChannelPage({ page }: { page: SocialChannelPageData }) {
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,0.72fr)_minmax(20rem,0.28fr)] lg:px-8">
+        <section className="ac-social-channel-body mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,0.72fr)_minmax(20rem,0.28fr)] lg:px-8">
           <div className="space-y-6">
             <div className="space-y-3">
               <p className="text-sm font-semibold text-primary">{page.platform} updates</p>

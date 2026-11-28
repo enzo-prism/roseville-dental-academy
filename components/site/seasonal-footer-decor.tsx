@@ -3,18 +3,19 @@
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { Acorn, Leaf, Pie, Pumpkin, TurkeyTooth } from "@/components/site/seasonal/thanksgiving-art";
+import { Cocoa, Gift, SantaTooth, Snowflake, Star, Tree } from "@/components/site/seasonal/christmas-art";
 import { activeSeasonalTheme, getSeasonalPeekStorageKey } from "@/lib/site-seasonal";
 
-// Curved paths for the easter-egg leaves, tossed up from the mascot's fan.
-const LEAF_FLIGHTS = [
-  { delay: 0, kind: "maple", path: "M0 0C-18 -26 -60 -30 -64 -70S-36 -126 -72 -150", size: 24, spin: -540, tone: "pumpkin" },
-  { delay: 80, kind: "oak", path: "M0 0C10 -30 -20 -60 -6 -96S30 -150 4 -178", size: 20, spin: 420, tone: "gold" },
-  { delay: 150, kind: "maple", path: "M0 0C26 -18 70 -14 74 -56S40 -120 92 -146", size: 24, spin: 600, tone: "cranberry" },
-  { delay: 230, kind: "oak", path: "M0 0C34 -6 96 -10 118 -40S150 -86 176 -98", size: 18, spin: -480, tone: "pumpkin" },
+// Curved paths for the easter-egg snowflakes (and one star), tossed up from
+// the pompom of the mascot's Santa hat.
+const FLAKE_FLIGHTS = [
+  { delay: 0, kind: "flake", path: "M0 0C-18 -26 -60 -30 -64 -70S-36 -126 -72 -150", size: 24, spin: -540, tone: "ice" },
+  { delay: 80, kind: "star", path: "M0 0C10 -30 -20 -60 -6 -96S30 -150 4 -178", size: 20, spin: 420, tone: "gold" },
+  { delay: 150, kind: "flake", path: "M0 0C26 -18 70 -14 74 -56S40 -120 92 -146", size: 24, spin: 600, tone: "ice" },
+  { delay: 230, kind: "flake", path: "M0 0C34 -6 96 -10 118 -40S150 -86 176 -98", size: 18, spin: -480, tone: "gold" },
 ] as const;
 
-const LEAF_BURST_DURATION_MS = 2_000;
+const SNOW_BURST_DURATION_MS = 2_000;
 const SURPRISE_DURATION_MS = 700;
 const PEEK_DURATION_MS = 1_400;
 const HINT_DELAY_MS = 2_600;
@@ -31,11 +32,11 @@ const LOOK_RANGE_Y = 1.6;
 type MascotPhase = "hiding" | "hint" | "idle" | "peek";
 
 /**
- * A little harvest (acorn, pumpkin, pie) and the turkey-tooth mascot on the
- * footer's top edge. The mascot blinks, glances at the pointer, peeks out from
- * behind the harvest once per session, and is the season's easter egg:
- * pressing it fans its feathers and tosses autumn leaves into the air.
- * Hidden by CSS unless <html data-rda-season="thanksgiving"> is set.
+ * A little Christmas corner (a fir tree, a gift, a mug of cocoa) and the
+ * Santa-tooth mascot on the footer's top edge. The mascot blinks, glances at
+ * the pointer, peeks up from behind the gifts once per session, and is the
+ * season's easter egg: pressing it tips its Santa hat and makes it snow.
+ * Hidden by CSS unless <html data-rda-season="christmas"> is set.
  */
 export function SeasonalFooterDecor() {
   const [burst, setBurst] = useState(0);
@@ -197,7 +198,7 @@ export function SeasonalFooterDecor() {
     if (phaseRef.current === "hiding") peek();
   }
 
-  function tossLeaves() {
+  function makeItSnow() {
     interacted.current = true;
     if (phaseRef.current === "hiding") peek();
     if (phaseRef.current !== "idle") changePhase("idle");
@@ -209,7 +210,7 @@ export function SeasonalFooterDecor() {
     window.clearTimeout(surpriseTimer.current);
     surpriseTimer.current = window.setTimeout(() => setSurprised(false), SURPRISE_DURATION_MS);
     window.clearTimeout(burstTimer.current);
-    burstTimer.current = window.setTimeout(() => setBurst(0), LEAF_BURST_DURATION_MS);
+    burstTimer.current = window.setTimeout(() => setBurst(0), SNOW_BURST_DURATION_MS);
   }
 
   return (
@@ -219,54 +220,58 @@ export function SeasonalFooterDecor() {
       data-rda-seasonal="footer"
       ref={root}
     >
-      <span aria-hidden="true" className="rda-seasonal-harvest">
-        <span className="rda-seasonal-harvest-slot rda-seasonal-harvest-acorn">
-          <Acorn className="rda-seasonal-harvest-art" />
+      <span aria-hidden="true" className="rda-seasonal-gifts">
+        <span className="rda-seasonal-gifts-slot rda-seasonal-gifts-gift">
+          <Gift className="rda-seasonal-gifts-art" />
         </span>
-        <span className="rda-seasonal-harvest-slot rda-seasonal-harvest-pumpkin">
-          <Pumpkin className="rda-seasonal-harvest-art" />
+        <span className="rda-seasonal-gifts-slot rda-seasonal-gifts-tree">
+          <Tree className="rda-seasonal-gifts-art" />
         </span>
-        <span className="rda-seasonal-harvest-slot rda-seasonal-harvest-pie">
-          <Pie className="rda-seasonal-harvest-art" />
+        <span className="rda-seasonal-gifts-slot rda-seasonal-gifts-cocoa">
+          <Cocoa className="rda-seasonal-gifts-art" />
         </span>
       </span>
       <button
-        aria-label="Toss the autumn leaves"
+        aria-label="Make it snow"
         className="rda-seasonal-mascot-button"
         data-rda-blink={blinking ? "true" : undefined}
-        // Alternates per press so the "gobble" squash replays on every press.
+        // Alternates per press so the hop replays on every press.
         data-rda-bursting={burst > 0 ? (burst % 2 ? "odd" : "even") : undefined}
         data-rda-mascot={phase}
         data-rda-mood={surprised ? "surprised" : undefined}
         data-rda-seasonal-egg="true"
         data-rda-spin={spin > 0 ? (spin % 2 ? "odd" : "even") : undefined}
-        onClick={tossLeaves}
+        onClick={makeItSnow}
         onFocus={revealIfHiding}
         onPointerEnter={revealIfHiding}
         type="button"
       >
         <span className="rda-seasonal-mascot-stage">
           <span className="rda-seasonal-mascot">
-            <TurkeyTooth className="rda-seasonal-mascot-art" />
+            <SantaTooth className="rda-seasonal-mascot-art" />
           </span>
         </span>
       </button>
       {burst > 0 ? (
-        <span aria-hidden="true" className="rda-seasonal-leaf-burst" key={burst}>
-          {LEAF_FLIGHTS.map((flight, index) => (
+        <span aria-hidden="true" className="rda-seasonal-snow-burst" key={burst}>
+          {FLAKE_FLIGHTS.map((flight, index) => (
             <span
-              className="rda-seasonal-flying-leaf"
-              key={`leaf-${index}`}
+              className="rda-seasonal-flying-flake"
+              key={`flake-${index}`}
               style={
                 {
-                  "--rda-leaf-delay": `${flight.delay}ms`,
-                  "--rda-leaf-size": `${flight.size}px`,
-                  "--rda-leaf-spin": `${flight.spin}deg`,
+                  "--rda-flake-delay": `${flight.delay}ms`,
+                  "--rda-flake-size": `${flight.size}px`,
+                  "--rda-flake-spin": `${flight.spin}deg`,
                   offsetPath: `path("${flight.path}")`,
                 } as CSSProperties
               }
             >
-              <Leaf className="rda-seasonal-flying-leaf-art" kind={flight.kind} tone={flight.tone} />
+              {flight.kind === "star" ? (
+                <Star className="rda-seasonal-flying-flake-art" />
+              ) : (
+                <Snowflake className="rda-seasonal-flying-flake-art" tone={flight.tone} />
+              )}
             </span>
           ))}
         </span>

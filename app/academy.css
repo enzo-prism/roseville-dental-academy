@@ -226,7 +226,7 @@ body {
     var(--ink);
   color: var(--ink-foreground);
   /* clip, not hidden: a hidden box becomes a scroll container and would
-     re-root scroll-driven animations (the seasonal divider leaves). */
+     re-root scroll-driven animations (the seasonal divider snowflakes). */
   overflow: clip;
 }
 
@@ -323,7 +323,7 @@ body {
   display: none;
 }
 
-/* Section heading block. The empty span is the seasonal leaf anchor
+/* Section heading block. The empty span is the seasonal snowflake anchor
    (`.rda-section-heading > span:empty`), so keep it in the markup. */
 .ac-heading {
   display: grid;
@@ -2636,15 +2636,15 @@ textarea.ac-input {
   background: var(--success);
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-confetti span {
-  background: var(--seasonal-pumpkin);
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-confetti span {
+  background: var(--seasonal-berry);
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-confetti span:nth-child(3n) {
-  background: var(--seasonal-cranberry);
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-confetti span:nth-child(3n) {
+  background: var(--seasonal-holly);
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-confetti span:nth-child(4n) {
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-confetti span:nth-child(4n) {
   background: var(--seasonal-gold);
 }
 
@@ -6785,53 +6785,64 @@ html.rda-motion .ac-not-found-icon {
 }
 
 /* ==========================================================================
-   Thanksgiving seasonal accents for the redesign (decorative only).
+   Christmas seasonal accents for the redesign (decorative only).
    Same double gate as the rest of the seasonal layer: <html data-rda-season>
    plus [data-rda-seasonal-scope]. Nothing here adds text, controls, or layout.
    ========================================================================== */
 
-/* The skills ticker turns a roasted harvest brown with glowing gold icons. */
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-ticker {
+/* The skills ticker turns an evergreen night, its icons glowing like a string
+   of fairy lights (gold, berry red, icy blue). */
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-ticker {
   background: linear-gradient(
     90deg,
-    color-mix(in oklab, var(--seasonal-bark) 55%, var(--ink)) 0%,
-    color-mix(in oklab, var(--seasonal-bark) 80%, var(--seasonal-cranberry)) 50%,
-    color-mix(in oklab, var(--seasonal-bark) 55%, var(--ink)) 100%
+    color-mix(in oklab, var(--seasonal-pine) 55%, var(--ink)) 0%,
+    color-mix(in oklab, var(--seasonal-pine) 85%, var(--seasonal-holly)) 50%,
+    color-mix(in oklab, var(--seasonal-pine) 55%, var(--ink)) 100%
   );
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-ticker-track svg {
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-ticker-track svg {
   color: var(--seasonal-gold);
-  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--seasonal-gold) 55%, transparent));
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--seasonal-gold) 60%, transparent));
 }
 
-/* A maple leaf stands in for the "Now enrolling" chip's live dot. */
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-hero-chip::after {
-  background: url("/assets/seasonal/thanksgiving-2026/maple-leaf.svg") center / contain no-repeat;
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-ticker-track li:nth-child(3n + 2) svg {
+  color: color-mix(in oklab, var(--seasonal-berry) 70%, var(--seasonal-snow));
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--seasonal-berry) 70%, transparent));
+}
+
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-ticker-track li:nth-child(3n) svg {
+  color: var(--brand-sky);
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--brand-sky) 65%, transparent));
+}
+
+/* A sprig of holly stands in for the "Now enrolling" chip's live dot. */
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-hero-chip::after {
+  background: url("/assets/seasonal/christmas-2026/holly.svg") center / contain no-repeat;
   content: "";
-  height: 1.05rem;
+  height: 1.15rem;
   order: -1;
-  rotate: -12deg;
-  width: 1.05rem;
+  rotate: -8deg;
+  width: 1.15rem;
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-hero-chip.ac-chip-live::before {
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-hero-chip.ac-chip-live::before {
   display: none;
 }
 
-/* Ink bands get a low harvest glow and a few leaves caught on the breeze. */
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-band-ink::before {
+/* Ink bands get a soft starlight glow and a few snowflakes and a star. */
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-band-ink::before {
   background: radial-gradient(
     circle at 50% 50%,
-    color-mix(in oklab, var(--seasonal-gold) 70%, transparent) 0 22%,
-    color-mix(in oklab, var(--seasonal-pumpkin) 28%, transparent) 46%,
+    color-mix(in oklab, var(--seasonal-gold) 62%, transparent) 0 18%,
+    color-mix(in oklab, var(--brand-sky) 26%, transparent) 46%,
     transparent 70%
   );
   border-radius: 50%;
   content: "";
   filter: blur(6px);
   height: 9rem;
-  opacity: 0.55;
+  opacity: 0.5;
   pointer-events: none;
   position: absolute;
   right: max(1rem, calc((100vw - var(--container)) / 2 - 0.5rem));
@@ -6839,52 +6850,54 @@ html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-band-ink::bef
   width: 9rem;
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-band-ink::after {
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-band-ink::after {
   background:
-    url("/assets/seasonal/thanksgiving-2026/maple-leaf.svg") 8% 26% / 1.1rem no-repeat,
-    url("/assets/seasonal/thanksgiving-2026/oak-leaf.svg") 31% 9% / 0.9rem no-repeat,
-    url("/assets/seasonal/thanksgiving-2026/maple-leaf-cranberry.svg") 58% 20% / 0.85rem no-repeat,
-    url("/assets/seasonal/thanksgiving-2026/oak-leaf.svg") 76% 34% / 1rem no-repeat,
-    url("/assets/seasonal/thanksgiving-2026/maple-leaf.svg") 94% 12% / 0.8rem no-repeat;
+    url("/assets/seasonal/christmas-2026/snowflake-snow.svg") 8% 26% / 1.1rem no-repeat,
+    url("/assets/seasonal/christmas-2026/snowflake-snow.svg") 31% 9% / 0.8rem no-repeat,
+    url("/assets/seasonal/christmas-2026/star.svg") 58% 20% / 0.85rem no-repeat,
+    url("/assets/seasonal/christmas-2026/snowflake-snow.svg") 76% 34% / 1rem no-repeat,
+    url("/assets/seasonal/christmas-2026/snowflake-snow.svg") 94% 12% / 0.75rem no-repeat;
   content: "";
   height: 12rem;
   inset: 0 0 auto;
-  opacity: 0.35;
+  opacity: 0.4;
   pointer-events: none;
   position: absolute;
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-band-ink > .ac-container {
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-band-ink > .ac-container {
   position: relative;
   z-index: 1;
 }
 
-/* The footer call-to-action warms up like a harvest sunset. */
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-footer-cta {
+/* The footer call-to-action turns a snowy evergreen night with a starry glow. */
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-footer-cta {
   background:
-    radial-gradient(90% 120% at 100% 0%, color-mix(in oklab, var(--seasonal-gold) 34%, transparent), transparent 60%),
+    radial-gradient(circle, color-mix(in oklab, var(--seasonal-snow) 55%, transparent) 0 1px, transparent 1.6px) 0 0 / 26px 26px,
+    radial-gradient(circle, color-mix(in oklab, var(--seasonal-snow) 35%, transparent) 0 1px, transparent 1.4px) 13px 11px / 34px 34px,
+    radial-gradient(90% 120% at 100% 0%, color-mix(in oklab, var(--seasonal-gold) 30%, transparent), transparent 60%),
     linear-gradient(
       120deg,
-      color-mix(in oklab, var(--seasonal-cranberry) 55%, var(--ink)) 0%,
-      color-mix(in oklab, var(--seasonal-bark) 75%, var(--seasonal-cranberry)) 55%,
-      color-mix(in oklab, var(--seasonal-pumpkin-deep) 70%, var(--seasonal-bark)) 100%
+      color-mix(in oklab, var(--seasonal-pine) 70%, var(--ink)) 0%,
+      color-mix(in oklab, var(--seasonal-pine) 55%, var(--brand-blue)) 55%,
+      color-mix(in oklab, var(--brand-blue) 70%, var(--seasonal-pine)) 100%
     );
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-footer-cta-title em {
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-footer-cta-title em {
   color: var(--seasonal-gold);
 }
 
-/* The stats tile wears a little leafy sprig in its corner. */
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-bento-stats {
+/* The stats tile wears a little holly bough in its corner. */
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-bento-stats {
   position: relative;
 }
 
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-bento-stats::after {
-  background: url("/assets/seasonal/thanksgiving-2026/leaf-sprig.svg") top right / contain no-repeat;
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-bento-stats::after {
+  background: url("/assets/seasonal/christmas-2026/holly-sprig.svg") top right / contain no-repeat;
   content: "";
   height: 4.5rem;
-  opacity: 0.85;
+  opacity: 0.9;
   pointer-events: none;
   position: absolute;
   right: 0.5rem;
@@ -7002,10 +7015,10 @@ html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-bento-stats::
 }
 
 /* Seasonal layout fit for the redesign's taller section headings and heroes. */
-/* The heading block now includes the lede, so the divider leaf finishes
+/* The heading block now includes the lede, so the divider snowflake finishes
    settling while the heading enters the viewport (independent of its height). */
 @media screen {
-  html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-heading.rda-section-heading > span:empty {
+  html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-heading.rda-section-heading > span:empty {
     border-radius: 99px;
     height: 2px;
   }
@@ -7013,34 +7026,40 @@ html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-bento-stats::
 
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-heading.rda-section-heading > span:empty::after {
+    html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-heading.rda-section-heading > span:empty::after {
       animation-range: entry 15% entry 100%;
     }
   }
 }
 
-/* Give the hero sprig and its falling leaf their own headroom on phones so
+/* Give the hero bough and its falling snowflake their own headroom on phones so
    they never sit over the enrollment chip or the headline. */
 @media (max-width: 639px) {
-  html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .rda-home-hero-copy {
+  html[data-rda-season="christmas"] [data-rda-seasonal-scope] .rda-home-hero-copy {
     --rda-seasonal-sprig-size: 52px;
-    --rda-leaf-fall: 14px;
+    --rda-flake-fall: 14px;
     padding-top: 3.5rem;
   }
 
-  /* The leaf lets go higher up so its whole fall stays in that headroom. */
-  html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .rda-home-hero-copy::after {
+  /* The snowflake lets go higher up so its whole fall stays in that headroom. */
+  html[data-rda-season="christmas"] [data-rda-seasonal-scope] .rda-home-hero-copy::after {
     top: calc(var(--rda-seasonal-sprig-size) * 0.35);
   }
 }
 
-/* The turkey-tooth replaces the faint "404" numerals while it is out. */
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-not-found-code {
+/* The Santa-tooth replaces the faint "404" numerals while it is out. */
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-not-found-code {
   display: none;
 }
 
-/* The footer harvest and the turkey-tooth sit on the footer's top edge; keep
+/* The footer's Christmas corner and the Santa-tooth sit on the footer's top edge; keep
    the last section's controls clear of them. */
-html[data-rda-season="thanksgiving"] [data-rda-seasonal-scope] .ac-social-follow {
-  padding-bottom: 4.5rem;
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-social-follow {
+  padding-bottom: 5rem;
+}
+
+/* The Facebook/TikTok channel pages end on a card stack; on phones the Santa hat
+   would graze its bottom border, so give it the same clearance as wider screens. */
+html[data-rda-season="christmas"] [data-rda-seasonal-scope] .ac-social-channel-body {
+  padding-bottom: 3.5rem;
 }

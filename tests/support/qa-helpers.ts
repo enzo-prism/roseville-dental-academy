@@ -817,8 +817,8 @@ async function hideFloatingThirdPartyWidgets(page: Page) {
       `,
     })
     .catch(() => undefined);
-  // Seasonal pseudo-element decorations (hero sprig and falling leaf, divider
-  // leaves) are gated by these <html> attributes rather than [data-rda-seasonal],
+  // Seasonal pseudo-element decorations (hero bough and falling flake, divider
+  // flakes) are gated by these <html> attributes rather than [data-rda-seasonal],
   // so drop them too in case the opt-out in suppressSeasonalTheme was bypassed.
   await page
     .evaluate((attributes) => {

@@ -1,17 +1,17 @@
-import { Leaf } from "@/components/site/seasonal/thanksgiving-art";
+import { Snowflake } from "@/components/site/seasonal/christmas-art";
 
-/** A few leaves drifting along the footer's top edge, behind the footer text. */
+/** A few snowflakes drifting along the footer's top edge, behind the footer text. */
 export function SeasonalFooterDrift() {
   return (
     <span aria-hidden="true" className="rda-seasonal-drift" data-rda-seasonal="drift">
-      <span className="rda-seasonal-drift-leaf rda-seasonal-drift-leaf-1">
-        <Leaf className="rda-seasonal-drift-art" kind="maple" tone="pumpkin" />
+      <span className="rda-seasonal-drift-flake rda-seasonal-drift-flake-1">
+        <Snowflake className="rda-seasonal-drift-art" tone="snow" />
       </span>
-      <span className="rda-seasonal-drift-leaf rda-seasonal-drift-leaf-2">
-        <Leaf className="rda-seasonal-drift-art" kind="oak" tone="gold" />
+      <span className="rda-seasonal-drift-flake rda-seasonal-drift-flake-2">
+        <Snowflake className="rda-seasonal-drift-art" tone="ice" />
       </span>
-      <span className="rda-seasonal-drift-leaf rda-seasonal-drift-leaf-3">
-        <Leaf className="rda-seasonal-drift-art" kind="maple" tone="cranberry" />
+      <span className="rda-seasonal-drift-flake rda-seasonal-drift-flake-3">
+        <Snowflake className="rda-seasonal-drift-art" tone="snow" />
       </span>
     </span>
   );

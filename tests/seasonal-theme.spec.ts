@@ -22,7 +22,7 @@ import {
   getSeasonalFlybyStorageKey,
   getSeasonalLocalDate,
   getSeasonalPeekStorageKey,
-  thanksgiving2026,
+  christmas2026,
   isSeasonalThemeActive,
   isSeasonalThemeCurrent,
   type SeasonalTheme,
@@ -37,16 +37,16 @@ import { localOrigin, suppressSeasonalTheme, suppressSitePromo } from "./support
 // (activeSeasonalTheme is null), so the on-state browser checks skip while the
 // pure logic and out-of-season checks keep running.
 
-// Daylight saving ends Nov 1, 2026 at 2am: the rest of the season is UTC-8.
-const MID_SEASON = "2026-11-12T10:00:00-08:00";
-const PEAK_DAY = "2026-11-26T10:00:00-08:00";
-const DAY_BEFORE_PEAK = "2026-11-25T10:00:00-08:00";
-const AFTER_SEASON = "2026-12-15T10:00:00-08:00";
-const MASCOT_LABEL = "Toss the autumn leaves";
-const PEEK_KEY = getSeasonalPeekStorageKey(thanksgiving2026);
-const ASSETS = "/assets/seasonal/thanksgiving-2026";
-// Banner sun breakpoint (globals.css "Seasonal layer", banner section).
-const SUN_MIN_WIDTH = 900;
+// Daylight saving ended Nov 1, 2026, so the whole season is UTC-8.
+const MID_SEASON = "2026-12-10T10:00:00-08:00";
+const PEAK_DAY = "2026-12-25T10:00:00-08:00";
+const DAY_BEFORE_PEAK = "2026-12-24T10:00:00-08:00";
+const AFTER_SEASON = "2027-01-06T10:00:00-08:00";
+const MASCOT_LABEL = "Make it snow";
+const PEEK_KEY = getSeasonalPeekStorageKey(christmas2026);
+const ASSETS = "/assets/seasonal/christmas-2026";
+// Banner star breakpoint (globals.css "Seasonal layer", banner section).
+const STAR_MIN_WIDTH = 900;
 const SEASONAL_ASSET_PATH = "/assets/seasonal/";
 const RETIRED = !activeSeasonalTheme;
 const RETIRED_REASON = "seasonal theme retired at build";
@@ -297,7 +297,7 @@ function animationNames(page: Page, selector: string, options: { running?: boole
     (element, { running, subtree }) =>
       element
         .getAnimations({ subtree: Boolean(subtree) })
-        // CSS transitions (hover lifts, fan scale) are not part of the contract.
+        // CSS transitions (hover lifts, hat tilt) are not part of the contract.
         .filter((animation) => "animationName" in animation)
         .filter((animation) => !running || animation.playState === "running")
         .map((animation) => (animation as CSSAnimation).animationName ?? "")
@@ -324,29 +324,29 @@ function runningSeasonalAnimations(page: Page) {
 }
 
 /**
- * Seeks each tumbling banner leaf to the moment the flyby attribute is removed
+ * Seeks each tumbling banner flake to the moment the flyby attribute is removed
  * and reports whether it is already out of sight (past the banner or
- * transparent), so removing the attribute never makes a visible leaf blink out
- * mid-air. Leaves the animations paused at that point.
+ * transparent), so removing the attribute never makes a visible flake blink out
+ * mid-air. Flakes the animations paused at that point.
  */
-function bannerLeavesAtFlybyEnd(page: Page) {
+function bannerFlakesAtFlybyEnd(page: Page) {
   return page.locator(".rda-promo-banner").evaluate((banner, end) => {
     const bannerRect = banner.getBoundingClientRect();
 
-    return Array.from(banner.querySelectorAll<HTMLElement>(".rda-seasonal-banner-leaf"))
-      .filter((leaf) => leaf.getAnimations().length > 0)
-      .map((leaf) => {
-        for (const animation of leaf.getAnimations({ subtree: true })) {
+    return Array.from(banner.querySelectorAll<HTMLElement>(".rda-seasonal-banner-flake"))
+      .filter((flake) => flake.getAnimations().length > 0)
+      .map((flake) => {
+        for (const animation of flake.getAnimations({ subtree: true })) {
           animation.pause();
           animation.currentTime = end;
         }
 
-        const rect = leaf.getBoundingClientRect();
-        const opacity = Number.parseFloat(window.getComputedStyle(leaf).opacity);
+        const rect = flake.getBoundingClientRect();
+        const opacity = Number.parseFloat(window.getComputedStyle(flake).opacity);
 
         return {
           gone: rect.left >= bannerRect.right || rect.right <= bannerRect.left || opacity < 0.02,
-          peak: leaf.classList.contains("rda-seasonal-banner-leaf-peak"),
+          peak: flake.classList.contains("rda-seasonal-banner-flake-peak"),
         };
       });
   }, SEASONAL_FLYBY_DURATION_MS);
@@ -363,9 +363,9 @@ type HeroArtReport = {
 };
 
 /**
- * The hero's corner sprig (::before) or falling leaf (::after). For the leaf,
+ * The hero's corner bough (::before) or falling flake (::after). For the flake,
  * the box covers its whole fall: from where it lets go, swaying up to 16px
- * left, down by --rda-leaf-fall.
+ * left, down by --rda-flake-fall.
  */
 async function heroArt(page: Page, pseudo: "::after" | "::before"): Promise<HeroArtReport | null> {
   return page.evaluate((pseudo) => {
@@ -381,7 +381,7 @@ async function heroArt(page: Page, pseudo: "::after" | "::before"): Promise<Hero
     // Absolutely positioned against the copy panel's padding box.
     const right = rect.left + copy.clientLeft + copy.clientWidth - px(style.right);
     const top = rect.top + copy.clientTop + px(style.top);
-    const fall = pseudo === "::after" ? px(window.getComputedStyle(copy).getPropertyValue("--rda-leaf-fall")) || 0 : 0;
+    const fall = pseudo === "::after" ? px(window.getComputedStyle(copy).getPropertyValue("--rda-flake-fall")) || 0 : 0;
     const sway = pseudo === "::after" ? 16 : 0;
 
     return {
@@ -406,8 +406,8 @@ async function heroArt(page: Page, pseudo: "::after" | "::before"): Promise<Hero
   }, pseudo);
 }
 
-/** Ends the falling leaf's one-off animation so its resting state can be read. */
-async function finishHeroLeaf(page: Page) {
+/** Ends the falling flake's one-off animation so its resting state can be read. */
+async function finishHeroFlake(page: Page) {
   await page.evaluate(() => {
     const copy = document.querySelector(".rda-home-hero-copy");
 
@@ -423,7 +423,7 @@ async function finishHeroLeaf(page: Page) {
 
 type DividerState = {
   // Inside an overflow-clipping box (its own, non-scrolling scroll container),
-  // where the view timeline is inactive and the leaf simply rests.
+  // where the view timeline is inactive and the flake simply rests.
   clipped: boolean;
   content: string;
   height: string;
@@ -476,7 +476,7 @@ async function dividerStates(page: Page): Promise<DividerState[]> {
   );
 }
 
-function isSettledLeaf(state: DividerState) {
+function isSettledFlake(state: DividerState) {
   return (
     state.opacity === "1" &&
     ["none", "0deg"].includes(state.rotate) &&
@@ -485,15 +485,15 @@ function isSettledLeaf(state: DividerState) {
 }
 
 // Hydration may lag the load event; retry the press until React answers.
-async function tossLeaves(page: Page, press: () => Promise<void>) {
-  const leaves = page.locator(".rda-seasonal-leaf-burst .rda-seasonal-flying-leaf");
+async function makeItSnow(page: Page, press: () => Promise<void>) {
+  const flakes = page.locator(".rda-seasonal-snow-burst .rda-seasonal-flying-flake");
 
   await expect(async () => {
     await press();
-    await expect(leaves).toHaveCount(4, { timeout: 750 });
+    await expect(flakes).toHaveCount(4, { timeout: 750 });
   }).toPass({ timeout: 15_000 });
 
-  return leaves;
+  return flakes;
 }
 
 type Box = { bottom: number; left: number; right: number; top: number };
@@ -660,28 +660,29 @@ test.describe("seasonal theme: pure gating logic", () => {
     expect(getSeasonalLocalDate(new Date("2026-03-08T10:30:00Z"), "America/Los_Angeles")).toBe("2026-03-08");
   });
 
-  test("the window is November 1-30 inclusive on the academy calendar", () => {
-    const at = (iso: string) => isSeasonalThemeActive(thanksgiving2026, new Date(iso));
+  test("the window is November 27 - December 31 inclusive on the academy calendar", () => {
+    const at = (iso: string) => isSeasonalThemeActive(christmas2026, new Date(iso));
 
-    expect(at("2026-10-31T23:59:59-07:00")).toBe(false);
-    expect(at("2026-11-01T00:00:00-07:00")).toBe(true);
-    expect(at("2026-11-12T12:00:00-08:00")).toBe(true);
-    expect(at("2026-11-30T23:59:59-08:00")).toBe(true);
-    expect(at("2026-12-01T00:00:00-08:00")).toBe(false);
-    expect(at("2025-11-15T12:00:00-08:00")).toBe(false);
-    expect(at("2027-11-15T12:00:00-08:00")).toBe(false);
+    // The day before the season opens (Nov 26) stays undecorated.
+    expect(at("2026-11-26T23:59:59-08:00")).toBe(false);
+    expect(at("2026-11-27T00:00:00-08:00")).toBe(true);
+    expect(at("2026-12-10T12:00:00-08:00")).toBe(true);
+    expect(at("2026-12-31T23:59:59-08:00")).toBe(true);
+    expect(at("2027-01-01T00:00:00-08:00")).toBe(false);
+    expect(at("2025-12-15T12:00:00-08:00")).toBe(false);
+    expect(at("2027-12-15T12:00:00-08:00")).toBe(false);
   });
 
-  test("the theme is current (shipped by builds) until Nov 30 ends in Los Angeles", () => {
-    const current = (iso: string) => isSeasonalThemeCurrent(thanksgiving2026, new Date(iso));
+  test("the theme is current (shipped by builds) until Dec 31 ends in Los Angeles", () => {
+    const current = (iso: string) => isSeasonalThemeCurrent(christmas2026, new Date(iso));
 
-    expect(current("2026-10-15T12:00:00-07:00")).toBe(true);
-    expect(current("2026-11-30T23:59:00-08:00")).toBe(true);
-    expect(current("2026-12-01T07:59:00Z")).toBe(true);
-    expect(current("2026-12-01T00:00:00-08:00")).toBe(false);
-    expect(current("2026-12-01T08:00:00Z")).toBe(false);
-    expect(current("2027-11-15T12:00:00-08:00")).toBe(false);
-    expect(activeSeasonalTheme === null).toBe(!isSeasonalThemeCurrent(thanksgiving2026, new Date()));
+    expect(current("2026-11-15T12:00:00-08:00")).toBe(true);
+    expect(current("2026-12-31T23:59:00-08:00")).toBe(true);
+    expect(current("2027-01-01T07:59:00Z")).toBe(true);
+    expect(current("2027-01-01T00:00:00-08:00")).toBe(false);
+    expect(current("2027-01-01T08:00:00Z")).toBe(false);
+    expect(current("2027-12-15T12:00:00-08:00")).toBe(false);
+    expect(activeSeasonalTheme === null).toBe(!isSeasonalThemeCurrent(christmas2026, new Date()));
   });
 
   type FakeEnvironment = {
@@ -762,34 +763,34 @@ test.describe("seasonal theme: pure gating logic", () => {
   }
 
   test("inline <head> script gates, opts out, and schedules one flyby per session", () => {
-    const script = buildSeasonalThemeScript(thanksgiving2026);
-    const flybyKey = getSeasonalFlybyStorageKey(thanksgiving2026);
+    const script = buildSeasonalThemeScript(christmas2026);
+    const flybyKey = getSeasonalFlybyStorageKey(christmas2026);
 
-    const before = runInlineScript(script, "2026-10-31T23:30:00-07:00");
+    const before = runInlineScript(script, "2026-11-26T23:30:00-08:00");
     expect([...before.attributes.keys()]).toEqual([]);
-    expect(before.window[SEASONAL_SCRIPT_MARKER]).toBe(thanksgiving2026.id);
+    expect(before.window[SEASONAL_SCRIPT_MARKER]).toBe(christmas2026.id);
 
-    const after = runInlineScript(script, "2026-12-01T00:05:00-08:00");
+    const after = runInlineScript(script, "2027-01-01T00:05:00-08:00");
     expect([...after.attributes.keys()]).toEqual([]);
-    expect(after.window[SEASONAL_SCRIPT_MARKER]).toBe(thanksgiving2026.id);
+    expect(after.window[SEASONAL_SCRIPT_MARKER]).toBe(christmas2026.id);
 
     const session: Record<string, string> = {};
     const first = runInlineScript(script, MID_SEASON, { sessionStorage: session });
-    expect(first.window[SEASONAL_SCRIPT_MARKER]).toBe(thanksgiving2026.id);
-    expect(first.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(first.window[SEASONAL_SCRIPT_MARKER]).toBe(christmas2026.id);
+    expect(first.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
     expect(first.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(true);
     expect(session[flybyKey]).toBe("1");
     expect(first.timers.map(({ delay }) => delay)).toEqual([SEASONAL_FLYBY_DURATION_MS]);
     first.timers[0].callback();
     expect(first.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
-    expect(first.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(first.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
 
     const second = runInlineScript(script, MID_SEASON, { sessionStorage: session });
-    expect(second.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(second.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
     expect(second.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
 
     const reduced = runInlineScript(script, MID_SEASON, { readyState: "loading", reducedMotion: true });
-    expect(reduced.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(reduced.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
     expect(reduced.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
     expect(reduced.listeners).toEqual([]);
 
@@ -797,35 +798,35 @@ test.describe("seasonal theme: pure gating logic", () => {
       localStorage: { [SEASONAL_OPT_OUT_STORAGE_KEY]: SEASONAL_OPT_OUT_VALUE },
     });
     expect([...optedOut.attributes.keys()]).toEqual([]);
-    expect(optedOut.window[SEASONAL_SCRIPT_MARKER]).toBe(thanksgiving2026.id);
+    expect(optedOut.window[SEASONAL_SCRIPT_MARKER]).toBe(christmas2026.id);
 
     // Unreadable session storage counts as "already seen": no flyby, theme stays.
     const blockedSession = runInlineScript(script, MID_SEASON, { sessionStorage: "throws" });
-    expect(blockedSession.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(blockedSession.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
     expect(blockedSession.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
   });
 
   test("the flyby is only spent on a page with a scoped banner", () => {
-    const script = buildSeasonalThemeScript(thanksgiving2026);
+    const script = buildSeasonalThemeScript(christmas2026);
     const session: Record<string, string> = {};
 
     const lander = runInlineScript(script, MID_SEASON, { banner: false, sessionStorage: session });
-    expect(lander.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(lander.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
     expect(lander.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
     expect(lander.timers).toEqual([]);
     expect(session).toEqual({});
 
     const home = runInlineScript(script, MID_SEASON, { sessionStorage: session });
     expect(home.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(true);
-    expect(session[getSeasonalFlybyStorageKey(thanksgiving2026)]).toBe("1");
+    expect(session[getSeasonalFlybyStorageKey(christmas2026)]).toBe("1");
   });
 
   test("while the document is loading the flyby waits for DOMContentLoaded", () => {
-    const script = buildSeasonalThemeScript(thanksgiving2026);
+    const script = buildSeasonalThemeScript(christmas2026);
     const session: Record<string, string> = {};
     const loading = runInlineScript(script, MID_SEASON, { readyState: "loading", sessionStorage: session });
 
-    expect(loading.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(loading.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
     expect(loading.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
     expect(session).toEqual({});
     expect(loading.listeners.map(({ options, type }) => ({ options, type }))).toEqual([
@@ -835,7 +836,7 @@ test.describe("seasonal theme: pure gating logic", () => {
     loading.readyState = "interactive";
     loading.listeners[0].callback();
     expect(loading.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(true);
-    expect(session[getSeasonalFlybyStorageKey(thanksgiving2026)]).toBe("1");
+    expect(session[getSeasonalFlybyStorageKey(christmas2026)]).toBe("1");
     expect(loading.timers.map(({ delay }) => delay)).toEqual([SEASONAL_FLYBY_DURATION_MS]);
 
     // Deferred check still respects a missing banner.
@@ -846,7 +847,7 @@ test.describe("seasonal theme: pure gating logic", () => {
 
   test("inline config escapes < so it cannot close the <script> element", () => {
     const hostile: SeasonalTheme = {
-      ...thanksgiving2026,
+      ...christmas2026,
       id: "</script><script>alert(1)</script><!--",
     };
     const script = buildSeasonalThemeScript(hostile);
@@ -886,50 +887,49 @@ test.describe("seasonal theme: pure gating logic", () => {
     );
   });
 
-  test("peakOn is Thanksgiving Day (the fourth Thursday), inside the window", () => {
-    expect(thanksgiving2026.peakOn).toBe("2026-11-26");
-    expect(new Date(`${thanksgiving2026.peakOn}T12:00:00Z`).getUTCDay()).toBe(4);
-    expect(Number(thanksgiving2026.peakOn.slice(-2))).toBeGreaterThan(21);
-    expect(thanksgiving2026.peakOn >= thanksgiving2026.startsOn).toBe(true);
-    expect(thanksgiving2026.peakOn <= thanksgiving2026.endsOn).toBe(true);
+  test("peakOn is Christmas Day (December 25), inside the window", () => {
+    expect(christmas2026.peakOn).toBe("2026-12-25");
+    expect(christmas2026.peakOn.slice(5)).toBe("12-25");
+    expect(christmas2026.peakOn >= christmas2026.startsOn).toBe(true);
+    expect(christmas2026.peakOn <= christmas2026.endsOn).toBe(true);
   });
 
   test("inline <head> script marks the peak day on the academy calendar only", () => {
-    const script = buildSeasonalThemeScript(thanksgiving2026);
+    const script = buildSeasonalThemeScript(christmas2026);
     const peak = (now: string, env: Partial<FakeEnvironment> = {}) => {
       const state = runInlineScript(script, now, { sessionStorage: {}, ...env });
 
       return { peak: state.attributes.has(SEASONAL_PEAK_ATTRIBUTE), state };
     };
 
-    // Nov 26 in Los Angeles, from just after midnight to just before the next one.
-    const early = peak("2026-11-26T00:05:00-08:00");
+    // Dec 25 in Los Angeles, from just after midnight to just before the next one.
+    const early = peak("2026-12-25T00:05:00-08:00");
     expect(early.peak).toBe(true);
     expect(early.state.attributes.get(SEASONAL_PEAK_ATTRIBUTE)).toBe("");
-    expect(early.state.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
+    expect(early.state.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
     expect(early.state.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(true);
-    // 23:30 Pacific is already Nov 27 in UTC.
-    expect(peak("2026-11-27T07:30:00Z").peak).toBe(true);
+    // 23:30 Pacific is already Dec 26 in UTC.
+    expect(peak("2026-12-26T07:30:00Z").peak).toBe(true);
 
-    // Nov 25 Pacific, including when it is already Nov 26 in UTC.
-    const dayBefore = peak("2026-11-25T23:59:00-08:00");
+    // Dec 24 Pacific, including when it is already Dec 25 in UTC.
+    const dayBefore = peak("2026-12-24T23:59:00-08:00");
     expect(dayBefore.peak).toBe(false);
-    expect(dayBefore.state.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("thanksgiving");
-    expect(peak("2026-11-26T03:00:00Z").peak).toBe(false);
+    expect(dayBefore.state.attributes.get(SEASONAL_THEME_ATTRIBUTE)).toBe("christmas");
+    expect(peak("2026-12-25T03:00:00Z").peak).toBe(false);
     expect(peak(MID_SEASON).peak).toBe(false);
     // The day after is still in season, just not the peak.
-    expect(peak("2026-11-27T10:00:00-08:00").peak).toBe(false);
+    expect(peak("2026-12-26T10:00:00-08:00").peak).toBe(false);
 
     // Over: nothing at all.
-    expect([...peak("2026-12-01T00:05:00-08:00").state.attributes.keys()]).toEqual([]);
+    expect([...peak("2027-01-01T00:05:00-08:00").state.attributes.keys()]).toEqual([]);
 
     // Reduced motion keeps the (static) peak flourish but skips the flyby.
-    const reduced = peak("2026-11-26T12:00:00-08:00", { reducedMotion: true });
+    const reduced = peak("2026-12-25T12:00:00-08:00", { reducedMotion: true });
     expect(reduced.peak).toBe(true);
     expect(reduced.state.attributes.has(SEASONAL_FLYBY_ATTRIBUTE)).toBe(false);
 
     // Opted out: no gate at all, peak included.
-    const optedOut = peak("2026-11-26T12:00:00-08:00", {
+    const optedOut = peak("2026-12-25T12:00:00-08:00", {
       localStorage: { [SEASONAL_OPT_OUT_STORAGE_KEY]: SEASONAL_OPT_OUT_VALUE },
     });
     expect([...optedOut.state.attributes.keys()]).toEqual([]);
@@ -937,7 +937,7 @@ test.describe("seasonal theme: pure gating logic", () => {
 });
 
 test.describe("seasonal theme: calendar window in the browser", () => {
-  // UTC host clock: the Nov 30 23:30 Pacific case is already Dec 1 locally.
+  // UTC host clock: the Dec 31 23:30 Pacific case is already Jan 1 locally.
   test.use({ timezoneId: "UTC" });
 
   test.beforeEach(async ({ context }) => {
@@ -945,13 +945,13 @@ test.describe("seasonal theme: calendar window in the browser", () => {
   });
 
   for (const { expected, peak = false, when } of [
-    { expected: false, when: "2026-10-31T23:30:00-07:00" },
-    { expected: true, when: "2026-11-01T00:05:00-07:00" },
-    { expected: true, when: "2026-11-25T23:30:00-08:00" },
-    { expected: true, peak: true, when: "2026-11-26T00:05:00-08:00" },
-    { expected: true, peak: true, when: "2026-11-26T23:30:00-08:00" },
-    { expected: true, when: "2026-11-30T23:30:00-08:00" },
-    { expected: false, when: "2026-12-01T00:05:00-08:00" },
+    { expected: false, when: "2026-11-26T23:30:00-08:00" },
+    { expected: true, when: "2026-11-27T00:05:00-08:00" },
+    { expected: true, when: "2026-12-24T23:30:00-08:00" },
+    { expected: true, peak: true, when: "2026-12-25T00:05:00-08:00" },
+    { expected: true, peak: true, when: "2026-12-25T23:30:00-08:00" },
+    { expected: true, when: "2026-12-31T23:30:00-08:00" },
+    { expected: false, when: "2027-01-01T00:05:00-08:00" },
   ]) {
     test(`${when} Pacific is ${expected ? "on" : "off"}${peak ? " (peak day)" : ""}`, async ({ page }) => {
       test.skip(expected && RETIRED, RETIRED_REASON);
@@ -964,7 +964,7 @@ test.describe("seasonal theme: calendar window in the browser", () => {
         return;
       }
 
-      expect(await seasonAttribute(page)).toBe("thanksgiving");
+      expect(await seasonAttribute(page)).toBe("christmas");
       expect(await page.locator("html").getAttribute(SEASONAL_PEAK_ATTRIBUTE)).toBe(peak ? "" : null);
       await scrollToBottom(page);
       await expect(page.locator(".rda-seasonal-footer")).toBeVisible();
@@ -980,10 +980,10 @@ test.describe("seasonal theme: calendar window in the browser", () => {
     await page.clock.pauseAt(new Date(MID_SEASON));
     await open(page, "/");
 
-    await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+    await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "christmas");
     await expect(page.locator("html")).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
     expect(await page.evaluate((marker) => (window as unknown as Record<string, unknown>)[marker], SEASONAL_SCRIPT_MARKER)).toBe(
-      thanksgiving2026.id,
+      christmas2026.id,
     );
   });
 });
@@ -1000,11 +1000,11 @@ test.describe("seasonal theme: decorations while on", () => {
       const response = await openAt(page, path, MID_SEASON);
 
       expect(response?.status()).toBe(200);
-      expect(await seasonAttribute(page)).toBe("thanksgiving");
+      expect(await seasonAttribute(page)).toBe("christmas");
       await expect(page.locator(`[${SEASONAL_SCOPE_ATTRIBUTE}="true"]`)).toHaveCount(1);
       await scrollToBottom(page);
       await expect(page.locator(".rda-seasonal-footer")).toBeVisible();
-      await expect(page.locator(".rda-seasonal-harvest-slot")).toHaveCount(3);
+      await expect(page.locator(".rda-seasonal-gifts-slot")).toHaveCount(3);
       await expect(mascotButton(page)).toBeVisible();
 
       const box = await mascotButton(page).boundingBox();
@@ -1013,26 +1013,26 @@ test.describe("seasonal theme: decorations while on", () => {
     });
   }
 
-  test("hero sprig, falling leaf and divider leaves are drawn as non-interactive pseudo-elements", async ({ page }) => {
+  test("hero sprig, falling flake and divider flakes are drawn as non-interactive pseudo-elements", async ({ page }) => {
     const assetRequests = trackSeasonalAssetRequests(page);
 
     await openAt(page, "/", MID_SEASON);
 
     const pseudos = await seasonalPseudoElements(page);
     const sprigs = pseudos.filter(({ selector }) => selector === ".rda-home-hero-copy::before");
-    const fallingLeaves = pseudos.filter(({ selector }) => selector === ".rda-home-hero-copy::after");
-    const dividerLeaves = pseudos.filter(({ selector }) => selector.startsWith(".rda-section-heading"));
+    const fallingFlakes = pseudos.filter(({ selector }) => selector === ".rda-home-hero-copy::after");
+    const dividerFlakes = pseudos.filter(({ selector }) => selector.startsWith(".rda-section-heading"));
 
     expect(sprigs.length).toBeGreaterThan(0);
-    expect(fallingLeaves.length).toBe(1);
-    expect(dividerLeaves.length).toBeGreaterThan(0);
+    expect(fallingFlakes.length).toBe(1);
+    expect(dividerFlakes.length).toBeGreaterThan(0);
 
-    for (const pseudo of [...sprigs, ...fallingLeaves, ...dividerLeaves]) {
+    for (const pseudo of [...sprigs, ...fallingFlakes, ...dividerFlakes]) {
       expect(pseudo.content, pseudo.selector).not.toBe("none");
       expect(pseudo.pointerEvents, pseudo.selector).toBe("none");
     }
 
-    // Divider maple leaf: 20x20.
+    // Divider snowflake: 20x20.
     for (const state of await dividerStates(page)) {
       expect(state.width).toBe("20px");
       expect(state.height).toBe("20px");
@@ -1041,16 +1041,16 @@ test.describe("seasonal theme: decorations while on", () => {
     await expect
       .poll(() => assetRequests.map((url) => new URL(url).pathname).sort())
       .toEqual(
-        expect.arrayContaining([`${ASSETS}/leaf-sprig.svg`, `${ASSETS}/maple-leaf.svg`, `${ASSETS}/oak-leaf.svg`]),
+        expect.arrayContaining([`${ASSETS}/holly-sprig.svg`, `${ASSETS}/snowflake-ice.svg`]),
       );
 
     // Course pages carry the divider too.
     await open(page, "/infection-control");
-    const courseLeaves = (await seasonalPseudoElements(page)).filter(({ selector }) =>
+    const courseFlakes = (await seasonalPseudoElements(page)).filter(({ selector }) =>
       selector.startsWith(".rda-section-heading"),
     );
-    expect(courseLeaves.length).toBeGreaterThan(0);
-    expect(courseLeaves.every(({ content }) => content !== "none")).toBe(true);
+    expect(courseFlakes.length).toBeGreaterThan(0);
+    expect(courseFlakes.every(({ content }) => content !== "none")).toBe(true);
   });
 
   test("decorations are hidden from assistive tech, text-free, and the mascot is the only control", async ({ page }) => {
@@ -1131,44 +1131,44 @@ test.describe("seasonal theme: decorations while on", () => {
     expect(ring.boxShadow).not.toBe("none");
     expect(ring.boxShadow).not.toMatch(/^rgba\([^)]*,\s*0\)/u);
 
-    await tossLeaves(page, () => page.keyboard.press("Enter"));
-    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(0, { timeout: 5_000 });
+    await makeItSnow(page, () => page.keyboard.press("Enter"));
+    await expect(page.locator(".rda-seasonal-flying-flake")).toHaveCount(0, { timeout: 5_000 });
 
-    await tossLeaves(page, () => page.keyboard.press("Space"));
+    await makeItSnow(page, () => page.keyboard.press("Space"));
   });
 
-  test("easter egg releases four leaves that clean themselves up", async ({ page }) => {
+  test("easter egg releases four flakes that clean themselves up", async ({ page }) => {
     await openAt(page, "/contact", MID_SEASON);
     await scrollToBottom(page);
 
-    const leaves = await tossLeaves(page, () => mascotButton(page).click());
+    const flakes = await makeItSnow(page, () => mascotButton(page).click());
 
-    expect(await leaves.evaluateAll((elements) => elements.every((leaf) => leaf.closest('[aria-hidden="true"]')))).toBe(true);
+    expect(await flakes.evaluateAll((elements) => elements.every((flake) => flake.closest('[aria-hidden="true"]')))).toBe(true);
     await expect(mascotButton(page)).toHaveAttribute("data-rda-bursting", /^(odd|even)$/u);
 
-    // Repeated presses restart the burst instead of stacking more leaves.
+    // Repeated presses restart the burst instead of stacking more flakes.
     for (let press = 0; press < 5; press += 1) {
       await mascotButton(page).click();
-      expect(await page.locator(".rda-seasonal-flying-leaf").count()).toBeLessThanOrEqual(4);
+      expect(await page.locator(".rda-seasonal-flying-flake").count()).toBeLessThanOrEqual(4);
     }
 
-    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(4);
-    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
-    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(0, { timeout: 5_000 });
-    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(0);
+    await expect(page.locator(".rda-seasonal-flying-flake")).toHaveCount(4);
+    await expect(page.locator(".rda-seasonal-snow-burst")).toHaveCount(1);
+    await expect(page.locator(".rda-seasonal-flying-flake")).toHaveCount(0, { timeout: 5_000 });
+    await expect(page.locator(".rda-seasonal-snow-burst")).toHaveCount(0);
     await expect(mascotButton(page)).not.toHaveAttribute("data-rda-bursting", /.*/);
   });
 
-  test("leaf burst is removed on the ~1.9s timer under a controlled clock", async ({ page }) => {
+  test("flake burst is removed on the ~1.9s timer under a controlled clock", async ({ page }) => {
     await page.clock.install({ time: new Date(MID_SEASON) });
     await open(page, "/");
     await scrollToBottom(page);
 
-    await tossLeaves(page, () => mascotButton(page).click());
+    await makeItSnow(page, () => mascotButton(page).click());
     await page.clock.runFor(1_000);
-    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(4);
+    await expect(page.locator(".rda-seasonal-flying-flake")).toHaveCount(4);
     await page.clock.runFor(1_000);
-    await expect(page.locator(".rda-seasonal-flying-leaf")).toHaveCount(0);
+    await expect(page.locator(".rda-seasonal-flying-flake")).toHaveCount(0);
   });
 });
 
@@ -1191,7 +1191,7 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
     await expect(html).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
     await expect(html).not.toHaveAttribute(SEASONAL_PEAK_ATTRIBUTE, /.*/);
 
-    // Inline leaves in the banner sky, not a ::after mask.
+    // Inline flakes in the banner sky, not a ::after mask.
     const sky = page.locator(`.rda-promo-banner > [data-rda-seasonal="banner"]`);
     await expect(sky).toHaveCount(1);
     await expect(sky).toHaveAttribute("aria-hidden", "true");
@@ -1200,17 +1200,17 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
       await page.locator(".rda-promo-banner").evaluate((banner) => window.getComputedStyle(banner, "::after").content),
     ).toBe("none");
 
-    const gust = ".rda-seasonal-banner-leaf:not(.rda-seasonal-banner-leaf-peak)";
-    await expect.poll(() => page.locator(gust).count()).toBe(3);
+    const flurry = ".rda-seasonal-banner-flake:not(.rda-seasonal-banner-flake-peak)";
+    await expect.poll(() => page.locator(flurry).count()).toBe(3);
     for (let index = 0; index < 3; index += 1) {
-      const leaf = `${gust} >> nth=${index}`;
-      await expect.poll(() => animationNames(page, leaf)).toEqual(["rda-seasonal-banner-gust"]);
-      expect(await animationNames(page, `${leaf} >> .rda-seasonal-tumbling-leaf`)).toEqual(["rda-seasonal-tumble"]);
+      const flake = `${flurry} >> nth=${index}`;
+      await expect.poll(() => animationNames(page, flake)).toEqual(["rda-seasonal-banner-flurry"]);
+      expect(await animationNames(page, `${flake} >> .rda-seasonal-tumbling-flake`)).toEqual(["rda-seasonal-twirl"]);
     }
-    // The peak-day gust stays parked off-peak.
-    expect(await animationNames(page, ".rda-seasonal-banner-leaf-peak")).toEqual([]);
+    // The peak-day flurry stays parked off-peak.
+    expect(await animationNames(page, ".rda-seasonal-banner-flake-peak")).toEqual([]);
 
-    expect(await bannerLeavesAtFlybyEnd(page)).toEqual([
+    expect(await bannerFlakesAtFlybyEnd(page)).toEqual([
       { gone: true, peak: false },
       { gone: true, peak: false },
       { gone: true, peak: false },
@@ -1238,14 +1238,14 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
     await expect(html).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
     await page.clock.runFor(1_000);
     await expect(html).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
-    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "christmas");
     expect(await animationNames(page, ".rda-seasonal-banner-sky", { subtree: true })).toEqual([]);
-    // The banner leaves are inline SVG: the flyby fetches no seasonal files.
+    // The banner flakes are inline SVG: the flyby fetches no seasonal files.
     expect(assetRequests.filter((url) => new URL(url).pathname.includes("banner"))).toEqual([]);
 
     // Same tab, later pages: sessionStorage remembers the flyby.
     await open(page, "/contact");
-    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "christmas");
     await expect(html).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(html).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
@@ -1254,11 +1254,11 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
   test("a page without a scoped banner does not spend the flyby", async ({ page }) => {
     await page.clock.install({ time: new Date(MID_SEASON) });
     await page.clock.pauseAt(new Date(MID_SEASON));
-    const flybyKey = getSeasonalFlybyStorageKey(thanksgiving2026);
+    const flybyKey = getSeasonalFlybyStorageKey(christmas2026);
     const html = page.locator("html");
 
     await open(page, "/lp/dental-assisting-enroll");
-    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "christmas");
     await expect(html).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
     expect(await page.evaluate((key) => window.sessionStorage.getItem(key), flybyKey)).toBeNull();
 
@@ -1271,12 +1271,12 @@ test.describe("seasonal theme: first-visit banner flyby", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openAt(page, "/", MID_SEASON);
 
-    await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+    await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "christmas");
     await expect(page.locator("html")).not.toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, /.*/);
   });
 });
 
-test.describe("seasonal theme: peak day (Thanksgiving)", () => {
+test.describe("seasonal theme: peak day (Christmas)", () => {
   test.skip(RETIRED, RETIRED_REASON);
 
   test.beforeEach(async ({ context }) => {
@@ -1291,8 +1291,8 @@ test.describe("seasonal theme: peak day (Thanksgiving)", () => {
     await open(page, "/");
   }
 
-  function sun(page: Page) {
-    return page.locator(".rda-seasonal-banner-sky .rda-seasonal-sun").evaluate((element) => {
+  function star(page: Page) {
+    return page.locator(".rda-seasonal-banner-sky .rda-seasonal-star").evaluate((element) => {
       const style = window.getComputedStyle(element);
       const rect = element.getBoundingClientRect();
       const banner = element.closest(".rda-promo-banner")!.getBoundingClientRect();
@@ -1308,7 +1308,7 @@ test.describe("seasonal theme: peak day (Thanksgiving)", () => {
   }
 
   function steam(page: Page) {
-    return page.locator(".rda-seasonal-harvest-pie .rda-pie-steam").evaluate((element) => ({
+    return page.locator(".rda-seasonal-gifts-cocoa .rda-cocoa-steam").evaluate((element) => ({
       animations: element
         .getAnimations({ subtree: true })
         .map((animation) => (animation as CSSAnimation).animationName)
@@ -1317,65 +1317,65 @@ test.describe("seasonal theme: peak day (Thanksgiving)", () => {
     }));
   }
 
-  test(`on Thanksgiving the harvest sun glows (>=${SUN_MIN_WIDTH}px only), a second gust follows and the pie steams`, async ({ page }) => {
+  test(`on Christmas Day the gold star shines (>=${STAR_MIN_WIDTH}px only), a second flurry follows and the cocoa steams`, async ({ page }) => {
     await openPinned(page, PEAK_DAY, 1280);
     const html = page.locator("html");
 
     await expect(html).toHaveAttribute(SEASONAL_PEAK_ATTRIBUTE, "");
     await expect(html).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
 
-    const wide = await sun(page);
+    const wide = await star(page);
     expect(wide.display).toBe("block");
     expect(wide.width).toBeGreaterThan(10);
     expect(wide.height).toBeGreaterThan(10);
     expect(wide.insideBanner).toBe(true);
 
     await expect
-      .poll(() => animationNames(page, ".rda-seasonal-banner-leaf-peak >> nth=0"))
-      .toEqual(["rda-seasonal-banner-gust"]);
-    expect(await animationNames(page, ".rda-seasonal-banner-leaf-peak >> nth=1")).toEqual(["rda-seasonal-banner-gust"]);
-    expect(await page.locator(".rda-seasonal-banner-leaf").count()).toBe(5);
+      .poll(() => animationNames(page, ".rda-seasonal-banner-flake-peak >> nth=0"))
+      .toEqual(["rda-seasonal-banner-flurry"]);
+    expect(await animationNames(page, ".rda-seasonal-banner-flake-peak >> nth=1")).toEqual(["rda-seasonal-banner-flurry"]);
+    expect(await page.locator(".rda-seasonal-banner-flake").count()).toBe(5);
 
-    // Steam rises from the pie on the day itself (paused while the footer is off screen).
+    // Steam rises from the cocoa on the day itself (paused while the footer is off screen).
     const peakSteam = await steam(page);
     expect(Number(peakSteam.opacity)).toBeGreaterThan(0.5);
     expect(peakSteam.animations).toEqual(["rda-seasonal-steam", "rda-seasonal-steam"]);
 
-    // Every leaf of both gusts is out of sight by the time the flyby attribute goes.
+    // Every flake of both flurries is out of sight by the time the flyby attribute goes.
     for (const width of [1280, 390]) {
       await page.setViewportSize({ height: 900, width });
-      const leaves = await bannerLeavesAtFlybyEnd(page);
-      expect(leaves, `${width}px`).toHaveLength(5);
-      expect(leaves.every(({ gone }) => gone), `${width}px`).toBe(true);
-      expect(leaves.filter(({ peak }) => peak), `${width}px`).toHaveLength(2);
+      const flakes = await bannerFlakesAtFlybyEnd(page);
+      expect(flakes, `${width}px`).toHaveLength(5);
+      expect(flakes.every(({ gone }) => gone), `${width}px`).toBe(true);
+      expect(flakes.filter(({ peak }) => peak), `${width}px`).toHaveLength(2);
     }
 
-    for (const width of [SUN_MIN_WIDTH, 1440]) {
+    for (const width of [STAR_MIN_WIDTH, 1440]) {
       await page.setViewportSize({ height: 900, width });
-      expect((await sun(page)).display, `${width}px`).toBe("block");
+      expect((await star(page)).display, `${width}px`).toBe("block");
     }
 
-    for (const width of [SUN_MIN_WIDTH - 1, 768, 390, 320]) {
+    for (const width of [STAR_MIN_WIDTH - 1, 768, 390, 320]) {
       await page.setViewportSize({ height: 900, width });
-      expect((await sun(page)).display, `${width}px`).toBe("none");
+      expect((await star(page)).display, `${width}px`).toBe("none");
     }
   });
 
-  test("the day before there is no sun, no second gust and no steam", async ({ page }) => {
+  test("the day before there is no star, no second flurry and no steam", async ({ page }) => {
     await openPinned(page, DAY_BEFORE_PEAK, 1440);
     const html = page.locator("html");
 
-    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+    await expect(html).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "christmas");
     await expect(html).toHaveAttribute(SEASONAL_FLYBY_ATTRIBUTE, "");
     await expect(html).not.toHaveAttribute(SEASONAL_PEAK_ATTRIBUTE, /.*/);
-    expect((await sun(page)).display).toBe("none");
+    expect((await star(page)).display).toBe("none");
     await expect
-      .poll(() => animationNames(page, ".rda-seasonal-banner-leaf:not(.rda-seasonal-banner-leaf-peak) >> nth=0"))
-      .toEqual(["rda-seasonal-banner-gust"]);
-    expect(await animationNames(page, ".rda-seasonal-banner-leaf-peak >> nth=0")).toEqual([]);
+      .poll(() => animationNames(page, ".rda-seasonal-banner-flake:not(.rda-seasonal-banner-flake-peak) >> nth=0"))
+      .toEqual(["rda-seasonal-banner-flurry"]);
+    expect(await animationNames(page, ".rda-seasonal-banner-flake-peak >> nth=0")).toEqual([]);
     expect(
       await page
-        .locator(".rda-seasonal-banner-leaf-peak")
+        .locator(".rda-seasonal-banner-flake-peak")
         .first()
         .evaluate((element) => window.getComputedStyle(element).opacity),
     ).toBe("0");
@@ -1383,31 +1383,31 @@ test.describe("seasonal theme: peak day (Thanksgiving)", () => {
   });
 });
 
-test.describe("seasonal theme: hero sprig and falling leaf", () => {
+test.describe("seasonal theme: hero sprig and falling flake", () => {
   test.skip(RETIRED, RETIRED_REASON);
 
   test.beforeEach(async ({ context }) => {
     await isolate(context);
   });
 
-  test("a sprig sits in the corner and one leaf falls once, then is gone", async ({ page }) => {
+  test("a sprig sits in the corner and one flake falls once, then is gone", async ({ page }) => {
     await page.setViewportSize({ height: 900, width: 1280 });
     await openAt(page, "/", MID_SEASON);
 
     const sprig = (await heroArt(page, "::before"))!;
     expect(sprig.content).toBe('""');
     expect(sprig.pointerEvents).toBe("none");
-    expect(sprig.backgroundImage).toContain(`${ASSETS}/leaf-sprig.svg`);
+    expect(sprig.backgroundImage).toContain(`${ASSETS}/holly-sprig.svg`);
     expect(sprig.animations).toEqual([]);
 
-    const leaf = (await heroArt(page, "::after"))!;
-    expect(leaf.content).toBe('""');
-    expect(leaf.pointerEvents).toBe("none");
-    expect(leaf.backgroundImage).toContain(`${ASSETS}/oak-leaf.svg`);
-    expect(leaf.animations).toEqual([{ iterations: 1, name: "rda-seasonal-leaf-fall" }]);
+    const flake = (await heroArt(page, "::after"))!;
+    expect(flake.content).toBe('""');
+    expect(flake.pointerEvents).toBe("none");
+    expect(flake.backgroundImage).toContain(`${ASSETS}/snowflake-ice.svg`);
+    expect(flake.animations).toEqual([{ iterations: 1, name: "rda-seasonal-snow-fall" }]);
 
-    // After its one fall the leaf is transparent: nothing loops in the hero.
-    await finishHeroLeaf(page);
+    // After its one fall the flake is transparent: nothing loops in the hero.
+    await finishHeroFlake(page);
     await expect.poll(async () => (await heroArt(page, "::after"))!.opacity).toBe("0");
 
     // Hover sways the sprig once.
@@ -1418,15 +1418,15 @@ test.describe("seasonal theme: hero sprig and falling leaf", () => {
   });
 
   for (const viewport of layoutWidths) {
-    test(`sprig and falling leaf stay clear of hero text and controls at ${viewport.width}px`, async ({ page }, testInfo) => {
+    test(`sprig and falling flake stay clear of hero text and controls at ${viewport.width}px`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport);
       await openAt(page, "/", MID_SEASON);
       await expect.poll(async () => (await heroArt(page, "::before"))?.content).toBe('""');
 
       const sprig = (await heroArt(page, "::before"))!;
-      const leaf = (await heroArt(page, "::after"))!;
+      const flake = (await heroArt(page, "::after"))!;
 
-      for (const art of [sprig, leaf]) {
+      for (const art of [sprig, flake]) {
         expect(art.box.left).toBeGreaterThanOrEqual(0);
         expect(art.box.right).toBeLessThanOrEqual(art.viewportWidth);
       }
@@ -1434,7 +1434,7 @@ test.describe("seasonal theme: hero sprig and falling leaf", () => {
       const collisions = await page.evaluate(findInkCollisions, {
         arts: [
           { box: sprig.box, label: "hero sprig" },
-          { box: leaf.box, label: "falling leaf path" },
+          { box: flake.box, label: "falling flake path" },
         ],
         boxes: false,
         exclude: "",
@@ -1443,7 +1443,7 @@ test.describe("seasonal theme: hero sprig and falling leaf", () => {
       });
 
       recordCollisions(testInfo, `hero sprig @${viewport.width}`, collisions);
-      expect(collisions, "hero sprig or leaf overlaps hero text or controls").toEqual([]);
+      expect(collisions, "hero sprig or flake overlaps hero text or controls").toEqual([]);
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
         "horizontal overflow",
@@ -1452,7 +1452,7 @@ test.describe("seasonal theme: hero sprig and falling leaf", () => {
   }
 });
 
-test.describe("seasonal theme: divider leaves", () => {
+test.describe("seasonal theme: divider flakes", () => {
   test.skip(RETIRED, RETIRED_REASON);
 
   test.beforeEach(async ({ context }) => {
@@ -1461,7 +1461,7 @@ test.describe("seasonal theme: divider leaves", () => {
 
   for (const path of ["/", "/infection-control", "/contact"]) {
     for (const viewport of [{ height: 844, width: 390 }, { height: 900, width: 1440 }]) {
-      test(`leaves drift down with the scroll and settle in the notch on ${path} at ${viewport.width}px`, async ({ page }) => {
+      test(`flakes drift down with the scroll and settle in the notch on ${path} at ${viewport.width}px`, async ({ page }) => {
         await page.setViewportSize(viewport);
         await openAt(page, path, MID_SEASON);
 
@@ -1486,7 +1486,7 @@ test.describe("seasonal theme: divider leaves", () => {
           expect(before.scrollDriven, `divider ${index} is scroll-driven`).toBe(true);
           if (parked && before.clipped) {
             // Static fallback: never hidden, never caught mid-fall.
-            expect(isSettledLeaf(before), `clipped divider ${index} rests: ${JSON.stringify(before)}`).toBe(true);
+            expect(isSettledFlake(before), `clipped divider ${index} rests: ${JSON.stringify(before)}`).toBe(true);
           } else if (parked) {
             expect(before.opacity, `divider ${index} hidden before it enters`).toBe("0");
             checkedBefore += 1;
@@ -1501,7 +1501,7 @@ test.describe("seasonal theme: divider leaves", () => {
           await nextFrames(page);
 
           const after = (await dividerStates(page))[index];
-          expect(isSettledLeaf(after), `divider ${index} settled: ${JSON.stringify(after)}`).toBe(true);
+          expect(isSettledFlake(after), `divider ${index} settled: ${JSON.stringify(after)}`).toBe(true);
         }
 
         expect(checkedBefore).toBeGreaterThan(0);
@@ -1628,7 +1628,7 @@ test.describe("seasonal theme: footer mascot", () => {
     expect(pressed.final).toBe("idle");
   });
 
-  test("a press gasps, fans the feathers and tosses four leaves along curved offset-paths that clean up", async ({ page }) => {
+  test("a press gasps, tips the Santa hat and tosses four flakes along curved offset-paths that clean up", async ({ page }) => {
     await openAt(page, "/", MID_SEASON);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
@@ -1641,49 +1641,49 @@ test.describe("seasonal theme: footer mascot", () => {
 
     expect(await mouths()).toEqual({ gasp: "0", smile: "1" });
 
-    await tossLeaves(page, () => mascot.click());
+    await makeItSnow(page, () => mascot.click());
     await expect(mascot).toHaveAttribute("data-rda-mood", "surprised");
-    // Each press flips data-rda-bursting so the gobble squash replays.
+    // Each press flips data-rda-bursting so the hop replays.
     const firstBurst = await mascot.getAttribute("data-rda-bursting");
     expect(firstBurst).toMatch(/^(odd|even)$/u);
     await expect.poll(mouths).toEqual({ gasp: "1", smile: "0" });
-    expect(await animationNames(page, ".rda-seasonal-mascot-art .rda-mascot-fan")).toEqual([
-      firstBurst === "odd" ? "rda-seasonal-fan-display" : "rda-seasonal-fan-display-again",
+    expect(await animationNames(page, ".rda-seasonal-mascot-art .rda-mascot-hat")).toEqual([
+      firstBurst === "odd" ? "rda-seasonal-hat-flop" : "rda-seasonal-hat-flop-again",
     ]);
 
-    const burst = await page.locator(".rda-seasonal-leaf-burst").evaluate((element) => ({
+    const burst = await page.locator(".rda-seasonal-snow-burst").evaluate((element) => ({
       ariaHidden: element.getAttribute("aria-hidden"),
-      leaves: Array.from(element.querySelectorAll<HTMLElement>(".rda-seasonal-flying-leaf")).map((leaf) => ({
-        animations: leaf.getAnimations().map((animation) => (animation as CSSAnimation).animationName).sort(),
-        art: leaf.querySelectorAll("svg.rda-seasonal-flying-leaf-art").length,
-        offsetPath: window.getComputedStyle(leaf).offsetPath,
+      flakes: Array.from(element.querySelectorAll<HTMLElement>(".rda-seasonal-flying-flake")).map((flake) => ({
+        animations: flake.getAnimations().map((animation) => (animation as CSSAnimation).animationName).sort(),
+        art: flake.querySelectorAll("svg.rda-seasonal-flying-flake-art").length,
+        offsetPath: window.getComputedStyle(flake).offsetPath,
       })),
       pointerEvents: window.getComputedStyle(element).pointerEvents,
     }));
 
     expect(burst.ariaHidden).toBe("true");
     expect(burst.pointerEvents).toBe("none");
-    expect(burst.leaves).toHaveLength(4);
-    expect(new Set(burst.leaves.map(({ offsetPath }) => offsetPath)).size).toBe(4);
+    expect(burst.flakes).toHaveLength(4);
+    expect(new Set(burst.flakes.map(({ offsetPath }) => offsetPath)).size).toBe(4);
 
-    for (const leaf of burst.leaves) {
-      expect(leaf.offsetPath).toMatch(/^path\("M ?0 0 ?C/u);
-      expect(leaf.art).toBe(1);
-      expect(leaf.animations).toEqual(["rda-seasonal-leaf-spin", "rda-seasonal-leaf-toss"]);
+    for (const flake of burst.flakes) {
+      expect(flake.offsetPath).toMatch(/^path\("M ?0 0 ?C/u);
+      expect(flake.art).toBe(1);
+      expect(flake.animations).toEqual(["rda-seasonal-flake-spin", "rda-seasonal-flake-toss"]);
     }
 
     await mascot.click();
     await expect(mascot).toHaveAttribute("data-rda-bursting", firstBurst === "odd" ? "even" : "odd");
-    // "odd" plays rda-seasonal-gobble, "even" rda-seasonal-gobble-again: a new name restarts the squash.
+    // "odd" plays rda-seasonal-hop, "even" rda-seasonal-hop-again: a new name restarts the squash.
     expect(
-      (await animationNames(page, ".rda-seasonal-mascot-art")).some((name) => name.startsWith("rda-seasonal-gobble")),
+      (await animationNames(page, ".rda-seasonal-mascot-art")).some((name) => name.startsWith("rda-seasonal-hop")),
     ).toBe(true);
-    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
+    await expect(page.locator(".rda-seasonal-snow-burst")).toHaveCount(1);
 
     // The gasp is brief; the burst clears itself after ~2s.
     await expect(mascot).not.toHaveAttribute("data-rda-mood", /.*/, { timeout: 2_000 });
     await expect.poll(mouths).toEqual({ gasp: "0", smile: "1" });
-    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(0, { timeout: 4_000 });
+    await expect(page.locator(".rda-seasonal-snow-burst")).toHaveCount(0, { timeout: 4_000 });
   });
 
   test("every third press adds a spin, alternating direction", async ({ page }) => {
@@ -1695,7 +1695,7 @@ test.describe("seasonal theme: footer mascot", () => {
 
     await mascot.click();
     await mascot.click();
-    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
+    await expect(page.locator(".rda-seasonal-snow-burst")).toHaveCount(1);
     await expect(mascot).not.toHaveAttribute("data-rda-spin", /.*/);
 
     await mascot.click();
@@ -1741,7 +1741,7 @@ test.describe("seasonal theme: footer mascot", () => {
 
     await expect(footerDecor(page)).not.toHaveAttribute("data-rda-awake", /.*/);
     const loops = await loopNames();
-    expect(loops).toEqual(["rda-seasonal-drift", "rda-seasonal-strut", "rda-seasonal-tumble"]);
+    expect(loops).toEqual(["rda-seasonal-bop", "rda-seasonal-drift", "rda-seasonal-twirl"]);
     // Blinks are scheduled by JS (data-rda-blink), not an endless CSS loop.
     expect(loops).not.toContain("rda-seasonal-blink");
     expect(await playStates()).toEqual(["paused"]);
@@ -1781,7 +1781,7 @@ test.describe("seasonal theme: footer mascot", () => {
     await expect(mascot).toHaveAttribute("data-rda-mascot", "hiding");
     // A synthetic click: no focus, no hover, no scroll.
     await mascot.evaluate((button) => (button as HTMLButtonElement).click());
-    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
+    await expect(page.locator(".rda-seasonal-snow-burst")).toHaveCount(1);
     await expect(mascot).not.toHaveAttribute("data-rda-mascot", "hiding");
     expect(await peekKeyValue(page)).toBe("1");
   });
@@ -1838,13 +1838,13 @@ test.describe("seasonal theme: footer mascot", () => {
       expect(Number.parseFloat((await mascotLook(page)).x) || 0).toBe(0);
 
       // Hover flourishes are for hover-capable pointers only: once the tap's own
-      // fan flare is over, a sticky touch :hover leaves the fan at rest.
+      // hat flop is over, a sticky touch :hover leaves the hat at rest.
       expect(await page.evaluate(() => window.matchMedia("(hover: hover)").matches)).toBe(false);
       await mascotButton(page).tap();
-      await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(0, { timeout: 4_000 });
+      await expect(page.locator(".rda-seasonal-snow-burst")).toHaveCount(0, { timeout: 4_000 });
       await page.waitForTimeout(400);
       expect(
-        await page.locator(".rda-seasonal-mascot-art .rda-mascot-fan").evaluate((fan) => window.getComputedStyle(fan).scale),
+        await page.locator(".rda-seasonal-mascot-art .rda-mascot-hat").evaluate((hat) => window.getComputedStyle(hat).rotate),
       ).toBe("none");
     } finally {
       await context.close();
@@ -1852,7 +1852,7 @@ test.describe("seasonal theme: footer mascot", () => {
   });
 });
 
-test.describe("seasonal theme: footer drifting leaves", () => {
+test.describe("seasonal theme: footer drifting flakes", () => {
   test.skip(RETIRED, RETIRED_REASON);
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 
@@ -1862,7 +1862,7 @@ test.describe("seasonal theme: footer drifting leaves", () => {
 
   for (const path of ["/", "/contact", "/faqs-1", `${RESOURCES_BASE_PATH}/${firstResource.slug}`]) {
     for (const viewport of layoutWidths) {
-      test(`drifting leaves stay in the footer's top padding on ${path} at ${viewport.width}px`, async ({ page }, testInfo) => {
+      test(`drifting flakes stay in the footer's top padding on ${path} at ${viewport.width}px`, async ({ page }, testInfo) => {
         await page.setViewportSize(viewport);
         await openAt(page, path, MID_SEASON);
         await scrollToBottom(page);
@@ -1901,14 +1901,14 @@ test.describe("seasonal theme: footer drifting leaves", () => {
         expect(drift.box.bottom - drift.footer.top).toBeLessThanOrEqual(drift.footer.paddingTop);
 
         const collisions = await page.evaluate(findInkCollisions, {
-          arts: [{ box: drift.box, label: "drifting leaves" }],
+          arts: [{ box: drift.box, label: "drifting flakes" }],
           exclude: "[data-rda-seasonal], .rda-whatsapp-fab, [data-rda-whatsapp]",
           root: ".rda-live-footer",
           tolerance: 0,
         });
 
         recordCollisions(testInfo, `drift ${path} @${viewport.width}`, collisions);
-        expect(collisions, "drifting leaves overlap footer text or controls").toEqual([]);
+        expect(collisions, "drifting flakes overlap footer text or controls").toEqual([]);
       });
     }
   }
@@ -1922,23 +1922,23 @@ test.describe("seasonal theme: reduced motion", () => {
     await isolate(context);
   });
 
-  test("only the leaf fade animates; decorations stay static", async ({ page }) => {
+  test("only the flake fade animates; decorations stay static", async ({ page }) => {
     await openAt(page, "/", MID_SEASON);
     await scrollToFooterDecor(page);
     await expect(footerDecor(page)).toHaveAttribute("data-rda-awake", "true");
     await page.locator(".rda-home-hero").first().hover().catch(() => undefined);
-    await tossLeaves(page, () => mascotButton(page).click());
+    await makeItSnow(page, () => mascotButton(page).click());
     // Three presses would earn a spin with motion; reduced motion skips it.
     await mascotButton(page).click();
     await mascotButton(page).click();
-    await expect(page.locator(".rda-seasonal-leaf-burst")).toHaveCount(1);
+    await expect(page.locator(".rda-seasonal-snow-burst")).toHaveCount(1);
     expect(await mascotButton(page).getAttribute("data-rda-spin")).toBeNull();
 
     const animations = await runningSeasonalAnimations(page);
 
     expect(animations.length).toBeGreaterThan(0);
     expect(animations.filter(({ infinite }) => infinite)).toEqual([]);
-    expect([...new Set(animations.map(({ name }) => name))]).toEqual(["rda-seasonal-leaf-fade"]);
+    expect([...new Set(animations.map(({ name }) => name))]).toEqual(["rda-seasonal-flake-fade"]);
   });
 
   test("the mascot never hides or peeks, and the eyes do not track the pointer", async ({ page }) => {
@@ -1971,7 +1971,7 @@ test.describe("seasonal theme: reduced motion", () => {
     ).toBe("1");
   });
 
-  test("no seasonal loop runs anywhere: no falling leaf, divider leaves sit in their notches", async ({ page }) => {
+  test("no seasonal loop runs anywhere: no falling flake, divider flakes sit in their notches", async ({ page }) => {
     await page.setViewportSize({ height: 900, width: 1280 });
     await openAt(page, "/", MID_SEASON);
     await scrollToFooterDecor(page);
@@ -1984,14 +1984,14 @@ test.describe("seasonal theme: reduced motion", () => {
     const sprig = (await heroArt(page, "::before"))!;
     expect(sprig.content).toBe('""');
     expect(sprig.animations).toEqual([]);
-    // The falling leaf never lets go: it stays transparent.
-    const leaf = (await heroArt(page, "::after"))!;
-    expect(leaf.animations).toEqual([]);
-    expect(leaf.opacity).toBe("0");
+    // The falling flake never lets go: it stays transparent.
+    const flake = (await heroArt(page, "::after"))!;
+    expect(flake.animations).toEqual([]);
+    expect(flake.opacity).toBe("0");
 
     for (const state of await dividerStates(page)) {
       expect(state.scrollDriven).toBe(false);
-      expect(isSettledLeaf(state), JSON.stringify(state)).toBe(true);
+      expect(isSettledFlake(state), JSON.stringify(state)).toBe(true);
     }
 
     expect(await runningSeasonalAnimations(page)).toEqual([]);
@@ -2014,10 +2014,10 @@ test.describe("seasonal theme: scope exclusions", () => {
 
       // Private tools never receive the <head> script; elsewhere the theme is
       // on and only the route's scope keeps decorations out.
-      expect(await seasonAttribute(page)).toBe(isPrivateSiteRoute(path) ? null : "thanksgiving");
+      expect(await seasonAttribute(page)).toBe(isPrivateSiteRoute(path) ? null : "christmas");
       await expect(page.locator("script#rda-seasonal-theme")).toHaveCount(isPrivateSiteRoute(path) ? 0 : 1);
       await expect(page.locator(`[${SEASONAL_SCOPE_ATTRIBUTE}]`)).toHaveCount(0);
-      // Not just hidden: the banner sky, drifting leaves and footer decor are never rendered here.
+      // Not just hidden: the banner sky, drifting flakes and footer decor are never rendered here.
       await expect(page.locator("[data-rda-seasonal]")).toHaveCount(0);
       await expect(page.locator(".rda-seasonal-banner-sky, .rda-seasonal-drift, .rda-seasonal-footer")).toHaveCount(0);
       await scrollToBottom(page);
@@ -2052,7 +2052,7 @@ async function notFoundMascot(page: Page) {
     const rect = h1.getBoundingClientRect();
     const px = (value: string) => Number.parseFloat(value);
     const width = px(style.width);
-    // Turkey-tooth art is 108x82.
+    // Santa-tooth art is 108x82.
     const height = Number.isFinite(px(style.height)) ? px(style.height) : (width * 82) / 108;
     // Absolutely positioned against the h1's padding box.
     const left = rect.left + h1.clientLeft + px(style.left);
@@ -2077,7 +2077,7 @@ async function assertNotFoundMascot(page: Page, testInfo: TestInfo, title: strin
   await expect.poll(async () => (await notFoundMascot(page))?.content).not.toBe("none");
 
   const mascot = (await notFoundMascot(page))!;
-  const art = still ? "turkey-tooth-still.svg" : "turkey-tooth-search.svg";
+  const art = still ? "santa-tooth-still.svg" : "santa-tooth-search.svg";
 
   expect(mascot.pointerEvents).toBe("none");
   expect(mascot.backgroundImage).toContain(`${ASSETS}/${art}`);
@@ -2114,7 +2114,7 @@ async function assertNoNotFoundMascot(page: Page) {
 
 test.describe("seasonal theme: 404 mascot", () => {
   test.skip(RETIRED, RETIRED_REASON);
-  // No strut: geometry is read from the resting position.
+  // No bop: geometry is read from the resting position.
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 
   test.beforeEach(async ({ context }) => {
@@ -2123,14 +2123,14 @@ test.describe("seasonal theme: 404 mascot", () => {
 
   for (const { label, path } of notFoundPaths) {
     for (const width of [320, 390, 1280]) {
-      test(`turkey-tooth stands above the heading at ${label}, ${width}px`, async ({ page }, testInfo) => {
+      test(`Santa-tooth stands above the heading at ${label}, ${width}px`, async ({ page }, testInfo) => {
         await page.setViewportSize({ height: width < 768 ? 760 : 900, width });
         const response = await openAt(page, path, MID_SEASON);
 
         expect(response?.status()).toBe(404);
         await expect(page.getByText("File not found", { exact: false }).first()).toBeVisible();
         // Next serves 404s as a client-rendered shell: the fallback applies the season.
-        await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+        await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "christmas");
         await assertNotFoundMascot(page, testInfo, `404 ${label} @${width}`, true);
         expect(await runningSeasonalAnimations(page)).toEqual([]);
         await expect(page.getByText("File not found", { exact: false }).first()).toBeVisible();
@@ -2147,21 +2147,21 @@ test.describe("seasonal theme: 404 mascot with motion", () => {
   });
 
   for (const width of [320, 390, 1280]) {
-    test(`the animated turkey-tooth struts without overflow at ${width}px`, async ({ page }, testInfo) => {
+    test(`the animated Santa-tooth bops without overflow at ${width}px`, async ({ page }, testInfo) => {
       await page.setViewportSize({ height: width < 768 ? 760 : 900, width });
       const response = await openAt(page, "/registration", MID_SEASON);
 
       expect(response?.status()).toBe(404);
-      await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "thanksgiving");
+      await expect(page.locator("html")).toHaveAttribute(SEASONAL_THEME_ATTRIBUTE, "christmas");
       await expect.poll(async () => (await notFoundMascot(page))?.content).not.toBe("none");
 
       const names = (await runningSeasonalAnimations(page)).map(({ name }) => name).sort();
-      expect(names).toEqual(["rda-seasonal-strut"]);
+      expect(names).toEqual(["rda-seasonal-bop"]);
 
-      // Pin the strut at rest before measuring.
+      // Pin the bop at rest before measuring.
       await page.evaluate(() => {
         for (const animation of document.getAnimations() as CSSAnimation[]) {
-          if (animation.animationName === "rda-seasonal-strut") {
+          if (animation.animationName === "rda-seasonal-bop") {
             animation.pause();
             animation.currentTime = 0;
           }
@@ -2227,7 +2227,7 @@ test.describe("seasonal theme: opt-out and parity", () => {
     for (const kind of ["banner", "drift", "footer"]) {
       await expect(page.locator(`[data-rda-seasonal="${kind}"]`)).toBeHidden();
     }
-    expect(await page.locator(".rda-seasonal-sun").evaluate((element) => window.getComputedStyle(element).display)).toBe(
+    expect(await page.locator(".rda-seasonal-star").evaluate((element) => window.getComputedStyle(element).display)).toBe(
       "none",
     );
     expect(await peekKeyValue(page)).toBeNull();
@@ -2260,7 +2260,7 @@ test.describe("seasonal theme: opt-out and parity", () => {
         const page = await context.newPage();
 
         await openAt(page, "/", MID_SEASON);
-        expect(await seasonAttribute(page)).toBe(seasonal ? "thanksgiving" : null);
+        expect(await seasonAttribute(page)).toBe(seasonal ? "christmas" : null);
         await scrollToBottom(page);
 
         return page.evaluate(() => document.body.innerText.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim());
@@ -2279,7 +2279,7 @@ test.describe("seasonal theme: opt-out and parity", () => {
 
 test.describe("seasonal theme: layout safety", () => {
   test.skip(RETIRED, RETIRED_REASON);
-  // Reduced motion stops the mascot's strut and the divider leaves, so boxes are stable.
+  // Reduced motion stops the mascot's bop and the divider flakes, so boxes are stable.
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 
   test.beforeEach(async ({ context }) => {
@@ -2332,7 +2332,7 @@ test.describe("seasonal theme: layout safety", () => {
 
   const matrix = [
     ...layoutWidths.flatMap((viewport) => layoutRoutes.map((path) => ({ path, peak: false, viewport }))),
-    // The peak day's pie steam, on the busiest footers.
+    // The peak day's cocoa steam, on the busiest footers.
     ...layoutWidths.flatMap((viewport) => ["/", "/contact", "/faqs-1"].map((path) => ({ path, peak: true, viewport }))),
   ];
 
@@ -2350,10 +2350,10 @@ test.describe("seasonal theme: layout safety", () => {
       expect(await page.locator("html").getAttribute(SEASONAL_PEAK_ATTRIBUTE)).toBe(peak ? "" : null);
 
       const arts = await page.evaluate(() =>
-        Array.from(document.querySelectorAll<Element>(".rda-seasonal-harvest-art, .rda-seasonal-mascot-art")).map(
+        Array.from(document.querySelectorAll<Element>(".rda-seasonal-gifts-art, .rda-seasonal-mascot-art")).map(
           (element, index) => {
             const rect = element.getBoundingClientRect();
-            const kind = element.classList.contains("rda-seasonal-mascot-art") ? "mascot" : "harvest";
+            const kind = element.classList.contains("rda-seasonal-mascot-art") ? "mascot" : "gifts";
 
             return {
               box: { bottom: rect.bottom, left: rect.left, right: rect.right, top: rect.top },
@@ -2363,7 +2363,7 @@ test.describe("seasonal theme: layout safety", () => {
         ),
       );
 
-      expect(arts.filter(({ label }) => label.startsWith("harvest")).length).toBe(3);
+      expect(arts.filter(({ label }) => label.startsWith("gifts")).length).toBe(3);
       expect(arts.filter(({ label }) => label.startsWith("mascot")).length).toBe(1);
 
       const collisions = await page.evaluate(findInkCollisions, {
@@ -2382,9 +2382,9 @@ test.describe("seasonal theme: layout safety", () => {
         const overlaps = (a: { bottom: number; left: number; right: number; top: number }, b: DOMRect) =>
           Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
           Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
-        // The harvest takes the pointer (hover wobble), so nothing interactive may sit under it.
+        // The gifts take the pointer (hover wobble), so nothing interactive may sit under it.
         const interactive = 'a[href], button, input, select, textarea, label, summary, [role="button"], [tabindex]';
-        const harvestCoversControls = Array.from(document.querySelectorAll(".rda-seasonal-harvest-slot")).some((slot) => {
+        const giftsCoversControls = Array.from(document.querySelectorAll(".rda-seasonal-gifts-slot")).some((slot) => {
           const rect = slot.getBoundingClientRect();
           const points = [
             [rect.left + rect.width / 2, rect.top + rect.height / 2],
@@ -2407,15 +2407,15 @@ test.describe("seasonal theme: layout safety", () => {
           decorPointerEvents: decor ? window.getComputedStyle(decor).pointerEvents : "missing",
           fabCollision: Boolean(fabRect && artBoxes.some(({ box }) => overlaps(box, fabRect))),
           innerWidth: window.innerWidth,
-          harvestCoversControls,
+          giftsCoversControls,
           scrollWidth: document.documentElement.scrollWidth,
         };
       }, arts);
 
       expect.soft(report.scrollWidth, "horizontal overflow").toBeLessThanOrEqual(report.innerWidth);
-      expect.soft(report.artOutsideViewport, "decor art leaves the viewport").toBe(false);
+      expect.soft(report.artOutsideViewport, "decor art flakes the viewport").toBe(false);
       expect.soft(report.decorPointerEvents).toBe("none");
-      expect.soft(report.harvestCoversControls, "the harvest must not cover links or controls").toBe(false);
+      expect.soft(report.giftsCoversControls, "the gifts must not cover links or controls").toBe(false);
       expect.soft(report.fabCollision, "footer decor overlaps the WhatsApp button").toBe(false);
       expect.soft(collisions, "footer decor overlaps page ink").toEqual([]);
     });
@@ -2451,7 +2451,7 @@ test.describe("seasonal theme: runtime health", () => {
 
       await page.setViewportSize({ height: 900, width: 1280 });
       await openAt(page, "/", when);
-      expect(await seasonAttribute(page)).toBe("thanksgiving");
+      expect(await seasonAttribute(page)).toBe("christmas");
       await page.locator(".rda-home-hero-copy").hover();
       await scrollToFooterDecor(page);
       await expect.poll(() => page.locator(".rda-seasonal-mascot-button").getAttribute("data-rda-mascot")).not.toBe(
@@ -2459,7 +2459,7 @@ test.describe("seasonal theme: runtime health", () => {
       );
       const art = (await page.locator(".rda-seasonal-mascot-art").boundingBox())!;
       await page.mouse.move(art.x + 200, art.y);
-      await tossLeaves(page, () => mascotButton(page).click());
+      await makeItSnow(page, () => mascotButton(page).click());
       await mascotButton(page).click();
       await mascotButton(page).click();
       await page.waitForTimeout(2_500);

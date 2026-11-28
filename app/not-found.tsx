@@ -16,7 +16,7 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 // Standalone 404: no primary navigation, just a calm way back. During the
-// Thanksgiving season the turkey-tooth stands over the h1, looking around for
+// Christmas season the Santa-tooth stands over the h1, looking around for
 // the missing page (see the seasonal rules for `.rda-not-found-content`),
 // replacing the icon right before it.
 export default function NotFound() {

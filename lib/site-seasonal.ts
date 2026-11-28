@@ -8,7 +8,7 @@
 export const SEASONAL_THEME_ATTRIBUTE = "data-rda-season";
 export const SEASONAL_FLYBY_ATTRIBUTE = "data-rda-season-flyby";
 export const SEASONAL_SCOPE_ATTRIBUTE = "data-rda-seasonal-scope";
-// Set on the theme's peak day (Thanksgiving Day itself) for a little extra flourish.
+// Set on the theme's peak day (Christmas Day itself) for a little extra flourish.
 export const SEASONAL_PEAK_ATTRIBUTE = "data-rda-season-peak";
 
 // Setting this localStorage key to "off" keeps decorations off for a browser.
@@ -25,17 +25,18 @@ export type SeasonalTheme = {
   id: string;
   peakOn: string;
   startsOn: string;
-  theme: "thanksgiving";
+  theme: "christmas";
   timeZone: string;
 };
 
-// Thanksgiving is the fourth Thursday of November (2026-11-26).
-export const thanksgiving2026: SeasonalTheme = {
-  id: "thanksgiving-2026",
-  theme: "thanksgiving",
-  startsOn: "2026-11-01",
-  endsOn: "2026-11-30",
-  peakOn: "2026-11-26",
+// From the day after Thanksgiving through New Year's Eve, peaking on
+// Christmas Day (2026-12-25).
+export const christmas2026: SeasonalTheme = {
+  id: "christmas-2026",
+  theme: "christmas",
+  startsOn: "2026-11-27",
+  endsOn: "2026-12-31",
+  peakOn: "2026-12-25",
   timeZone: "America/Los_Angeles",
 };
 
@@ -60,8 +61,8 @@ export function isSeasonalThemeCurrent(theme: SeasonalTheme, now: Date) {
 // Evaluated when pages are built/rendered: the first deploy after the season
 // drops the <head> script and the footer markup. Replace with next year's
 // dates (and a new asset folder) to bring the layer back.
-export const activeSeasonalTheme: SeasonalTheme | null = isSeasonalThemeCurrent(thanksgiving2026, new Date())
-  ? thanksgiving2026
+export const activeSeasonalTheme: SeasonalTheme | null = isSeasonalThemeCurrent(christmas2026, new Date())
+  ? christmas2026
   : null;
 
 export function isSeasonalThemeActive(theme: SeasonalTheme, now: Date) {

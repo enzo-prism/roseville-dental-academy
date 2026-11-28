@@ -40,13 +40,13 @@
         "dark-border": "#22303d",
         "whatsapp": "#25d366",
         "whatsapp-foreground": "#ffffff",
-        "seasonal-pumpkin": "#e8862e",
-        "seasonal-pumpkin-deep": "#c2621a",
-        "seasonal-stem": "#5f7a3a",
+        "seasonal-berry": "#c8363f",
+        "seasonal-berry-deep": "#8e2231",
+        "seasonal-holly": "#2e7d4f",
+        "seasonal-pine": "#1e5239",
         "seasonal-gold": "#edb547",
-        "seasonal-cranberry": "#a8323e",
-        "seasonal-bark": "#7a4a2b",
-        "seasonal-cream": "#fff6e6"
+        "seasonal-cocoa": "#7a4a2b",
+        "seasonal-snow": "#f7fbfe"
       },
       "fontFamily": {
         "display": [
